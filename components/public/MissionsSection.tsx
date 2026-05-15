@@ -145,11 +145,11 @@ export default function MissionsSection() {
 
       <section
         ref={sectionRef}
-        className="relative h-screen bg-[#070f09] text-white"
+        className="relative h-[420svh] bg-[#070f09] text-white"
       >
         <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_18%_24%,rgba(11,143,58,0.18),transparent_28%),radial-gradient(circle_at_54%_42%,rgba(200,16,46,0.10),transparent_30%),radial-gradient(circle_at_86%_68%,rgba(247,198,0,0.12),transparent_30%)]" />
 
-        <div className="sticky top-0 h-[100svh] overflow-hidden bg-[#070f09]">
+        <div className="sticky top-0 h-screen overflow-hidden bg-[#070f09]">
           <div className="absolute left-0 right-0 top-0 z-40 h-[2px] bg-white/5">
             <div
               className="h-full transition-all duration-300"
