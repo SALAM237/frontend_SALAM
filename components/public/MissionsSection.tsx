@@ -87,6 +87,10 @@ const sectionAnimations = `
 .slide-bottom {
   animation: slide-bottom .5s cubic-bezier(.25,.46,.45,.94) both;
 }
+
+.missions-debug div {
+  box-shadow: 0 0 0 1px red inset !important;
+}
 `;
 
 export default function MissionsSection() {
@@ -148,7 +152,7 @@ export default function MissionsSection() {
 
       <section
         ref={sectionRef}
-        className="relative h-[500svh] bg-[#070f09] text-white"
+        className="missions-debug relative h-[500svh] bg-[#070f09] text-white"
       >
         <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_18%_24%,rgba(11,143,58,0.18),transparent_28%),radial-gradient(circle_at_54%_42%,rgba(200,16,46,0.10),transparent_30%),radial-gradient(circle_at_86%_68%,rgba(247,198,0,0.12),transparent_30%)]" />
 
