@@ -90,7 +90,7 @@ const sectionAnimations = `
 }
 `;
 
-export default function MissionsSectionPreview() {
+export function MissionsSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const rightPaneRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
