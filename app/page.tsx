@@ -10,7 +10,7 @@ import { CTABanner }        from '@/components/public/CTABanner';
 
 export default function HomePage() {
   return (
-    <main className="overflow-x-hidden">
+    <main className="overflow-x-clip">
       <HeroSection />
       <MarqueeSection />
       <SalamStatsSection />
