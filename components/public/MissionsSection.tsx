@@ -312,10 +312,10 @@ function MobileTabletMissionsView({
         />
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <div className="relative min-h-0 flex-1 overflow-visible lg:overflow-hidden">
         {MISSIONS.map((mission, index) => {
           const arrivalGap = 110;
-          const pinY = 10;
+          const pinY = 4;
           const startY = pinY;
           const stickyHold = 0.12;
           const endProgress = 1 - stickyHold;
@@ -486,7 +486,7 @@ function MissionActionsPanel({
       className={
         orientation === "horizontal"
           ? "absolute top-0 flex h-full w-[min(58vw,760px)] shrink-0 items-center pr-[clamp(1.5rem,3vw,3rem)] transition-[transform,opacity] duration-300 ease-out will-change-transform"
-          : "absolute left-0 right-0 top-0 mx-auto flex h-full w-[92%] max-w-[32rem] items-start transition-[transform,opacity] duration-300 ease-out will-change-transform"
+          : "absolute left-0 right-0 top-0 mx-auto flex h-auto w-[92%] max-w-[32rem] items-start transition-[transform,opacity] duration-300 ease-out will-change-transform"
       }
       style={{
         zIndex,
