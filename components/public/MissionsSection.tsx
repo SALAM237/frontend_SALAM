@@ -150,6 +150,39 @@ export default function MissionsSection() {
       >
         <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_18%_24%,rgba(11,143,58,0.18),transparent_28%),radial-gradient(circle_at_54%_42%,rgba(200,16,46,0.10),transparent_30%),radial-gradient(circle_at_86%_68%,rgba(247,198,0,0.12),transparent_30%)]" />
 
+        <div className="pointer-events-none absolute right-[-14%] top-[6%] z-[1] flex flex-col gap-[34vh] lg:hidden">
+          {MISSIONS.map((mission, index) => {
+            const isActive = index === activeIdx;
+
+            return (
+              <div
+                key={mission.num}
+                className="relative transition-all duration-700 ease-out"
+                style={{
+                  opacity: isActive ? 1 : 0.22,
+                  transform: `scale(${isActive ? 1 : 0.82})`,
+                }}
+              >
+                <div
+                  className="h-[20rem] w-[20rem] rounded-full blur-3xl md:h-[28rem] md:w-[28rem]"
+                  style={{
+                    background: ha(mission.accent, isActive ? 0.42 : 0.18),
+                  }}
+                />
+
+                <div
+                  className="absolute right-[10%] top-[18%] h-32 w-32 rounded-full blur-2xl"
+                  style={{
+                    background: ha(mission.accent, isActive ? 0.34 : 0.14),
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        
+
         <div className="sticky top-0 h-[100svh] overflow-hidden bg-[#070f09]">
           <div className="absolute left-0 right-0 top-0 z-40 h-[2px] bg-white/5">
             <div
@@ -300,7 +333,7 @@ function MobileTabletMissionsView({
   viewportHeight: number;
 }) {
   return (
-    <div className="relative z-10 flex h-full flex-col px-[4%] pt-[clamp(3rem,7vh,5.8rem)] pb-[clamp(0.85rem,3vh,1.5rem)] lg:hidden">
+    <div className="relative z-10 flex h-full flex-col px-[4%] pt-[clamp(4.5rem,9vh,5.8rem)] pb-[clamp(0.85rem,3vh,1.5rem)] lg:hidden">
       <div className="relative mx-auto min-h-[32svh] w-[92%] max-w-[32rem] shrink-0 overflow-hidden">
         <StickyMissionStack activeIdx={activeIdx} compact />
       </div>
@@ -312,10 +345,10 @@ function MobileTabletMissionsView({
         />
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-visible lg:overflow-hidden">
+      <div className="relative min-h-0 flex-1 overflow-visible pb-[5px] lg:overflow-hidden">
         {MISSIONS.map((mission, index) => {
           const arrivalGap = 110;
-          const pinY = 4;
+          const pinY = 5;
           const startY = pinY;
           const stickyHold = 0.12;
           const endProgress = 1 - stickyHold;
