@@ -95,8 +95,7 @@ export default function MissionsSection() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [panelStep, setPanelStep] = useState(760);
   const [mobilePanelStep, setMobilePanelStep] = useState(420);
-  const [viewportWidth, setViewportWidth] = useState(1920);
-  const [viewportHeight, setViewportHeight] = useState(1080);
+  const [viewport, setViewport] = useState({ width: 1200, height: 800 });
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -113,10 +112,12 @@ export default function MissionsSection() {
 
       setProgress(nextProgress);
       setActiveIdx(nextIndex);
-      setViewportWidth(window.innerWidth);
-      setViewportHeight(window.innerHeight);
-      setPanelStep(Math.min(window.innerWidth * 0.58, 760));
-      setMobilePanelStep(Math.min(window.innerHeight * 0.48, 440));
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      setViewport({ width, height });
+      setPanelStep(Math.min(width * 0.58, 760));
+      setMobilePanelStep(Math.min(height * 0.48, 440));
     };
 
     const onScroll = () => {
@@ -149,7 +150,7 @@ export default function MissionsSection() {
       >
         <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_18%_24%,rgba(11,143,58,0.18),transparent_28%),radial-gradient(circle_at_54%_42%,rgba(200,16,46,0.10),transparent_30%),radial-gradient(circle_at_86%_68%,rgba(247,198,0,0.12),transparent_30%)]" />
 
-        <div className="sticky top-0 h-screen overflow-hidden bg-[#070f09]">
+        <div className="sticky top-0 h-[100svh] overflow-hidden bg-[#070f09]">
           <div className="absolute left-0 right-0 top-0 z-40 h-[2px] bg-white/5">
             <div
               className="h-full transition-all duration-300"
@@ -161,11 +162,9 @@ export default function MissionsSection() {
             />
           </div>
 
-          <div className="absolute left-0 right-0 top-0 z-40 flex items-center justify-between px-[clamp(1rem,3.5vw,4.5rem)] pt-[clamp(0.8rem,2vw,1.35rem)]">
+          <div className="absolute left-0 right-0 top-0 z-40 flex items-center justify-between px-[7%] pt-[clamp(1.35rem,3vw,2.2rem)] lg:px-[clamp(1rem,3.5vw,4.5rem)] lg:pt-[clamp(0.8rem,2vw,1.35rem)]">
             <div>
-              <span className="mb-1 block text-[0.62rem] font-black uppercase tracking-[0.28em] text-emerald-400/70 md:text-[0.8rem] lg:text-[0.9rem]">
-                Association SALAM
-              </span>
+              
               <h2 className="text-[clamp(1rem,1.8vw,1.75rem)] font-black tracking-[-0.03em] text-white">
                 Nos Missions
               </h2>
@@ -198,14 +197,14 @@ export default function MissionsSection() {
             progress={progress}
             activeIdx={activeIdx}
             panelStep={panelStep}
-            viewportWidth={viewportWidth}
+            viewportWidth={viewport.width}
           />
 
           <MobileTabletMissionsView
             progress={progress}
             activeIdx={activeIdx}
             panelStep={mobilePanelStep}
-            viewportHeight={viewportHeight}
+            viewportHeight={viewport.height}
           />
         </div>
       </section>
@@ -301,8 +300,8 @@ function MobileTabletMissionsView({
   viewportHeight: number;
 }) {
   return (
-    <div className="relative z-10 flex h-full flex-col px-[clamp(1rem,4vw,2.2rem)] pt-[clamp(4.5rem,9vh,5.8rem)] pb-[clamp(0.85rem,3vh,1.5rem)] lg:hidden">
-      <div className="relative min-h-[32svh] shrink-0 overflow-hidden">
+    <div className="relative z-10 flex h-full flex-col px-[4%] pt-[clamp(4.5rem,9vh,5.8rem)] pb-[clamp(0.85rem,3vh,1.5rem)] lg:hidden">
+      <div className="relative mx-auto min-h-[32svh] w-[92%] max-w-[32rem] shrink-0 overflow-hidden">
         <StickyMissionStack activeIdx={activeIdx} compact />
       </div>
 
@@ -317,12 +316,14 @@ function MobileTabletMissionsView({
         {MISSIONS.map((mission, index) => {
           const arrivalGap = 110;
           const pinY = 10;
-          const startY = 18;
+          const startY = pinY;
+          const stickyHold = 0.12;
+          const endProgress = 1 - stickyHold;
           const maxTranslate = (N - 1) * (panelStep + arrivalGap);
           const delayedOffset = index * 0.06;
           const delayedProgress = Math.min(
             1,
-            Math.max(0, (progress - delayedOffset) / (1 - delayedOffset))
+            Math.max(0, (progress - delayedOffset) / Math.max(0.001, endProgress - delayedOffset))
           );
 
           const rawY =
@@ -375,7 +376,7 @@ function StickyMissionStack({
   compact?: boolean;
 }) {
   return (
-    <aside className="relative h-full min-w-0 overflow-hidden">
+    <aside className="relative h-full min-w-0 overflow-hidden mobile-mission-stack">
       {MISSIONS.map((mission, index) => {
         const isActive = index === activeIdx;
         const isPast = index < activeIdx;
@@ -503,9 +504,17 @@ function MissionActionsPanel({
       >
         <div className="mb-[clamp(0.9rem,2vw,1.35rem)]">
           <p className="text-[clamp(0.9rem,2.4vw,1.15rem)] font-semibold leading-snug text-white/72">
-            Comment cette mission
-            <br />
-            <span className="font-black text-white">se concrétise&nbsp;?</span>
+            {orientation === "vertical" ? (
+              <>
+                Comment cette mission <span className="font-black text-white">se concrétise&nbsp;?</span>
+              </>
+            ) : (
+              <>
+                Comment cette mission
+                <br />
+                <span className="font-black text-white">se concrétise&nbsp;?</span>
+              </>
+            )}
           </p>
         </div>
 
@@ -518,9 +527,9 @@ function MissionActionsPanel({
           {mission.actions.map((action) => (
             <li
               key={action}
-              className="mx-auto flex min-w-0 w-[87%] items-center gap-2 rounded-[0.9rem] border px-2 py-2.5 backdrop-blur-md md:w-full md:px-3 md:py-3"
+              className="mx-auto flex min-w-0 w-[82%] items-center gap-2 rounded-[0.9rem] border px-2 py-2.5 backdrop-blur-md md:w-full md:px-3 md:py-3"
               style={{
-                background: orientation === 'vertical' ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.25)',
+                background: orientation === 'vertical' ? 'rgba(0,0,0,0.20)' : 'rgba(0,0,0,0.25)',
                 borderColor: ha(acc, 0.22),
               }}
             >
