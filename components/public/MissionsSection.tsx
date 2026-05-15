@@ -106,8 +106,10 @@ export default function MissionsSection() {
     const update = () => {
       const rect = section.getBoundingClientRect();
       const total = section.offsetHeight - window.innerHeight;
+      const holdDistance = window.innerHeight * 0.8;
+      const animTotal = Math.max(0, total - holdDistance);
       const scrolled = Math.max(0, -rect.top);
-      const nextProgress = total <= 0 ? 0 : Math.min(1, scrolled / total);
+      const nextProgress = animTotal <= 0 ? 0 : Math.min(1, scrolled / animTotal);
       const nextIndex = Math.min(N - 1, Math.round(nextProgress * (N - 1)));
 
       setProgress(nextProgress);
@@ -146,7 +148,7 @@ export default function MissionsSection() {
 
       <section
         ref={sectionRef}
-        className="relative h-[420svh] bg-[#070f09] text-white"
+        className="relative h-[500svh] bg-[#070f09] text-white"
       >
         <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_18%_24%,rgba(11,143,58,0.18),transparent_28%),radial-gradient(circle_at_54%_42%,rgba(200,16,46,0.10),transparent_30%),radial-gradient(circle_at_86%_68%,rgba(247,198,0,0.12),transparent_30%)]" />
 
@@ -299,7 +301,7 @@ function DesktopMissionsView({
             const pinX = 25;
             const startX = 20;
             const maxTranslate = (N - 1) * (panelStep + arrivalGap);
-            const delayedOffset = index * 0.06;
+            const delayedOffset = index * 0.14;
             const delayedProgress = Math.min(
               1,
               Math.max(0, (progress - delayedOffset) / (1 - delayedOffset))
@@ -311,7 +313,7 @@ function DesktopMissionsView({
 
             const topPinnedIndex = MISSIONS.reduce(
               (latestPinnedIndex, _mission, missionIndex) => {
-                const missionDelayedOffset = missionIndex * 0.06;
+                const missionDelayedOffset = missionIndex * 0.14;
                 const missionDelayedProgress = Math.min(
                   1,
                   Math.max(
@@ -545,7 +547,7 @@ function MissionActionsPanel({
     <article
       className={
         orientation === "horizontal"
-          ? "absolute top-0 flex h-full w-[min(58vw,760px)] shrink-0 items-center pr-[clamp(1.5rem,3vw,3rem)] transition-[transform,opacity] duration-300 ease-out will-change-transform"
+          ? "absolute top-0 flex h-full w-[min(58vw,760px)] shrink-0 items-center pr-[clamp(1.5rem,3vw,3rem)] lg:w-[min(54vw,720px)] transition-[transform,opacity] duration-300 ease-out will-change-transform"
           : "absolute left-0 right-0 top-0 mx-auto flex h-auto w-[92%] max-w-[32rem] items-start transition-[transform,opacity] duration-300 ease-out will-change-transform"
       }
       style={{
@@ -563,7 +565,7 @@ function MissionActionsPanel({
         }}
       >
         <div className="mb-[clamp(0.9rem,2vw,1.35rem)]">
-          <p className="text-[clamp(0.9rem,2.4vw,1.15rem)] font-semibold leading-snug text-white/72">
+          <p className="text-[clamp(0.9rem,2.4vw,1.15rem)] font-semibold leading-snug text-white/72 lg:text-[0.88rem]">
             {orientation === "vertical" ? (
               <>
                 Comment cette mission <span className="font-black text-white">se concrétise&nbsp;?</span>
