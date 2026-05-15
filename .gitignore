@@ -4,6 +4,8 @@
 node_modules/
 *.tsbuildinfo
 README.md
+mission_scroll_horizontal.tsx
+scroll_horizontal_mission_1.jsx
 =======
 # Logs
 logs

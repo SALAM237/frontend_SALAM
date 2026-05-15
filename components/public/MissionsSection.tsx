@@ -95,6 +95,8 @@ export default function MissionsSection() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [panelStep, setPanelStep] = useState(760);
   const [mobilePanelStep, setMobilePanelStep] = useState(420);
+  const [viewportWidth, setViewportWidth] = useState(1920);
+  const [viewportHeight, setViewportHeight] = useState(1080);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -111,6 +113,8 @@ export default function MissionsSection() {
 
       setProgress(nextProgress);
       setActiveIdx(nextIndex);
+      setViewportWidth(window.innerWidth);
+      setViewportHeight(window.innerHeight);
       setPanelStep(Math.min(window.innerWidth * 0.58, 760));
       setMobilePanelStep(Math.min(window.innerHeight * 0.48, 440));
     };
@@ -194,12 +198,14 @@ export default function MissionsSection() {
             progress={progress}
             activeIdx={activeIdx}
             panelStep={panelStep}
+            viewportWidth={viewportWidth}
           />
 
           <MobileTabletMissionsView
             progress={progress}
             activeIdx={activeIdx}
             panelStep={mobilePanelStep}
+            viewportHeight={viewportHeight}
           />
         </div>
       </section>
@@ -211,10 +217,12 @@ function DesktopMissionsView({
   progress,
   activeIdx,
   panelStep,
+  viewportWidth,
 }: {
   progress: number;
   activeIdx: number;
   panelStep: number;
+  viewportWidth: number;
 }) {
   return (
     <div className="relative z-10 hidden h-full grid-cols-[minmax(420px,0.95fr)_minmax(0,1.05fr)] gap-[clamp(2.5rem,5vw,6rem)] px-[clamp(1.5rem,3.5vw,4.5rem)] pt-[clamp(4.25rem,8vh,5.75rem)] pb-[clamp(1rem,4vh,2rem)] lg:grid">
@@ -269,7 +277,7 @@ function DesktopMissionsView({
                 x={x}
                 y={0}
                 zIndex={index + 1}
-                visible={rawX < window.innerWidth}
+                visible={rawX < viewportWidth}
                 hiddenBehind={topPinnedIndex > index}
                 orientation="horizontal"
               />
@@ -285,10 +293,12 @@ function MobileTabletMissionsView({
   progress,
   activeIdx,
   panelStep,
+  viewportHeight,
 }: {
   progress: number;
   activeIdx: number;
   panelStep: number;
+  viewportHeight: number;
 }) {
   return (
     <div className="relative z-10 flex h-full flex-col px-[clamp(1rem,4vw,2.2rem)] pt-[clamp(4.5rem,9vh,5.8rem)] pb-[clamp(0.85rem,3vh,1.5rem)] lg:hidden">
@@ -346,7 +356,7 @@ function MobileTabletMissionsView({
               x={0}
               y={y}
               zIndex={index + 1}
-              visible={rawY < window.innerHeight}
+              visible={rawY < viewportHeight}
               hiddenBehind={topPinnedIndex > index}
               orientation="vertical"
             />
