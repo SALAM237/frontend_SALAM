@@ -382,7 +382,7 @@ function MobileTabletMissionsView({
           const stickyHold = 0.12;
           const endProgress = 1 - stickyHold;
           const maxTranslate = (N - 1) * (panelStep + arrivalGap);
-          const delayedOffset = index * 0.06;
+          const delayedOffset = index * 0.14;
           const delayedProgress = Math.min(
             1,
             Math.max(0, (progress - delayedOffset) / Math.max(0.001, endProgress - delayedOffset))
@@ -394,7 +394,7 @@ function MobileTabletMissionsView({
 
           const topPinnedIndex = MISSIONS.reduce(
             (latestPinnedIndex, _mission, missionIndex) => {
-              const missionDelayedOffset = missionIndex * 0.06;
+              const missionDelayedOffset = missionIndex * 0.14;
               const missionDelayedProgress = Math.min(
                 1,
                 Math.max(
