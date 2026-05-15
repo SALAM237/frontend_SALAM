@@ -150,7 +150,34 @@ export default function MissionsSection() {
       >
         <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_18%_24%,rgba(11,143,58,0.18),transparent_28%),radial-gradient(circle_at_54%_42%,rgba(200,16,46,0.10),transparent_30%),radial-gradient(circle_at_86%_68%,rgba(247,198,0,0.12),transparent_30%)]" />
 
-        <div className="pointer-events-none absolute right-[-14%] top-[6%] z-[1] flex flex-col gap-[34vh] lg:hidden">
+        <div className="pointer-events-none absolute inset-0 z-[1] hidden lg:block">
+          <div
+            className="absolute left-[-10%] top-[12%] h-[22rem] w-[22rem] rounded-full blur-3xl"
+            style={{ background: ha('#0B8F3A', 0.14) }}
+          />
+
+          <div
+            className="absolute left-[8%] bottom-[10%] h-[16rem] w-[16rem] rounded-full blur-3xl"
+            style={{ background: ha('#C8102E', 0.12) }}
+          />
+
+          <div
+            className="absolute right-[-8%] top-[10%] h-[24rem] w-[24rem] rounded-full blur-3xl"
+            style={{ background: ha('#F7C600', 0.12) }}
+          />
+
+          <div
+            className="absolute right-[6%] bottom-[8%] h-[18rem] w-[18rem] rounded-full blur-3xl"
+            style={{ background: ha('#3B82F6', 0.10) }}
+          />
+
+          <div
+            className="absolute right-[14%] top-[24%] h-40 w-40 rounded-full blur-2xl"
+            style={{ background: ha(MISSIONS[activeIdx].accent, 0.10) }}
+          />
+        </div>
+
+        <div className="pointer-events-none absolute right-[-10%] top-[8%] z-[1] flex flex-col gap-[30vh] lg:hidden">
           {MISSIONS.map((mission, index) => {
             const isActive = index === activeIdx;
 
@@ -159,21 +186,21 @@ export default function MissionsSection() {
                 key={mission.num}
                 className="relative transition-all duration-700 ease-out"
                 style={{
-                  opacity: isActive ? 1 : 0.22,
-                  transform: `scale(${isActive ? 1 : 0.82})`,
+                  opacity: isActive ? 0.80 : 0.16,
+                  transform: `scale(${isActive ? 0.82 : 0.75})`,
                 }}
               >
                 <div
-                  className="h-[20rem] w-[20rem] rounded-full blur-3xl md:h-[28rem] md:w-[28rem]"
+                  className="h-[16rem] w-[16rem] rounded-full blur-3xl md:h-[20rem] md:w-[20rem]"
                   style={{
-                    background: ha(mission.accent, isActive ? 0.42 : 0.18),
+                    background: ha(mission.accent, isActive ? 0.28 : 0.11),
                   }}
                 />
 
                 <div
-                  className="absolute right-[10%] top-[18%] h-32 w-32 rounded-full blur-2xl"
+                  className="absolute right-[10%] top-[18%] h-22 w-22 rounded-full blur-2xl"
                   style={{
-                    background: ha(mission.accent, isActive ? 0.34 : 0.14),
+                    background: ha(mission.accent, isActive ? 0.20 : 0.09),
                   }}
                 />
               </div>
