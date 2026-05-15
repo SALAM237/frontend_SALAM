@@ -1,0 +1,6 @@
+'use client';
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { useDemoStore } from '@/store/demo.store';
+const cats=['all','culture','sport','etude','benevolat','divers'];
+export default function DemoActivities(){const [cat,setCat]=useState('all'); const {activities,joinActivity}=useDemoStore(); const list=useMemo(()=>cat==='all'?activities:activities.filter(a=>a.category===cat),[cat,activities]); return <main className="container-salam section-salam"><h1 className="text-4xl font-black">Activités démo</h1><div className="mt-6 flex flex-wrap gap-2">{cats.map(c=><button key={c} onClick={()=>setCat(c)} className={`rounded-full border px-4 py-2 ${cat===c?'bg-salam-green text-white':''}`}>{c}</button>)}</div><div className="mt-8 grid gap-4 md:grid-cols-2">{list.map(a=><article key={a.id} className="rounded-salam border p-6 shadow-sm"><span className="text-sm font-bold text-salam-red">{a.category}</span><h2 className="mt-2 text-2xl font-black">{a.title}</h2><p className="mt-2 text-neutral-600">{a.description}</p><p className="mt-3 text-sm">{a.date} · {a.location} · {a.participants} participants</p><button onClick={()=>{joinActivity(a.id);toast.success('Inscription simulée à l’activité')}} className="mt-5 rounded-full bg-salam-green px-5 py-2 text-white">S’inscrire</button></article>)}</div></main>}

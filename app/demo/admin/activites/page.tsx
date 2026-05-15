@@ -1,0 +1,1 @@
+export default function Page(){return <main className="container-salam section-salam"><h1 className="text-4xl font-black">app/demo/admin/activites</h1><p className="mt-4 text-neutral-700">Première page scaffoldée. À connecter au module métier correspondant.</p></main>}

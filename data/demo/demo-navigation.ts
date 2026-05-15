@@ -1,0 +1,1 @@
+export const demoNavigation = [{ label:'Dashboard', href:'/demo/admin' },{ label:'Adhérents', href:'/demo/admin/adherents' },{ label:'Rôles', href:'/demo/admin/roles' },{ label:'Activités', href:'/demo/activites' }];

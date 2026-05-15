@@ -1,0 +1,2 @@
+import Link from 'next/link';
+export default function DemoAdmin(){return <main className="container-salam section-salam"><h1 className="text-4xl font-black">Admin démo</h1><div className="mt-8 grid gap-4 md:grid-cols-3">{[['Adhérents','/demo/admin/adherents'],['Rôles & permissions','/demo/admin/roles'],['Activités','/demo/admin/activites'],['Galerie','/demo/admin/galerie'],['Messages','/demo/admin/messages'],['Paramètres','/demo/admin/settings']].map(([l,h])=><Link className="rounded-salam border p-6 font-bold hover:bg-green-50" href={h} key={h}>{l}</Link>)}</div></main>}

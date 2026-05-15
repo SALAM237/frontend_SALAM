@@ -1,0 +1,1 @@
+export const demoPermissions = ['members.read','members.create','members.update','members.validate','roles.read','roles.create','roles.update','roles.assign','activities.read','activities.create','activities.update','activities.publish','gallery.upload','gallery.moderate','messages.send','messages.moderate','settings.update','audit.read'];

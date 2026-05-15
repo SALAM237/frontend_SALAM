@@ -1,0 +1,6 @@
+'use client';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { useDemoStore } from '@/store/demo.store';
+import { demoPermissions } from '@/data/demo/demo-permissions';
+export default function DemoRoles(){const {roles,addRole}=useDemoStore(); const [name,setName]=useState(''); return <main className="container-salam section-salam"><h1 className="text-4xl font-black">Rôles & autorisations</h1><div className="mt-6 flex gap-2"><input value={name} onChange={e=>setName(e.target.value)} placeholder="Nouveau rôle" className="min-h-11 rounded-full border px-4"/><button className="rounded-full bg-salam-green px-5 text-white" onClick={()=>{if(name.trim()){addRole(name.trim());setName('');toast.success('Rôle créé en démo')}}}>Créer</button></div><div className="mt-8 grid gap-4">{roles.map(r=><div key={r.id} className="rounded-salam border p-5"><div className="flex items-center justify-between"><b>{r.name}</b><span className="text-xs">{r.isSystem?'Système':'Personnalisé'}</span></div><div className="mt-3 flex flex-wrap gap-2">{demoPermissions.slice(0,6).map(p=><span key={p} className="rounded-full bg-neutral-100 px-3 py-1 text-xs">{p}</span>)}</div></div>)}</div></main>}
