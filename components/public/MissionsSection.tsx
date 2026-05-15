@@ -145,7 +145,7 @@ export default function MissionsSection() {
 
       <section
         ref={sectionRef}
-        className="relative h-[420svh] bg-[#070f09] text-white"
+        className="relative h-screen bg-[#070f09] text-white"
       >
         <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_18%_24%,rgba(11,143,58,0.18),transparent_28%),radial-gradient(circle_at_54%_42%,rgba(200,16,46,0.10),transparent_30%),radial-gradient(circle_at_86%_68%,rgba(247,198,0,0.12),transparent_30%)]" />
 
@@ -518,9 +518,9 @@ function MissionActionsPanel({
           {mission.actions.map((action) => (
             <li
               key={action}
-              className="mx-auto flex min-w-0 w-[82%] items-center gap-2 rounded-[0.9rem] border px-2 py-2.5 backdrop-blur-md md:w-full md:px-3 md:py-3"
+              className="mx-auto flex min-w-0 w-[87%] items-center gap-2 rounded-[0.9rem] border px-2 py-2.5 backdrop-blur-md md:w-full md:px-3 md:py-3"
               style={{
-                background: orientation === 'vertical' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.25)',
+                background: orientation === 'vertical' ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.25)',
                 borderColor: ha(acc, 0.22),
               }}
             >
