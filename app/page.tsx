@@ -3,7 +3,7 @@ import { MarqueeSection }   from '@/components/public/MarqueeSection';
 import SalamStatsSection    from '@/components/public/SalamStatsSection';
 import { ParallaxBanner }   from '@/components/public/ParallaxBanner';
 import MissionsSection      from '@/components/public/MissionsSection';
-import { ValuesSection }    from '@/components/public/EngagementStection';
+import { EngagementSection } from '@/components/public/EngagementStection';
 import { ActivityPreview }  from '@/components/public/ActivityPreview';
 import { GalleryPreview }   from '@/components/public/GalleryPreview';
 import { CTABanner }        from '@/components/public/CTABanner';
@@ -16,7 +16,7 @@ export default function HomePage() {
       <SalamStatsSection />
       <ParallaxBanner />
       <MissionsSection />
-      <ValuesSection />
+      <EngagementSection />
       <ActivityPreview />
       <GalleryPreview />
       <CTABanner />
