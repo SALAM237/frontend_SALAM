@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, type ElementType } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -217,8 +218,12 @@ const KEYWORDS = [
 ];
 
 // ── Composant principal ────────────────────────────────────────────────────
+const VALID_IDS = ['preparer', 'insertion', 'solidarite', 'developpement'];
+
 export default function MissionsPage() {
-  const [activeId, setActiveId] = useState<string>('preparer');
+  const searchParams = useSearchParams();
+  const initialId = VALID_IDS.includes(searchParams.get('m') ?? '') ? searchParams.get('m')! : 'preparer';
+  const [activeId, setActiveId] = useState<string>(initialId);
   const tabsRef    = useRef<HTMLDivElement>(null);
   const navScrollRef = useRef<HTMLDivElement>(null);
   const rafRef     = useRef<number | null>(null);

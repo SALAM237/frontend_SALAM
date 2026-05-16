@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 const MISSIONS = [
   {
     num: "01",
+    missionId: "preparer",
     badge: "Mission 1",
     lines: ["Préparer les", "futurs étudiants"],
     accent: "#0B8F3A",
@@ -21,6 +23,7 @@ const MISSIONS = [
   },
   {
     num: "02",
+    missionId: "insertion",
     badge: "Mission 2",
     lines: ["Insertion socio-", "professionnelle"],
     accent: "#C8102E",
@@ -37,6 +40,7 @@ const MISSIONS = [
   },
   {
     num: "03",
+    missionId: "solidarite",
     badge: "Mission 3",
     lines: ["Solidarité &", "action sociale"],
     accent: "#F7C600",
@@ -53,6 +57,7 @@ const MISSIONS = [
   },
   {
     num: "04",
+    missionId: "developpement",
     badge: "Mission 4",
     lines: ["Développement", "du Cameroun"],
     accent: "#3B82F6",
@@ -556,6 +561,17 @@ function StickyMissionStack({
             <p className="max-w-[50ch] text-[clamp(0.82rem,2.3vw,1.05rem)] leading-[1.72] text-white/60 lg:max-w-[42ch] lg:leading-[1.9]">
               {mission.resume}
             </p>
+
+            <Link
+              href={`/missions?m=${mission.missionId}`}
+              className="mt-[clamp(0.9rem,2vw,1.4rem)] inline-flex items-center gap-1.5 text-[clamp(0.78rem,1.6vw,0.9rem)] font-black tracking-[0.04em] transition-opacity duration-200 hover:opacity-70"
+              style={{ color: acc }}
+            >
+              Voir tout
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
         );
       })}
