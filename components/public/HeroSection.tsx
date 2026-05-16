@@ -154,7 +154,7 @@ export function HeroSection() {
         {/* Navbar */}
         <header
           className={[
-            'mx-auto flex w-full max-w-7xl items-center justify-between gap-4 rounded-full px-[clamp(1rem,3vw,3rem)] py-2 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 lg:px-4',
+            'relative mx-auto flex w-full max-w-7xl items-center justify-between gap-4 rounded-full px-[clamp(1rem,3vw,3rem)] py-2 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 lg:px-4',
             navScrolled
               ? 'max-lg:border max-lg:border-white/20 max-lg:bg-white/10 max-lg:shadow-[0_18px_60px_rgba(0,0,0,0.22)] max-lg:backdrop-blur-xl'
               : 'max-lg:border-0 max-lg:bg-transparent max-lg:shadow-none max-lg:backdrop-blur-none',
@@ -174,6 +174,14 @@ export function HeroSection() {
             </div>
           </Link>
 
+          {/* Demo button — centered on mobile */}
+          <Link
+            href="/demo"
+            className="absolute left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[0.68rem] font-bold text-white/90 backdrop-blur-sm transition hover:bg-white/20 lg:hidden"
+          >
+            <SparklesIcon className="h-2.5 w-2.5" /> Démo
+          </Link>
+
           <nav className="hidden items-center gap-5 text-[0.92rem] font-semibold text-white/80 lg:flex" aria-label="Navigation principale">
             {navItems.map((item) => (
               <Link
@@ -187,6 +195,10 @@ export function HeroSection() {
           </nav>
 
           <div className="flex shrink-0 items-center gap-2">
+            {/* Desktop: Démo */}
+            <Link href="/demo" className="hidden items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-bold text-white/90 backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/20 lg:inline-flex">
+              <SparklesIcon className="h-3.5 w-3.5" /> Démo
+            </Link>
             {/* Desktop: Connexion */}
             <Link href="/adhesion" className="hidden items-center gap-2 rounded-full bg-emerald-800 px-4 py-2 text-sm font-bold text-white shadow-xl shadow-emerald-950/40 transition hover:-translate-y-0.5 hover:bg-emerald-700 lg:inline-flex">
               <UsersIcon className="h-4 w-4" /> Connexion
@@ -237,9 +249,16 @@ export function HeroSection() {
                 ))}
               </nav>
 
-              {/* Séparateur + CTA */}
-              <div className="px-4 pb-4 pt-1">
-                <div className="mb-3 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+              {/* Séparateur + CTAs */}
+              <div className="px-4 pb-4 pt-1 flex flex-col gap-2">
+                <div className="h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+                <Link
+                  href="/demo"
+                  className="flex w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-bold text-white/90 backdrop-blur-sm transition hover:bg-white/20"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <SparklesIcon className="h-4 w-4" /> Voir la démo
+                </Link>
                 <Link
                   href="/auth/login"
                   className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-700 to-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-950/40 transition hover:from-emerald-600 hover:to-emerald-500"

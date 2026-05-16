@@ -21,9 +21,21 @@ export const routes = {
   // Auth
   login: '/auth/login',
   register: '/auth/register',
-  // Portals
-  member: '/member/dashboard',
-  admin: '/admin/dashboard',
+  // Member portal
+  member:           '/member/dashboard',
+  memberCarte:      '/member/carte',
+  memberProfil:     '/member/profil',
+  memberActivites:  '/member/activites',
+  memberMessages:   '/member/messages',
+  // Admin portal
+  admin:            '/admin/dashboard',
+  adminAdherents:   '/admin/adherents',
+  adminNouveau:     '/admin/adherents/nouveau',
+  adminCartes:      '/admin/cartes',
+  adminActivites:   '/admin/activites',
+  adminGalerie:     '/admin/galerie',
+  adminActualites:  '/admin/actualites',
+  adminParametres:  '/admin/parametres',
   // Demo
   demo: '/demo',
   demoActivities: '/demo/activites',

@@ -1,1 +1,214 @@
-export default function Page(){return <main className="container-salam section-salam"><h1 className="text-4xl font-black">app/admin/dashboard</h1><p className="mt-4 text-neutral-700">Première page scaffoldée. À connecter au module métier correspondant.</p></main>}
+'use client';
+
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import {
+  Users, UserPlus, CreditCard, CalendarDays, TrendingUp, Activity,
+  ArrowRight, MoreHorizontal, CheckCircle2, Clock, XCircle
+} from 'lucide-react';
+
+const fadeUp = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
+const container = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
+
+const STATS = [
+  { label: 'Adhérents actifs',    value: '128',  delta: '+8 ce mois', icon: Users,        color: 'bg-emerald-100 text-emerald-700' },
+  { label: 'Nouvelles demandes',  value: '12',   delta: 'En attente',  icon: UserPlus,     color: 'bg-blue-100 text-blue-700'      },
+  { label: 'Cartes émises',       value: '94',   delta: '+3 ce mois',  icon: CreditCard,   color: 'bg-yellow-100 text-yellow-700'  },
+  { label: 'Activités à venir',   value: '5',    delta: 'Ce trimestre',icon: CalendarDays, color: 'bg-red-100 text-red-700'        },
+];
+
+const RECENT_MEMBERS = [
+  { id: 'SALAM-2024-0128', name: 'Armelle Fotso',    role: 'Membre actif', status: 'active',  date: '14 mai 2025'  },
+  { id: 'SALAM-2024-0127', name: 'Pierre Nguemo',    role: 'Alumni',       status: 'active',  date: '11 mai 2025'  },
+  { id: 'SALAM-2024-0126', name: 'Sophie Nkolo',     role: 'Étudiant',     status: 'pending', date: '9 mai 2025'   },
+  { id: 'SALAM-2024-0125', name: 'Eric Balla',       role: 'Membre actif', status: 'active',  date: '7 mai 2025'   },
+  { id: 'SALAM-2024-0124', name: 'Marie Tchakounte', role: 'Étudiant',     status: 'pending', date: '5 mai 2025'   },
+];
+
+const QUICK_ACTIONS = [
+  { label: 'Nouveau membre',    href: '/admin/adherents/nouveau', icon: UserPlus,     desc: 'Créer une fiche adhérent',       color: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-100 hover:border-emerald-200' },
+  { label: 'Émettre une carte', href: '/admin/cartes',           icon: CreditCard,   desc: 'Générer une carte membre + QR',  color: 'bg-blue-50 hover:bg-blue-100 border-blue-100 hover:border-blue-200'             },
+  { label: 'Voir les adhérents',href: '/admin/adherents',        icon: Users,        desc: 'Gérer la liste des membres',     color: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-100 hover:border-yellow-200'     },
+  { label: 'Activités',        href: '/admin/activites',         icon: CalendarDays, desc: 'Gérer les événements',           color: 'bg-purple-50 hover:bg-purple-100 border-purple-100 hover:border-purple-200'   },
+];
+
+const statusStyle: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
+  active:   { label: 'Actif',     cls: 'bg-emerald-50 text-emerald-700',   icon: CheckCircle2 },
+  pending:  { label: 'En attente',cls: 'bg-yellow-50 text-yellow-700',     icon: Clock        },
+  inactive: { label: 'Inactif',   cls: 'bg-red-50 text-red-700',           icon: XCircle      },
+};
+
+export default function AdminDashboardPage() {
+  return (
+    <div className="mx-auto max-w-6xl space-y-6">
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Tableau de bord</h1>
+          <p className="mt-0.5 text-sm text-neutral-500">Bienvenue, Admin · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+        </div>
+        <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20">
+          <UserPlus size={14} /> Nouveau membre
+        </Link>
+      </div>
+
+      {/* Stats */}
+      <motion.div
+        variants={container} initial="hidden" animate="show"
+        className="grid grid-cols-2 gap-4 lg:grid-cols-4"
+      >
+        {STATS.map(({ label, value, delta, icon: Icon, color }) => (
+          <motion.div key={label} variants={fadeUp} className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
+                <Icon size={18} />
+              </div>
+              <MoreHorizontal size={16} className="text-neutral-300" />
+            </div>
+            <div>
+              <p className="text-[2rem] font-black leading-none tracking-[-0.05em] text-neutral-900">{value}</p>
+              <p className="mt-1 text-xs font-semibold text-neutral-500">{label}</p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <TrendingUp size={12} className="text-emerald-500" />
+              <span className="text-[11px] font-semibold text-emerald-600">{delta}</span>
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* Main grid */}
+      <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+
+        {/* Adhérents récents */}
+        <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+            <h2 className="font-black text-neutral-900">Derniers adhérents</h2>
+            <Link href="/admin/adherents" className="flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700">
+              Voir tous <ArrowRight size={11} />
+            </Link>
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden overflow-x-auto sm:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-neutral-50 bg-neutral-50/50">
+                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Membre</th>
+                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">N° ID</th>
+                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Statut</th>
+                  <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Date</th>
+                  <th className="px-5 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-50">
+                {RECENT_MEMBERS.map((m) => {
+                  const s = statusStyle[m.status];
+                  const StatusIcon = s.icon;
+                  return (
+                    <tr key={m.id} className="group transition-colors hover:bg-neutral-50/50">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
+                            {m.name[0]}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-neutral-900">{m.name}</p>
+                            <p className="text-xs text-neutral-400">{m.role}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className="font-mono text-xs text-neutral-500">{m.id}</span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black ${s.cls}`}>
+                          <StatusIcon size={10} /> {s.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-neutral-400">{m.date}</td>
+                      <td className="px-5 py-3.5">
+                        <Link href={`/admin/adherents/${m.id}`} className="text-xs font-bold text-emerald-600 opacity-0 transition-opacity group-hover:opacity-100 hover:text-emerald-700">
+                          Voir →
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="divide-y divide-neutral-50 sm:hidden">
+            {RECENT_MEMBERS.map((m) => {
+              const s = statusStyle[m.status];
+              return (
+                <div key={m.id} className="flex items-center gap-3 px-4 py-3.5">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
+                    {m.name[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-neutral-900">{m.name}</p>
+                    <p className="text-xs text-neutral-400">{m.id}</p>
+                  </div>
+                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${s.cls}`}>{s.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Quick actions */}
+        <div className="flex flex-col gap-4">
+          <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
+            <h2 className="mb-4 font-black text-neutral-900">Actions rapides</h2>
+            <div className="flex flex-col gap-2">
+              {QUICK_ACTIONS.map(({ label, href, icon: Icon, desc, color }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-3 rounded-xl border p-3.5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-sm ${color}`}
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/60 shadow-sm">
+                    <Icon size={16} className="text-neutral-700" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-neutral-900">{label}</p>
+                    <p className="text-[11px] text-neutral-500">{desc}</p>
+                  </div>
+                  <ArrowRight size={14} className="shrink-0 text-neutral-400" />
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Activity */}
+          <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Activity size={14} className="text-emerald-600" />
+              <h2 className="font-black text-neutral-900">Activité récente</h2>
+            </div>
+            <ul className="mt-4 flex flex-col gap-3">
+              {[
+                { text: 'Armelle Fotso — carte émise', time: 'Il y a 2h' },
+                { text: 'Pierre Nguemo — inscription validée', time: 'Il y a 5h' },
+                { text: 'Sophie Nkolo — demande reçue', time: 'Hier' },
+                { text: 'Activité « Networking » publiée', time: 'Il y a 2j' },
+              ].map(({ text, time }, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <div className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                  <div>
+                    <p className="text-xs font-semibold text-neutral-700">{text}</p>
+                    <p className="text-[10px] text-neutral-400">{time}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
