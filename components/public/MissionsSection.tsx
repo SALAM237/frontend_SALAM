@@ -397,7 +397,7 @@ function MobileTabletMissionsView({
   viewportHeight: number;
 }) {
   return (
-    <div className="relative z-10 flex h-full flex-col px-[4%] pt-[clamp(4.5rem,9vh,5.8rem)] pb-0 lg:hidden bg-yellow-400">
+    <div className="relative z-10 flex h-[100svh] flex-col px-[4%] pt-[clamp(4.5rem,9vh,5.8rem)] pb-0 lg:hidden bg-yellow-400">
       <div className="relative mx-auto min-h-[32svh] w-[92%] max-w-[32rem] shrink-0 overflow-hidden">
         <StickyMissionStack activeIdx={activeIdx} compact />
       </div>
