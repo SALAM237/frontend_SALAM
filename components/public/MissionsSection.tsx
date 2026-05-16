@@ -292,7 +292,7 @@ export default function MissionsSection() {
           </div>
 
           {/* Chiffre + Voir tout — mobile uniquement */}
-          <div className="pointer-events-none absolute right-[4%] top-[3rem] z-[1] flex flex-col items-end lg:hidden">
+          <div className="pointer-events-none absolute right-[4%] top-[3rem] z-40 flex flex-col items-end lg:hidden">
             <div
               className="select-none font-black leading-none tracking-[-0.08em] text-white/[0.035] transition-all duration-500 ease-out"
               style={{ fontSize: "clamp(7rem,22vw,24rem)" }}
