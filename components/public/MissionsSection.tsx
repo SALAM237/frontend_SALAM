@@ -335,7 +335,7 @@ function DesktopMissionsView({
             const pinX = 25;
             const startX = 20;
             const maxTranslate = (N - 1) * (panelStep + arrivalGap);
-            const DELAYS = [0, 0.14, 0.42, 0.72];
+            const DELAYS = [0, 0.14, 0.34, 0.54];
             const delayedOffset = DELAYS[index];
             const delayedProgress = Math.min(
               1,
@@ -417,7 +417,7 @@ function MobileTabletMissionsView({
           const stickyHold = 0.12;
           const endProgress = 1 - stickyHold;
           const maxTranslate = (N - 1) * (panelStep + arrivalGap);
-          const DELAYS = [0, 0.14, 0.42, 0.72];
+          const DELAYS = [0, 0.14, 0.34, 0.54];
           const delayedOffset = DELAYS[index];
           const delayedProgress = Math.min(
             1,

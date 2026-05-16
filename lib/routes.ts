@@ -1,1 +1,33 @@
-export const routes = { home:'/', demo:'/demo', adhesion:'/adhesion', activities:'/activites', gallery:'/galerie', contact:'/contact', login:'/auth/login', admin:'/admin/dashboard', member:'/member/dashboard', donate:'/don' } as const;
+export const routes = {
+  home: '/',
+  // Public
+  about: '/a-propos',
+  president: '/mot-du-president',
+  bureau: '/bureau-executif',
+  conseil: '/conseil-des-sages',
+  antennes: '/antennes',
+  commissions: '/commissions',
+  activities: '/activites',
+  gallery: '/galerie',
+  news: '/actualites',
+  adhesion: '/adhesion',
+  donate: '/don',
+  contact: '/contact',
+  // Legal
+  legal: '/mentions-legales',
+  privacy: '/confidentialite',
+  cookies: '/cookies',
+  terms: '/conditions',
+  // Auth
+  login: '/auth/login',
+  register: '/auth/register',
+  // Portals
+  member: '/member/dashboard',
+  admin: '/admin/dashboard',
+  // Demo
+  demo: '/demo',
+  demoActivities: '/demo/activites',
+  demoGallery: '/demo/galerie',
+  demoMember: '/demo/member',
+  demoAdmin: '/demo/admin',
+} as const;

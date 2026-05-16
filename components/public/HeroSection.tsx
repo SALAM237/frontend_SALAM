@@ -73,9 +73,9 @@ const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const navItems = [
   { label: "Accueil",      href: "/" },
   { label: "À propos",     href: "/a-propos" },
-  { label: "Missions",     href: "/missions" },
   { label: "Activités",    href: "/activites" },
   { label: "Galerie",      href: "/galerie" },
+  { label: "Actualités",   href: "/actualites" },
   { label: "Contact",      href: "/contact" },
 ];
 
@@ -241,7 +241,7 @@ export function HeroSection() {
               <div className="px-4 pb-4 pt-1">
                 <div className="mb-3 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
                 <Link
-                  href="/connexion"
+                  href="/auth/login"
                   className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-700 to-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-950/40 transition hover:from-emerald-600 hover:to-emerald-500"
                   onClick={() => setMenuOpen(false)}
                 >

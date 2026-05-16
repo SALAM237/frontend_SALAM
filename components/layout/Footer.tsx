@@ -25,8 +25,8 @@ const NAV_COLS = [
     title: 'Espace membre',
     links: [
       ['Mon espace',  '/member/dashboard'],
-      ['Messages',    '/member/messages'],
       ['Connexion',   '/auth/login'],
+      ['Adhésion',    '/adhesion'],
       ['Mode démo',   '/demo'],
     ],
   },
@@ -125,8 +125,8 @@ export function Footer() {
             <Link href="/confidentialite" className="text-white/28 hover:text-white/60 transition-colors">
               Confidentialité
             </Link>
-            <Link href="/sitemap" className="text-white/28 hover:text-white/60 transition-colors">
-              Plan du site
+            <Link href="/conditions" className="text-white/28 hover:text-white/60 transition-colors">
+              CGU
             </Link>
           </nav>
         </div>
