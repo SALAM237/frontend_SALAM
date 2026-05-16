@@ -531,9 +531,7 @@ function StickyMissionStack({
                 <>
                   <span>Insertion</span>
                   <br />
-                  <span style={{ color: acc }}>socio-</span>
-                  <br />
-                  <span style={{ color: acc }}>professionnelle</span>
+                  <span style={{ color: acc }}>socio-professionnelle</span>
                 </>
               ) : (
                 <>

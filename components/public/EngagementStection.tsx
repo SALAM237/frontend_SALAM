@@ -64,18 +64,18 @@ export function EngagementSection() {
 ];
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-[#fffdf8] px-5 py-1.5 md:px-8 lg:px-3">
+    <section className="relative min-h-screen overflow-hidden bg-[#fffdf8] px-5 pt-[clamp(3rem,6vw,5rem)] pb-1.5 md:px-8 lg:px-3">
       <div className="absolute left-[-120px] top-20 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl" />
       <div className="absolute right-[-120px] top-32 h-96 w-96 rounded-full bg-yellow-200/40 blur-3xl" />
       <div className="absolute bottom-10 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-red-200/20 blur-3xl" />
 
-      <div className="relative z-10 mx-auto max-w-7xl">
+      <div className="relative z-10 mx-auto max-w-7xl lg:max-w-5xl">
         <div className="mx-auto max-w-4xl text-center">
           <span className="inline-flex rounded-full border border-emerald-300 bg-emerald-600 px-3 py-1.5 text-xs font-black uppercase tracking-[0.25em] text-white shadow-sm backdrop-blur">
             Nos engagements
           </span>
 
-          <h1 className="mt-6 text-[clamp(2.5rem,7vw,5rem)] font-black leading-[0.92] tracking-[-0.07em] text-white">
+          <h1 className="mt-6 text-[clamp(2rem,6vw,2.8rem)] lg:text-[clamp(1.6rem,3.2vw,2.8rem)] font-black leading-[0.92] tracking-[-0.07em] text-white">
             <span>
               <span className="text-emerald-700">Révéler</span>{' '}
               <span className="text-black">le potentiel d’une jeunesse engagée</span>
@@ -87,11 +87,11 @@ export function EngagementSection() {
           </p>
         </div>
 
-        <div className="mt-8 mb-14 flex flex-col gap-[6px] md:mb-20 md:gap-2 lg:mt-14 lg:mb-28 lg:gap-5">
+        <div className="mt-8 mb-14 flex flex-col gap-[6px] md:mb-20 md:gap-2 lg:mt-8 lg:mb-16 lg:gap-3">
           {cards.map((card, index) => (
             <article
               key={card.title}
-              className={`group relative overflow-hidden rounded-[1.2rem] md:rounded-[1.5rem] lg:rounded-[2.5rem] border border-white/70 bg-white/80 shadow-[0_12px_40px_rgba(15,23,42,0.06),0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] hover:scale-[1.012] hover:shadow-[0_24px_80px_rgba(15,23,42,0.14),0_50px_140px_rgba(15,23,42,0.18)] ${
+              className={`group relative overflow-hidden rounded-[1.2rem] md:rounded-[1.5rem] lg:rounded-[2.5rem] border border-white/70 bg-emerald-50/60 shadow-[0_12px_40px_rgba(15,23,42,0.06),0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] hover:scale-[1.012] hover:shadow-[0_24px_80px_rgba(15,23,42,0.14),0_50px_140px_rgba(15,23,42,0.18)] ${
                 card.lineColor === 'bg-emerald-500'
                   ? 'hover:border-emerald-500/70'
                   : card.lineColor === 'bg-red-500'
@@ -138,21 +138,21 @@ export function EngagementSection() {
                     openIndex === index
                       ? 'max-h-[900px] opacity-100'
                       : 'max-h-0 opacity-0 lg:opacity-100'
-                  } overflow-hidden transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] lg:grid lg:max-h-none lg:grid-cols-[360px_0.82fr]`}
+                  } overflow-hidden transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] lg:grid lg:max-h-none lg:grid-cols-[240px_0.82fr]`}
                 >
-                  <div className="relative hidden flex-col justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-[#07140d] via-[#0b1f15] to-[#10261a] p-6 shadow-[inset_-1px_0_0_rgba(255,255,255,0.6)] transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.015] lg:flex lg:border-b-0 lg:border-r">
+                  <div className="relative hidden flex-col justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-[#07140d] via-[#0b1f15] to-[#10261a] p-6 shadow-[inset_-1px_0_0_rgba(255,255,255,0.6)] transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.015] lg:flex lg:border-b-0 lg:border-r lg:p-3">
                     <div
                       className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-[0.08]`}
                     />
 
                     <span
-                      className={`absolute left-2 top-1/2 -translate-y-1/2 text-[12rem] font-black leading-none tracking-[-0.08em] text-emerald-500/10 transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-110`}
+                      className={`absolute left-2 top-1/2 -translate-y-1/2 text-[12rem] lg:text-[7rem] font-black leading-none tracking-[-0.08em] text-emerald-500/10 transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-110`}
                     >
                       {card.letter}
                     </span>
 
                     <div className="relative z-10">
-                      <h3 className="mt-5 text-[clamp(1.65rem,2.8vw,2.3rem)] font-black leading-[0.94] tracking-[-0.05em] text-white">
+                      <h3 className="mt-3 text-[clamp(1.1rem,1.8vw,1.5rem)] font-black leading-[0.94] tracking-[-0.05em] text-white">
                         {card.title}
                       </h3>
 
@@ -163,7 +163,7 @@ export function EngagementSection() {
                   </div>
 
                   {/* Right block */}
-                <div className="min-h-0 overflow-hidden border-t border-emerald-100 bg-emerald-50/60 p-4 transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:bg-emerald-50/85 lg:border-t-0 lg:w-[980px] lg:max-w-[980px] lg:gap-3 lg:p-5">
+                <div className="min-h-0 overflow-hidden border-t border-emerald-100 p-4 transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] lg:border-t-0 lg:w-[780px] lg:max-w-[780px] lg:gap-1 lg:py-3">
                   <div className="flex flex-col gap-2 p-2 md:flex-row md:items-center md:gap-6">
                     <p className="relative min-w-[120px] pl-4 text-[13px] font-black uppercase tracking-[0.18em] text-emerald-700 md:self-center before:absolute before:left-0 before:top-1/2 before:h-6 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-emerald-500">
                       Engagement
