@@ -27,7 +27,7 @@ const catColors: Record<string, string> = {
 
 export default function AdminActualitesPage() {
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="w-full space-y-5">
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -36,43 +36,47 @@ export default function AdminActualitesPage() {
           <p className="mt-0.5 text-sm text-neutral-500">{NEWS.length} articles</p>
         </div>
         <button className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white hover:bg-emerald-700">
-          <Plus size={14} /> <span className="hidden sm:inline">Nouvel article</span>
+          <Plus size={14} />
+          <span className="hidden sm:inline">Nouvel article</span>
         </button>
       </div>
 
-      <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
 
-        {/* Table — desktop only (lg+) */}
+        {/* Table — lg+ uniquement */}
         <div className="hidden overflow-x-auto lg:block">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-neutral-100 bg-neutral-50/60">
-                {['Article', 'Catégorie', 'Date', 'Vues', 'Statut', ''].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">{h}</th>
-                ))}
+                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Article</th>
+                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Catégorie</th>
+                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Date</th>
+                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Vues</th>
+                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Statut</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-50">
               {NEWS.map(n => (
-                <tr key={n.id} className="group hover:bg-neutral-50/40 transition-colors">
-                  <td className="px-4 py-4 max-w-[260px]">
+                <tr key={n.id} className="group transition-colors hover:bg-neutral-50/40">
+                  <td className="max-w-[240px] px-4 py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-neutral-100">
                         <Newspaper size={14} className="text-neutral-500" />
                       </div>
-                      <p className="truncate font-semibold text-neutral-900 text-sm">{n.title}</p>
+                      <p className="truncate text-sm font-semibold text-neutral-900">{n.title}</p>
                     </div>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
+                  <td className="whitespace-nowrap px-4 py-4">
                     <span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${catColors[n.category] || 'bg-neutral-50 text-neutral-500'}`}>{n.category}</span>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-xs text-neutral-500">{n.date}</td>
+                  <td className="whitespace-nowrap px-4 py-4 text-xs text-neutral-500">{n.date}</td>
                   <td className="px-4 py-4 text-xs font-semibold text-neutral-600">{n.views > 0 ? n.views : '—'}</td>
                   <td className="px-4 py-4">
                     <span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${sCfg[n.status].cls}`}>{sCfg[n.status].label}</span>
                   </td>
                   <td className="px-4 py-4">
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                       <button className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700"><Eye size={13} /></button>
                       <button className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:border-blue-300 hover:text-blue-600"><Edit size={13} /></button>
                       <button className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:border-red-300 hover:text-red-600"><Trash2 size={13} /></button>
@@ -84,16 +88,16 @@ export default function AdminActualitesPage() {
           </table>
         </div>
 
-        {/* Cards — mobile + tablet (< lg) */}
+        {/* Cards mobile + tablette (< lg) */}
         <div className="divide-y divide-neutral-50 lg:hidden">
           {NEWS.map(n => (
             <div key={n.id} className="flex items-start gap-3 px-4 py-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100">
                 <Newspaper size={16} className="text-neutral-500" />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="truncate font-semibold text-neutral-900 text-sm">{n.title}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-neutral-900">{n.title}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${catColors[n.category] || 'bg-neutral-50 text-neutral-500'}`}>{n.category}</span>
                   <span className="text-[10px] text-neutral-400">{n.date}</span>
                   {n.views > 0 && <span className="text-[10px] text-neutral-400">{n.views} vues</span>}

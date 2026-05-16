@@ -24,7 +24,7 @@ export default function AdminActivitesPage() {
   const filtered = ACTIVITES.filter(a => filter === 'all' || a.status === filter);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="w-full space-y-5">
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -33,7 +33,8 @@ export default function AdminActivitesPage() {
           <p className="mt-0.5 text-sm text-neutral-500">{ACTIVITES.length} activités au total</p>
         </div>
         <button className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white hover:bg-emerald-700">
-          <Plus size={14} /> <span className="hidden sm:inline">Nouvelle activité</span>
+          <Plus size={14} />
+          <span className="hidden sm:inline">Nouvelle activité</span>
         </button>
       </div>
 
@@ -44,7 +45,7 @@ export default function AdminActivitesPage() {
           { label: 'Brouillons', value: ACTIVITES.filter(a => a.status === 'draft').length,     color: 'text-yellow-700'  },
           { label: 'Passées',    value: ACTIVITES.filter(a => a.status === 'past').length,      color: 'text-neutral-500' },
         ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm text-center sm:p-4">
+          <div key={label} className="rounded-2xl border border-neutral-100 bg-white p-3 text-center shadow-sm sm:p-4">
             <p className={`text-2xl font-black leading-none tracking-[-0.04em] sm:text-3xl ${color}`}>{value}</p>
             <p className="mt-1 text-[10px] font-semibold text-neutral-500 sm:text-xs">{label}</p>
           </div>
@@ -68,15 +69,18 @@ export default function AdminActivitesPage() {
         ))}
       </div>
 
-      {/* Table — desktop only (lg+, sidebar visible) */}
-      <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm">
+      {/* Table — lg+ uniquement (sidebar visible, largeur suffisante) */}
+      <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
         <div className="hidden overflow-x-auto lg:block">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-neutral-100 bg-neutral-50/60">
-                {['Activité', 'Date', 'Lieu', 'Inscrits', 'Statut', ''].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">{h}</th>
-                ))}
+                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Activité</th>
+                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Date</th>
+                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Lieu</th>
+                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Inscrits</th>
+                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Statut</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-50">
@@ -85,32 +89,32 @@ export default function AdminActivitesPage() {
                 const pct = Math.round((a.inscrits / a.max) * 100);
                 return (
                   <tr key={a.id} className="group transition-colors hover:bg-neutral-50/40">
-                    <td className="px-4 py-3.5 max-w-[240px]">
+                    <td className="max-w-[220px] px-4 py-3.5">
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
                           <CalendarDays size={14} className="text-emerald-600" />
                         </div>
-                        <p className="truncate font-semibold text-neutral-900">{a.title}</p>
+                        <p className="truncate text-sm font-semibold text-neutral-900">{a.title}</p>
                       </div>
                     </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap">
+                    <td className="whitespace-nowrap px-4 py-3.5">
                       <p className="text-sm text-neutral-700">{a.date}</p>
-                      <p className="flex items-center gap-1 text-xs text-neutral-400"><Clock size={10} /> {a.heure}</p>
+                      <p className="flex items-center gap-1 text-xs text-neutral-400"><Clock size={10} />{a.heure}</p>
                     </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap">
+                    <td className="whitespace-nowrap px-4 py-3.5">
                       <span className="flex items-center gap-1 text-xs text-neutral-600"><MapPin size={11} />{a.lieu}</span>
                     </td>
                     <td className="px-4 py-3.5">
                       <span className="flex items-center gap-1 text-xs font-semibold text-neutral-700"><Users size={11} />{a.inscrits}/{a.max}</span>
                       <div className="mt-1 h-1 w-16 rounded-full bg-neutral-100">
-                        <div className="h-1 rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+                        <div className="h-1 rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
                       </div>
                     </td>
                     <td className="px-4 py-3.5">
                       <span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${s.cls}`}>{s.label}</span>
                     </td>
                     <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                         <button className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700"><Eye size={13} /></button>
                         <button className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:border-red-300 hover:text-red-600"><Trash2 size={13} /></button>
                       </div>
@@ -122,7 +126,7 @@ export default function AdminActivitesPage() {
           </table>
         </div>
 
-        {/* Cards — mobile + tablet (< lg) */}
+        {/* Cards mobile + tablette (< lg) */}
         <div className="divide-y divide-neutral-50 lg:hidden">
           {filtered.map(a => {
             const s = sCfg[a.status];
@@ -132,18 +136,14 @@ export default function AdminActivitesPage() {
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
                   <CalendarDays size={16} className="text-emerald-600" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="truncate font-semibold text-neutral-900 text-sm">{a.title}</p>
-                  <p className="mt-0.5 text-xs text-neutral-400">
-                    <span className="inline-flex items-center gap-1"><Clock size={9} /> {a.date} · {a.heure}</span>
-                  </p>
-                  <p className="text-xs text-neutral-400">
-                    <span className="inline-flex items-center gap-1"><MapPin size={9} /> {a.lieu}</span>
-                    <span className="mx-1">·</span>
-                    <span className="inline-flex items-center gap-1"><Users size={9} /> {a.inscrits}/{a.max}</span>
-                  </p>
-                  <div className="mt-1.5 h-1 w-20 rounded-full bg-neutral-100">
-                    <div className="h-1 rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-neutral-900">{a.title}</p>
+                  <p className="mt-0.5 truncate text-xs text-neutral-400">{a.date} · {a.heure} · {a.lieu}</p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <span className="flex items-center gap-1 text-xs text-neutral-500"><Users size={10} />{a.inscrits}/{a.max}</span>
+                    <div className="h-1 w-14 rounded-full bg-neutral-100">
+                      <div className="h-1 rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
+                    </div>
                   </div>
                 </div>
                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ${s.cls}`}>{s.label}</span>

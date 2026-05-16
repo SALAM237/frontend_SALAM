@@ -119,7 +119,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col lg:pl-64">
+      <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
 
         {/* Top bar */}
         <header className="sticky top-0 z-20 flex h-14 items-center gap-4 border-b border-neutral-200/80 bg-white/95 px-5 backdrop-blur-sm">
@@ -154,7 +154,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page content */}
-        <main className="flex-1 px-4 py-5 sm:px-5 md:px-6 lg:px-8">
+        <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-5 sm:px-5 md:px-6 lg:px-8">
           {children}
         </main>
       </div>
