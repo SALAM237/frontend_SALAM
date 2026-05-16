@@ -6,7 +6,6 @@ import Link from "next/link";
 const MISSIONS = [
   {
     num: "01",
-    missionId: "preparer",
     badge: "Mission 1",
     lines: ["Préparer les", "futurs étudiants"],
     accent: "#0B8F3A",
@@ -23,7 +22,6 @@ const MISSIONS = [
   },
   {
     num: "02",
-    missionId: "insertion",
     badge: "Mission 2",
     lines: ["Insertion socio-", "professionnelle"],
     accent: "#C8102E",
@@ -40,7 +38,6 @@ const MISSIONS = [
   },
   {
     num: "03",
-    missionId: "solidarite",
     badge: "Mission 3",
     lines: ["Solidarité &", "action sociale"],
     accent: "#F7C600",
@@ -57,7 +54,6 @@ const MISSIONS = [
   },
   {
     num: "04",
-    missionId: "developpement",
     badge: "Mission 4",
     lines: ["Développement", "du Cameroun"],
     accent: "#3B82F6",
@@ -287,11 +283,32 @@ export default function MissionsSection() {
             </div>
           </div>
 
+          {/* Chiffre — desktop uniquement */}
           <div
-            className="pointer-events-none absolute bottom-[-2vw] right-[2vw] z-[1] select-none font-black leading-none tracking-[-0.08em] text-white/[0.035] transition-all duration-500 ease-out lg:bottom-[-2vw] lg:top-auto max-lg:bottom-auto max-lg:top-[3rem] max-lg:right-[4%]"
+            className="pointer-events-none absolute bottom-[-2vw] right-[2vw] z-[1] hidden select-none font-black leading-none tracking-[-0.08em] text-white/[0.035] transition-all duration-500 ease-out lg:block"
             style={{ fontSize: "clamp(7rem,22vw,24rem)" }}
           >
             {MISSIONS[activeIdx].num}
+          </div>
+
+          {/* Chiffre + Voir tout — mobile uniquement */}
+          <div className="pointer-events-none absolute right-[4%] top-[3rem] z-[1] flex flex-col items-end lg:hidden">
+            <div
+              className="select-none font-black leading-none tracking-[-0.08em] text-white/[0.035] transition-all duration-500 ease-out"
+              style={{ fontSize: "clamp(7rem,22vw,24rem)" }}
+            >
+              {MISSIONS[activeIdx].num}
+            </div>
+            <Link
+              href={`/missions?m=${{ "01": "preparer", "02": "insertion", "03": "solidarite", "04": "developpement" }[MISSIONS[activeIdx].num]}`}
+              className="pointer-events-auto -mt-1 inline-flex items-center gap-1.5 text-xs font-black tracking-[0.04em] transition-opacity duration-200 hover:opacity-70"
+              style={{ color: MISSIONS[activeIdx].accent }}
+            >
+              Voir tout
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
 
           <DesktopMissionsView
@@ -563,12 +580,12 @@ function StickyMissionStack({
             </p>
 
             <Link
-              href={`/missions?m=${mission.missionId}`}
-              className="mt-[clamp(0.9rem,2vw,1.4rem)] inline-flex items-center gap-1.5 text-[clamp(0.78rem,1.6vw,0.9rem)] font-black tracking-[0.04em] transition-opacity duration-200 hover:opacity-70"
+              href={`/missions?m=${{ "01": "preparer", "02": "insertion", "03": "solidarite", "04": "developpement" }[mission.num]}`}
+              className="mt-[clamp(0.8rem,1.8vw,1.2rem)] hidden items-center gap-1.5 text-[clamp(0.78rem,1.5vw,0.88rem)] font-black tracking-[0.04em] transition-opacity duration-200 hover:opacity-70 lg:inline-flex"
               style={{ color: acc }}
             >
               Voir tout
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </Link>

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, type ElementType } from 'react';
-import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -130,7 +129,7 @@ const MISSIONS: MissionData[] = [
       "Retour structuré des compétences",
       "Réseau professionnel national",
     ],
-    partners: [],
+    partners: ["MINSUP", "MINEFOP", "GICAM", "Réseau Alumni SALAM", "Entreprises partenaires"],
   },
   {
     id: 'solidarite',
@@ -162,7 +161,7 @@ const MISSIONS: MissionData[] = [
       "Mobilisation citoyenne",
       "Actions humanitaires durables",
     ],
-    partners: [],
+    partners: ["CASAM", "Associations étudiantes", "ONG locales", "Mécènes & Donateurs"],
   },
   {
     id: 'developpement',
@@ -194,7 +193,7 @@ const MISSIONS: MissionData[] = [
       "Participation au développement",
       "Réduction de la fuite des cerveaux",
     ],
-    partners: [],
+    partners: ["MINPMEESA", "GICAM", "Réseau Alumni SALAM", "Incubateurs & Startups", "Institutions financières"],
   },
 ];
 
@@ -221,19 +220,16 @@ const KEYWORDS = [
 const VALID_IDS = ['preparer', 'insertion', 'solidarite', 'developpement'];
 
 export default function MissionsPage() {
-  const searchParams = useSearchParams();
-  const initialId = VALID_IDS.includes(searchParams.get('m') ?? '') ? searchParams.get('m')! : 'preparer';
-  const [activeId, setActiveId] = useState<string>(initialId);
-  const tabsRef    = useRef<HTMLDivElement>(null);
+  const [activeId, setActiveId] = useState<string>('preparer');
+  const tabsRef      = useRef<HTMLDivElement>(null);
   const navScrollRef = useRef<HTMLDivElement>(null);
-  const rafRef     = useRef<number | null>(null);
-  const navTopRef  = useRef<number>(0);
+  const rafRef       = useRef<number | null>(null);
+  const sentinelRef  = useRef<HTMLDivElement>(null);
 
-  // Capture la position absolue du nav dans le document au premier rendu (scrollY=0)
+  // Lit le paramètre ?m= côté client uniquement
   useEffect(() => {
-    if (tabsRef.current) {
-      navTopRef.current = tabsRef.current.getBoundingClientRect().top + window.scrollY;
-    }
+    const m = new URLSearchParams(window.location.search).get('m');
+    if (m && VALID_IDS.includes(m)) setActiveId(m);
   }, []);
 
   // Easing cubic ease-in-out
@@ -284,9 +280,12 @@ export default function MissionsPage() {
     const clickedIndex = MISSIONS.findIndex(m => m.id === id);
     setActiveId(id);
     slideNav(clickedIndex, prevIndex);
-    // Scroll vers juste au-dessus du nav sticky (offsetTop naturel - hauteur header)
-    const target = Math.max(0, navTopRef.current - 64);
-    window.scrollTo({ top: target, behavior: 'smooth' });
+    // Sentinel is in normal flow (never sticky) → getBoundingClientRect gives true document position
+    const sentinel = sentinelRef.current;
+    if (sentinel) {
+      const target = sentinel.getBoundingClientRect().top + window.scrollY - 64;
+      window.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+    }
   };
 
   return (
@@ -322,6 +321,9 @@ export default function MissionsPage() {
           </div>
         </div>
       </section>*/}
+
+      {/* Sentinel: normal-flow anchor used to compute scroll target for the sticky nav */}
+      <div ref={sentinelRef} />
 
       {/* ── Sticky Tab Nav ── */}
       <div
@@ -481,23 +483,24 @@ export default function MissionsPage() {
                 </div>
               </div>*/}
 
-               {/* Partners (mission 01 only) */}
-                {m.partners.length > 0 && (
-                  <div className="shrink-0 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm lg:w-56">
-                    <div className="mb-3 flex items-center gap-2">
-                      <Building2 size={13} className="text-neutral-400" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Partenaires</span>
-                    </div>
-                    <ul className="space-y-1.5">
-                      {m.partners.map(p => (
-                        <li key={p} className="flex items-center gap-2">
-                          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${a.dot}`} />
-                          <span className="text-xs text-neutral-600">{p}</span>
-                        </li>
-                      ))}
-                    </ul>
+               {/* Partenaires — pleine largeur, pills en row */}
+                <div className="rounded-2xl border border-neutral-100 bg-white px-5 py-5 shadow-sm">
+                  <div className="mb-4 flex items-center gap-2">
+                    <Building2 size={13} className="text-neutral-400" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Partenaires</span>
                   </div>
-                )}
+                  <div className="flex flex-wrap gap-2">
+                    {m.partners.map(p => (
+                      <span
+                        key={p}
+                        className="flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-700"
+                      >
+                        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${a.dot}`} />
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                </div>
 
             </div>
               </motion.section>
