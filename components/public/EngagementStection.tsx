@@ -163,14 +163,13 @@ export function EngagementSection() {
 
                   <div
                     className={
+                      'grid transition-[grid-template-rows] ease-[cubic-bezier(.22,1,.36,1)] lg:[grid-template-rows:1fr] ' +
                       (openIndex === index
-                        ? 'max-h-[900px] opacity-100'
-                        : 'max-h-0 opacity-0 lg:opacity-100') +
-                      ' overflow-hidden transition-all ' +
-                      (openIndex === index ? 'duration-700' : 'duration-200') +
-                      ' ease-[cubic-bezier(.22,1,.36,1)] lg:grid lg:max-h-none lg:grid-cols-[240px_0.82fr]'
+                        ? 'grid-rows-[1fr] duration-500'
+                        : 'grid-rows-[0fr] duration-300')
                     }
                   >
+                  <div className="min-h-0 overflow-hidden lg:grid lg:grid-cols-[240px_0.82fr]">
                     {/* Left block — desktop only */}
                     <div className="relative hidden flex-col justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-[#07140d] via-[#0b1f15] to-[#10261a] p-6 shadow-[inset_-1px_0_0_rgba(255,255,255,0.6)] transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.015] lg:flex lg:border-b-0 lg:border-r lg:p-3">
                       <div className={'absolute inset-0 bg-gradient-to-br ' + card.color + ' opacity-[0.08]'} />
@@ -216,8 +215,9 @@ export function EngagementSection() {
                         </p>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </div>{/* inner min-h-0 */}
+                  </div>{/* outer grid */}
+                </div>{/* overflow-hidden wrapper */}
               </article>
             ))}
           </div>
