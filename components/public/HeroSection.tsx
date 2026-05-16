@@ -73,6 +73,7 @@ const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const navItems = [
   { label: "Accueil",      href: "/" },
   { label: "À propos",     href: "/a-propos" },
+  { label: "Missions",     href: "/missions" },
   { label: "Activités",    href: "/activites" },
   { label: "Galerie",      href: "/galerie" },
   { label: "Actualités",   href: "/actualites" },
