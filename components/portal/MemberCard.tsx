@@ -30,8 +30,8 @@ export function MemberCard({ member, printable = false }: { member: MemberCardDa
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl ${printable ? 'shadow-none' : 'shadow-2xl shadow-emerald-950/40'}`}
-      style={{ width: 400, height: 250, background: 'linear-gradient(135deg, #07140d 0%, #0b1f15 55%, #10261a 100%)' }}
+      className={`relative overflow-hidden rounded-2xl w-full ${printable ? 'shadow-none' : 'shadow-2xl shadow-emerald-950/40'}`}
+      style={{ maxWidth: 400, aspectRatio: '8/5', background: 'linear-gradient(135deg, #07140d 0%, #0b1f15 55%, #10261a 100%)' }}
     >
       {/* Flag stripe top */}
       <div className="absolute left-0 right-0 top-0 h-[5px]" style={{ background: 'linear-gradient(90deg, #0B8F3A 33%, #C8102E 33%, #C8102E 66%, #F7C600 66%)' }} />

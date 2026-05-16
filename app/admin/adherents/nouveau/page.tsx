@@ -69,7 +69,7 @@ export default function NouveauAdherentPage() {
         Numéro d&apos;adhérent : <span className="font-mono font-bold text-emerald-700">{generatedId}</span>
       </p>
       <div className="mt-8 flex flex-col items-center gap-3">
-        <div className="flex justify-center">
+        <div className="mx-auto w-full max-w-[400px]">
           <MemberCard member={cardData} />
         </div>
         <div className="flex gap-3">
@@ -192,7 +192,7 @@ export default function NouveauAdherentPage() {
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-black text-white">3</span>
             Aperçu carte membre
           </p>
-          <div className="flex justify-center overflow-x-auto">
+          <div className="mx-auto w-full max-w-[400px]">
             <MemberCard member={cardData} />
           </div>
         </div>

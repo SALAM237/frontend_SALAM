@@ -158,7 +158,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
           </div>
         </header>
 
-        <main className="flex-1 px-5 py-6 md:px-8">
+        <main className="flex-1 px-4 py-5 sm:px-5 md:px-6 lg:px-8">
           {children}
         </main>
       </div>

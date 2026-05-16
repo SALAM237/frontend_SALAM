@@ -113,7 +113,7 @@ export default function CartesPage() {
                 <p className="text-sm font-black text-neutral-900">Aperçu carte</p>
                 <span className="text-xs font-mono text-neutral-400">{selected.id}</span>
               </div>
-              <div className="flex justify-center overflow-x-auto">
+              <div className="mx-auto w-full max-w-[400px]">
                 <MemberCard member={selected} />
               </div>
               <p className="text-center text-[10px] text-neutral-400">

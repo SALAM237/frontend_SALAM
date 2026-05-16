@@ -122,7 +122,7 @@ export default function MemberDashboardPage() {
                 Voir <ArrowRight className="inline" size={10} />
               </Link>
             </div>
-            <div className="flex justify-center overflow-x-auto" style={{ transform: 'scale(0.72)', transformOrigin: 'top center', height: 180 }}>
+            <div className="mx-auto" style={{ maxWidth: 288 }}>
               <MemberCard member={MOCK_MEMBER} />
             </div>
           </div>

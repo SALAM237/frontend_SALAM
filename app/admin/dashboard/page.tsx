@@ -43,13 +43,15 @@ export default function AdminDashboardPage() {
     <div className="mx-auto max-w-6xl space-y-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Tableau de bord</h1>
-          <p className="mt-0.5 text-sm text-neutral-500">Bienvenue, Admin · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">Tableau de bord</h1>
+          <p className="mt-0.5 text-sm text-neutral-500">
+            Bienvenue, Admin<span className="hidden sm:inline"> · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+          </p>
         </div>
-        <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20">
-          <UserPlus size={14} /> Nouveau membre
+        <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20">
+          <UserPlus size={14} /> <span className="hidden sm:inline">Nouveau membre</span>
         </Link>
       </div>
 

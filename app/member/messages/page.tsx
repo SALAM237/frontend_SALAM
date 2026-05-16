@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Send, MessageSquare, Search } from 'lucide-react';
+import { Send, MessageSquare, Search, ArrowLeft } from 'lucide-react';
 
 type Message = { id: number; from: string; subject: string; preview: string; date: string; read: boolean; body: string };
 
@@ -14,6 +14,7 @@ const MESSAGES: Message[] = [
 
 export default function MessagesPage() {
   const [selected, setSelected]   = useState<Message | null>(MESSAGES[0]);
+  const [showDetail, setShowDetail] = useState(false);
   const [search, setSearch]       = useState('');
   const [reply, setReply]         = useState('');
   const [replySent, setReplySent] = useState(false);
@@ -36,10 +37,10 @@ export default function MessagesPage() {
         <p className="mt-0.5 text-sm text-neutral-500">Communications de l&apos;équipe SALAM</p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[320px_1fr]" style={{ height: 'calc(100vh - 200px)', minHeight: 400 }}>
+      <div className="grid gap-4 lg:grid-cols-[320px_1fr] min-h-[420px] lg:h-[calc(100vh-200px)]">
 
         {/* Message list */}
-        <div className="flex flex-col rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden">
+        <div className={`flex-col rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden ${showDetail ? 'hidden lg:flex' : 'flex'}`}>
           <div className="border-b border-neutral-100 p-3">
             <div className="relative">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -56,7 +57,7 @@ export default function MessagesPage() {
             {filtered.map(m => (
               <button
                 key={m.id}
-                onClick={() => setSelected(m)}
+                onClick={() => { setSelected(m); setShowDetail(true); }}
                 className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-neutral-50 ${selected?.id === m.id ? 'bg-emerald-50/60 border-l-[3px] border-l-emerald-500' : ''}`}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -81,9 +82,12 @@ export default function MessagesPage() {
 
         {/* Message view */}
         {selected ? (
-          <div className="flex flex-col rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden">
+          <div className={`flex-col rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden ${showDetail ? 'flex' : 'hidden lg:flex'}`}>
             {/* Header */}
             <div className="border-b border-neutral-100 p-5">
+              <button onClick={() => setShowDetail(false)} className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 lg:hidden">
+                <ArrowLeft size={13} /> Retour aux messages
+              </button>
               <h2 className="font-black text-neutral-900">{selected.subject}</h2>
               <div className="mt-1 flex flex-wrap items-center gap-3">
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[10px] font-black text-white">
@@ -121,7 +125,7 @@ export default function MessagesPage() {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center rounded-2xl border border-neutral-100 bg-white shadow-sm">
+          <div className="hidden items-center justify-center rounded-2xl border border-neutral-100 bg-white shadow-sm lg:flex">
             <div className="text-center">
               <MessageSquare size={40} className="mx-auto text-neutral-200" />
               <p className="mt-3 text-sm font-semibold text-neutral-400">Sélectionnez un message</p>

@@ -31,16 +31,16 @@ export default function ProfilPage() {
       </div>
 
       {/* Avatar */}
-      <div className="flex items-center gap-4 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-2xl font-black text-white">
           {form.firstName[0]}{form.lastName[0]}
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="font-black text-neutral-900">{form.firstName} {form.lastName}</p>
           <p className="text-sm text-neutral-500">Membre actif · Antenne Paris</p>
           <p className="mt-1 font-mono text-xs text-emerald-600">SALAM-2024-0042</p>
         </div>
-        <button className="ml-auto inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300">
+        <button className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300 sm:w-auto sm:ml-auto">
           <User size={13} /> Changer la photo
         </button>
       </div>
@@ -85,7 +85,7 @@ export default function ProfilPage() {
         <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
           <p className="mb-2 text-sm font-black text-neutral-900">Données personnelles</p>
           <p className="mb-4 text-xs text-neutral-500">Conformément au RGPD, vous pouvez exporter ou supprimer vos données à tout moment.</p>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button type="button" className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300">
               Exporter mes données
             </button>

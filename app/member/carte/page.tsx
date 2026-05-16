@@ -33,16 +33,16 @@ export default function MembreCartePage() {
       {/* Status bar */}
       <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
         <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <p className="text-sm font-black text-emerald-800">Carte active et valide</p>
-          <p className="text-xs text-emerald-600">Valable jusqu'au 31 décembre {MEMBER.year}</p>
+          <p className="text-xs text-emerald-600">Valable jusqu&apos;au 31 décembre {MEMBER.year}</p>
         </div>
-        <span className="text-xs font-mono font-bold text-emerald-700">{MEMBER.id}</span>
+        <span className="hidden shrink-0 text-xs font-mono font-bold text-emerald-700 sm:block">{MEMBER.id}</span>
       </div>
 
       {/* Card display */}
-      <div className="rounded-2xl border border-neutral-100 bg-white p-8 shadow-sm">
-        <div className="flex justify-center overflow-x-auto">
+      <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm sm:p-8">
+        <div className="mx-auto w-full max-w-[400px]">
           <MemberCard member={MEMBER} />
         </div>
 

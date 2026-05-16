@@ -55,9 +55,9 @@ export default function AdminAdherentsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input
             type="text"
@@ -68,13 +68,13 @@ export default function AdminAdherentsPage() {
           />
         </div>
 
-        {/* Status filters */}
-        <div className="flex gap-1.5">
+        {/* Status filters + Download */}
+        <div className="flex flex-wrap gap-1.5">
           {FILTER_OPTIONS.map(({ label, value }) => (
             <button
               key={value}
               onClick={() => setFilter(value)}
-              className={`h-9 rounded-xl border px-4 text-xs font-bold transition-all ${
+              className={`h-9 rounded-xl border px-3 text-xs font-bold transition-all sm:px-4 ${
                 filter === value
                   ? 'border-emerald-500 bg-emerald-600 text-white'
                   : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300 hover:text-emerald-700'
@@ -83,11 +83,10 @@ export default function AdminAdherentsPage() {
               {label}
             </button>
           ))}
+          <button className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-600 hover:border-neutral-300 sm:px-4">
+            <Download size={13} /> Exporter
+          </button>
         </div>
-
-        <button className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 text-xs font-bold text-neutral-600 hover:border-neutral-300">
-          <Download size={13} /> Exporter
-        </button>
       </div>
 
       {/* Table */}
