@@ -138,7 +138,7 @@ export function EngagementSection() {
                     openIndex === index
                       ? 'max-h-[900px] opacity-100'
                       : 'max-h-0 opacity-0 lg:opacity-100'
-                  } overflow-hidden transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] lg:grid lg:max-h-none lg:grid-cols-[240px_0.82fr]`}
+                  } overflow-hidden transition-all ${openIndex === index ? 'duration-700' : 'duration-200'} ease-[cubic-bezier(.22,1,.36,1)] lg:grid lg:max-h-none lg:grid-cols-[240px_0.82fr]`}
                 >
                   <div className="relative hidden flex-col justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-[#07140d] via-[#0b1f15] to-[#10261a] p-6 shadow-[inset_-1px_0_0_rgba(255,255,255,0.6)] transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.015] lg:flex lg:border-b-0 lg:border-r lg:p-3">
                     <div
