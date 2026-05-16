@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type IconProps = {
   className?: string;
@@ -67,6 +68,8 @@ function SparklesIcon({ className = "" }: IconProps) {
   );
 }
 
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
 const navItems = [
   { label: "Accueil",      href: "/" },
   { label: "À propos",     href: "/a-propos" },
@@ -78,9 +81,45 @@ const navItems = [
 
 export function HeroSection() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [navVisible, setNavVisible] = useState(true);
+  const [navScrolled, setNavScrolled] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    let lastY = window.scrollY;
+    const handleScroll = () => {
+      const y = window.scrollY;
+
+      // Scroll-to-top button: show at 70% of scrollable height
+      const totalScrollable = document.documentElement.scrollHeight - window.innerHeight;
+      setShowScrollTop(totalScrollable > 0 && y / totalScrollable >= 0.7);
+
+      // Hide navbar entirely inside MissionsSection sticky zone
+      const missionsEl = document.getElementById('missions-section');
+      if (missionsEl) {
+        const rect = missionsEl.getBoundingClientRect();
+        if (rect.top <= 0 && rect.bottom >= window.innerHeight) {
+          setNavVisible(false);
+          lastY = y;
+          return;
+        }
+      }
+
+      setNavScrolled(y > 20);
+      if (y > lastY && y > 60) {
+        setNavVisible(false);
+        setMenuOpen(false);
+      } else {
+        setNavVisible(true);
+      }
+      lastY = y;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <section className="relative mx-3 my-3 overflow-hidden rounded-2xl lg:rounded-[2.5rem] bg-[#06130b] px-[clamp(1rem,3vw,3rem)] py-[clamp(0.8rem,2vw,1.5rem)] text-white" style={{ height: 'calc(100vh - 1.5rem)', minHeight: 'calc(100svh - 1.5rem)' }}>
+    <section className="relative h-screen min-h-svh overflow-hidden rounded-none bg-[#06130b] px-[clamp(1rem,3vw,3rem)] py-[clamp(0.8rem,2vw,1.5rem)] text-white lg:mx-3 lg:my-3 lg:h-[calc(100vh-1.5rem)] lg:min-h-[calc(100svh-1.5rem)] lg:rounded-[2.5rem]">
 
       {/* ── Video background ── */}
       <video
@@ -105,92 +144,138 @@ export function HeroSection() {
       <div className="pointer-events-none absolute bottom-[-16rem] right-[-16rem] z-10 h-[27rem] w-[66rem] -rotate-6 rounded-[100%] bg-red-600/[0.16] blur-[1px]" />
       <div className="pointer-events-none absolute bottom-[-18rem] right-[-8rem] z-10 h-[24rem] w-[52rem] -rotate-3 rounded-[100%] bg-yellow-400/[0.18] blur-[1px]" />
 
-      {/* ── Navbar ── */}
-      <header className="relative z-30 mx-auto flex w-full max-w-7xl items-center justify-between gap-4 rounded-full border border-white/20 bg-white/10 px-4 py-2 shadow-[0_18px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl md:px-5">
-        <Link href="/" className="flex min-w-0 items-center gap-2.5" aria-label="Accueil SALAM">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/images/logo/logo_salam_wbg.png"
-            alt="Logo SALAM"
-            className="h-10 w-10 shrink-0 rounded-full object-cover shadow-md"
-          />
-          <div className="min-w-0 leading-tight">
-            <p className="hidden text-[0.78rem] font-black tracking-[0.18em] text-white lg:block">SALAM</p>
-            <p className="hidden text-[0.68rem] font-semibold text-white/70 lg:block">Cameroun • Maroc</p>
-          </div>
-        </Link>
-
-        <nav className="hidden items-center gap-5 text-[0.92rem] font-semibold text-white/80 lg:flex" aria-label="Navigation principale">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={item.href === "/" ? "text-yellow-300" : "transition hover:text-yellow-300"}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex shrink-0 items-center gap-2">
-          {/* Desktop: Rejoindre SALAM */}
-          <Link href="/adhesion" className="hidden items-center gap-2 rounded-full bg-emerald-800 px-4 py-2 text-sm font-bold text-white shadow-xl shadow-emerald-950/40 transition hover:-translate-y-0.5 hover:bg-emerald-700 lg:inline-flex">
-            <UsersIcon className="h-4 w-4" /> Rejoindre SALAM
+      {/* ── Fixed nav wrapper (navbar + dropdown) ── */}
+      <div
+        className={[
+          'fixed inset-x-0 z-50 transition-[transform,top] duration-300 ease-out lg:inset-x-3',
+          navVisible ? 'translate-y-0 top-3 md:top-4 lg:top-6' : '-translate-y-full top-0',
+        ].join(' ')}
+      >
+        {/* Navbar */}
+        <header
+          className={[
+            'mx-auto flex w-full max-w-7xl items-center justify-between gap-4 rounded-full px-[clamp(1rem,3vw,3rem)] py-2 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 lg:px-4',
+            navScrolled
+              ? 'max-lg:border max-lg:border-white/20 max-lg:bg-white/10 max-lg:shadow-[0_18px_60px_rgba(0,0,0,0.22)] max-lg:backdrop-blur-xl'
+              : 'max-lg:border-0 max-lg:bg-transparent max-lg:shadow-none max-lg:backdrop-blur-none',
+            'lg:border lg:border-white/20 lg:bg-white/10 lg:shadow-[0_18px_60px_rgba(0,0,0,0.22)] lg:backdrop-blur-xl',
+          ].join(' ')}
+        >
+          <Link href="/" className="flex min-w-0 items-center gap-2.5" aria-label="Accueil SALAM">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/logo/logo_salam_wbg.png"
+              alt="Logo SALAM"
+              className="h-10 w-10 shrink-0 rounded-full object-cover shadow-md"
+            />
+            <div className="min-w-0 leading-tight">
+              <p className="hidden text-[0.78rem] font-black tracking-[0.18em] text-white lg:block">SALAM</p>
+              <p className="hidden text-[0.68rem] font-semibold text-white/70 lg:block">Cameroun • Maroc</p>
+            </div>
           </Link>
 
-          {/* Mobile: burger 2 traits */}
-          <button
-            className="flex flex-col gap-[5px] rounded-lg p-2 transition hover:bg-white/10 lg:hidden"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Menu"
-            aria-expanded={menuOpen}
-          >
-            <span className="block h-0.5 w-5 rounded-full bg-white transition-all" />
-            <span className="block h-0.5 w-5 rounded-full bg-white transition-all" />
-          </button>
-        </div>
-      </header>
-
-      {/* ── Mobile menu panel ── */}
-      {menuOpen && (
-        <div className="absolute left-[clamp(1rem,3vw,3rem)] right-[clamp(1rem,3vw,3rem)] top-[4rem] z-40 rounded-2xl border border-white/20 bg-emerald-950/92 p-5 shadow-2xl backdrop-blur-xl lg:hidden">
-          <nav className="flex flex-col gap-4">
+          <nav className="hidden items-center gap-5 text-[0.92rem] font-semibold text-white/80 lg:flex" aria-label="Navigation principale">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`text-sm font-semibold transition ${item.href === "/" ? "text-yellow-300" : "text-white/80 hover:text-yellow-300"}`}
-                onClick={() => setMenuOpen(false)}
+                className={item.href === "/" ? "text-yellow-300" : "transition hover:text-yellow-300"}
               >
                 {item.label}
               </Link>
             ))}
           </nav>
-          <div className="mt-4 border-t border-white/15 pt-4">
-            <Link
-              href="/adhesion"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-800 px-4 py-2 text-sm font-bold text-white shadow-xl transition hover:bg-emerald-700"
-              onClick={() => setMenuOpen(false)}
-            >
-              <UsersIcon className="h-4 w-4" /> Rejoindre SALAM
+
+          <div className="flex shrink-0 items-center gap-2">
+            {/* Desktop: Connexion */}
+            <Link href="/adhesion" className="hidden items-center gap-2 rounded-full bg-emerald-800 px-4 py-2 text-sm font-bold text-white shadow-xl shadow-emerald-950/40 transition hover:-translate-y-0.5 hover:bg-emerald-700 lg:inline-flex">
+              <UsersIcon className="h-4 w-4" /> Connexion
             </Link>
+
+            {/* Mobile/tablet: burger → X animé */}
+            <button
+              className="flex h-9 w-9 flex-col items-center justify-center gap-[5px] rounded-full transition hover:bg-white/10 lg:hidden"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+              aria-expanded={menuOpen}
+            >
+              <span className={`block h-0.5 w-5 rounded-full bg-white transition-all duration-300 ${menuOpen ? 'translate-y-[3.5px] rotate-45' : ''}`} />
+              <span className={`block h-0.5 w-5 rounded-full bg-white transition-all duration-300 ${menuOpen ? '-translate-y-[3.5px] -rotate-45' : ''}`} />
+            </button>
           </div>
-        </div>
-      )}
+        </header>
+
+        {/* Mobile/tablet dropdown */}
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -14, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.97 }}
+              transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+              className="mx-[clamp(0.4rem,2vw,1rem)] mt-2 overflow-hidden rounded-2xl border border-white/[0.09] bg-emerald-950/90 shadow-[0_32px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl lg:hidden"
+            >
+              {/* Items */}
+              <nav className="flex flex-col px-2 pt-3 pb-1">
+                {navItems.map((item, i) => (
+                  <motion.div
+                    key={item.href}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.05 + i * 0.045, duration: 0.22, ease: 'easeOut' }}
+                  >
+                    <Link
+                      href={item.href}
+                      className="group flex items-center justify-between rounded-xl px-4 py-3.5 text-[0.93rem] font-semibold transition-colors duration-150 hover:bg-white/[0.07]"
+                      style={{ color: item.href === '/' ? '#fde047' : 'rgba(255,255,255,0.80)' }}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <span>{item.label}</span>
+                      <ArrowUpRightIcon className="h-3.5 w-3.5 opacity-20 transition-opacity duration-150 group-hover:opacity-60" />
+                    </Link>
+                  </motion.div>
+                ))}
+              </nav>
+
+              {/* Séparateur + CTA */}
+              <div className="px-4 pb-4 pt-1">
+                <div className="mb-3 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+                <Link
+                  href="/connexion"
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-700 to-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-950/40 transition hover:from-emerald-600 hover:to-emerald-500"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <UsersIcon className="h-4 w-4" /> Connexion
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* ── Hero content ── */}
-      <div className="relative z-20 mx-auto flex h-[calc(100svh-5rem)] max-w-7xl items-center">
+      <div className="relative z-20 mx-auto flex h-[calc(100svh-5rem)] max-w-7xl items-center pt-14">
         <div className="max-w-[680px] pt-[clamp(0.4rem,1.5vw,1rem)] text-center lg:text-left">
 
           {/* Pills badge */}
-          <div className="mb-4 inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/20 bg-white/[0.12] px-2.5 py-1 text-[0.6rem] font-bold text-white shadow-lg backdrop-blur-xl lg:gap-2.5 lg:px-3 lg:py-1.5 lg:text-xs">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2, delay: 0.3, ease: EASE }}
+            className="mb-4 inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/20 bg-white/[0.12] px-2.5 py-1 text-[0.6rem] font-bold text-white shadow-lg backdrop-blur-xl lg:gap-2.5 lg:px-3 lg:py-1.5 lg:text-xs"
+          >
             <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 lg:h-2 lg:w-2" /> Solidarité</span>
             <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-red-500 lg:h-2 lg:w-2" /> Engagement</span>
             <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-yellow-300 lg:h-2 lg:w-2" /> Réussite</span>
-          </div>
+          </motion.div>
 
           {/* H1 */}
-          <h1 className="mx-auto max-w-4xl text-[clamp(1.6rem,3.8vw,3.6rem)] font-black leading-[0.93] tracking-[-0.06em] text-white drop-shadow-[0_18px_50px_rgba(0,0,0,0.55)] lg:mx-0">
+          <motion.h1
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.3, delay: 0.9, ease: EASE }}
+            className="mx-auto max-w-4xl text-[clamp(1.6rem,3.8vw,3.6rem)] font-black leading-[0.93] tracking-[-0.06em] text-white drop-shadow-[0_18px_50px_rgba(0,0,0,0.55)] lg:mx-0"
+          >
             <span className="block">Ensemble,</span>
             <span className="block">construisons</span>
             <span className="block">notre avenir.</span>
@@ -201,39 +286,49 @@ export function HeroSection() {
               <span className="text-red-400">A</span>
               <span className="text-emerald-300">M</span>
             </span>
-          </h1>
+          </motion.h1>
 
           {/* Description */}
-          <p className="mx-auto mt-4 max-w-xl text-[0.75rem] leading-6 text-white/[0.82] drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] lg:mx-0 lg:mt-5 lg:text-[clamp(0.92rem,1.15vw,1.02rem)] lg:leading-7">
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2, delay: 1.5, ease: EASE }}
+            className="mx-auto mt-4 max-w-xl text-[0.75rem] leading-6 text-white/[0.82] drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] lg:mx-0 lg:mt-5 lg:text-[clamp(0.92rem,1.15vw,1.02rem)] lg:leading-7"
+          >
             Une communauté d&apos;anciens étudiants camerounais du Maroc engagée pour accompagner les plus jeunes, favoriser l&apos;intégration professionnelle et contribuer au développement du Cameroun.
-          </p>
+          </motion.p>
 
           {/* CTAs */}
-          <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:items-stretch lg:mt-6 lg:gap-3 lg:justify-start">
-            <Link href="/adhesion" className="inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2 text-[0.75rem] font-extrabold text-white shadow-2xl shadow-emerald-950/35 transition hover:-translate-y-0.5 lg:gap-2 lg:px-5 lg:py-2.5 lg:text-[0.92rem]">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.1, delay: 2.1, ease: EASE }}
+            className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:items-stretch lg:mt-6 lg:gap-3 lg:justify-start"
+          >
+            <Link href="/adhesion" className="inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2 text-[0.75rem] font-extrabold text-white shadow-2xl shadow-emerald-950/35 transition hover:-translate-y-0.5 hover:from-red-400 hover:to-red-400 lg:gap-2 lg:px-5 lg:py-2.5 lg:text-[0.92rem]">
               Devenir membre <ArrowUpRightIcon className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
             </Link>
-            <Link href="/activites" className="inline-flex items-center justify-center gap-1.5 rounded-full border border-white/25 bg-white/[0.14] px-4 py-2 text-[0.75rem] font-extrabold text-white shadow-xl shadow-black/20 backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/[0.22] lg:gap-2 lg:px-5 lg:py-2.5 lg:text-[0.92rem]">
+            <Link href="/activites" className="inline-flex items-center justify-center gap-1.5 rounded-full border border-white/25 bg-white/[0.14] px-4 py-2 text-[0.75rem] font-extrabold text-white shadow-xl shadow-black/20 backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-red-400 hover:border-red-400 lg:gap-2 lg:px-5 lg:py-2.5 lg:text-[0.92rem]">
               Voir les activités <CalendarIcon className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
             </Link>
-          </div>
+          </motion.div>
 
           {/* Info cards — mobile only, below CTAs */}
           <div className="mt-16 grid grid-cols-3 gap-2 lg:hidden">
-            <div className="rounded-xl border border-white/[0.18] bg-white/10 p-2.5 backdrop-blur-xl">
-              <UsersIcon className="mx-auto mb-1 block h-3.5 w-3.5 text-emerald-300" />
+            <div style={{ animationDelay: '2.7s' }} className="slide-in-bottom group rounded-xl border border-white/[0.18] bg-white/10 p-2.5 backdrop-blur-xl transition-colors duration-300 hover:bg-emerald-500 hover:border-transparent">
+              <UsersIcon className="mx-auto mb-1 block h-3.5 w-3.5 text-emerald-300 transition-colors duration-300 group-hover:text-white" />
               <p className="text-center text-[0.65rem] font-black leading-tight text-white">Réseau</p>
-              <p className="mt-0.5 text-center text-[0.55rem] font-medium leading-snug text-white/60">Anciens & partenaires</p>
+              <p className="mt-0.5 text-center text-[0.55rem] font-medium leading-snug text-white/60 transition-colors duration-300 group-hover:text-white">Anciens & partenaires</p>
             </div>
-            <div className="rounded-xl border border-white/[0.18] bg-white/10 p-2.5 backdrop-blur-xl">
-              <GraduationCapIcon className="mx-auto mb-1 block h-3.5 w-3.5 text-yellow-300" />
+            <div style={{ animationDelay: '3.1s' }} className="slide-in-bottom group rounded-xl border border-white/[0.18] bg-white/10 p-2.5 backdrop-blur-xl transition-colors duration-300 hover:bg-red-500 hover:border-transparent">
+              <GraduationCapIcon className="mx-auto mb-1 block h-3.5 w-3.5 text-red-400 transition-colors duration-300 group-hover:text-yellow-300" />
               <p className="text-center text-[0.65rem] font-black leading-tight text-white">Réussite</p>
-              <p className="mt-0.5 text-center text-[0.55rem] font-medium leading-snug text-white/60">Diplôme & carrière</p>
+              <p className="mt-0.5 text-center text-[0.55rem] font-medium leading-snug text-white/60 transition-colors duration-300 group-hover:text-white">Diplôme & carrière</p>
             </div>
-            <div className="rounded-xl border border-white/[0.18] bg-white/10 p-2.5 backdrop-blur-xl">
-              <HeartHandshakeIcon className="mx-auto mb-1 block h-3.5 w-3.5 text-red-300" />
-              <p className="text-center text-[0.65rem] font-black leading-tight text-white">Transmission</p>
-              <p className="mt-0.5 text-center text-[0.55rem] font-medium leading-snug text-white/60">Conseil, suivi & accompagnement</p>
+            <div style={{ animationDelay: '3.5s' }} className="slide-in-bottom group rounded-xl border border-white/[0.18] bg-white/10 p-2.5 backdrop-blur-xl transition-colors duration-300 hover:bg-yellow-400 hover:border-transparent">
+              <HeartHandshakeIcon className="mx-auto mb-1 block h-3.5 w-3.5 text-yellow-300 transition-colors duration-300 group-hover:text-black" />
+              <p className="text-center text-[0.65rem] font-black leading-tight text-white transition-colors duration-300 group-hover:text-black">Transmission</p>
+              <p className="mt-0.5 text-center text-[0.55rem] font-medium leading-snug text-white/60 transition-colors duration-300 group-hover:text-black">Conseil, suivi & accompagnement</p>
             </div>
           </div>
 
@@ -242,22 +337,47 @@ export function HeroSection() {
 
       {/* ── Info cards — bottom right, contained inside section ── */}
       <div className="absolute bottom-[clamp(1.5rem,2.5vh,2rem)] right-[clamp(1rem,4vw,3rem)] z-20 hidden w-[clamp(22rem,28vw,32rem)] grid-cols-3 gap-2.5 lg:grid">
-        <div className="rounded-2xl border border-white/[0.18] bg-white/10 p-3 backdrop-blur-xl">
-          <UsersIcon className="mx-auto mb-1.5 block h-4 w-4 text-emerald-300" />
+        <div style={{ animationDelay: '2.7s' }} className="slide-in-bottom group rounded-2xl border border-white/[0.18] bg-white/10 p-3 backdrop-blur-xl transition-colors duration-300 hover:bg-emerald-500 hover:border-transparent">
+          <UsersIcon className="mx-auto mb-1.5 block h-4 w-4 text-emerald-300 transition-colors duration-300 group-hover:text-white" />
           <p className="text-center text-sm font-black leading-tight text-white">Réseau</p>
-          <p className="mt-1 text-center text-[0.68rem] font-medium leading-snug text-white/70">Anciens, étudiants et partenaires</p>
+          <p className="mt-1 text-center text-[0.68rem] font-medium leading-snug text-white/70 transition-colors duration-300 group-hover:text-white">Anciens, étudiants et partenaires</p>
         </div>
-        <div className="rounded-2xl border border-white/[0.18] bg-white/10 p-3 backdrop-blur-xl">
-          <GraduationCapIcon className="mx-auto mb-1.5 block h-4 w-4 text-yellow-300" />
+        <div style={{ animationDelay: '3.1s' }} className="slide-in-bottom group rounded-2xl border border-white/[0.18] bg-white/10 p-3 backdrop-blur-xl transition-colors duration-300 hover:bg-red-500 hover:border-transparent">
+          <GraduationCapIcon className="mx-auto mb-1.5 block h-4 w-4 text-red-400 transition-colors duration-300 group-hover:text-yellow-300" />
           <p className="text-center text-sm font-black leading-tight text-white">Réussite</p>
-          <p className="mt-1 text-center text-[0.68rem] font-medium leading-snug text-white/70">Études, diplôme, carrière</p>
+          <p className="mt-1 text-center text-[0.68rem] font-medium leading-snug text-white/70 transition-colors duration-300 group-hover:text-white">Études, diplôme, carrière</p>
         </div>
-        <div className="rounded-2xl border border-white/[0.18] bg-white/10 p-3 backdrop-blur-xl">
-          <HeartHandshakeIcon className="mx-auto mb-1.5 block h-4 w-4 text-red-300" />
-          <p className="text-center text-sm font-black leading-tight text-white">Transmission</p>
-          <p className="mt-1 text-center text-[0.68rem] font-medium leading-snug text-white/70">Conseil, suivi & accompagnement</p>
+        <div style={{ animationDelay: '3.5s' }} className="slide-in-bottom group rounded-2xl border border-white/[0.18] bg-white/10 p-3 backdrop-blur-xl transition-colors duration-300 hover:bg-yellow-400 hover:border-transparent">
+          <HeartHandshakeIcon className="mx-auto mb-1.5 block h-4 w-4 text-yellow-300 transition-colors duration-300 group-hover:text-black" />
+          <p className="text-center text-sm font-black leading-tight text-white transition-colors duration-300 group-hover:text-black">Transmission</p>
+          <p className="mt-1 text-center text-[0.68rem] font-medium leading-snug text-white/70 transition-colors duration-300 group-hover:text-black">Conseil, suivi & accompagnement</p>
         </div>
       </div>
+      <style>{`
+        @keyframes slide-in-bottom {
+          0%   { transform: translateY(32px); opacity: 0; }
+          100% { transform: translateY(0);    opacity: 1; }
+        }
+        .slide-in-bottom {
+          -webkit-animation: slide-in-bottom .5s cubic-bezier(.25,.46,.45,.94) both;
+                  animation: slide-in-bottom .5s cubic-bezier(.25,.46,.45,.94) both;
+        }
+      `}</style>
+
+      {/* ── Scroll to top ── */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        style={{
+          opacity: showScrollTop ? 1 : 0,
+          pointerEvents: showScrollTop ? 'auto' : 'none',
+        }}
+        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-800 text-white shadow-xl shadow-emerald-950/40 transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-700"
+        aria-label="Retour en haut de page"
+      >
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
     </section>
   );
 }

@@ -1,7 +1,39 @@
 "use client";
-
+import { useRef, useState, useEffect } from 'react';
 
 type IconProps = { className?: string };
+
+const DURATION = 2000;
+const LABEL_ANIM = 500;
+const STEP = DURATION + LABEL_ANIM;
+
+function CountUp({ target, suffix, started, delay }: { target: number; suffix: string; started: boolean; delay: number }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!started) return;
+    let raf: number;
+    let timer: ReturnType<typeof setTimeout>;
+
+    timer = setTimeout(() => {
+      const startTime = performance.now();
+      const tick = (now: number) => {
+        const t = Math.min((now - startTime) / DURATION, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        setCount(Math.round(eased * target));
+        if (t < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(raf);
+    };
+  }, [started, target, delay]);
+
+  return <>{count.toLocaleString('fr-FR')}{suffix}</>;
+}
 
 function UsersIcon({ className = "" }: IconProps) {
   return (
@@ -45,18 +77,79 @@ function getSalamAge(): number {
 }
 
 const stats = [
-  { label: "Membres",              value: 400,           suffix: "+", icon: UsersIcon,    color: "text-emerald-700", bg: "bg-emerald-50", line: "bg-emerald-700" },
+  { label: "Membres",              value: 300,           suffix: "+", icon: UsersIcon,    color: "text-emerald-700", bg: "bg-emerald-50", line: "bg-emerald-700" },
   { label: "Années d'existence",   value: getSalamAge(), suffix: "",  icon: ClockIcon,    color: "text-emerald-700", bg: "bg-emerald-50", line: "bg-emerald-700" },
   { label: "Actions sociales",     value: 126,           suffix: "+", icon: HeartIcon,    color: "text-red-600",     bg: "bg-red-50",     line: "bg-red-600"     },
   { label: "Événements organisés", value: 100,           suffix: "+", icon: CalendarIcon, color: "text-yellow-500",  bg: "bg-yellow-50",  line: "bg-yellow-400"  },
 ];
 
 export default function SalamStatsSection() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [started, setStarted] = useState(false);
+  const [showLabels, setShowLabels] = useState(stats.map(() => false));
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setStarted(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.7 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!started) return;
+    const timers = stats.map((_, i) =>
+      setTimeout(() => {
+        setShowLabels(prev => {
+          const next = [...prev];
+          next[i] = true;
+          return next;
+        });
+      }, i * STEP + DURATION)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [started]);
 
   return (
     <section
-      className="relative overflow-hidden px-[clamp(1rem,4vw,4.5rem)] py-[clamp(2.5rem,5vw,4rem)]"
+      ref={sectionRef}
+      className="relative overflow-hidden px-[clamp(1rem,4vw,4.5rem)] pt-[clamp(2.5rem,5vw,4rem)] pb-[clamp(4.5rem,8vw,7rem)]"
     >
+      <style>{`
+        @keyframes slide-left {
+          0%   { transform: translateX(20px); opacity: 0; }
+          100% { transform: translateX(0);    opacity: 1; }
+        }
+        .slide-left {
+          -webkit-animation: slide-left ${LABEL_ANIM}ms cubic-bezier(.25,.46,.45,.94) both;
+                  animation: slide-left ${LABEL_ANIM}ms cubic-bezier(.25,.46,.45,.94) both;
+        }
+        @keyframes fade-in-fwd {
+          0%   { transform: translateZ(-60px); opacity: 0; }
+          100% { transform: translateZ(0);     opacity: 1; }
+        }
+        .fade-in-fwd {
+          -webkit-animation: fade-in-fwd 1.8s cubic-bezier(.39,.575,.565,1.000) both;
+                  animation: fade-in-fwd 1.8s cubic-bezier(.39,.575,.565,1.000) both;
+        }
+        @keyframes tracking-in-contract-bck {
+          0%   { letter-spacing: 1em; transform: translateZ(400px); opacity: 0; }
+          40%  { opacity: 0.6; }
+          100% { letter-spacing: normal; transform: translateZ(0); opacity: 1; }
+        }
+        .tracking-in-contract-bck {
+          -webkit-animation: tracking-in-contract-bck 1s cubic-bezier(.215,.61,.355,1.000) both;
+                  animation: tracking-in-contract-bck 1s cubic-bezier(.215,.61,.355,1.000) both;
+        }
+      `}</style>
       <div className="pointer-events-none absolute -left-32 top-10 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl" />
       <div className="pointer-events-none absolute -right-32 bottom-10 h-72 w-72 rounded-full bg-yellow-200/50 blur-3xl" />
       <div className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-emerald-700 via-red-600 to-yellow-400" />
@@ -64,13 +157,13 @@ export default function SalamStatsSection() {
       <div className="relative z-10 mx-auto max-w-5xl">
 
         <div className="mx-auto mb-8 max-w-2xl text-center">
-          <p className="mb-2 text-xs font-black uppercase tracking-[0.24em] text-emerald-700">
+          <p className={`mb-2 text-xs font-black uppercase text-emerald-700 ${started ? 'tracking-in-contract-bck' : 'opacity-0'}`}>
             SALAM en chiffres
           </p>
-          <h2 className="text-[clamp(1.6rem,3.2vw,2.8rem)] font-black leading-tight tracking-[-0.04em] text-neutral-950">
+          <h2 className={`text-[clamp(1.6rem,3.2vw,2.8rem)] font-black leading-tight tracking-[-0.04em] text-neutral-950 ${started ? 'fade-in-fwd' : 'opacity-0'}`}>
             Une communauté qui agit, transmet et construit.
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-[clamp(0.85rem,1.1vw,0.98rem)] leading-7 text-neutral-500">
+          <p className="mx-auto mt-3 mb-12 max-w-xl text-[clamp(0.85rem,1.1vw,0.98rem)] leading-7 text-neutral-500">
             Des anciens étudiants camerounais du Maroc engagés pour accompagner les jeunes,
             renforcer le réseau et participer au développement du Cameroun.
           </p>
@@ -92,11 +185,11 @@ export default function SalamStatsSection() {
 
                 <div className="flex items-end gap-0.5">
                   <span className={`text-[clamp(1.3rem,4vw,2.4rem)] font-black leading-none ${item.color}`}>
-                    {item.value.toLocaleString("fr-FR")}{item.suffix}
+                    <CountUp target={item.value} suffix={item.suffix} started={started} delay={index * STEP} />
                   </span>
                 </div>
 
-                <p className="mt-1 text-[0.7rem] font-semibold leading-snug text-neutral-600 lg:mt-1.5 lg:text-sm">
+                <p className={`mt-1 text-[0.7rem] font-semibold leading-snug text-neutral-600 lg:mt-1.5 lg:text-sm ${showLabels[index] ? 'slide-left' : 'opacity-0'}`}>
                   {item.label}
                 </p>
 

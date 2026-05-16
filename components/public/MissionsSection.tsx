@@ -83,13 +83,26 @@ const sectionAnimations = `
   0% { transform: translateY(-40px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }
 }
-
 .slide-bottom {
   animation: slide-bottom .5s cubic-bezier(.25,.46,.45,.94) both;
 }
 
-.missions-debug div {
-  box-shadow: 0 0 0 1px red inset !important;
+@keyframes fade-in-left {
+  0%   { transform: translateX(-50px); opacity: 0; }
+  100% { transform: translateX(0);     opacity: 1; }
+}
+.fade-in-left {
+  -webkit-animation: fade-in-left 1.2s cubic-bezier(.39,.575,.565,1.000) both;
+          animation: fade-in-left 1.2s cubic-bezier(.39,.575,.565,1.000) both;
+}
+
+@keyframes fade-in-right {
+  0%   { transform: translateX(50px); opacity: 0; }
+  100% { transform: translateX(0);    opacity: 1; }
+}
+.fade-in-right {
+  -webkit-animation: fade-in-right 1.2s cubic-bezier(.39,.575,.565,1.000) both;
+          animation: fade-in-right 1.2s cubic-bezier(.39,.575,.565,1.000) both;
 }
 `;
 
@@ -97,9 +110,21 @@ export default function MissionsSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [progress, setProgress] = useState(0);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [titleAnimated, setTitleAnimated] = useState(false);
   const [panelStep, setPanelStep] = useState(760);
   const [mobilePanelStep, setMobilePanelStep] = useState(420);
   const [viewport, setViewport] = useState({ width: 1200, height: 800 });
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+    const io = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setTitleAnimated(true); io.disconnect(); } },
+      { threshold: 0.10 }
+    );
+    io.observe(section);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -152,7 +177,8 @@ export default function MissionsSection() {
 
       <section
         ref={sectionRef}
-        className="missions-debug relative h-[500svh] bg-[#070f09] text-white"
+        id="missions-section"
+        className="relative h-[500svh] bg-[#070f09] text-white"
       >
         <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_18%_24%,rgba(11,143,58,0.18),transparent_28%),radial-gradient(circle_at_54%_42%,rgba(200,16,46,0.10),transparent_30%),radial-gradient(circle_at_86%_68%,rgba(247,198,0,0.12),transparent_30%)]" />
 
@@ -217,6 +243,7 @@ export default function MissionsSection() {
         
 
         <div className="sticky top-0 h-[100svh] overflow-hidden bg-[#070f09]">
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-50 h-6 bg-[#070f09] lg:hidden" />
           <div className="absolute left-0 right-0 top-0 z-40 h-[2px] bg-white/5">
             <div
               className="h-full transition-all duration-300"
@@ -231,9 +258,13 @@ export default function MissionsSection() {
           <div className="absolute left-0 right-0 top-0 z-40 flex items-center justify-between px-[7%] pt-[clamp(1.35rem,3vw,2.2rem)] lg:px-[clamp(1rem,3.5vw,4.5rem)] lg:pt-[clamp(0.8rem,2vw,1.35rem)]">
             <div>
               
-              <h2 className="text-[clamp(1rem,1.8vw,1.75rem)] font-black tracking-[-0.03em] text-white">
+              <h2 className={`text-[clamp(1rem,1.8vw,1.75rem)] font-black tracking-[-0.03em] text-white ${titleAnimated ? 'fade-in-left' : 'opacity-0'}`}>
                 Nos Missions
               </h2>
+              <div
+                className={`mt-1 h-[2px] w-[45%] rounded-full transition-all duration-500 ${titleAnimated ? 'fade-in-right' : 'opacity-0'}`}
+                style={{ animationDelay: titleAnimated ? '0.2s' : undefined, background: MISSIONS[activeIdx].accent } as React.CSSProperties}
+              />
             </div>
 
             <div className="flex items-center gap-2">
@@ -253,7 +284,7 @@ export default function MissionsSection() {
           </div>
 
           <div
-            className="pointer-events-none absolute bottom-[-2vw] right-[2vw] z-[1] select-none font-black leading-none tracking-[-0.08em] text-white/[0.035] transition-all duration-500 ease-out"
+            className="pointer-events-none absolute bottom-[-2vw] right-[2vw] z-[1] select-none font-black leading-none tracking-[-0.08em] text-white/[0.035] transition-all duration-500 ease-out lg:bottom-[-2vw] lg:top-auto max-lg:bottom-auto max-lg:top-[3rem] max-lg:right-[4%]"
             style={{ fontSize: "clamp(7rem,22vw,24rem)" }}
           >
             {MISSIONS[activeIdx].num}
@@ -305,7 +336,8 @@ function DesktopMissionsView({
             const pinX = 25;
             const startX = 20;
             const maxTranslate = (N - 1) * (panelStep + arrivalGap);
-            const delayedOffset = index * 0.14;
+            const DELAYS = [0, 0.14, 0.42, 0.72];
+            const delayedOffset = DELAYS[index];
             const delayedProgress = Math.min(
               1,
               Math.max(0, (progress - delayedOffset) / (1 - delayedOffset))
@@ -317,7 +349,7 @@ function DesktopMissionsView({
 
             const topPinnedIndex = MISSIONS.reduce(
               (latestPinnedIndex, _mission, missionIndex) => {
-                const missionDelayedOffset = missionIndex * 0.14;
+                const missionDelayedOffset = DELAYS[missionIndex];
                 const missionDelayedProgress = Math.min(
                   1,
                   Math.max(
@@ -378,7 +410,7 @@ function MobileTabletMissionsView({
         />
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-visible pb-[5px] lg:overflow-hidden">
+      <div className="relative min-h-0 flex-1 self-stretch overflow-hidden pb-6">
         {MISSIONS.map((mission, index) => {
           const arrivalGap = 110;
           const pinY = 5;
@@ -386,7 +418,8 @@ function MobileTabletMissionsView({
           const stickyHold = 0.12;
           const endProgress = 1 - stickyHold;
           const maxTranslate = (N - 1) * (panelStep + arrivalGap);
-          const delayedOffset = index * 0.14;
+          const DELAYS = [0, 0.14, 0.42, 0.72];
+          const delayedOffset = DELAYS[index];
           const delayedProgress = Math.min(
             1,
             Math.max(0, (progress - delayedOffset) / Math.max(0.001, endProgress - delayedOffset))
@@ -398,7 +431,7 @@ function MobileTabletMissionsView({
 
           const topPinnedIndex = MISSIONS.reduce(
             (latestPinnedIndex, _mission, missionIndex) => {
-              const missionDelayedOffset = missionIndex * 0.14;
+              const missionDelayedOffset = DELAYS[missionIndex];
               const missionDelayedProgress = Math.min(
                 1,
                 Math.max(
@@ -488,6 +521,11 @@ function StickyMissionStack({
                   ? "clamp(0.75rem,1.8vw,1.15rem)"
                   : "clamp(1rem,2vw,1.35rem)",
                 maxWidth: mission.num === "04" ? "12ch" : "14ch",
+                ...(!compact && {
+                  transform: isActive ? "translateY(0)" : "translateY(14px)",
+                  transition: "transform 0.65s cubic-bezier(.22,1,.36,1)",
+                  transitionDelay: isActive ? "0.1s" : "0s",
+                }),
               }}
             >
               {mission.num === "02" ? (
