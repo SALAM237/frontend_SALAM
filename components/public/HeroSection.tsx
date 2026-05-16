@@ -75,7 +75,7 @@ const navItems = [
   { label: "À propos",     href: "/a-propos" },
   { label: "Missions",     href: "/missions" },
   { label: "Activités",    href: "/activites" },
-  { label: "Actualités",   href: "/actualites" },
+  { label: "Galerie",      href: "/galerie" },
   { label: "Contact",      href: "/contact" },
 ];
 

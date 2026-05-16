@@ -1,105 +1,199 @@
-'use client';
-import { motion } from 'framer-motion';
-import { Heart, Globe, Handshake, LucideIcon } from 'lucide-react';
+import { useState } from 'react';
 
-interface Value {
-  Icon: LucideIcon;
-  title: string;
-  description: string;
-  accent: { text: string; bg: string; border: string; iconBg: string };
-}
-
-const VALUES: Value[] = [
+export default function EngagementsPreview() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const cards = [
   {
-    Icon: Heart,
+    letter: 'S',
     title: 'Solidarité',
-    description:
-      "Nous nous entraidons au quotidien : logement, emploi, orientation, démarches administratives. Personne ne traverse seul les difficultés de l'intégration.",
-    accent: { text: 'text-salam-red', bg: 'bg-red-50', border: 'border-red-100', iconBg: 'bg-red-100' },
+    color: 'from-red-500 to-rose-400',
+    lineColor: 'bg-emerald-500',
+    engagement:
+      'Créer une communauté solidaire au service des étudiants et des personnes les plus vulnérables.',
+    actions:
+      'Entraide, réseau, soutien social, Alumni, actions solidaires et accompagnement des personnes vulnérables.',
+    impact:
+      'Une génération unie qui avance ensemble et agit pour ceux qui en ont le plus besoin.',
   },
   {
-    Icon: Globe,
-    title: 'Culture & Identité',
-    description:
-      'Valoriser les cultures camerounaise et marocaine à travers soirées, expositions, gastronomie et échanges interculturels enrichissants.',
-    accent: { text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', iconBg: 'bg-amber-100' },
+    letter: 'A',
+    title: 'Accompagnement',
+    color: 'from-emerald-600 to-green-400',
+    lineColor: 'bg-red-500',
+    engagement: 'Accompagner chaque étudiant vers la réussite.',
+    actions: 'Orientation, préparation, accompagnement et intégration.',
+    impact:
+      'Des étudiants mieux préparés, plus confiants et moins isolés.',
   },
   {
-    Icon: Handshake,
-    title: 'Réseau & Carrière',
-    description:
-      'Mettre en relation les membres pour créer des opportunités professionnelles, stages, emplois et projets entrepreneuriaux communs.',
-    accent: { text: 'text-salam-green', bg: 'bg-green-50', border: 'border-green-100', iconBg: 'bg-green-100' },
+    letter: 'L',
+    title: 'Leadership',
+    color: 'from-yellow-500 to-amber-300',
+    lineColor: 'bg-yellow-400',
+    engagement: 'Transformer les compétences en opportunités.',
+    actions:
+      'Insertion professionnelle, networking, projets et entrepreneuriat.',
+    impact:
+      'Créer et offrir plus d’opportunités académiques, professionnelles et entrepreneuriales pour les jeunes camerounais.',
+  },
+  {
+    letter: 'A',
+    title: 'Action',
+    color: 'from-blue-600 to-cyan-400',
+    lineColor: 'bg-red-500',
+    engagement: 'Faire des étudiants des acteurs du développement.',
+    actions:
+      'Innovation, engagement citoyen et transmission d’expertise.',
+    impact:
+      'Contribuer concrètement au développement du Cameroun.',
+  },
+  {
+    letter: 'M',
+    title: 'Mobilisation',
+    color: 'from-emerald-800 to-emerald-500',
+    lineColor: 'bg-emerald-500',
+    engagement:
+      'Mobiliser les talents et les énergies autour d’un impact collectif durable.',
+    actions:
+      'Actions citoyennes, initiatives communautaires, projets solidaires et mobilisation de la jeunesse.',
+    impact:
+      'Une jeunesse engagée capable de porter des changements durables pour la société.',
   },
 ];
 
-const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number];
-const container = { hidden: {}, visible: { transition: { staggerChildren: 0.15 } } };
-const item = {
-  hidden:   { opacity: 0, y: 28 },
-  visible:  { opacity: 1, y: 0, transition: { duration: 0.65, ease: EASE } },
-};
-
-export function ValuesSection() {
   return (
-    <section>
-      <div className="container-salam section-salam">
+    <section className="relative min-h-screen overflow-hidden bg-[#fffdf8] px-5 py-1.5 md:px-8 lg:px-3">
+      <div className="absolute left-[-120px] top-20 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl" />
+      <div className="absolute right-[-120px] top-32 h-96 w-96 rounded-full bg-yellow-200/40 blur-3xl" />
+      <div className="absolute bottom-10 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-red-200/20 blur-3xl" />
 
-        {/* ── Header ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          viewport={{ once: true }}
-          className="mb-[clamp(2.5rem,5vw,4.5rem)] max-w-2xl"
-        >
-          <span className="badge-pill mb-5 border-salam-green/20 bg-green-50 text-salam-green">
-            Nos piliers
+      <div className="relative z-10 mx-auto max-w-7xl">
+        <div className="mx-auto max-w-4xl text-center">
+          <span className="inline-flex rounded-full border border-emerald-300 bg-emerald-600 px-3 py-1.5 text-xs font-black uppercase tracking-[0.25em] text-white shadow-sm backdrop-blur">
+            Nos engagements
           </span>
-          <h2 className="subtitle-salam text-salam-ink">
-            Des valeurs qui<br />nous rassemblent
-          </h2>
-          <p className="text-salam mt-4 text-neutral-600">
-            SALAM repose sur trois piliers fondateurs qui guident chacune de nos actions
-            et définissent notre identité commune.
+
+          <h1 className="mt-6 text-[clamp(2.5rem,7vw,5rem)] font-black leading-[0.92] tracking-[-0.07em] text-white">
+            <span>
+              <span className="text-emerald-700">Révéler</span>{' '}
+              <span className="text-black">le potentiel d’une jeunesse engagée</span>
+            </span>
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-2xl text-[clamp(1rem,1.3vw,1.15rem)] leading-8 text-neutral-600">
+            Accompagner les étudiants, soutenir les plus vulnérables et mobiliser les talents pour contribuer au développement du Cameroun.
           </p>
-        </motion.div>
+        </div>
 
-        {/* ── Cards ── */}
-        <motion.div
-          variants={container}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-60px' }}
-          className="grid gap-[clamp(1rem,2vw,1.5rem)] md:grid-cols-3"
-        >
-          {VALUES.map(({ Icon, title, description, accent }) => (
-            <motion.article
-              key={title}
-              variants={item}
-              className={`group card-salam border ${accent.border} ${accent.bg} p-[clamp(1.5rem,3vw,2.5rem)]`}
+        <div className="mt-8 mb-14 flex flex-col gap-[6px] md:mb-20 md:gap-2 lg:mt-14 lg:mb-28 lg:gap-5">
+          {cards.map((card, index) => (
+            <article
+              key={card.title}
+              className={`group relative overflow-hidden rounded-[1.2rem] md:rounded-[1.5rem] lg:rounded-[2.5rem] border border-white/70 bg-white/80 shadow-[0_12px_40px_rgba(15,23,42,0.06),0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] hover:scale-[1.012] hover:shadow-[0_24px_80px_rgba(15,23,42,0.14),0_50px_140px_rgba(15,23,42,0.18)] ${
+                card.lineColor === 'bg-emerald-500'
+                  ? 'hover:border-emerald-500/70'
+                  : card.lineColor === 'bg-red-500'
+                    ? 'hover:border-red-500/70'
+                    : 'hover:border-yellow-400/80'
+              }`}
             >
-              {/* Icon */}
-              <div
-                className={`mb-6 inline-flex size-[clamp(48px,5vw,60px)] items-center justify-center rounded-2xl ${accent.iconBg} transition-transform duration-300 group-hover:scale-110`}
-              >
-                <Icon size={24} className={accent.text} />
+              <div className="overflow-hidden">
+                {/* Mobile / Tablet Premium Accordion */}
+                <button
+                  onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                  className="relative flex min-h-[96px] w-full items-center justify-between overflow-hidden border-b border-white/10 bg-gradient-to-br from-[#07140d] via-[#0b1f15] to-[#10261a] px-5 py-3.5 text-left lg:hidden"
+                >
+                {/* Left block */}
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-[0.08]`}
+                  />
+
+                  <span
+                    className={`absolute left-6 top-1/2 -translate-y-1/2 text-[6rem] font-black leading-none tracking-[-0.08em] text-emerald-500/10`}
+                  >
+                    {card.letter}
+                  </span>
+
+                  <div className="relative z-10 flex items-center justify-between gap-4 w-full">
+                    <div className="pl-8">
+                      <h3 className="text-[1.5rem] md:text-[1.8rem] lg:text-[clamp(1.65rem,2.8vw,2.3rem)] font-black leading-[0.95] tracking-[-0.05em] text-white">
+                        {card.title}
+                      </h3>
+
+                      <div
+                        className={`mt-3 h-[4px] w-16 rounded-[6px] ${card.lineColor}`}
+                      />
+                    </div>
+
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-[0.8rem] border border-white/10 bg-white/5 text-xl text-white/70 backdrop-blur transition-all duration-500 ${openIndex === index ? 'rotate-180 bg-white/10' : ''}`}>
+                      {openIndex === index ? '−' : '+'}
+                    </div>
+                  </div>
+                </button>
+
+                <div
+                  className={`${
+                    openIndex === index
+                      ? 'max-h-[900px] opacity-100'
+                      : 'max-h-0 opacity-0 lg:opacity-100'
+                  } overflow-hidden transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] lg:grid lg:max-h-none lg:grid-cols-[360px_0.82fr]`}
+                >
+                  <div className="relative hidden flex-col justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-[#07140d] via-[#0b1f15] to-[#10261a] p-6 shadow-[inset_-1px_0_0_rgba(255,255,255,0.6)] transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.015] lg:flex lg:border-b-0 lg:border-r">
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-[0.08]`}
+                    />
+
+                    <span
+                      className={`absolute left-2 top-1/2 -translate-y-1/2 text-[12rem] font-black leading-none tracking-[-0.08em] text-emerald-500/10 transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-110`}
+                    >
+                      {card.letter}
+                    </span>
+
+                    <div className="relative z-10">
+                      <h3 className="mt-5 text-[clamp(1.65rem,2.8vw,2.3rem)] font-black leading-[0.94] tracking-[-0.05em] text-white">
+                        {card.title}
+                      </h3>
+
+                      <div
+                        className={`mt-4 h-[4px] w-20 rounded-full ${card.lineColor} transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:w-28`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right block */}
+                <div className="min-h-0 overflow-hidden border-t border-emerald-100 bg-emerald-50/60 p-4 transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:bg-emerald-50/85 lg:border-t-0 lg:w-[980px] lg:max-w-[980px] lg:gap-3 lg:p-5">
+                  <div className="flex flex-col gap-2 p-2 md:flex-row md:items-center md:gap-6">
+                    <p className="relative min-w-[120px] pl-4 text-[13px] font-black uppercase tracking-[0.18em] text-emerald-700 md:self-center before:absolute before:left-0 before:top-1/2 before:h-6 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-emerald-500">
+                      Engagement
+                    </p>
+                    <p className="w-full text-[12px] leading-[1.35] text-neutral-700">
+                      {card.engagement}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2 p-2 md:flex-row md:items-center md:gap-6">
+                    <p className="relative min-w-[120px] pl-4 text-[13px] font-black uppercase tracking-[0.18em] text-emerald-700 md:self-center before:absolute before:left-0 before:top-1/2 before:h-6 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-emerald-500">
+                      Actions
+                    </p>
+                    <p className="w-full text-[12px] leading-[1.35] text-neutral-700">
+                      {card.actions}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2 p-2 md:flex-row md:items-center md:gap-6">
+                    <p className="relative min-w-[120px] pl-4 text-[13px] font-black uppercase tracking-[0.18em] text-emerald-700 md:self-center before:absolute before:left-0 before:top-1/2 before:h-6 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-emerald-500">
+                      Impact
+                    </p>
+                    <p className="w-full text-[12px] font-semibold leading-[1.35] text-neutral-950">
+                      {card.impact}
+                    </p>
+                  </div>
+                </div>
+                </div>
               </div>
-
-              {/* Text */}
-              <h3
-                className={`font-black leading-tight ${accent.text}`}
-                style={{ fontSize: 'clamp(1.15rem,2vw,1.4rem)' }}
-              >
-                {title}
-              </h3>
-              <p className="mt-3 text-[13.5px] leading-relaxed text-neutral-600">{description}</p>
-
-              {/* Decorative bottom line */}
-              <div className={`mt-6 h-[3px] w-12 rounded-full ${accent.iconBg} transition-all duration-300 group-hover:w-20`} />
-            </motion.article>
+            </article>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
