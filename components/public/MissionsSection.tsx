@@ -397,7 +397,7 @@ function MobileTabletMissionsView({
   viewportHeight: number;
 }) {
   return (
-    <div className="relative z-10 flex h-[100svh] flex-col px-[4%] pt-[clamp(4.5rem,9vh,5.8rem)] pb-0 lg:hidden bg-yellow-400">
+    <div className="relative z-10 flex h-[100svh] flex-col px-[4%] pt-[clamp(4.5rem,9vh,5.8rem)] pb-0 lg:hidden">
       <div className="relative mx-auto min-h-[28svh] w-[92%] max-w-[32rem] shrink-0 overflow-hidden">
         <StickyMissionStack activeIdx={activeIdx} compact />
       </div>
@@ -599,9 +599,9 @@ function MissionActionsPanel({
       }}
     >
       <div
-        className="w-full rounded-[clamp(1.1rem,3vw,2.25rem)] border p-[clamp(0.9rem,2.6vw,2rem)] shadow-[0_24px_90px_rgba(0,0,0,0.2)] backdrop-blur-xl lg:p-[2.2rem]"
+        className="w-full rounded-[clamp(1.1rem,3vw,2.25rem)] border p-[clamp(0.9rem,2.6vw,2rem)] shadow-[0_24px_90px_rgba(0,0,0,0.2)] lg:backdrop-blur-xl lg:p-[2.2rem]"
         style={{
-          background: orientation === 'vertical' ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.06)',
+          background: orientation === 'vertical' ? 'rgba(10,25,14,0.85)' : 'rgba(255,255,255,0.06)',
           borderColor: ha(acc, 0.18),
         }}
       >
