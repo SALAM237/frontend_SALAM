@@ -201,7 +201,7 @@ export function HeroSection() {
               <SparklesIcon className="h-3.5 w-3.5" /> Démo
             </Link>
             {/* Desktop: Connexion */}
-            <Link href="/adhesion" className="hidden items-center gap-2 rounded-full bg-emerald-800 px-4 py-2 text-sm font-bold text-white shadow-xl shadow-emerald-950/40 transition hover:-translate-y-0.5 hover:bg-emerald-700 lg:inline-flex">
+            <Link href="/auth/login" className="hidden items-center gap-2 rounded-full bg-emerald-800 px-4 py-2 text-sm font-bold text-white shadow-xl shadow-emerald-950/40 transition hover:-translate-y-0.5 hover:bg-emerald-700 lg:inline-flex">
               <UsersIcon className="h-4 w-4" /> Connexion
             </Link>
 
