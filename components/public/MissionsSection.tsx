@@ -243,7 +243,6 @@ export default function MissionsSection() {
         
 
         <div className="sticky top-0 h-[100svh] overflow-hidden bg-[#070f09]">
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-50 h-6 bg-[#070f09] lg:hidden" />
           <div className="absolute left-0 right-0 top-0 z-40 h-[2px] bg-white/5">
             <div
               className="h-full transition-all duration-300"
@@ -410,7 +409,7 @@ function MobileTabletMissionsView({
         />
       </div>
 
-      <div className="relative min-h-0 flex-1 self-stretch overflow-hidden pb-6">
+      <div className="relative min-h-0 flex-1 self-stretch overflow-hidden">
         {MISSIONS.map((mission, index) => {
           const arrivalGap = 110;
           const pinY = 5;
