@@ -1,7 +1,9 @@
+'use client';
+
 import { useState } from 'react';
 
-export default function EngagementsPreview() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+export function EngagementSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
   const cards = [
   {
     letter: 'S',
@@ -198,3 +200,4 @@ export default function EngagementsPreview() {
     </section>
   );
 }
+
