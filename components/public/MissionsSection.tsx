@@ -304,7 +304,7 @@ export default function MissionsSection() {
               className="pointer-events-auto -mt-1 inline-flex items-center gap-1.5 text-xs font-black tracking-[0.04em] transition-opacity duration-200 hover:opacity-70"
               style={{ color: MISSIONS[activeIdx].accent }}
             >
-              Voir tout
+              Voir plus
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
@@ -584,7 +584,7 @@ function StickyMissionStack({
               className="mt-[clamp(0.8rem,1.8vw,1.2rem)] hidden items-center gap-1.5 text-[clamp(0.78rem,1.5vw,0.88rem)] font-black tracking-[0.04em] transition-opacity duration-200 hover:opacity-70 lg:inline-flex"
               style={{ color: acc }}
             >
-              Voir tout
+              Voir plus
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
