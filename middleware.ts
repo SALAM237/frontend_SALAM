@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const PROTECTED_PREFIXES = ['/admin', '/member'];
-const LOGIN_URL = '/connexion';
+const LOGIN_URL = '/auth/login';
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

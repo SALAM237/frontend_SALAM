@@ -39,6 +39,7 @@ export default function RegisterPage() {
   const [loading, setLoading]   = useState(false);
   const [success, setSuccess]   = useState(false);
   const [errors, setErrors]     = useState<Partial<Record<keyof FormData | 'global', string>>>({});
+  const [pwDismiss, setPwDismiss] = useState(false);
 
   const set = (k: keyof FormData, v: string | boolean) =>
     setForm(f => ({ ...f, [k]: v }));
@@ -56,10 +57,8 @@ export default function RegisterPage() {
 
   const validateStep2 = () => {
     const e: typeof errors = {};
-    if (form.password.length < 10)           e.password = 'Minimum 10 caractères';
-    else if (!/[A-Z]/.test(form.password))   e.password = 'Doit contenir une majuscule';
-    else if (!/[0-9]/.test(form.password))   e.password = 'Doit contenir un chiffre';
-    if (form.password !== form.confirm)      e.confirm  = 'Les mots de passe ne correspondent pas';
+    if (!pwChecks.every(c => c.valid)) e.password = 'Le mot de passe ne remplit pas tous les critères';
+    if (form.password !== form.confirm) e.confirm  = 'Les mots de passe ne correspondent pas';
     if (!form.cgu) e.cgu = 'Vous devez accepter les conditions';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -95,19 +94,19 @@ export default function RegisterPage() {
     }
   };
 
-  const pwdStrength = (() => {
-    const p = form.password;
-    if (!p) return 0;
-    let s = 0;
-    if (p.length >= 10)            s++;
-    if (/[A-Z]/.test(p))          s++;
-    if (/[0-9]/.test(p))          s++;
-    if (/[^A-Za-z0-9]/.test(p))   s++;
-    return s;
-  })();
+  const pwChecks = [
+    { label: 'Au moins 8 caractères',             valid: form.password.length >= 8 },
+    { label: 'Une majuscule',                      valid: /[A-Z]/.test(form.password) },
+    { label: 'Une minuscule',                      valid: /[a-z]/.test(form.password) },
+    { label: 'Un chiffre',                         valid: /[0-9]/.test(form.password) },
+    { label: 'Un caractère spécial (-, @, !, …)',  valid: /[^A-Za-z0-9]/.test(form.password) },
+  ];
+  const allValid    = pwChecks.every(c => c.valid);
+  const pwdStrength = pwChecks.filter(c => c.valid).length;
+  const showChecks  = form.password.length > 0 && !pwDismiss;
 
-  const strengthLabel = ['', 'Faible', 'Moyen', 'Fort', 'Excellent'][pwdStrength];
-  const strengthColor = ['', 'bg-red-400', 'bg-orange-400', 'bg-emerald-500', 'bg-emerald-600'][pwdStrength];
+  const strengthLabel = ['', 'Très faible', 'Faible', 'Moyen', 'Fort', 'Excellent'][pwdStrength];
+  const strengthColor = ['', 'bg-red-500', 'bg-red-400', 'bg-orange-400', 'bg-emerald-500', 'bg-emerald-600'][pwdStrength];
 
   if (success) {
     return (
@@ -248,11 +247,34 @@ export default function RegisterPage() {
             {form.password && (
               <div className="mt-2 space-y-1">
                 <div className="flex gap-1">
-                  {[1, 2, 3, 4].map(i => (
+                  {[1, 2, 3, 4, 5].map(i => (
                     <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= pwdStrength ? strengthColor : 'bg-neutral-200'}`} />
                   ))}
                 </div>
                 <p className="text-[11px] text-neutral-400">Force : <span className="font-bold text-neutral-600">{strengthLabel}</span></p>
+              </div>
+            )}
+            {showChecks && (
+              <div className={`mt-2 rounded-xl border p-3 transition-all duration-200 ${
+                allValid
+                  ? 'border-emerald-300 bg-emerald-50/60'
+                  : 'border-neutral-200 bg-neutral-50/40'
+              }`}>
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Critères</p>
+                  {allValid && (
+                    <button type="button" onClick={() => setPwDismiss(true)}
+                      className="text-[11px] text-emerald-600 hover:text-emerald-700 font-bold">✕</button>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  {pwChecks.map((c, i) => (
+                    <div key={i} className={`flex items-center gap-2 text-[11px] transition-colors duration-200 ${c.valid ? 'text-emerald-600' : 'text-neutral-400'}`}>
+                      <span className="w-3 text-center font-bold">{c.valid ? '✓' : '○'}</span>
+                      <span>{c.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </Field>
