@@ -129,40 +129,44 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Bannière email non vérifié */}
+        {/* Erreur email non vérifié + option de renvoi */}
         {needsVerify && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 space-y-3">
-            <div className="flex items-start gap-3">
-              <MailWarning size={17} className="mt-0.5 shrink-0 text-amber-600" />
-              <p className="text-xs leading-relaxed text-amber-800">
-                <span className="font-black">Email non vérifié.</span> Vérifiez votre boîte mail et cliquez sur le lien de confirmation avant de vous connecter.
-              </p>
+          <div className="space-y-2">
+            <div className="flex items-start gap-2.5 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+              <div className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
+              <p className="text-xs leading-relaxed text-red-700">{PENDING_MSG}</p>
             </div>
 
-            {resendStatus === 'sent' ? (
-              <div className="flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-2.5">
-                <CheckCircle2 size={14} className="shrink-0 text-emerald-600" />
-                <p className="text-xs font-semibold text-emerald-700">
-                  Email renvoyé ! Vérifiez votre boîte mail (et les spams).
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-3">
+              <div className="flex items-start gap-2.5">
+                <MailWarning size={15} className="mt-0.5 shrink-0 text-amber-600" />
+                <p className="text-xs leading-relaxed text-amber-800">
+                  Vous n&apos;avez pas reçu l&apos;email de confirmation ? Cliquez sur le bouton ci-dessous pour recevoir un nouveau lien.
                 </p>
               </div>
-            ) : (
-              <div className="flex items-center justify-between border-t border-amber-200 pt-3">
-                <p className="text-[11px] text-amber-700">Vous n&apos;avez pas reçu l&apos;email ?</p>
+
+              {resendStatus === 'sent' ? (
+                <div className="flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-2.5">
+                  <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
+                  <p className="text-xs font-semibold text-emerald-700">
+                    Email renvoyé ! Vérifiez votre boîte mail (et les spams).
+                  </p>
+                </div>
+              ) : (
                 <button
                   type="button"
                   onClick={handleResend}
                   disabled={resendStatus === 'loading'}
-                  className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[11px] font-black text-white transition hover:bg-amber-700 disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-2.5 text-xs font-black text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
                 >
                   {resendStatus === 'loading'
-                    ? <Loader2 size={11} className="animate-spin" />
-                    : <RefreshCw size={11} />
+                    ? <Loader2 size={12} className="animate-spin" />
+                    : <RefreshCw size={12} />
                   }
-                  Renvoyer l&apos;email
+                  Renvoyer le lien de vérification
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
 
