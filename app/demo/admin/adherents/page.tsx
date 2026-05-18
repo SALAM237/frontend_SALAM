@@ -1,1 +1,2 @@
-export default function Page(){return <main className="container-salam section-salam"><h1 className="text-4xl font-black">app/demo/admin/adherents</h1><p className="mt-4 text-neutral-700">Première page scaffoldée. À connecter au module métier correspondant.</p></main>}
+import { redirect } from 'next/navigation';
+export default function Page() { redirect('/admin/adherents'); }

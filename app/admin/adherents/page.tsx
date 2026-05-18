@@ -1,44 +1,66 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { UserPlus, Search, Filter, CreditCard, Eye, CheckCircle2, Clock, XCircle, Download } from 'lucide-react';
+import { UserPlus, Search, Eye, CheckCircle2, Clock, XCircle, Download, Loader2 } from 'lucide-react';
+import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 
-type Status = 'active' | 'pending' | 'inactive';
+type MemberStatus = 'active' | 'pending' | 'suspended';
 
-const MEMBERS = [
-  { id: 'SALAM-2024-0128', firstName: 'Armelle',    lastName: 'Fotso',       role: 'Membre actif', antenne: 'Paris',        status: 'active'   as Status, carte: true,  date: '14 mai 2025' },
-  { id: 'SALAM-2024-0127', firstName: 'Pierre',     lastName: 'Nguemo',      role: 'Alumni',       antenne: 'Casablanca',   status: 'active'   as Status, carte: true,  date: '11 mai 2025' },
-  { id: 'SALAM-2024-0126', firstName: 'Sophie',     lastName: 'Nkolo',       role: 'Étudiant',     antenne: 'Paris',        status: 'pending'  as Status, carte: false, date: '9 mai 2025'  },
-  { id: 'SALAM-2024-0125', firstName: 'Eric',       lastName: 'Balla',       role: 'Membre actif', antenne: 'Lyon',         status: 'active'   as Status, carte: true,  date: '7 mai 2025'  },
-  { id: 'SALAM-2024-0124', firstName: 'Marie',      lastName: 'Tchakounte',  role: 'Étudiant',     antenne: 'Rabat',        status: 'pending'  as Status, carte: false, date: '5 mai 2025'  },
-  { id: 'SALAM-2024-0123', firstName: 'François',   lastName: 'Atangana',    role: 'Bureau',       antenne: 'Paris',        status: 'active'   as Status, carte: true,  date: '2 mai 2025'  },
-  { id: 'SALAM-2024-0122', firstName: 'Christelle', lastName: 'Mbarga',      role: 'Alumni',       antenne: 'Bordeaux',     status: 'inactive' as Status, carte: false, date: '28 avr 2025' },
-  { id: 'SALAM-2024-0121', firstName: 'Rodrigue',   lastName: 'Essama',      role: 'Membre actif', antenne: 'Casablanca',   status: 'active'   as Status, carte: true,  date: '25 avr 2025' },
-];
-
-const statusConfig: Record<Status, { label: string; cls: string; icon: React.ElementType }> = {
-  active:   { label: 'Actif',      cls: 'bg-emerald-50 text-emerald-700 border-emerald-100',   icon: CheckCircle2 },
-  pending:  { label: 'En attente', cls: 'bg-yellow-50 text-yellow-700 border-yellow-100',     icon: Clock        },
-  inactive: { label: 'Inactif',    cls: 'bg-red-50 text-red-700 border-red-100',               icon: XCircle      },
+const statusConfig: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
+  active:    { label: 'Actif',      cls: 'bg-emerald-50 text-emerald-700 border-emerald-100',   icon: CheckCircle2 },
+  pending:   { label: 'En attente', cls: 'bg-yellow-50  text-yellow-700  border-yellow-100',    icon: Clock        },
+  suspended: { label: 'Suspendu',   cls: 'bg-red-50     text-red-700     border-red-100',        icon: XCircle      },
+  rejected:  { label: 'Refusé',     cls: 'bg-neutral-50 text-neutral-500 border-neutral-200',   icon: XCircle      },
 };
 
-const FILTER_OPTIONS: { label: string; value: Status | 'all' }[] = [
-  { label: 'Tous',       value: 'all'      },
-  { label: 'Actifs',     value: 'active'   },
-  { label: 'En attente', value: 'pending'  },
-  { label: 'Inactifs',   value: 'inactive' },
+const cotisationConfig: Record<string, { label: string; cls: string }> = {
+  paid:   { label: 'Payée',    cls: 'bg-emerald-50 text-emerald-700' },
+  unpaid: { label: 'Impayée',  cls: 'bg-red-50 text-red-600'        },
+  exempt: { label: 'Exempté',  cls: 'bg-neutral-50 text-neutral-400' },
+};
+
+const FILTER_OPTIONS: { label: string; value: MemberStatus | 'all' }[] = [
+  { label: 'Tous',      value: 'all'       },
+  { label: 'Actifs',    value: 'active'    },
+  { label: 'En attente',value: 'pending'   },
+  { label: 'Suspendus', value: 'suspended' },
 ];
+
+const DEMO_MEMBERS: MemberListItem[] = [
+  { _id: 'd1', firstName: 'Armelle',    lastName: 'Fotso',      email: 'a.fotso@example.com',      memberStatus: 'active',    createdAt: '2025-05-14', memberId: 'SALAM-2025-A3F2', cotisationStatus: 'paid'   },
+  { _id: 'd2', firstName: 'Pierre',     lastName: 'Nguemo',     email: 'p.nguemo@example.com',     memberStatus: 'active',    createdAt: '2025-05-11', memberId: 'SALAM-2025-B7C1', cotisationStatus: 'paid'   },
+  { _id: 'd3', firstName: 'Sophie',     lastName: 'Nkolo',      email: 's.nkolo@example.com',      memberStatus: 'pending',   createdAt: '2025-05-09', memberId: 'SALAM-2025-D4E9', cotisationStatus: 'unpaid' },
+  { _id: 'd4', firstName: 'Eric',       lastName: 'Balla',      email: 'e.balla@example.com',      memberStatus: 'active',    createdAt: '2025-05-07', memberId: 'SALAM-2025-F2G8', cotisationStatus: 'paid'   },
+  { _id: 'd5', firstName: 'Marie',      lastName: 'Tchakounte', email: 'm.tchakounte@example.com', memberStatus: 'pending',   createdAt: '2025-05-05', memberId: 'SALAM-2025-H6I3', cotisationStatus: 'unpaid' },
+  { _id: 'd6', firstName: 'François',   lastName: 'Atangana',   email: 'f.atangana@example.com',   memberStatus: 'active',    createdAt: '2025-05-02', memberId: 'SALAM-2025-J9K4', cotisationStatus: 'paid'   },
+  { _id: 'd7', firstName: 'Christelle', lastName: 'Mbarga',     email: 'c.mbarga@example.com',     memberStatus: 'suspended', createdAt: '2025-04-28', memberId: 'SALAM-2025-L1M5', cotisationStatus: 'unpaid' },
+  { _id: 'd8', firstName: 'Rodrigue',   lastName: 'Essama',     email: 'r.essama@example.com',     memberStatus: 'active',    createdAt: '2025-04-25', memberId: 'SALAM-2025-N0P6', cotisationStatus: 'exempt' },
+];
+
+function fmt(d: string) {
+  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 export default function AdminAdherentsPage() {
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<Status | 'all'>('all');
+  const [filter, setFilter] = useState<MemberStatus | 'all'>('all');
 
-  const filtered = MEMBERS.filter(m => {
-    const matchSearch = `${m.firstName} ${m.lastName} ${m.id} ${m.role} ${m.antenne}`.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filter === 'all' || m.status === filter;
-    return matchSearch && matchStatus;
-  });
+  const { data, isLoading } = useAdminMembers({ status: filter, search, limit: 100 });
+
+  const members = useMemo<MemberListItem[]>(() => {
+    const raw = data?.data?.data ?? [];
+    return !isLoading && raw.length === 0 ? DEMO_MEMBERS : raw;
+  }, [data, isLoading]);
+
+  const displayed = useMemo(() =>
+    members.filter(m => {
+      const matchStatus = filter === 'all' || m.memberStatus === filter;
+      const matchSearch = `${m.firstName} ${m.lastName} ${m.email} ${m.memberId}`
+        .toLowerCase().includes(search.toLowerCase());
+      return matchStatus && matchSearch;
+    }),
+  [members, filter, search]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -47,7 +69,9 @@ export default function AdminAdherentsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Adhérents</h1>
-          <p className="mt-0.5 text-sm text-neutral-500">{MEMBERS.length} membres au total</p>
+          <p className="mt-0.5 text-sm text-neutral-500">
+            {isLoading ? 'Chargement…' : `${data?.data?.total ?? members.length} membres au total`}
+          </p>
         </div>
         <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white transition-all hover:bg-emerald-700">
           <UserPlus size={14} /> Nouveau membre
@@ -56,7 +80,6 @@ export default function AdminAdherentsPage() {
 
       {/* Filters */}
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        {/* Search */}
         <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input
@@ -68,7 +91,6 @@ export default function AdminAdherentsPage() {
           />
         </div>
 
-        {/* Status filters + Download */}
         <div className="flex flex-wrap gap-1.5">
           {FILTER_OPTIONS.map(({ label, value }) => (
             <button
@@ -91,91 +113,97 @@ export default function AdminAdherentsPage() {
 
       {/* Table */}
       <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm">
-        {/* Desktop */}
-        <div className="hidden overflow-x-auto md:block">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-neutral-100 bg-neutral-50/60">
-                <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Membre</th>
-                <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">N° ID</th>
-                <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Antenne</th>
-                <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Statut</th>
-                <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Carte</th>
-                <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Inscription</th>
-                <th className="px-5 py-3.5" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-50">
-              {filtered.map((m) => {
-                const s = statusConfig[m.status];
-                const SI = s.icon;
-                return (
-                  <tr key={m.id} className="group transition-colors hover:bg-neutral-50/40">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[11px] font-black text-white">
-                          {m.firstName[0]}{m.lastName[0]}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
-                          <p className="text-xs text-neutral-400">{m.role}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5"><span className="font-mono text-xs text-neutral-500">{m.id}</span></td>
-                    <td className="px-5 py-3.5 text-xs text-neutral-600">{m.antenne}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black ${s.cls}`}>
-                        <SI size={10} /> {s.label}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {m.carte
-                        ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700"><CheckCircle2 size={10} /> Émise</span>
-                        : <span className="inline-flex items-center gap-1 rounded-full bg-neutral-50 px-2.5 py-1 text-[10px] font-bold text-neutral-400"><XCircle size={10} /> Non émise</span>
-                      }
-                    </td>
-                    <td className="px-5 py-3.5 text-xs text-neutral-400">{m.date}</td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                        <Link href={`/admin/adherents/${m.id}`} className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700">
-                          <Eye size={13} />
-                        </Link>
-                        <Link href={`/admin/adherents/${m.id}`} className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700">
-                          <CreditCard size={13} />
-                        </Link>
-                      </div>
-                    </td>
+
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 size={20} className="animate-spin text-emerald-600" />
+          </div>
+        )}
+
+        {!isLoading && (
+          <>
+            {/* Desktop */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-neutral-100 bg-neutral-50/60">
+                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Membre</th>
+                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">N° ID</th>
+                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Email</th>
+                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Statut</th>
+                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Cotisation</th>
+                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Inscription</th>
+                    <th className="px-5 py-3.5" />
                   </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-50">
+                  {displayed.map((m) => {
+                    const s = statusConfig[m.memberStatus] ?? statusConfig.pending;
+                    const SI = s.icon;
+                    const c = cotisationConfig[m.cotisationStatus] ?? cotisationConfig.unpaid;
+                    return (
+                      <tr key={m._id} className="group transition-colors hover:bg-neutral-50/40">
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[11px] font-black text-white">
+                              {m.firstName[0]}{m.lastName[0]}
+                            </div>
+                            <p className="font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5"><span className="font-mono text-xs text-neutral-500">{m.memberId}</span></td>
+                        <td className="px-5 py-3.5 text-xs text-neutral-500">{m.email}</td>
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black ${s.cls}`}>
+                            <SI size={10} /> {s.label}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black ${c.cls}`}>
+                            {c.label}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-xs text-neutral-400">{fmt(m.createdAt)}</td>
+                        <td className="px-5 py-3.5">
+                          <Link
+                            href={`/admin/adherents/${m._id}`}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 opacity-0 transition-all group-hover:opacity-100 hover:border-emerald-300 hover:text-emerald-700"
+                          >
+                            <Eye size={13} />
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="divide-y divide-neutral-50 md:hidden">
+              {displayed.map((m) => {
+                const s = statusConfig[m.memberStatus] ?? statusConfig.pending;
+                return (
+                  <Link key={m._id} href={`/admin/adherents/${m._id}`} className="flex items-center gap-3 px-4 py-4 transition-colors hover:bg-neutral-50">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
+                      {m.firstName[0]}{m.lastName[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
+                      <p className="text-xs text-neutral-400">{m.memberId} · {m.email}</p>
+                    </div>
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${s.cls}`}>{s.label}</span>
+                  </Link>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+            </div>
 
-        {/* Mobile cards */}
-        <div className="divide-y divide-neutral-50 md:hidden">
-          {filtered.map((m) => {
-            const s = statusConfig[m.status];
-            return (
-              <Link key={m.id} href={`/admin/adherents/${m.id}`} className="flex items-center gap-3 px-4 py-4 transition-colors hover:bg-neutral-50">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-                  {m.firstName[0]}{m.lastName[0]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
-                  <p className="text-xs text-neutral-400">{m.id} · {m.antenne}</p>
-                </div>
-                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${s.cls}`}>{s.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="py-12 text-center">
-            <p className="text-sm font-semibold text-neutral-400">Aucun membre trouvé</p>
-          </div>
+            {displayed.length === 0 && (
+              <div className="py-12 text-center">
+                <p className="text-sm font-semibold text-neutral-400">Aucun membre trouvé</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

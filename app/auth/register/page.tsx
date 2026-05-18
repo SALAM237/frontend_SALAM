@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Eye, EyeOff, ArrowRight, Loader2, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Loader2, ChevronDown, Mail } from 'lucide-react';
+import { apiClient } from '@/lib/api/client';
 
 const PAYS = [
   'Maroc', 'Cameroun', 'France', 'Belgique', 'Canada', 'Espagne',
@@ -36,6 +37,7 @@ export default function RegisterPage() {
   const [showPwd, setShowPwd]   = useState(false);
   const [showConf, setShowConf] = useState(false);
   const [loading, setLoading]   = useState(false);
+  const [success, setSuccess]   = useState(false);
   const [errors, setErrors]     = useState<Partial<Record<keyof FormData | 'global', string>>>({});
 
   const set = (k: keyof FormData, v: string | boolean) =>
@@ -54,8 +56,10 @@ export default function RegisterPage() {
 
   const validateStep2 = () => {
     const e: typeof errors = {};
-    if (form.password.length < 8)         e.password = 'Minimum 8 caractères';
-    if (form.password !== form.confirm)   e.confirm  = 'Les mots de passe ne correspondent pas';
+    if (form.password.length < 10)           e.password = 'Minimum 10 caractères';
+    else if (!/[A-Z]/.test(form.password))   e.password = 'Doit contenir une majuscule';
+    else if (!/[0-9]/.test(form.password))   e.password = 'Doit contenir un chiffre';
+    if (form.password !== form.confirm)      e.confirm  = 'Les mots de passe ne correspondent pas';
     if (!form.cgu) e.cgu = 'Vous devez accepter les conditions';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -69,30 +73,76 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep2()) return;
+    setErrors({});
     setLoading(true);
-    // Placeholder — à connecter au backend
-    await new Promise(r => setTimeout(r, 1600));
-    setLoading(false);
+
+    try {
+      await apiClient('/api/v1/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName:  form.lastName,
+          email:     form.email,
+          password:  form.password,
+          phone:     form.phone || undefined,
+        }),
+      });
+      setSuccess(true);
+    } catch (err: unknown) {
+      setErrors({ global: err instanceof Error ? err.message : 'Erreur lors de l\'inscription' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const pwdStrength = (() => {
     const p = form.password;
     if (!p) return 0;
     let s = 0;
-    if (p.length >= 8)         s++;
-    if (/[A-Z]/.test(p))      s++;
-    if (/[0-9]/.test(p))      s++;
-    if (/[^A-Za-z0-9]/.test(p)) s++;
+    if (p.length >= 10)            s++;
+    if (/[A-Z]/.test(p))          s++;
+    if (/[0-9]/.test(p))          s++;
+    if (/[^A-Za-z0-9]/.test(p))   s++;
     return s;
   })();
 
   const strengthLabel = ['', 'Faible', 'Moyen', 'Fort', 'Excellent'][pwdStrength];
   const strengthColor = ['', 'bg-red-400', 'bg-orange-400', 'bg-emerald-500', 'bg-emerald-600'][pwdStrength];
 
+  if (success) {
+    return (
+      <div className="space-y-8">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100">
+          <Mail size={24} className="text-emerald-700" />
+        </div>
+        <div>
+          <h2 className="text-[1.75rem] font-black leading-[1.1] tracking-[-0.04em] text-neutral-900">
+            Vérifiez votre<span className="text-emerald-600"> e-mail !</span>
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-neutral-500">
+            Un lien d&apos;activation a été envoyé à{' '}
+            <span className="font-bold text-neutral-700">{form.email}</span>.
+            Cliquez sur le lien pour activer votre compte.
+          </p>
+        </div>
+        <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3.5">
+          <p className="text-xs leading-relaxed text-emerald-700">
+            Le lien expire dans <strong>24 heures</strong>. Vérifiez aussi vos spams.
+          </p>
+        </div>
+        <p className="text-center text-sm text-neutral-500">
+          Déjà activé ?{' '}
+          <Link href="/auth/login" className="font-black text-emerald-700 hover:text-emerald-600">
+            Se connecter
+          </Link>
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-7">
 
-      {/* En-tête */}
       <div>
         <h2 className="text-[1.75rem] font-black leading-[1.1] tracking-[-0.04em] text-neutral-900">
           Rejoindre <span className="text-emerald-600">SALAM</span>
@@ -102,18 +152,15 @@ export default function RegisterPage() {
         </p>
       </div>
 
-      {/* Indicateur d'étapes */}
       <div className="flex items-center gap-2">
         {([1, 2] as Step[]).map((s, i) => (
           <div key={s} className="flex items-center gap-2">
             {i > 0 && <div className="h-px w-8 bg-neutral-200" />}
             <div className="flex items-center gap-1.5">
               <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black transition-all ${
-                step === s
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : step > s
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-neutral-100 text-neutral-400'
+                step === s ? 'bg-emerald-600 text-white shadow-sm'
+                  : step > s ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-neutral-100 text-neutral-400'
               }`}>
                 {step > s ? (
                   <svg className="h-3 w-3" fill="none" viewBox="0 0 12 10">
@@ -129,57 +176,37 @@ export default function RegisterPage() {
         ))}
       </div>
 
-      {/* ── Étape 1 — Informations personnelles ── */}
       {step === 1 && (
         <form onSubmit={handleNext} className="space-y-4" noValidate>
-
-          {/* Prénom / Nom */}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Prénom" error={errors.firstName}>
-              <input
-                type="text" autoComplete="given-name" required
+              <input type="text" autoComplete="given-name" required
                 value={form.firstName} onChange={e => set('firstName', e.target.value)}
-                placeholder="Jean"
-                className={inputCls(!!errors.firstName)}
-              />
+                placeholder="Jean" className={inputCls(!!errors.firstName)} />
             </Field>
             <Field label="Nom" error={errors.lastName}>
-              <input
-                type="text" autoComplete="family-name" required
+              <input type="text" autoComplete="family-name" required
                 value={form.lastName} onChange={e => set('lastName', e.target.value)}
-                placeholder="Kamga"
-                className={inputCls(!!errors.lastName)}
-              />
+                placeholder="Kamga" className={inputCls(!!errors.lastName)} />
             </Field>
           </div>
 
-          {/* Email */}
           <Field label="Adresse e-mail" error={errors.email}>
-            <input
-              type="email" autoComplete="email" required
+            <input type="email" autoComplete="email" required
               value={form.email} onChange={e => set('email', e.target.value)}
-              placeholder="vous@exemple.com"
-              className={inputCls(!!errors.email)}
-            />
+              placeholder="vous@exemple.com" className={inputCls(!!errors.email)} />
           </Field>
 
-          {/* Téléphone */}
           <Field label="Téléphone (optionnel)">
-            <input
-              type="tel" autoComplete="tel"
+            <input type="tel" autoComplete="tel"
               value={form.phone} onChange={e => set('phone', e.target.value)}
-              placeholder="+212 6 00 00 00 00"
-              className={inputCls(false)}
-            />
+              placeholder="+212 6 00 00 00 00" className={inputCls(false)} />
           </Field>
 
-          {/* Pays */}
           <Field label="Pays de résidence" error={errors.pays}>
             <div className="relative">
-              <select
-                value={form.pays} onChange={e => set('pays', e.target.value)}
-                className={`${inputCls(!!errors.pays)} appearance-none pr-9`}
-              >
+              <select value={form.pays} onChange={e => set('pays', e.target.value)}
+                className={`${inputCls(!!errors.pays)} appearance-none pr-9`}>
                 <option value="">Sélectionner…</option>
                 {PAYS.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
@@ -187,13 +214,10 @@ export default function RegisterPage() {
             </div>
           </Field>
 
-          {/* Filière */}
           <Field label="Filière / Domaine d'études" error={errors.filiere}>
             <div className="relative">
-              <select
-                value={form.filiere} onChange={e => set('filiere', e.target.value)}
-                className={`${inputCls(!!errors.filiere)} appearance-none pr-9`}
-              >
+              <select value={form.filiere} onChange={e => set('filiere', e.target.value)}
+                className={`${inputCls(!!errors.filiere)} appearance-none pr-9`}>
                 <option value="">Sélectionner…</option>
                 {FILIERES.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
@@ -201,36 +225,26 @@ export default function RegisterPage() {
             </div>
           </Field>
 
-          <button
-            type="submit"
-            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-black text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98]"
-          >
-            Continuer
-            <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
+          <button type="submit"
+            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-black text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98]">
+            Continuer <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
           </button>
         </form>
       )}
 
-      {/* ── Étape 2 — Sécurité ── */}
       {step === 2 && (
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
 
-          {/* Mot de passe */}
           <Field label="Mot de passe" error={errors.password}>
             <div className="relative">
-              <input
-                type={showPwd ? 'text' : 'password'}
-                autoComplete="new-password" required
+              <input type={showPwd ? 'text' : 'password'} autoComplete="new-password" required
                 value={form.password} onChange={e => set('password', e.target.value)}
-                placeholder="••••••••"
-                className={`${inputCls(!!errors.password)} pr-11`}
-              />
+                placeholder="••••••••" className={`${inputCls(!!errors.password)} pr-11`} />
               <button type="button" onClick={() => setShowPwd(v => !v)}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600">
                 {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
-            {/* Jauge force */}
             {form.password && (
               <div className="mt-2 space-y-1">
                 <div className="flex gap-1">
@@ -243,16 +257,11 @@ export default function RegisterPage() {
             )}
           </Field>
 
-          {/* Confirmation */}
           <Field label="Confirmer le mot de passe" error={errors.confirm}>
             <div className="relative">
-              <input
-                type={showConf ? 'text' : 'password'}
-                autoComplete="new-password" required
+              <input type={showConf ? 'text' : 'password'} autoComplete="new-password" required
                 value={form.confirm} onChange={e => set('confirm', e.target.value)}
-                placeholder="••••••••"
-                className={`${inputCls(!!errors.confirm)} pr-11`}
-              />
+                placeholder="••••••••" className={`${inputCls(!!errors.confirm)} pr-11`} />
               <button type="button" onClick={() => setShowConf(v => !v)}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600">
                 {showConf ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -260,7 +269,6 @@ export default function RegisterPage() {
             </div>
           </Field>
 
-          {/* CGU */}
           <div className="space-y-1">
             <label className="flex cursor-pointer items-start gap-2.5">
               <div className="relative mt-0.5 shrink-0">
@@ -281,44 +289,35 @@ export default function RegisterPage() {
             {errors.cgu && <p className="pl-6 text-[11px] text-red-500">{errors.cgu}</p>}
           </div>
 
-          {/* Actions */}
+          {errors.global && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+              <div className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
+              <p className="text-xs leading-relaxed text-red-700">{errors.global}</p>
+            </div>
+          )}
+
           <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={() => { setStep(1); setErrors({}); }}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-500 transition hover:border-neutral-300 hover:text-neutral-800"
-            >
+            <button type="button" onClick={() => { setStep(1); setErrors({}); }}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-500 transition hover:border-neutral-300 hover:text-neutral-800">
               <ArrowRight size={15} className="rotate-180" />
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-black text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <>
-                  Créer mon compte
-                  <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
-                </>
+            <button type="submit" disabled={loading}
+              className="group flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-black text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60">
+              {loading ? <Loader2 size={16} className="animate-spin" /> : (
+                <>Créer mon compte <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" /></>
               )}
             </button>
           </div>
         </form>
       )}
 
-      {/* Divider */}
       <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-neutral-200" />
-        </div>
+        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-neutral-200" /></div>
         <div className="relative flex justify-center">
           <span className="bg-[#f7f8f6] px-3 text-[11px] font-semibold text-neutral-400">ou</span>
         </div>
       </div>
 
-      {/* Lien connexion */}
       <p className="text-center text-sm text-neutral-500">
         Déjà membre ?{' '}
         <Link href="/auth/login" className="font-black text-emerald-700 hover:text-emerald-600">
@@ -329,7 +328,6 @@ export default function RegisterPage() {
   );
 }
 
-// ── Helpers ──
 function inputCls(hasError: boolean) {
   return `w-full rounded-xl border bg-white px-4 py-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-300 transition-all focus:ring-2 ${
     hasError
@@ -338,13 +336,7 @@ function inputCls(hasError: boolean) {
   }`;
 }
 
-function Field({
-  label, error, children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
       <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">{label}</label>

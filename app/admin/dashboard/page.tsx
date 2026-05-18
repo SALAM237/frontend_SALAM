@@ -4,41 +4,74 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   Users, UserPlus, CreditCard, CalendarDays, TrendingUp, Activity,
-  ArrowRight, MoreHorizontal, CheckCircle2, Clock, XCircle
+  ArrowRight, MoreHorizontal, CheckCircle2, Clock, XCircle,
 } from 'lucide-react';
+import { useAdminStats } from '@/lib/api/dashboard';
 
 const fadeUp = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
-
-const STATS = [
-  { label: 'Adhérents actifs',    value: '128',  delta: '+8 ce mois', icon: Users,        color: 'bg-emerald-100 text-emerald-700' },
-  { label: 'Nouvelles demandes',  value: '12',   delta: 'En attente',  icon: UserPlus,     color: 'bg-blue-100 text-blue-700'      },
-  { label: 'Cartes émises',       value: '94',   delta: '+3 ce mois',  icon: CreditCard,   color: 'bg-yellow-100 text-yellow-700'  },
-  { label: 'Activités à venir',   value: '5',    delta: 'Ce trimestre',icon: CalendarDays, color: 'bg-red-100 text-red-700'        },
-];
-
-const RECENT_MEMBERS = [
-  { id: 'SALAM-2024-0128', name: 'Armelle Fotso',    role: 'Membre actif', status: 'active',  date: '14 mai 2025'  },
-  { id: 'SALAM-2024-0127', name: 'Pierre Nguemo',    role: 'Alumni',       status: 'active',  date: '11 mai 2025'  },
-  { id: 'SALAM-2024-0126', name: 'Sophie Nkolo',     role: 'Étudiant',     status: 'pending', date: '9 mai 2025'   },
-  { id: 'SALAM-2024-0125', name: 'Eric Balla',       role: 'Membre actif', status: 'active',  date: '7 mai 2025'   },
-  { id: 'SALAM-2024-0124', name: 'Marie Tchakounte', role: 'Étudiant',     status: 'pending', date: '5 mai 2025'   },
-];
 
 const QUICK_ACTIONS = [
   { label: 'Nouveau membre',    href: '/admin/adherents/nouveau', icon: UserPlus,     desc: 'Créer une fiche adhérent',       color: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-100 hover:border-emerald-200' },
   { label: 'Émettre une carte', href: '/admin/cartes',           icon: CreditCard,   desc: 'Générer une carte membre + QR',  color: 'bg-blue-50 hover:bg-blue-100 border-blue-100 hover:border-blue-200'             },
   { label: 'Voir les adhérents',href: '/admin/adherents',        icon: Users,        desc: 'Gérer la liste des membres',     color: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-100 hover:border-yellow-200'     },
-  { label: 'Activités',        href: '/admin/activites',         icon: CalendarDays, desc: 'Gérer les événements',           color: 'bg-purple-50 hover:bg-purple-100 border-purple-100 hover:border-purple-200'   },
+  { label: 'Activités',         href: '/admin/activites',        icon: CalendarDays, desc: 'Gérer les événements',           color: 'bg-purple-50 hover:bg-purple-100 border-purple-100 hover:border-purple-200'     },
 ];
 
 const statusStyle: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
-  active:   { label: 'Actif',     cls: 'bg-emerald-50 text-emerald-700',   icon: CheckCircle2 },
-  pending:  { label: 'En attente',cls: 'bg-yellow-50 text-yellow-700',     icon: Clock        },
-  inactive: { label: 'Inactif',   cls: 'bg-red-50 text-red-700',           icon: XCircle      },
+  active:    { label: 'Actif',      cls: 'bg-emerald-50 text-emerald-700', icon: CheckCircle2 },
+  pending:   { label: 'En attente', cls: 'bg-yellow-50 text-yellow-700',   icon: Clock        },
+  suspended: { label: 'Suspendu',   cls: 'bg-red-50 text-red-700',         icon: XCircle      },
+  rejected:  { label: 'Refusé',     cls: 'bg-neutral-50 text-neutral-500', icon: XCircle      },
 };
 
+function fmt(d: string) {
+  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export default function AdminDashboardPage() {
+  const { data: statsRes, isLoading } = useAdminStats();
+  const stats = statsRes?.data;
+
+  const statCards = [
+    {
+      label: 'Adhérents actifs',
+      value: isLoading ? '…' : String(stats?.members.active ?? 128),
+      delta: stats ? `${stats.members.total} au total` : '+8 ce mois',
+      icon: Users,
+      color: 'bg-emerald-100 text-emerald-700',
+    },
+    {
+      label: 'Nouvelles demandes',
+      value: isLoading ? '…' : String(stats?.members.pending ?? 12),
+      delta: 'En attente',
+      icon: UserPlus,
+      color: 'bg-blue-100 text-blue-700',
+    },
+    {
+      label: 'Cotisations payées',
+      value: isLoading ? '…' : String(stats?.cotisations.paid ?? 94),
+      delta: stats ? `${stats.cotisations.year}` : 'Cette année',
+      icon: CreditCard,
+      color: 'bg-yellow-100 text-yellow-700',
+    },
+    {
+      label: 'Activités à venir',
+      value: '5',
+      delta: 'Ce trimestre',
+      icon: CalendarDays,
+      color: 'bg-red-100 text-red-700',
+    },
+  ];
+
+  const recentMembers = stats?.recentMembers ?? [
+    { _id: 'd1', firstName: 'Armelle',  lastName: 'Fotso',      memberStatus: 'active',  createdAt: '2025-05-14', memberId: 'SALAM-2025-A3F2' },
+    { _id: 'd2', firstName: 'Pierre',   lastName: 'Nguemo',     memberStatus: 'active',  createdAt: '2025-05-11', memberId: 'SALAM-2025-B7C1' },
+    { _id: 'd3', firstName: 'Sophie',   lastName: 'Nkolo',      memberStatus: 'pending', createdAt: '2025-05-09', memberId: 'SALAM-2025-D4E9' },
+    { _id: 'd4', firstName: 'Eric',     lastName: 'Balla',      memberStatus: 'active',  createdAt: '2025-05-07', memberId: 'SALAM-2025-F2G8' },
+    { _id: 'd5', firstName: 'Marie',    lastName: 'Tchakounte', memberStatus: 'pending', createdAt: '2025-05-05', memberId: 'SALAM-2025-H6I3' },
+  ];
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
 
@@ -60,7 +93,7 @@ export default function AdminDashboardPage() {
         variants={container} initial="hidden" animate="show"
         className="grid grid-cols-2 gap-4 lg:grid-cols-4"
       >
-        {STATS.map(({ label, value, delta, icon: Icon, color }) => (
+        {statCards.map(({ label, value, delta, icon: Icon, color }) => (
           <motion.div key={label} variants={fadeUp} className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex items-center justify-between">
               <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
@@ -105,33 +138,30 @@ export default function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50">
-                {RECENT_MEMBERS.map((m) => {
-                  const s = statusStyle[m.status];
+                {recentMembers.map((m) => {
+                  const s = statusStyle[m.memberStatus] ?? statusStyle.pending;
                   const StatusIcon = s.icon;
                   return (
-                    <tr key={m.id} className="group transition-colors hover:bg-neutral-50/50">
+                    <tr key={m._id} className="group transition-colors hover:bg-neutral-50/50">
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
-                            {m.name[0]}
+                            {m.firstName[0]}{m.lastName[0]}
                           </div>
-                          <div>
-                            <p className="font-semibold text-neutral-900">{m.name}</p>
-                            <p className="text-xs text-neutral-400">{m.role}</p>
-                          </div>
+                          <p className="font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="font-mono text-xs text-neutral-500">{m.id}</span>
+                        <span className="font-mono text-xs text-neutral-500">{m.memberId}</span>
                       </td>
                       <td className="px-5 py-3.5">
                         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black ${s.cls}`}>
                           <StatusIcon size={10} /> {s.label}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-xs text-neutral-400">{m.date}</td>
+                      <td className="px-5 py-3.5 text-xs text-neutral-400">{fmt(m.createdAt)}</td>
                       <td className="px-5 py-3.5">
-                        <Link href={`/admin/adherents/${m.id}`} className="text-xs font-bold text-emerald-600 opacity-0 transition-opacity group-hover:opacity-100 hover:text-emerald-700">
+                        <Link href={`/admin/adherents/${m._id}`} className="text-xs font-bold text-emerald-600 opacity-0 transition-opacity group-hover:opacity-100 hover:text-emerald-700">
                           Voir →
                         </Link>
                       </td>
@@ -144,16 +174,16 @@ export default function AdminDashboardPage() {
 
           {/* Mobile cards */}
           <div className="divide-y divide-neutral-50 sm:hidden">
-            {RECENT_MEMBERS.map((m) => {
-              const s = statusStyle[m.status];
+            {recentMembers.map((m) => {
+              const s = statusStyle[m.memberStatus] ?? statusStyle.pending;
               return (
-                <div key={m.id} className="flex items-center gap-3 px-4 py-3.5">
+                <div key={m._id} className="flex items-center gap-3 px-4 py-3.5">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-                    {m.name[0]}
+                    {m.firstName[0]}{m.lastName[0]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-neutral-900">{m.name}</p>
-                    <p className="text-xs text-neutral-400">{m.id}</p>
+                    <p className="font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
+                    <p className="text-xs text-neutral-400">{m.memberId}</p>
                   </div>
                   <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${s.cls}`}>{s.label}</span>
                 </div>
@@ -162,7 +192,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Quick actions */}
+        {/* Quick actions + Activity */}
         <div className="flex flex-col gap-4">
           <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
             <h2 className="mb-4 font-black text-neutral-900">Actions rapides</h2>
@@ -186,7 +216,6 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Activity */}
           <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <Activity size={14} className="text-emerald-600" />

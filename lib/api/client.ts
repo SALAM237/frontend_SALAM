@@ -1,1 +1,30 @@
-export async function apiClient<T>(path: string, init?: RequestInit): Promise<T> { const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, { ...init, credentials:'include', headers:{'Content-Type':'application/json', ...(init?.headers||{})} }); if(!res.ok) throw new Error('Erreur API'); return res.json(); }
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+export async function apiClient<T = unknown>(
+  path: string,
+  init?: RequestInit & { token?: string },
+): Promise<ApiResponse<T>> {
+  const { token, ...rest } = init ?? {};
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(rest.headers as Record<string, string> ?? {}),
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${API}${path}`, {
+    ...rest,
+    credentials: 'include',
+    headers,
+  });
+
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.message ?? 'Erreur serveur');
+  return json as ApiResponse<T>;
+}

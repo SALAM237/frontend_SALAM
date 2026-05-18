@@ -6,15 +6,19 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CreditCard, User, CalendarDays,
-  MessageSquare, LogOut, Menu, X, ChevronRight, Bell
+  MessageSquare, LogOut, Menu, X, ChevronRight, Bell,
+  Banknote, FileText, FolderOpen,
 } from 'lucide-react';
 
 const NAV = [
-  { label: 'Mon espace',   href: '/member/dashboard', icon: LayoutDashboard },
-  { label: 'Ma carte',     href: '/member/carte',     icon: CreditCard       },
-  { label: 'Mon profil',   href: '/member/profil',    icon: User             },
-  { label: 'Activités',    href: '/member/activites', icon: CalendarDays     },
-  { label: 'Messages',     href: '/member/messages',  icon: MessageSquare    },
+  { label: 'Mon espace',    href: '/member/dashboard',   icon: LayoutDashboard },
+  { label: 'Ma carte',      href: '/member/carte',       icon: CreditCard       },
+  { label: 'Mon profil',    href: '/member/profil',      icon: User             },
+  { label: 'Cotisations',   href: '/member/cotisations', icon: Banknote         },
+  { label: 'Mes factures',  href: '/member/factures',    icon: FileText         },
+  { label: 'Mes documents', href: '/member/documents',   icon: FolderOpen       },
+  { label: 'Activités',     href: '/member/activites',   icon: CalendarDays     },
+  { label: 'Messages',      href: '/member/messages',    icon: MessageSquare    },
 ];
 
 const MOCK_MEMBER = { firstName: 'Jean', lastName: 'Kamga', id: 'SALAM-2024-0042', role: 'Membre actif' };
