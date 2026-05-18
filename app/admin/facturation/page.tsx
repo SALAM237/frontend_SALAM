@@ -10,6 +10,7 @@ import {
   useAdminInvoices, useCreateInvoice, useSendInvoice,
   type InvoiceDoc,
 } from '@/lib/api/invoices';
+import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 
 /* ─── Helpers ─────────────────────────────────────────── */
 type InvoiceStatus = 'draft' | 'sent' | 'closed';
@@ -94,6 +95,15 @@ function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose
 
 /* ─── Create invoice modal ────────────────────────────── */
 
+const COTIS_LABEL: Record<MemberListItem['cotisationStatus'], string> = {
+  paid: 'À jour', unpaid: 'Impayé', exempt: 'Exempté',
+};
+const COTIS_BADGE: Record<MemberListItem['cotisationStatus'], string> = {
+  paid:   'bg-emerald-50 text-emerald-700',
+  unpaid: 'bg-red-50 text-red-700',
+  exempt: 'bg-neutral-100 text-neutral-600',
+};
+
 function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const today = new Date().toISOString().slice(0, 10);
   const [title,         setTitle]         = useState('');
@@ -103,19 +113,46 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const [paymentLink,   setPaymentLink]   = useState('');
   const [recipientMode, setRecipientMode] = useState<'all' | 'select'>('all');
   const [selected,      setSelected]      = useState<string[]>([]);
+  const [memberSearch,  setMemberSearch]  = useState('');
+  const [cotisFilter,   setCotisFilter]   = useState<'all' | MemberListItem['cotisationStatus']>('all');
   const [errors,        setErrors]        = useState<Record<string, string>>({});
 
   const createInvoice = useCreateInvoice();
+  const { data: membersData } = useAdminMembers({ limit: 200, status: 'active' });
+  const allMembers: MemberListItem[] = membersData?.data?.data ?? [];
+
+  const filteredMembers = useMemo(() =>
+    allMembers.filter(m => {
+      const q = memberSearch.trim().toLowerCase();
+      const matchSearch = !q || `${m.firstName} ${m.lastName}`.toLowerCase().includes(q);
+      const matchCotis  = cotisFilter === 'all' || m.cotisationStatus === cotisFilter;
+      return matchSearch && matchCotis;
+    }),
+  [allMembers, memberSearch, cotisFilter]);
+
+  const allFilteredSelected  = filteredMembers.length > 0 && filteredMembers.every(m => selected.includes(m._id));
+  const someFilteredSelected = filteredMembers.some(m => selected.includes(m._id));
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelected(prev => prev.filter(id => !filteredMembers.some(m => m._id === id)));
+    } else {
+      setSelected(prev => {
+        const toAdd = filteredMembers.map(m => m._id).filter(id => !prev.includes(id));
+        return [...prev, ...toAdd];
+      });
+    }
+  };
 
   const toggleMember = (id: string) =>
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!title.trim())          e.title   = 'Titre requis';
-    if (!amount || Number(amount) <= 0) e.amount = 'Montant invalide';
-    if (!dueDate)               e.dueDate = 'Échéance requise';
-    if (recipientMode === 'select' && selected.length === 0) e.recipients = 'Sélectionnez au moins un destinataire';
+    if (!title.trim())                                          e.title      = 'Titre requis';
+    if (!amount || Number(amount) <= 0)                         e.amount     = 'Montant invalide';
+    if (!dueDate)                                               e.dueDate    = 'Échéance requise';
+    if (recipientMode === 'select' && selected.length === 0)    e.recipients = 'Sélectionnez au moins un destinataire';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -197,15 +234,81 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
+          {/* Destinataires */}
           <div className="space-y-3">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Destinataires</label>
             <div className="flex gap-2">
-              <button
-                onClick={() => setRecipientMode('all')}
+              <button type="button" onClick={() => setRecipientMode('all')}
                 className={`rounded-xl border px-4 py-2 text-xs font-black transition ${recipientMode === 'all' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300'}`}>
-                Tous les membres actifs
+                Tous les actifs
+              </button>
+              <button type="button" onClick={() => setRecipientMode('select')}
+                className={`rounded-xl border px-4 py-2 text-xs font-black transition ${recipientMode === 'select' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300'}`}>
+                Sélection manuelle
               </button>
             </div>
+
+            {recipientMode === 'select' && (
+              <div className="overflow-hidden rounded-xl border border-neutral-200">
+                {/* Search */}
+                <div className="relative border-b border-neutral-100">
+                  <Search size={13} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                  <input value={memberSearch} onChange={e => setMemberSearch(e.target.value)}
+                    placeholder="Rechercher par nom ou prénom…"
+                    className="h-9 w-full bg-neutral-50 pl-9 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:bg-white" />
+                </div>
+
+                {/* Cotisation filter chips */}
+                <div className="flex flex-wrap gap-1.5 border-b border-neutral-100 px-3 py-2">
+                  {(['all', 'unpaid', 'paid', 'exempt'] as const).map(f => (
+                    <button key={f} type="button" onClick={() => setCotisFilter(f)}
+                      className={`rounded-full border px-2.5 py-0.5 text-[10px] font-black transition ${cotisFilter === f ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300'}`}>
+                      {f === 'all' ? 'Tous' : f === 'unpaid' ? 'Impayé' : f === 'paid' ? 'À jour' : 'Exempté'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Select all row */}
+                <div className="flex items-center gap-3 border-b border-neutral-100 bg-neutral-50 px-3 py-2">
+                  <input type="checkbox" id="select-all"
+                    checked={allFilteredSelected}
+                    ref={el => { if (el) el.indeterminate = !allFilteredSelected && someFilteredSelected; }}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 cursor-pointer rounded border-neutral-300 accent-emerald-600" />
+                  <label htmlFor="select-all" className="flex-1 cursor-pointer text-xs font-black text-neutral-600">
+                    Sélectionner tout ({filteredMembers.length})
+                  </label>
+                  {selected.length > 0 && (
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">
+                      {selected.length} sélectionné{selected.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+
+                {/* Member list */}
+                <div className="max-h-44 divide-y divide-neutral-50 overflow-y-auto">
+                  {filteredMembers.length === 0 && (
+                    <p className="py-6 text-center text-xs text-neutral-400">Aucun membre trouvé</p>
+                  )}
+                  {filteredMembers.map(m => (
+                    <label key={m._id} htmlFor={`m-${m._id}`}
+                      className="flex cursor-pointer items-center gap-3 px-3 py-2.5 transition hover:bg-neutral-50">
+                      <input type="checkbox" id={`m-${m._id}`}
+                        checked={selected.includes(m._id)}
+                        onChange={() => toggleMember(m._id)}
+                        className="h-4 w-4 cursor-pointer rounded border-neutral-300 accent-emerald-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-black text-neutral-900">{m.firstName} {m.lastName}</p>
+                        <p className="truncate font-mono text-[10px] text-neutral-400">{m.memberId}</p>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black ${COTIS_BADGE[m.cotisationStatus]}`}>
+                        {COTIS_LABEL[m.cotisationStatus]}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
             {errors.recipients && <p className="text-[11px] text-red-500">{errors.recipients}</p>}
           </div>
         </div>

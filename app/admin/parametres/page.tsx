@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Save, CheckCircle2, Shield, Bell, Globe, Lock, Palette } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ParametresPage() {
+  const router = useRouter();
   const [saved, setSaved] = useState(false);
   const [assocName, setAssocName] = useState('Association SALAM Cameroun');
   const [email, setEmail] = useState('contact@salam-cameroun.com');
@@ -16,7 +19,27 @@ export default function ParametresPage() {
     e.preventDefault();
     await new Promise(r => setTimeout(r, 700));
     setSaved(true);
+    toast.success('Paramètres enregistrés');
     setTimeout(() => setSaved(false), 2500);
+  };
+
+  const handleChangePassword = () => {
+    toast.info('Redirection vers la réinitialisation du mot de passe…');
+    setTimeout(() => router.push('/auth/forgot-password'), 800);
+  };
+
+  const handleViewAccess = () => {
+    toast.info('Gestion des rôles et accès disponible dans la rubrique Adhérents.');
+  };
+
+  const handleMaintenanceToggle = () => {
+    setMaintenanceMode(v => {
+      const next = !v;
+      toast[next ? 'warning' : 'success'](
+        next ? 'Mode maintenance activé — site public inaccessible' : 'Mode maintenance désactivé',
+      );
+      return next;
+    });
   };
 
   return (
@@ -49,10 +72,10 @@ export default function ParametresPage() {
         {/* Sécurité */}
         <Section icon={Shield} title="Sécurité">
           <div className="flex flex-wrap gap-3">
-            <button type="button" className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300">
+            <button type="button" onClick={handleChangePassword} className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
               <Lock size={13} /> Changer le mot de passe admin
             </button>
-            <button type="button" className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300">
+            <button type="button" onClick={handleViewAccess} className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
               <Shield size={13} /> Voir les accès admin
             </button>
           </div>
@@ -67,7 +90,7 @@ export default function ParametresPage() {
             </div>
             <button
               type="button"
-              onClick={() => setMaintenanceMode(v => !v)}
+              onClick={handleMaintenanceToggle}
               className={`relative h-6 w-11 rounded-full transition-all ${maintenanceMode ? 'bg-red-500' : 'bg-neutral-200'}`}
             >
               <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${maintenanceMode ? 'left-[22px]' : 'left-0.5'}`} />

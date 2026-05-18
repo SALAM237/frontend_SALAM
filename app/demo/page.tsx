@@ -11,7 +11,7 @@ export default function DemoPage() {
       {/* Portal access — prominent CTAs */}
       <div className="mt-8 grid gap-4 sm:grid-cols-2 max-w-lg">
         <Link
-          href="/admin/dashboard"
+          href="/demo/admin"
           className="group flex items-center gap-4 rounded-2xl border-2 border-emerald-600 bg-emerald-600 px-6 py-5 text-white shadow-lg transition-all hover:bg-emerald-700 hover:shadow-xl"
         >
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10">
@@ -23,7 +23,7 @@ export default function DemoPage() {
           </div>
         </Link>
         <Link
-          href="/member/dashboard"
+          href="/demo/member"
           className="group flex items-center gap-4 rounded-2xl border-2 border-neutral-200 bg-white px-6 py-5 text-neutral-900 shadow-lg transition-all hover:border-emerald-400 hover:shadow-xl"
         >
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
