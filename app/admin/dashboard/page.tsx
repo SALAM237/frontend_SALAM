@@ -7,6 +7,7 @@ import {
   ArrowRight, MoreHorizontal, CheckCircle2, Clock, XCircle,
 } from 'lucide-react';
 import { useAdminStats } from '@/lib/api/dashboard';
+import { useAuthStore } from '@/store/auth.store';
 
 const fadeUp = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
@@ -31,46 +32,41 @@ function fmt(d: string) {
 
 export default function AdminDashboardPage() {
   const { data: statsRes, isLoading } = useAdminStats();
+  const { user } = useAuthStore();
   const stats = statsRes?.data;
 
   const statCards = [
     {
       label: 'Adhérents actifs',
-      value: isLoading ? '…' : String(stats?.members.active ?? 128),
-      delta: stats ? `${stats.members.total} au total` : '+8 ce mois',
+      value: isLoading ? '…' : String(stats?.members.active ?? 0),
+      delta: stats ? `${stats.members.total} au total` : '—',
       icon: Users,
       color: 'bg-emerald-100 text-emerald-700',
     },
     {
       label: 'Nouvelles demandes',
-      value: isLoading ? '…' : String(stats?.members.pending ?? 12),
-      delta: 'En attente',
+      value: isLoading ? '…' : String(stats?.members.pending ?? 0),
+      delta: 'En attente de validation',
       icon: UserPlus,
       color: 'bg-blue-100 text-blue-700',
     },
     {
       label: 'Cotisations payées',
-      value: isLoading ? '…' : String(stats?.cotisations.paid ?? 94),
-      delta: stats ? `${stats.cotisations.year}` : 'Cette année',
+      value: isLoading ? '…' : String(stats?.cotisations.paid ?? 0),
+      delta: stats ? `${stats.cotisations.year}` : '—',
       icon: CreditCard,
       color: 'bg-yellow-100 text-yellow-700',
     },
     {
       label: 'Activités à venir',
-      value: '5',
-      delta: 'Ce trimestre',
+      value: '—',
+      delta: 'Bientôt disponible',
       icon: CalendarDays,
       color: 'bg-red-100 text-red-700',
     },
   ];
 
-  const recentMembers = stats?.recentMembers ?? [
-    { _id: 'd1', firstName: 'Armelle',  lastName: 'Fotso',      memberStatus: 'active',  createdAt: '2025-05-14', memberId: 'SALAM-2025-A3F2' },
-    { _id: 'd2', firstName: 'Pierre',   lastName: 'Nguemo',     memberStatus: 'active',  createdAt: '2025-05-11', memberId: 'SALAM-2025-B7C1' },
-    { _id: 'd3', firstName: 'Sophie',   lastName: 'Nkolo',      memberStatus: 'pending', createdAt: '2025-05-09', memberId: 'SALAM-2025-D4E9' },
-    { _id: 'd4', firstName: 'Eric',     lastName: 'Balla',      memberStatus: 'active',  createdAt: '2025-05-07', memberId: 'SALAM-2025-F2G8' },
-    { _id: 'd5', firstName: 'Marie',    lastName: 'Tchakounte', memberStatus: 'pending', createdAt: '2025-05-05', memberId: 'SALAM-2025-H6I3' },
-  ];
+  const recentMembers = stats?.recentMembers ?? [];
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -80,7 +76,7 @@ export default function AdminDashboardPage() {
         <div>
           <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">Tableau de bord</h1>
           <p className="mt-0.5 text-sm text-neutral-500">
-            Bienvenue, Admin<span className="hidden sm:inline"> · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+            Bienvenue{user ? `, ${user.firstName}` : ''}<span className="hidden sm:inline"> · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
           </p>
         </div>
         <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20">
@@ -127,6 +123,13 @@ export default function AdminDashboardPage() {
 
           {/* Desktop table */}
           <div className="hidden overflow-x-auto sm:block">
+            {recentMembers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
+                <Users size={28} className="mb-3 opacity-30" />
+                <p className="text-sm font-semibold">Aucun adhérent pour le moment</p>
+                <p className="mt-1 text-xs">Les nouveaux membres apparaîtront ici.</p>
+              </div>
+            ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-50 bg-neutral-50/50">
@@ -170,11 +173,16 @@ export default function AdminDashboardPage() {
                 })}
               </tbody>
             </table>
+            )}
           </div>
 
           {/* Mobile cards */}
           <div className="divide-y divide-neutral-50 sm:hidden">
-            {recentMembers.map((m) => {
+            {recentMembers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-neutral-400">
+                <p className="text-sm">Aucun adhérent pour le moment</p>
+              </div>
+            ) : recentMembers.map((m) => {
               const s = statusStyle[m.memberStatus] ?? statusStyle.pending;
               return (
                 <div key={m._id} className="flex items-center gap-3 px-4 py-3.5">
@@ -221,22 +229,10 @@ export default function AdminDashboardPage() {
               <Activity size={14} className="text-emerald-600" />
               <h2 className="font-black text-neutral-900">Activité récente</h2>
             </div>
-            <ul className="mt-4 flex flex-col gap-3">
-              {[
-                { text: 'Armelle Fotso — carte émise', time: 'Il y a 2h' },
-                { text: 'Pierre Nguemo — inscription validée', time: 'Il y a 5h' },
-                { text: 'Sophie Nkolo — demande reçue', time: 'Hier' },
-                { text: 'Activité « Networking » publiée', time: 'Il y a 2j' },
-              ].map(({ text, time }, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <div className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-                  <div>
-                    <p className="text-xs font-semibold text-neutral-700">{text}</p>
-                    <p className="text-[10px] text-neutral-400">{time}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-4 flex flex-col items-center justify-center py-4 text-center text-neutral-400">
+              <p className="text-xs font-semibold">Aucune activité récente</p>
+              <p className="mt-0.5 text-[10px]">Les actions admin apparaîtront ici.</p>
+            </div>
           </div>
         </div>
       </div>

@@ -2,34 +2,28 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { CreditCard, User, CalendarDays, MessageSquare, ArrowRight, CheckCircle2, Bell } from 'lucide-react';
+import { CreditCard, User, CalendarDays, MessageSquare, ArrowRight, Bell } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
-
-const MOCK_MEMBER: MemberCardData = {
-  id: 'SALAM-2024-0042',
-  firstName: 'Jean',
-  lastName: 'Kamga',
-  role: 'Membre actif',
-  antenne: 'Paris',
-  year: new Date().getFullYear(),
-};
+import { useAuthStore } from '@/store/auth.store';
 
 const fadeUp  = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 
-const UPCOMING = [
-  { title: 'Soirée Networking SALAM',    date: '22 mai 2025',  lieu: 'Paris · Maison du Cameroun', status: 'inscrit' },
-  { title: 'Atelier Leadership Jeunesse', date: '7 juin 2025',  lieu: 'En ligne (Zoom)',           status: 'ouvert'  },
-  { title: 'AG Annuelle 2025',            date: '28 juin 2025', lieu: 'Paris · Salle des fêtes',   status: 'bientot' },
-];
-
-const NOTIFICATIONS = [
-  { text: 'Votre carte de membre est disponible',   time: 'Il y a 2h',  read: false },
-  { text: 'Nouvelle activité : Soirée Networking',  time: 'Il y a 1j',  read: false },
-  { text: 'Bienvenue dans l\'espace membre SALAM !', time: 'Il y a 3j', read: true  },
-];
-
 export default function MemberDashboardPage() {
+  const { user } = useAuthStore();
+
+  const firstName = user?.firstName ?? '';
+  const lastName  = user?.lastName  ?? '';
+  const memberId  = user?._id ? `SALAM-${new Date().getFullYear()}-${user._id.slice(-4).toUpperCase()}` : '—';
+
+  const memberCardData: MemberCardData = {
+    id:        memberId,
+    firstName: firstName || '—',
+    lastName:  lastName  || '—',
+    role:      'Membre actif',
+    year:      new Date().getFullYear(),
+  };
+
   return (
     <div className="mx-auto max-w-5xl space-y-5">
 
@@ -38,12 +32,14 @@ export default function MemberDashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-white/50">Bienvenue,</p>
-            <h1 className="text-2xl font-black tracking-[-0.03em]">{MOCK_MEMBER.firstName} {MOCK_MEMBER.lastName} 👋</h1>
-            <p className="mt-1 text-sm text-white/50">{MOCK_MEMBER.role} · Antenne {MOCK_MEMBER.antenne}</p>
+            <h1 className="text-2xl font-black tracking-[-0.03em]">
+              {firstName || lastName ? `${firstName} ${lastName}` : 'Membre'} 👋
+            </h1>
+            <p className="mt-1 text-sm text-white/50">Membre actif</p>
           </div>
           <div className="text-right">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/30">N° membre</p>
-            <p className="font-mono text-sm font-bold text-emerald-400">{MOCK_MEMBER.id}</p>
+            <p className="font-mono text-sm font-bold text-emerald-400">{memberId}</p>
           </div>
         </div>
         <div className="mt-4 h-px bg-white/[0.08]" />
@@ -60,10 +56,10 @@ export default function MemberDashboardPage() {
       {/* Quick stats */}
       <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: 'Activités inscrites', value: '3',  icon: CalendarDays, href: '/member/activites', color: 'bg-blue-50 text-blue-700'      },
-          { label: 'Messages non lus',    value: '2',  icon: MessageSquare, href: '/member/messages', color: 'bg-red-50 text-red-700'        },
-          { label: 'Mon profil',          value: '80%',icon: User,          href: '/member/profil',   color: 'bg-yellow-50 text-yellow-700'  },
-          { label: 'Ma carte',            value: '✓',  icon: CreditCard,    href: '/member/carte',    color: 'bg-emerald-50 text-emerald-700' },
+          { label: 'Activités inscrites', value: '—', icon: CalendarDays, href: '/member/activites', color: 'bg-blue-50 text-blue-700'       },
+          { label: 'Messages non lus',    value: '—', icon: MessageSquare, href: '/member/messages', color: 'bg-red-50 text-red-700'         },
+          { label: 'Mon profil',          value: '—', icon: User,          href: '/member/profil',   color: 'bg-yellow-50 text-yellow-700'   },
+          { label: 'Ma carte',            value: '✓', icon: CreditCard,    href: '/member/carte',    color: 'bg-emerald-50 text-emerald-700' },
         ].map(({ label, value, icon: Icon, href, color }) => (
           <motion.div key={label} variants={fadeUp}>
             <Link href={href} className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
@@ -89,26 +85,10 @@ export default function MemberDashboardPage() {
               Toutes <ArrowRight size={11} />
             </Link>
           </div>
-          <div className="divide-y divide-neutral-50">
-            {UPCOMING.map(({ title, date, lieu, status }) => (
-              <div key={title} className="flex items-start gap-4 px-5 py-4">
-                <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl bg-emerald-50 text-center">
-                  <p className="text-[10px] font-black text-emerald-600">{date.split(' ')[1]}</p>
-                  <p className="text-base font-black leading-none text-emerald-700">{date.split(' ')[0]}</p>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-neutral-900">{title}</p>
-                  <p className="text-xs text-neutral-400">{lieu}</p>
-                </div>
-                <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black ${
-                  status === 'inscrit' ? 'bg-emerald-50 text-emerald-700' :
-                  status === 'ouvert'  ? 'bg-blue-50 text-blue-700' :
-                  'bg-neutral-50 text-neutral-500'
-                }`}>
-                  {status === 'inscrit' ? '✓ Inscrit' : status === 'ouvert' ? 'Inscription ouverte' : 'Bientôt'}
-                </span>
-              </div>
-            ))}
+          <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
+            <CalendarDays size={28} className="mb-3 opacity-30" />
+            <p className="text-sm font-semibold">Aucune activité à venir</p>
+            <p className="mt-1 text-xs">Les activités publiées apparaîtront ici.</p>
           </div>
         </div>
 
@@ -123,7 +103,7 @@ export default function MemberDashboardPage() {
               </Link>
             </div>
             <div className="mx-auto" style={{ maxWidth: 288 }}>
-              <MemberCard member={MOCK_MEMBER} />
+              <MemberCard member={memberCardData} />
             </div>
           </div>
 
@@ -133,17 +113,10 @@ export default function MemberDashboardPage() {
               <Bell size={14} className="text-neutral-500" />
               <p className="text-sm font-black text-neutral-900">Notifications</p>
             </div>
-            <ul className="space-y-3">
-              {NOTIFICATIONS.map(({ text, time, read }, i) => (
-                <li key={i} className={`flex items-start gap-3 ${read ? 'opacity-50' : ''}`}>
-                  <div className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${read ? 'bg-neutral-300' : 'bg-emerald-500'}`} />
-                  <div>
-                    <p className="text-xs font-semibold text-neutral-700">{text}</p>
-                    <p className="text-[10px] text-neutral-400">{time}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="flex flex-col items-center justify-center py-6 text-neutral-400">
+              <Bell size={22} className="mb-2 opacity-20" />
+              <p className="text-xs font-semibold">Aucune notification</p>
+            </div>
           </div>
         </div>
       </div>

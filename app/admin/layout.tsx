@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, UserPlus, CreditCard, CalendarDays,
   Images, Newspaper, Settings, LogOut, Menu, X, ChevronRight, Bell,
   Banknote, FileText, History,
 } from 'lucide-react';
+import { useAuthStore } from '@/store/auth.store';
+import { apiClient } from '@/lib/api/client';
 
 const NAV = [
   { label: 'Tableau de bord',   href: '/admin/dashboard',         icon: LayoutDashboard },
@@ -24,7 +26,11 @@ const NAV = [
   { label: 'Paramètres',        href: '/admin/parametres',        icon: Settings },
 ];
 
-function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+function AdminSidebar({ open, onClose, initials, displayName, adminRole, onLogout }: {
+  open: boolean; onClose: () => void;
+  initials: string; displayName: string; adminRole: string;
+  onLogout: () => void;
+}) {
   const pathname = usePathname();
 
   return (
@@ -93,16 +99,16 @@ function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => void })
         {/* User footer */}
         <div className="border-t border-white/[0.06] p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-              A
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
+              {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-black text-white/80">Administrateur</p>
-              <p className="truncate text-[10px] text-white/30">Super Admin</p>
+              <p className="truncate text-sm font-black text-white/80">{displayName}</p>
+              <p className="truncate text-[10px] text-white/30">{adminRole}</p>
             </div>
-            <Link href="/" className="text-white/25 transition-colors hover:text-red-400" title="Déconnexion">
+            <button onClick={onLogout} className="text-white/25 transition-colors hover:text-red-400" title="Déconnexion">
               <LogOut size={15} />
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -113,14 +119,29 @@ function AdminSidebar({ open, onClose }: { open: boolean; onClose: () => void })
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const { user, clearAuth } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
+  const handleLogout = async () => {
+    try { await apiClient('/api/v1/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
+    clearAuth();
+    router.push('/bureau-executif/connexion');
+  };
+
   const currentPage = NAV.find(n => n.href === pathname || (n.href !== '/admin/dashboard' && pathname.startsWith(n.href)));
+  const initials = user ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() : 'A';
+  const displayName = user ? `${user.firstName} ${user.lastName}` : 'Administrateur';
+  const adminRole = user?.roles.find(r => ['admin', 'super_admin'].includes(r.slug))?.name ?? 'Admin';
 
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">
-      <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <AdminSidebar
+        open={sidebarOpen} onClose={() => setSidebarOpen(false)}
+        initials={initials} displayName={displayName} adminRole={adminRole}
+        onLogout={handleLogout}
+      />
 
       {/* Main content */}
       <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
@@ -152,7 +173,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-500" />
             </button>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
-              A
+              {initials}
             </div>
           </div>
         </header>

@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/auth.store';
+import { apiClient } from '@/lib/api/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CreditCard, User, CalendarDays,
@@ -21,9 +23,12 @@ const NAV = [
   { label: 'Messages',      href: '/member/messages',    icon: MessageSquare    },
 ];
 
-const MOCK_MEMBER = { firstName: 'Jean', lastName: 'Kamga', id: 'SALAM-2024-0042', role: 'Membre actif' };
 
-function MemberSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+function MemberSidebar({ open, onClose, firstName, lastName, initials, onLogout }: {
+  open: boolean; onClose: () => void;
+  firstName: string; lastName: string; initials: string;
+  onLogout: () => void;
+}) {
   const pathname = usePathname();
 
   return (
@@ -63,8 +68,9 @@ function MemberSidebar({ open, onClose }: { open: boolean; onClose: () => void }
         {/* Mini card preview */}
         <div className="mx-3 my-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] p-3">
           <p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-400/70">Carte membre</p>
-          <p className="mt-1 text-sm font-black text-white">{MOCK_MEMBER.firstName} {MOCK_MEMBER.lastName}</p>
-          <p className="text-[10px] text-white/35">{MOCK_MEMBER.id}</p>
+          <p className="mt-1 text-sm font-black text-white">
+            {firstName || lastName ? `${firstName} ${lastName}` : '—'}
+          </p>
           <Link
             href="/member/carte"
             onClick={onClose}
@@ -103,16 +109,18 @@ function MemberSidebar({ open, onClose }: { open: boolean; onClose: () => void }
         {/* User footer */}
         <div className="border-t border-white/[0.06] p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-              {MOCK_MEMBER.firstName[0]}
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
+              {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-black text-white/80">{MOCK_MEMBER.firstName} {MOCK_MEMBER.lastName}</p>
-              <p className="truncate text-[10px] text-white/30">{MOCK_MEMBER.role}</p>
+              <p className="truncate text-sm font-black text-white/80">
+                {firstName || lastName ? `${firstName} ${lastName}` : '—'}
+              </p>
+              <p className="truncate text-[10px] text-white/30">Membre actif</p>
             </div>
-            <Link href="/" className="text-white/25 transition-colors hover:text-red-400" title="Déconnexion">
+            <button onClick={onLogout} className="text-white/25 transition-colors hover:text-red-400" title="Déconnexion">
               <LogOut size={15} />
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -123,14 +131,29 @@ function MemberSidebar({ open, onClose }: { open: boolean; onClose: () => void }
 export default function MemberLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const { user, clearAuth } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
+  const handleLogout = async () => {
+    try { await apiClient('/api/v1/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
+    clearAuth();
+    router.push('/auth/login');
+  };
+
   const currentPage = NAV.find(n => n.href === pathname);
+  const firstName  = user?.firstName ?? '';
+  const lastName   = user?.lastName  ?? '';
+  const initials   = firstName && lastName ? `${firstName[0]}${lastName[0]}`.toUpperCase() : '…';
 
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">
-      <MemberSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <MemberSidebar
+        open={sidebarOpen} onClose={() => setSidebarOpen(false)}
+        firstName={firstName} lastName={lastName} initials={initials}
+        onLogout={handleLogout}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
         {/* Top bar */}
@@ -157,7 +180,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
               <Bell size={15} />
             </button>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
-              {MOCK_MEMBER.firstName[0]}
+              {initials}
             </div>
           </div>
         </header>
