@@ -3,8 +3,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ArrowRight } from 'lucide-react';
+import { Menu, X, ArrowRight, LayoutGrid } from 'lucide-react';
 import { SalamLogo } from '@/components/brand/SalamLogo';
+import { useAuthStore } from '@/store/auth.store';
+import { getPostLoginRedirect } from '@/lib/auth/roles';
 
 const NAV = [
   { label: 'À propos',   href: '/a-propos' },
@@ -19,6 +21,7 @@ export function Header() {
   const [open,     setOpen]     = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+  const user = useAuthStore(s => s.user);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -32,6 +35,10 @@ export function Header() {
     document.body.style.overflow = open ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [open]);
+
+  const userSpace  = user ? getPostLoginRedirect(user) : '/auth/login';
+  const initials   = user ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() : '';
+  const shortName  = user ? `${user.firstName} ${user.lastName[0]}.` : '';
 
   return (
     <>
@@ -85,12 +92,25 @@ export function Header() {
             >
               Démo
             </Link>
-            <Link
-              href="/auth/login"
-              className="inline-flex items-center gap-1.5 rounded-full bg-salam-green px-5 py-2.5 text-[13px] font-bold text-white shadow-sm shadow-green-900/15 transition-colors hover:bg-green-800"
-            >
-              Connexion <ArrowRight size={13} />
-            </Link>
+            {user ? (
+              <Link
+                href={userSpace}
+                className="inline-flex items-center gap-2 rounded-full bg-salam-green px-4 py-2.5 text-[13px] font-bold text-white shadow-sm shadow-green-900/15 transition-colors hover:bg-green-800"
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-[10px] font-black">
+                  {initials}
+                </span>
+                <span>{shortName}</span>
+                <LayoutGrid size={13} />
+              </Link>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="inline-flex items-center gap-1.5 rounded-full bg-salam-green px-5 py-2.5 text-[13px] font-bold text-white shadow-sm shadow-green-900/15 transition-colors hover:bg-green-800"
+              >
+                Connexion <ArrowRight size={13} />
+              </Link>
+            )}
           </div>
 
           {/* ── Mobile burger ── */}
@@ -149,7 +169,13 @@ export function Header() {
                 })}
                 <div className="mt-3 flex gap-2 border-t border-neutral-100 pt-4">
                   <Link href="/demo" className="flex-1 rounded-xl border border-neutral-200 py-3 text-center text-sm font-semibold text-neutral-600">Démo</Link>
-                  <Link href="/auth/login" className="flex-1 rounded-xl bg-salam-green py-3 text-center text-sm font-bold text-white">Connexion</Link>
+                  {user ? (
+                    <Link href={userSpace} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-salam-green py-3 text-sm font-bold text-white">
+                      <LayoutGrid size={14} /> Mon espace
+                    </Link>
+                  ) : (
+                    <Link href="/auth/login" className="flex-1 rounded-xl bg-salam-green py-3 text-center text-sm font-bold text-white">Connexion</Link>
+                  )}
                 </div>
               </nav>
             </motion.div>

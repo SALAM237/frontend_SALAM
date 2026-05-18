@@ -3,18 +3,22 @@
 import { useState } from 'react';
 import { CreditCard, Download, Share2, CheckCircle2, Smartphone, Info } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
-
-const MEMBER: MemberCardData = {
-  id: 'SALAM-2024-0042',
-  firstName: 'Jean',
-  lastName: 'Kamga',
-  role: 'Membre actif',
-  antenne: 'Paris',
-  year: new Date().getFullYear(),
-};
+import { useAuthStore } from '@/store/auth.store';
 
 export default function MembreCartePage() {
   const [downloaded, setDownloaded] = useState(false);
+  const user = useAuthStore(s => s.user);
+
+  const year     = new Date().getFullYear();
+  const memberId = user?._id ? `SALAM-${year}-${user._id.slice(-4).toUpperCase()}` : '—';
+
+  const memberData: MemberCardData = {
+    id:        memberId,
+    firstName: user?.firstName ?? '—',
+    lastName:  user?.lastName  ?? '—',
+    role:      'Membre actif',
+    year,
+  };
 
   const handleDownload = () => {
     setDownloaded(true);
@@ -35,18 +39,17 @@ export default function MembreCartePage() {
         <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-black text-emerald-800">Carte active et valide</p>
-          <p className="text-xs text-emerald-600">Valable jusqu&apos;au 31 décembre {MEMBER.year}</p>
+          <p className="text-xs text-emerald-600">Valable jusqu&apos;au 31 décembre {year}</p>
         </div>
-        <span className="hidden shrink-0 text-xs font-mono font-bold text-emerald-700 sm:block">{MEMBER.id}</span>
+        <span className="hidden shrink-0 text-xs font-mono font-bold text-emerald-700 sm:block">{memberId}</span>
       </div>
 
       {/* Card display */}
       <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm sm:p-8">
         <div className="mx-auto w-full max-w-[400px]">
-          <MemberCard member={MEMBER} />
+          <MemberCard member={memberData} />
         </div>
 
-        {/* Actions */}
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <button
             onClick={handleDownload}
@@ -60,7 +63,7 @@ export default function MembreCartePage() {
         </div>
       </div>
 
-      {/* QR Info */}
+      {/* Info cards */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
           <div className="mb-3 flex items-center gap-2">
@@ -89,11 +92,10 @@ export default function MembreCartePage() {
           </div>
           <div className="space-y-3">
             {[
-              { label: 'Nom complet',    value: `${MEMBER.firstName} ${MEMBER.lastName}` },
-              { label: 'N° membre',      value: MEMBER.id             },
-              { label: 'Rôle',           value: MEMBER.role           },
-              { label: 'Antenne',        value: `Antenne ${MEMBER.antenne}` },
-              { label: 'Validité',       value: `Année ${MEMBER.year}` },
+              { label: 'Nom complet', value: user ? `${user.firstName} ${user.lastName}` : '—' },
+              { label: 'N° membre',   value: memberId },
+              { label: 'Rôle',        value: 'Membre actif' },
+              { label: 'Validité',    value: `Année ${year}` },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between gap-2">
                 <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-400">{label}</p>
@@ -110,7 +112,7 @@ export default function MembreCartePage() {
         <div>
           <p className="text-sm font-black text-yellow-800">Renouvellement annuel</p>
           <p className="mt-0.5 text-xs text-yellow-700">
-            Votre carte est valable pour l&apos;année {MEMBER.year}. Le renouvellement s&apos;effectue en début d&apos;année
+            Votre carte est valable pour l&apos;année {year}. Le renouvellement s&apos;effectue en début d&apos;année
             via la page d&apos;adhésion ou en contactant l&apos;administration.
           </p>
         </div>

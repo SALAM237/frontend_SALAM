@@ -130,6 +130,7 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, onLogout 
 
 export default function MemberLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifOpen,   setNotifOpen]   = useState(false);
   const pathname = usePathname();
   const { user, clearAuth } = useAuthStore();
   const router = useRouter();
@@ -176,9 +177,29 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
           </div>
 
           <div className="ml-auto flex items-center gap-3">
-            <button className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500">
-              <Bell size={15} />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen(v => !v)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700"
+              >
+                <Bell size={15} />
+              </button>
+              {notifOpen && (
+                <>
+                  <div className="fixed inset-0 z-[99]" onClick={() => setNotifOpen(false)} />
+                  <div className="absolute right-0 top-full z-[100] mt-2 w-72 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-xl">
+                    <div className="border-b border-neutral-100 px-4 py-3">
+                      <p className="text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Notifications</p>
+                    </div>
+                    <div className="flex flex-col items-center py-10 text-center">
+                      <Bell size={28} className="mb-3 text-neutral-200" />
+                      <p className="text-sm font-semibold text-neutral-400">Aucune notification</p>
+                      <p className="mt-1 text-xs text-neutral-300">Vous êtes à jour !</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
               {initials}
             </div>

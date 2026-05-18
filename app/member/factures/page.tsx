@@ -150,30 +150,12 @@ function InvoiceRow({ invoice, onView }: { invoice: MemberInvoiceDoc; onView: ()
 }
 
 /* ─── Page principale ─────────────────────────────────── */
-/* ─── Demo data ─────────────────────────────────────────── */
-const DEMO_MEMBER_INVOICES: MemberInvoiceDoc[] = [
-  {
-    _id: 'demo-inv1', invoiceNumber: 'SALAM-FACT-2026-0001', type: 'event',
-    title: 'Soirée Gala 2026', description: "Dîner de gala annuel de l'association SALAM",
-    amount: 50, currency: 'EUR', issuedAt: '2026-04-01T00:00:00.000Z', dueDate: '2026-05-15T00:00:00.000Z',
-    paymentLink: 'https://www.salam-cameroun.com/paiement', status: 'sent', recipients: [],
-    myRecipient: { userId: 'me', invoiceNumber: 'SALAM-FACT-2026-0001-A', status: 'pending', sentAt: '2026-04-01' },
-  },
-  {
-    _id: 'demo-inv2', invoiceNumber: 'SALAM-FACT-2026-0002', type: 'event',
-    title: "Sortie Musée d'Orsay", description: "Visite culturelle — Musée d'Orsay, Paris",
-    amount: 15, currency: 'EUR', issuedAt: '2026-03-01T00:00:00.000Z', dueDate: '2026-03-20T00:00:00.000Z',
-    status: 'closed', recipients: [],
-    myRecipient: { userId: 'me', invoiceNumber: 'SALAM-FACT-2026-0002-A', status: 'paid', sentAt: '2026-03-01', paidAt: '2026-03-10' },
-  },
-];
 
 export default function MemberFacturesPage() {
   const [selected, setSelected] = useState<MemberInvoiceDoc | null>(null);
 
   const { data, isLoading, isError } = useMemberInvoices();
-  const rawInvoices = data?.data ?? [];
-  const invoices = !isLoading && rawInvoices.length === 0 ? DEMO_MEMBER_INVOICES : rawInvoices;
+  const invoices = data?.data ?? [];
 
   const pending = useMemo(() =>
     invoices.filter(i => isPending((i.myRecipient?.status ?? 'pending') as RecipientStatus)),

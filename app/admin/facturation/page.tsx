@@ -93,14 +93,6 @@ function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose
 }
 
 /* ─── Create invoice modal ────────────────────────────── */
-const MOCK_MEMBERS = [
-  { id: 'm1', name: 'Jean Kamga',      memberId: 'SALAM-2025-0001' },
-  { id: 'm2', name: 'Amina Bello',     memberId: 'SALAM-2025-0002' },
-  { id: 'm3', name: 'Paul Essomba',    memberId: 'SALAM-2025-0003' },
-  { id: 'm4', name: 'Sophie Mbarga',   memberId: 'SALAM-2025-0004' },
-  { id: 'm5', name: 'Ibrahim Diallo',  memberId: 'SALAM-2025-0005' },
-  { id: 'm6', name: 'Fatou Coulibaly', memberId: 'SALAM-2025-0006' },
-];
 
 function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const today = new Date().toISOString().slice(0, 10);
@@ -208,25 +200,12 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
           <div className="space-y-3">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Destinataires</label>
             <div className="flex gap-2">
-              {(['all', 'select'] as const).map(mode => (
-                <button key={mode} onClick={() => setRecipientMode(mode)}
-                  className={`rounded-xl border px-4 py-2 text-xs font-black transition ${recipientMode === mode ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300'}`}>
-                  {mode === 'all' ? `Tous les membres (${MOCK_MEMBERS.length})` : 'Sélectionner…'}
-                </button>
-              ))}
+              <button
+                onClick={() => setRecipientMode('all')}
+                className={`rounded-xl border px-4 py-2 text-xs font-black transition ${recipientMode === 'all' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300'}`}>
+                Tous les membres actifs
+              </button>
             </div>
-            {recipientMode === 'select' && (
-              <div className="rounded-xl border border-neutral-200 divide-y divide-neutral-50 max-h-48 overflow-y-auto">
-                {MOCK_MEMBERS.map(m => (
-                  <label key={m.id} className="flex cursor-pointer items-center gap-3 px-4 py-2.5 hover:bg-neutral-50">
-                    <input type="checkbox" checked={selected.includes(m.id)} onChange={() => toggleMember(m.id)}
-                      className="h-4 w-4 rounded border-neutral-300 accent-emerald-600" />
-                    <span className="flex-1 text-sm font-semibold text-neutral-800">{m.name}</span>
-                    <span className="font-mono text-[10px] text-neutral-400">{m.memberId}</span>
-                  </label>
-                ))}
-              </div>
-            )}
             {errors.recipients && <p className="text-[11px] text-red-500">{errors.recipients}</p>}
           </div>
         </div>
@@ -244,39 +223,6 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* ─── Demo data ───────────────────────────────────────── */
-const DEMO_INVOICES: InvoiceDoc[] = [
-  {
-    _id: 'demo-inv1', invoiceNumber: 'SALAM-FACT-2026-0001', type: 'event',
-    title: 'Soirée Gala 2026', description: "Dîner de gala annuel de l'association SALAM",
-    amount: 50, currency: 'EUR', issuedAt: '2026-04-01T00:00:00.000Z', dueDate: '2026-05-15T00:00:00.000Z',
-    paymentLink: 'https://www.salam-cameroun.com/paiement', status: 'sent',
-    recipients: [
-      { userId: 'm1', invoiceNumber: 'SALAM-FACT-2026-0001-A', status: 'paid',    sentAt: '2026-04-01', paidAt: '2026-04-10' },
-      { userId: 'm2', invoiceNumber: 'SALAM-FACT-2026-0001-B', status: 'paid',    sentAt: '2026-04-01', paidAt: '2026-04-12' },
-      { userId: 'm3', invoiceNumber: 'SALAM-FACT-2026-0001-C', status: 'sent',    sentAt: '2026-04-01' },
-      { userId: 'm4', invoiceNumber: 'SALAM-FACT-2026-0001-D', status: 'pending'  },
-      { userId: 'm5', invoiceNumber: 'SALAM-FACT-2026-0001-E', status: 'pending'  },
-    ],
-  },
-  {
-    _id: 'demo-inv2', invoiceNumber: 'SALAM-FACT-2026-0002', type: 'event',
-    title: "Sortie Musée d'Orsay", description: "Visite culturelle — Musée d'Orsay, Paris",
-    amount: 15, currency: 'EUR', issuedAt: '2026-03-01T00:00:00.000Z', dueDate: '2026-03-20T00:00:00.000Z',
-    status: 'closed',
-    recipients: [
-      { userId: 'm1', invoiceNumber: 'SALAM-FACT-2026-0002-A', status: 'paid', sentAt: '2026-03-01', paidAt: '2026-03-10' },
-      { userId: 'm2', invoiceNumber: 'SALAM-FACT-2026-0002-B', status: 'paid', sentAt: '2026-03-01', paidAt: '2026-03-14' },
-      { userId: 'm6', invoiceNumber: 'SALAM-FACT-2026-0002-C', status: 'paid', sentAt: '2026-03-01', paidAt: '2026-03-15' },
-    ],
-  },
-  {
-    _id: 'demo-inv3', invoiceNumber: 'SALAM-FACT-2026-0003', type: 'event',
-    title: 'Conférence diaspora 2026', description: 'Conférence annuelle de la diaspora camerounaise',
-    amount: 25, currency: 'EUR', issuedAt: '2026-05-18T00:00:00.000Z', dueDate: '2026-06-30T00:00:00.000Z',
-    status: 'draft', recipients: [],
-  },
-];
 
 /* ─── Page principale ─────────────────────────────────── */
 export default function FacturationAdminPage() {
@@ -287,8 +233,7 @@ export default function FacturationAdminPage() {
   const { data, isLoading, isError } = useAdminInvoices();
   const sendInvoice = useSendInvoice();
 
-  const rawInvoices = data?.data ?? [];
-  const invoices = !isLoading && rawInvoices.length === 0 ? DEMO_INVOICES : rawInvoices;
+  const invoices = data?.data ?? [];
 
   const filtered = useMemo(() =>
     invoices.filter(inv =>

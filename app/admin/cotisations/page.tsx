@@ -78,16 +78,6 @@ function mapRows(data: AdminCotisationRow[], year: number): MemberRow[] {
   }));
 }
 
-const DEMO_ROWS: MemberRow[] = [
-  { userId: 'demo-u1', cotisationId: 'demo-c1', memberId: 'SALAM-2026-A3F2', firstName: 'Jean',      lastName: 'Kamga',      email: 'j.kamga@example.com',      status: 'paid',   paidAt: '2026-02-10', reference: 'VIR-BNP-0210'   },
-  { userId: 'demo-u2', cotisationId: 'demo-c2', memberId: 'SALAM-2026-B7D1', firstName: 'Amina',     lastName: 'Bello',      email: 'a.bello@example.com',      status: 'unpaid'                                                  },
-  { userId: 'demo-u3', cotisationId: 'demo-c3', memberId: 'SALAM-2026-C2E8', firstName: 'Paul',      lastName: 'Essomba',    email: 'p.essomba@example.com',    status: 'paid',   paidAt: '2026-01-25', reference: 'PAYPAL-X1Y2Z3'  },
-  { userId: 'demo-u4', cotisationId: 'demo-c4', memberId: 'SALAM-2026-D5G4', firstName: 'Sophie',    lastName: 'Mbarga',     email: 's.mbarga@example.com',     status: 'exempt'                                                  },
-  { userId: 'demo-u5', cotisationId: 'demo-c5', memberId: 'SALAM-2026-E9H6', firstName: 'Ibrahim',   lastName: 'Diallo',     email: 'i.diallo@example.com',     status: 'unpaid'                                                  },
-  { userId: 'demo-u6', cotisationId: 'demo-c6', memberId: 'SALAM-2026-F1J0', firstName: 'Fatou',     lastName: 'Coulibaly',  email: 'f.coulibaly@example.com',  status: 'paid',   paidAt: '2026-03-05', reference: 'VIR-SG-0305'    },
-  { userId: 'demo-u7', cotisationId: 'demo-c7', memberId: 'SALAM-2026-G3K8', firstName: 'Marie',     lastName: 'Ngo Biyong', email: 'm.ngobiyong@example.com',  status: 'unpaid'                                                  },
-  { userId: 'demo-u8', cotisationId: 'demo-c8', memberId: 'SALAM-2026-H6L5', firstName: 'Emmanuel',  lastName: 'Talla',      email: 'e.talla@example.com',      status: 'paid',   paidAt: '2026-02-28', reference: 'VIR-CA-0228'    },
-];
 
 /* ─── Loading skeleton ───────────────────────────────────── */
 function Skeleton() {
@@ -325,9 +315,8 @@ export default function CotisationsAdminPage() {
   const updateStatus = useUpdateCotisationStatus();
 
   const members = useMemo(() => {
-    const rows = rawData?.data ? mapRows(rawData.data, year) : [];
-    return !isLoading && rows.length === 0 ? DEMO_ROWS : rows;
-  }, [rawData, year, isLoading]);
+    return rawData?.data ? mapRows(rawData.data, year) : [];
+  }, [rawData, year]);
 
   const filtered = useMemo(() =>
     members.filter(m =>

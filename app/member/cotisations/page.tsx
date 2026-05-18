@@ -113,13 +113,6 @@ function ReceiptModal({ cot, user, onClose }: {
 }
 
 /* ─── Page principale ─────────────────────────────────────── */
-/* ─── Demo data ─────────────────────────────────────────── */
-const DEMO_COTISATIONS: CotisationDoc[] = [
-  { _id: 'demo-cot2026', userId: 'me', year: 2026, amount: 30, status: 'unpaid' },
-  { _id: 'demo-cot2025', userId: 'me', year: 2025, amount: 30, status: 'paid',  paidAt: '2025-02-15', reference: 'VIR-BNP-0215'    },
-  { _id: 'demo-cot2024', userId: 'me', year: 2024, amount: 30, status: 'paid',  paidAt: '2024-03-20', reference: 'PAYPAL-AB1C2D'    },
-  { _id: 'demo-cot2023', userId: 'me', year: 2023, amount: 30, status: 'paid',  paidAt: '2023-01-30', reference: 'VIR-SG-0130'      },
-];
 
 export default function MemberCotisationsPage() {
   const [openReceipt, setOpenReceipt] = useState<CotisationDoc | null>(null);
@@ -128,8 +121,7 @@ export default function MemberCotisationsPage() {
   const { data, isLoading, isError } = useMemberCotisations();
   const user = useAuthStore(s => s.user);
 
-  const rawCotisations = data?.data ?? [];
-  const cotisations = !isLoading && rawCotisations.length === 0 ? DEMO_COTISATIONS : rawCotisations;
+  const cotisations = data?.data ?? [];
   const filtered = cotisations.filter(c => filter === 'all' || c.status === filter);
 
   return (
@@ -171,7 +163,7 @@ export default function MemberCotisationsPage() {
 
         {!isLoading && !isError && filtered.length === 0 && (
           <div className="rounded-2xl border border-neutral-100 bg-white p-10 text-center text-sm text-neutral-400">
-            {cotisations.length === 0
+            {data?.data?.length === 0
               ? 'Aucune cotisation enregistrée.'
               : 'Aucune cotisation pour ce filtre.'}
           </div>

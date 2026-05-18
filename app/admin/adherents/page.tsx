@@ -27,16 +27,6 @@ const FILTER_OPTIONS: { label: string; value: MemberStatus | 'all' }[] = [
   { label: 'Suspendus', value: 'suspended' },
 ];
 
-const DEMO_MEMBERS: MemberListItem[] = [
-  { _id: 'd1', firstName: 'Armelle',    lastName: 'Fotso',      email: 'a.fotso@example.com',      memberStatus: 'active',    createdAt: '2025-05-14', memberId: 'SALAM-2025-A3F2', cotisationStatus: 'paid'   },
-  { _id: 'd2', firstName: 'Pierre',     lastName: 'Nguemo',     email: 'p.nguemo@example.com',     memberStatus: 'active',    createdAt: '2025-05-11', memberId: 'SALAM-2025-B7C1', cotisationStatus: 'paid'   },
-  { _id: 'd3', firstName: 'Sophie',     lastName: 'Nkolo',      email: 's.nkolo@example.com',      memberStatus: 'pending',   createdAt: '2025-05-09', memberId: 'SALAM-2025-D4E9', cotisationStatus: 'unpaid' },
-  { _id: 'd4', firstName: 'Eric',       lastName: 'Balla',      email: 'e.balla@example.com',      memberStatus: 'active',    createdAt: '2025-05-07', memberId: 'SALAM-2025-F2G8', cotisationStatus: 'paid'   },
-  { _id: 'd5', firstName: 'Marie',      lastName: 'Tchakounte', email: 'm.tchakounte@example.com', memberStatus: 'pending',   createdAt: '2025-05-05', memberId: 'SALAM-2025-H6I3', cotisationStatus: 'unpaid' },
-  { _id: 'd6', firstName: 'François',   lastName: 'Atangana',   email: 'f.atangana@example.com',   memberStatus: 'active',    createdAt: '2025-05-02', memberId: 'SALAM-2025-J9K4', cotisationStatus: 'paid'   },
-  { _id: 'd7', firstName: 'Christelle', lastName: 'Mbarga',     email: 'c.mbarga@example.com',     memberStatus: 'suspended', createdAt: '2025-04-28', memberId: 'SALAM-2025-L1M5', cotisationStatus: 'unpaid' },
-  { _id: 'd8', firstName: 'Rodrigue',   lastName: 'Essama',     email: 'r.essama@example.com',     memberStatus: 'active',    createdAt: '2025-04-25', memberId: 'SALAM-2025-N0P6', cotisationStatus: 'exempt' },
-];
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -49,9 +39,8 @@ export default function AdminAdherentsPage() {
   const { data, isLoading } = useAdminMembers({ status: filter, search, limit: 100 });
 
   const members = useMemo<MemberListItem[]>(() => {
-    const raw = data?.data?.data ?? [];
-    return !isLoading && raw.length === 0 ? DEMO_MEMBERS : raw;
-  }, [data, isLoading]);
+    return data?.data?.data ?? [];
+  }, [data]);
 
   const displayed = useMemo(() =>
     members.filter(m => {

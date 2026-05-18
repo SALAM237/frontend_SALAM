@@ -1,25 +1,110 @@
 'use client';
 
 import { useState } from 'react';
-import { Send, MessageSquare, Search, ArrowLeft } from 'lucide-react';
+import { Send, MessageSquare, Search, ArrowLeft, Pencil, Paperclip, X } from 'lucide-react';
 
 type Message = { id: number; from: string; subject: string; preview: string; date: string; read: boolean; body: string };
 
-const MESSAGES: Message[] = [
-  { id: 1, from: 'Équipe SALAM',       subject: 'Bienvenue dans votre espace membre !',      preview: 'Bonjour Jean, nous sommes ravis de vous accueillir…', date: '14 mai', read: false, body: "Bonjour Jean,\n\nNous sommes ravis de vous accueillir dans la communauté SALAM !\n\nVotre espace membre est maintenant actif. Vous pouvez y accéder à votre carte de membre, consulter les activités à venir et gérer votre profil.\n\nN'hésitez pas à nous contacter pour toute question.\n\nCordialement,\nL'équipe SALAM" },
-  { id: 2, from: 'Équipe SALAM',       subject: 'Votre carte de membre est disponible',       preview: 'Votre carte officielle SALAM est prête à être téléchargée…', date: '14 mai', read: false, body: "Bonjour Jean,\n\nVotre carte de membre SALAM est maintenant disponible dans votre espace.\n\nVous pouvez la télécharger ou la partager directement depuis la rubrique \"Ma carte\".\n\nLe QR code intégré permet de vérifier votre adhésion lors de nos événements.\n\nCordialement,\nL'équipe SALAM" },
-  { id: 3, from: 'Bureau exécutif',    subject: 'Invitation : Soirée Networking 22 mai',      preview: 'Cher membre, nous avons le plaisir de vous inviter…', date: '10 mai', read: true,  body: "Cher membre,\n\nNous avons le plaisir de vous inviter à notre soirée Networking du 22 mai 2025 à Paris.\n\nAu programme : rencontres professionnelles, dîner débat et échanges en réseau.\n\nInscription obligatoire avant le 20 mai.\n\nCordialement,\nLe Bureau exécutif" },
-  { id: 4, from: 'Admin SALAM',        subject: 'Renouvellement adhésion 2025',               preview: 'Votre adhésion pour 2025 est confirmée. Voici les détails…', date: '2 mai', read: true,   body: "Bonjour Jean,\n\nNous confirmons votre adhésion SALAM pour l'année 2025.\n\nVotre numéro de membre : SALAM-2024-0042\nStatut : Membre actif\nAntenne : Paris\n\nMerci pour votre engagement.\n\nL'Administration SALAM" },
-];
+function ComposeModal({ onClose }: { onClose: () => void }) {
+  const [to,         setTo]         = useState('');
+  const [subject,    setSubject]    = useState('');
+  const [body,       setBody]       = useState('');
+  const [attachName, setAttachName] = useState('');
+  const [sent,       setSent]       = useState(false);
+
+  const handleSend = () => {
+    if (!subject.trim() || !body.trim()) return;
+    setSent(true);
+    setTimeout(onClose, 1500);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/50 backdrop-blur-sm sm:items-center">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <Pencil size={14} className="text-emerald-600" />
+            <h3 className="font-black text-neutral-900">Nouveau message</h3>
+          </div>
+          <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={15} /></button>
+        </div>
+
+        <div className="space-y-3 px-5 py-4">
+          <div>
+            <label className="mb-1 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Destinataire</label>
+            <input
+              value={to} onChange={e => setTo(e.target.value)}
+              placeholder="Bureau exécutif SALAM"
+              className="h-9 w-full rounded-xl border border-neutral-200 px-3 text-sm placeholder:text-neutral-300 focus:border-emerald-400 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Objet</label>
+            <input
+              value={subject} onChange={e => setSubject(e.target.value)}
+              placeholder="Sujet du message…"
+              className="h-9 w-full rounded-xl border border-neutral-200 px-3 text-sm placeholder:text-neutral-300 focus:border-emerald-400 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Message</label>
+            <textarea
+              value={body} onChange={e => setBody(e.target.value)}
+              rows={5}
+              placeholder="Rédigez votre message…"
+              className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2.5 text-sm placeholder:text-neutral-300 focus:border-emerald-400 focus:outline-none"
+            />
+          </div>
+
+          {/* Attachment */}
+          <div className="flex items-center gap-2">
+            <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-500 transition hover:border-emerald-300 hover:text-emerald-600">
+              <Paperclip size={12} />
+              {attachName ? attachName : 'Joindre un document'}
+              <input
+                type="file"
+                className="sr-only"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onChange={e => { if (e.target.files?.[0]) setAttachName(e.target.files[0].name); }}
+              />
+            </label>
+            {attachName && (
+              <button onClick={() => setAttachName('')} className="text-neutral-300 hover:text-neutral-600">
+                <X size={11} />
+              </button>
+            )}
+            <p className="text-[10px] text-neutral-300">PDF, JPG, PNG, DOC · max 5 Mo</p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 border-t border-neutral-100 px-5 py-4">
+          <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600 hover:border-neutral-300">
+            Annuler
+          </button>
+          <button
+            onClick={handleSend}
+            disabled={!subject.trim() || !body.trim() || sent}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-black transition-all disabled:opacity-40 ${sent ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
+          >
+            {sent ? '✓ Envoyé !' : <><Send size={13} /> Envoyer</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function MessagesPage() {
-  const [selected, setSelected]   = useState<Message | null>(MESSAGES[0]);
+  const [messages]                  = useState<Message[]>([]);
+  const [selected, setSelected]     = useState<Message | null>(null);
   const [showDetail, setShowDetail] = useState(false);
-  const [search, setSearch]       = useState('');
-  const [reply, setReply]         = useState('');
-  const [replySent, setReplySent] = useState(false);
+  const [search, setSearch]         = useState('');
+  const [reply, setReply]           = useState('');
+  const [replySent, setReplySent]   = useState(false);
+  const [attachName, setAttachName] = useState('');
+  const [compose, setCompose]       = useState(false);
 
-  const filtered = MESSAGES.filter(m =>
+  const filtered = messages.filter(m =>
     `${m.from} ${m.subject} ${m.preview}`.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -27,14 +112,23 @@ export default function MessagesPage() {
     if (!reply.trim()) return;
     setReplySent(true);
     setReply('');
+    setAttachName('');
     setTimeout(() => setReplySent(false), 2500);
   };
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="mb-5">
-        <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Messages</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">Communications de l&apos;équipe SALAM</p>
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Messages</h1>
+          <p className="mt-0.5 text-sm text-neutral-500">Communications de l&apos;équipe SALAM</p>
+        </div>
+        <button
+          onClick={() => setCompose(true)}
+          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20"
+        >
+          <Pencil size={13} /> Nouveau message
+        </button>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr] min-h-[420px] lg:h-[calc(100vh-200px)]">
@@ -53,6 +147,7 @@ export default function MessagesPage() {
               />
             </div>
           </div>
+
           <div className="flex-1 overflow-y-auto divide-y divide-neutral-50">
             {filtered.map(m => (
               <button
@@ -66,15 +161,21 @@ export default function MessagesPage() {
                 </div>
                 <p className={`mt-0.5 truncate text-xs ${m.read ? 'text-neutral-500' : 'font-semibold text-neutral-700'}`}>{m.subject}</p>
                 <p className="mt-0.5 truncate text-[10px] text-neutral-400">{m.preview}</p>
-                {!m.read && (
-                  <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                )}
+                {!m.read && <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />}
               </button>
             ))}
+
             {filtered.length === 0 && (
-              <div className="py-8 text-center">
-                <MessageSquare size={28} className="mx-auto text-neutral-200" />
-                <p className="mt-2 text-xs text-neutral-400">Aucun message</p>
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <MessageSquare size={32} className="mb-3 text-neutral-200" />
+                <p className="text-sm font-semibold text-neutral-400">Aucun message</p>
+                <p className="mt-1 text-xs text-neutral-300">Vos messages apparaîtront ici.</p>
+                <button
+                  onClick={() => setCompose(true)}
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700"
+                >
+                  <Pencil size={11} /> Écrire un message
+                </button>
               </div>
             )}
           </div>
@@ -83,7 +184,6 @@ export default function MessagesPage() {
         {/* Message view */}
         {selected ? (
           <div className={`flex-col rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden ${showDetail ? 'flex' : 'hidden lg:flex'}`}>
-            {/* Header */}
             <div className="border-b border-neutral-100 p-5">
               <button onClick={() => setShowDetail(false)} className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 lg:hidden">
                 <ArrowLeft size={13} /> Retour aux messages
@@ -98,13 +198,12 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            {/* Body */}
             <div className="flex-1 overflow-y-auto p-5">
               <p className="whitespace-pre-line text-sm leading-[1.75] text-neutral-700">{selected.body}</p>
             </div>
 
-            {/* Reply */}
-            <div className="border-t border-neutral-100 p-4">
+            {/* Reply area */}
+            <div className="border-t border-neutral-100 p-4 space-y-2">
               <div className="flex gap-2">
                 <textarea
                   value={reply}
@@ -121,7 +220,28 @@ export default function MessagesPage() {
                   <Send size={15} />
                 </button>
               </div>
-              {replySent && <p className="mt-2 text-xs font-semibold text-emerald-600">✓ Réponse envoyée</p>}
+
+              {/* Attach document */}
+              <div className="flex items-center gap-2">
+                <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-neutral-400 transition hover:text-emerald-600">
+                  <Paperclip size={12} />
+                  <span>{attachName || 'Joindre un document'}</span>
+                  <input
+                    type="file"
+                    className="sr-only"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onChange={e => { if (e.target.files?.[0]) setAttachName(e.target.files[0].name); }}
+                  />
+                </label>
+                {attachName && (
+                  <>
+                    <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-500">{attachName}</span>
+                    <button onClick={() => setAttachName('')} className="text-neutral-300 hover:text-neutral-600"><X size={11} /></button>
+                  </>
+                )}
+              </div>
+
+              {replySent && <p className="text-xs font-semibold text-emerald-600">✓ Réponse envoyée</p>}
             </div>
           </div>
         ) : (
@@ -133,6 +253,8 @@ export default function MessagesPage() {
           </div>
         )}
       </div>
+
+      {compose && <ComposeModal onClose={() => setCompose(false)} />}
     </div>
   );
 }

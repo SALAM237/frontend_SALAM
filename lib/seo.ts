@@ -41,7 +41,7 @@ export const defaultMetadata: Metadata = {
   applicationName: 'SALAM Cameroun',
 
   title: {
-    default: 'SALAM | Association des Étudiants et Lauréats Camerounais du Maroc',
+    default: 'SALAM | Solidaire Associative des Lauréats du Maroc',
     template: '%s | SALAM',
   },
 
@@ -58,7 +58,7 @@ export const defaultMetadata: Metadata = {
   openGraph: {
     type:        'website',
     siteName:    SITE_NAME,
-    title:       'SALAM | Solidarité des Lauréats et Étudiants Camerounais du Maroc',
+    title:       'SALAM | Solidaire Associative des Lauréats du Maroc',
     description: "Association camerounaise internationale engagée pour l'accompagnement des étudiants, la solidarité, l'insertion professionnelle et le développement du Cameroun.",
     images:      [{ url: `${SITE_URL}/og-image.jpg`, width: 1200, height: 630, alt: 'Association SALAM Cameroun' }],
     url:         SITE_URL,
@@ -68,7 +68,7 @@ export const defaultMetadata: Metadata = {
   /* Twitter / X */
   twitter: {
     card:        'summary_large_image',
-    title:       'SALAM | Association Camerounaise des Lauréats du Maroc',
+    title:       'SALAM | Solidaire Associative des Lauréats du Maroc',
     description: 'Solidarité, accompagnement, leadership et opportunités pour les étudiants et diplômés camerounais.',
     images:      [`${SITE_URL}/og-image.jpg`],
   },

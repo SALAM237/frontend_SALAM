@@ -118,6 +118,7 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, onLogou
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifOpen,   setNotifOpen]   = useState(false);
   const pathname = usePathname();
   const { user, clearAuth } = useAuthStore();
   const router = useRouter();
@@ -127,7 +128,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const handleLogout = async () => {
     try { await apiClient('/api/v1/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
     clearAuth();
-    router.push('/bureau-executif/connexion');
+    router.push('/auth/login');
   };
 
   const currentPage = NAV.find(n => n.href === pathname || (n.href !== '/admin/dashboard' && pathname.startsWith(n.href)));
@@ -168,10 +169,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           {/* Right */}
           <div className="ml-auto flex items-center gap-3">
-            <button className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700">
-              <Bell size={15} />
-              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-500" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen(v => !v)}
+                className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700"
+              >
+                <Bell size={15} />
+                <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-500" />
+              </button>
+              {notifOpen && (
+                <>
+                  <div className="fixed inset-0 z-[99]" onClick={() => setNotifOpen(false)} />
+                  <div className="absolute right-0 top-full z-[100] mt-2 w-72 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-xl">
+                    <div className="border-b border-neutral-100 px-4 py-3">
+                      <p className="text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Notifications</p>
+                    </div>
+                    <div className="flex flex-col items-center py-10 text-center">
+                      <Bell size={28} className="mb-3 text-neutral-200" />
+                      <p className="text-sm font-semibold text-neutral-400">Aucune notification</p>
+                      <p className="mt-1 text-xs text-neutral-300">Vous êtes à jour !</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
               {initials}
             </div>
