@@ -26,7 +26,7 @@ function RecipientPicker({
   const token = useAuthStore(s => s.accessToken);
 
   const { data: results = [], isLoading } = useQuery({
-    queryKey: ['msg-member-search', q],
+    queryKey: ['admin-msg-member-search', q],
     queryFn: async () => {
       const res = await apiClient<MembersListResponse>(
         `/api/v1/admin/members?search=${encodeURIComponent(q)}&limit=8`,
@@ -65,7 +65,7 @@ function RecipientPicker({
       <div className="relative">
         <div className="flex min-h-[38px] flex-wrap items-center gap-1.5 rounded-xl border border-neutral-200 px-2.5 py-1.5 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-500/10">
           {value.map(r => (
-            <span key={r.id} className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-100">
+            <span key={r.id} className="inline-flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
               {r.name}
               <button type="button" onClick={() => remove(r.id)} className="ml-0.5 text-emerald-400 hover:text-emerald-700">
                 <X size={10} />
@@ -123,14 +123,14 @@ function RecipientPicker({
 /* ── ComposeModal ────────────────────────────────────────── */
 
 function ComposeModal({ onClose }: { onClose: () => void }) {
-  const [to,        setTo]        = useState<Recipient[]>([]);
-  const [cc,        setCc]        = useState<Recipient[]>([]);
-  const [bcc,       setBcc]       = useState<Recipient[]>([]);
-  const [showCcBcc, setShowCcBcc] = useState(false);
-  const [subject,   setSubject]   = useState('');
-  const [body,      setBody]      = useState('');
-  const [attachName,setAttachName]= useState('');
-  const [sent,      setSent]      = useState(false);
+  const [to,        setTo]         = useState<Recipient[]>([]);
+  const [cc,        setCc]         = useState<Recipient[]>([]);
+  const [bcc,       setBcc]        = useState<Recipient[]>([]);
+  const [showCcBcc, setShowCcBcc]  = useState(false);
+  const [subject,   setSubject]    = useState('');
+  const [body,      setBody]       = useState('');
+  const [attachName,setAttachName] = useState('');
+  const [sent,      setSent]       = useState(false);
 
   const canSend = to.length > 0 && subject.trim() !== '' && body.trim() !== '';
 
@@ -157,7 +157,6 @@ function ComposeModal({ onClose }: { onClose: () => void }) {
         <div className="space-y-3 px-5 py-4">
           <RecipientPicker value={to} onChange={setTo} label="À" placeholder="Saisir le nom d'un membre…" />
 
-          {/* CC / CCI toggle */}
           <button
             type="button"
             onClick={() => setShowCcBcc(v => !v)}
@@ -187,28 +186,20 @@ function ComposeModal({ onClose }: { onClose: () => void }) {
             <label className="mb-1 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Message</label>
             <textarea
               value={body} onChange={e => setBody(e.target.value)}
-              rows={5}
-              placeholder="Rédigez votre message…"
+              rows={5} placeholder="Rédigez votre message…"
               className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2.5 text-sm placeholder:text-neutral-300 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
             />
           </div>
 
-          {/* Attachment */}
           <div className="flex items-center gap-2">
             <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-500 transition hover:border-emerald-300 hover:text-emerald-600">
               <Paperclip size={12} />
               {attachName || 'Joindre un document'}
-              <input
-                type="file"
-                className="sr-only"
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                onChange={e => { if (e.target.files?.[0]) setAttachName(e.target.files[0].name); }}
-              />
+              <input type="file" className="sr-only" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onChange={e => { if (e.target.files?.[0]) setAttachName(e.target.files[0].name); }} />
             </label>
             {attachName && (
-              <button onClick={() => setAttachName('')} className="text-neutral-300 hover:text-neutral-600">
-                <X size={11} />
-              </button>
+              <button onClick={() => setAttachName('')} className="text-neutral-300 hover:text-neutral-600"><X size={11} /></button>
             )}
             <p className="text-[10px] text-neutral-300">PDF, JPG, PNG, DOC · max 5 Mo</p>
           </div>
@@ -233,7 +224,7 @@ function ComposeModal({ onClose }: { onClose: () => void }) {
 
 /* ── Page ────────────────────────────────────────────────── */
 
-export default function MessagesPage() {
+export default function AdminMessagesPage() {
   const [messages]                  = useState<Message[]>([]);
   const [selected, setSelected]     = useState<Message | null>(null);
   const [showDetail, setShowDetail] = useState(false);
@@ -257,11 +248,11 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Messages</h1>
-          <p className="mt-0.5 text-sm text-neutral-500">Communications de l&apos;équipe SALAM</p>
+          <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">Messages</h1>
+          <p className="mt-0.5 text-sm text-neutral-500">Communications avec les membres</p>
         </div>
         <button
           onClick={() => setCompose(true)}
@@ -273,7 +264,7 @@ export default function MessagesPage() {
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr] min-h-[420px] lg:h-[calc(100vh-200px)]">
 
-        {/* Message list */}
+        {/* List */}
         <div className={`flex-col rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden ${showDetail ? 'hidden lg:flex' : 'flex'}`}>
           <div className="border-b border-neutral-100 p-3">
             <div className="relative">
@@ -288,9 +279,7 @@ export default function MessagesPage() {
 
           <div className="flex-1 overflow-y-auto divide-y divide-neutral-50">
             {filtered.map(m => (
-              <button
-                key={m.id}
-                onClick={() => { setSelected(m); setShowDetail(true); }}
+              <button key={m.id} onClick={() => { setSelected(m); setShowDetail(true); }}
                 className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-neutral-50 ${selected?.id === m.id ? 'bg-emerald-50/60 border-l-[3px] border-l-emerald-500' : ''}`}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -307,9 +296,8 @@ export default function MessagesPage() {
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <MessageSquare size={32} className="mb-3 text-neutral-200" />
                 <p className="text-sm font-semibold text-neutral-400">Aucun message</p>
-                <p className="mt-1 text-xs text-neutral-300">Vos messages apparaîtront ici.</p>
-                <button
-                  onClick={() => setCompose(true)}
+                <p className="mt-1 text-xs text-neutral-300">Les messages reçus apparaîtront ici.</p>
+                <button onClick={() => setCompose(true)}
                   className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700"
                 >
                   <Pencil size={11} /> Écrire un message
@@ -319,45 +307,34 @@ export default function MessagesPage() {
           </div>
         </div>
 
-        {/* Message view */}
+        {/* View */}
         {selected ? (
           <div className={`flex-col rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden ${showDetail ? 'flex' : 'hidden lg:flex'}`}>
             <div className="border-b border-neutral-100 p-5">
               <button onClick={() => setShowDetail(false)} className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 lg:hidden">
-                <ArrowLeft size={13} /> Retour aux messages
+                <ArrowLeft size={13} /> Retour
               </button>
               <h2 className="font-black text-neutral-900">{selected.subject}</h2>
               <div className="mt-1 flex flex-wrap items-center gap-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[10px] font-black text-white">
-                  {selected.from[0]}
-                </div>
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[10px] font-black text-white">{selected.from[0]}</div>
                 <p className="text-xs font-semibold text-neutral-600">{selected.from}</p>
                 <span className="text-[10px] text-neutral-400">{selected.date}</span>
               </div>
             </div>
-
             <div className="flex-1 overflow-y-auto p-5">
               <p className="whitespace-pre-line text-sm leading-[1.75] text-neutral-700">{selected.body}</p>
             </div>
-
-            {/* Reply area */}
             <div className="border-t border-neutral-100 p-4 space-y-2">
               <div className="flex gap-2">
-                <textarea
-                  value={reply} onChange={e => setReply(e.target.value)}
-                  placeholder="Écrire une réponse…" rows={2}
+                <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Écrire une réponse…" rows={2}
                   className="flex-1 resize-none rounded-xl border border-neutral-200 px-4 py-2.5 text-sm placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none"
                 />
-                <button
-                  onClick={handleReply}
-                  disabled={!reply.trim() || replySent}
+                <button onClick={handleReply} disabled={!reply.trim() || replySent}
                   className={`flex h-10 w-10 shrink-0 items-center justify-center self-end rounded-xl transition-all ${replySent ? 'bg-emerald-100 text-emerald-600' : 'bg-emerald-600 text-white hover:bg-emerald-700'} disabled:opacity-40`}
                 >
                   <Send size={15} />
                 </button>
               </div>
-
-              {/* Attach */}
               <div className="flex items-center gap-2">
                 <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-neutral-400 transition hover:text-emerald-600">
                   <Paperclip size={12} />
@@ -372,7 +349,6 @@ export default function MessagesPage() {
                   </>
                 )}
               </div>
-
               {replySent && <p className="text-xs font-semibold text-emerald-600">✓ Réponse envoyée</p>}
             </div>
           </div>

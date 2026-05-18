@@ -1,26 +1,25 @@
 'use client';
 
-import { useRef } from 'react';
-
 export type MemberCardData = {
-  id: string;          // ex: SALAM-2024-0042
+  id: string;
   firstName: string;
   lastName: string;
-  role: string;        // ex: Membre actif, Alumni, Bureau
-  antenne?: string;    // ex: Paris, Casablanca
-  year: number;        // année de validité
+  role: string;
+  antenne?: string;
+  year: number;
   photo?: string;
 };
 
-function QRCode({ data, size = 120 }: { data: string; size?: number }) {
+function QRCode({ data, size = 72 }: { data: string; size?: number }) {
   const encoded = encodeURIComponent(data);
   return (
     <img
-      src={`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}&bgcolor=07140d&color=ffffff&margin=6&qzone=1`}
-      alt="QR code carte de membre"
+      src={`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}&bgcolor=07140d&color=ffffff&margin=4&qzone=1`}
+      alt="QR code"
       width={size}
       height={size}
-      className="rounded-lg"
+      className="rounded-lg shrink-0"
+      crossOrigin="anonymous"
     />
   );
 }
@@ -31,7 +30,12 @@ export function MemberCard({ member, printable = false }: { member: MemberCardDa
   return (
     <div
       className={`relative overflow-hidden rounded-2xl w-full ${printable ? 'shadow-none' : 'shadow-2xl shadow-emerald-950/40'}`}
-      style={{ maxWidth: 400, aspectRatio: '8/5', background: 'linear-gradient(135deg, #07140d 0%, #0b1f15 55%, #10261a 100%)' }}
+      style={{
+        maxWidth: 400,
+        aspectRatio: '8/5',
+        minHeight: 200,
+        background: 'linear-gradient(135deg, #07140d 0%, #0b1f15 55%, #10261a 100%)',
+      }}
     >
       {/* Flag stripe top */}
       <div className="absolute left-0 right-0 top-0 h-[5px]" style={{ background: 'linear-gradient(90deg, #0B8F3A 33%, #C8102E 33%, #C8102E 66%, #F7C600 66%)' }} />
@@ -42,48 +46,44 @@ export function MemberCard({ member, printable = false }: { member: MemberCardDa
       <div className="absolute bottom-[-30px] left-[-30px] h-40 w-40 rounded-full bg-yellow-400/5" />
 
       {/* Content */}
-      <div className="relative z-10 flex h-full flex-col justify-between p-5 pt-6">
+      <div className="relative z-10 flex h-full flex-col justify-between p-3.5 pt-5 sm:p-5 sm:pt-6">
 
         {/* Top row */}
-        <div className="flex items-start justify-between">
-          <div>
-            {/* Logo + name */}
-            <div className="flex items-center gap-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/logo/logo_salam_wbg.png" alt="SALAM" className="h-9 w-9 rounded-full object-cover ring-1 ring-white/20" />
-              <div>
-                <p className="text-[11px] font-black tracking-[0.22em] text-white">SALAM</p>
-                <p className="text-[8px] font-medium tracking-[0.1em] text-white/45">SOLIDAIRE ASSOCIATIVE</p>
+              <img src="/images/logo/logo_salam_wbg.png" alt="SALAM" className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-white/20 sm:h-9 sm:w-9" />
+              <div className="min-w-0">
+                <p className="text-[10px] font-black tracking-[0.22em] text-white sm:text-[11px]">SALAM</p>
+                <p className="text-[7px] font-medium tracking-[0.1em] text-white/45 sm:text-[8px]">SOLIDAIRE ASSOCIATIVE</p>
               </div>
             </div>
-            {/* Badge */}
-            <div className="mt-3 inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5">
-              <span className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-400">Carte de membre</span>
+            <div className="mt-2 inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5">
+              <span className="text-[8px] font-black uppercase tracking-[0.18em] text-emerald-400 sm:text-[9px]">Carte de membre</span>
             </div>
           </div>
 
           {/* QR Code */}
-          <QRCode data={verifyUrl} size={80} />
+          <QRCode data={verifyUrl} size={64} />
         </div>
 
         {/* Bottom row */}
-        <div>
-          {/* Member name */}
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">Titulaire</p>
-          <p className="mt-0.5 text-[1.45rem] font-black leading-tight tracking-[-0.02em] text-white">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40">Titulaire</p>
+          <p className="mt-0.5 truncate text-[1.1rem] font-black leading-tight tracking-[-0.02em] text-white sm:text-[1.3rem]">
             {member.firstName} {member.lastName.toUpperCase()}
           </p>
 
-          {/* Role + ID + year */}
-          <div className="mt-2 flex items-end justify-between">
-            <div>
-              <p className="text-[10px] font-semibold text-emerald-400">{member.role}</p>
-              {member.antenne && <p className="text-[9px] text-white/35">Antenne {member.antenne}</p>}
+          <div className="mt-1.5 flex items-end justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[9px] font-semibold text-emerald-400 sm:text-[10px]">{member.role}</p>
+              {member.antenne && <p className="truncate text-[8px] text-white/35 sm:text-[9px]">Antenne {member.antenne}</p>}
             </div>
-            <div className="text-right">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/35">N° membre</p>
-              <p className="text-[11px] font-black tracking-[0.08em] text-white/70">{member.id}</p>
-              <p className="text-[9px] text-white/30">Valide {member.year}</p>
+            <div className="shrink-0 text-right">
+              <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-white/35 sm:text-[9px]">N° membre</p>
+              <p className="text-[10px] font-black tracking-[0.06em] text-white/70 sm:text-[11px]">{member.id}</p>
+              <p className="text-[8px] text-white/30 sm:text-[9px]">Valide {member.year}</p>
             </div>
           </div>
         </div>

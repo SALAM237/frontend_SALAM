@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, UserPlus, CreditCard, CalendarDays,
   Images, Newspaper, Settings, LogOut, Menu, X, ChevronRight, Bell,
-  Banknote, FileText, History,
+  Banknote, FileText, History, MessageSquare,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { apiClient } from '@/lib/api/client';
@@ -22,6 +22,7 @@ const NAV = [
   { label: 'Activités',         href: '/admin/activites',         icon: CalendarDays },
   { label: 'Galerie',           href: '/admin/galerie',           icon: Images },
   { label: 'Actualités',        href: '/admin/actualites',        icon: Newspaper },
+  { label: 'Messages',          href: '/admin/messages',          icon: MessageSquare },
   { label: 'Historique',        href: '/admin/historique',        icon: History },
   { label: 'Paramètres',        href: '/admin/parametres',        icon: Settings },
 ];
