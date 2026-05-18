@@ -156,7 +156,7 @@ const DEMO_MEMBER_INVOICES: MemberInvoiceDoc[] = [
     _id: 'demo-inv1', invoiceNumber: 'SALAM-FACT-2026-0001', type: 'event',
     title: 'Soirée Gala 2026', description: "Dîner de gala annuel de l'association SALAM",
     amount: 50, currency: 'EUR', issuedAt: '2026-04-01T00:00:00.000Z', dueDate: '2026-05-15T00:00:00.000Z',
-    paymentLink: 'https://salam-cameroun.com/paiement', status: 'sent', recipients: [],
+    paymentLink: 'https://www.salam-cameroun.com/paiement', status: 'sent', recipients: [],
     myRecipient: { userId: 'me', invoiceNumber: 'SALAM-FACT-2026-0001-A', status: 'pending', sentAt: '2026-04-01' },
   },
   {

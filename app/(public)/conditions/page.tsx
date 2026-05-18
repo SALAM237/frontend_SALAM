@@ -32,7 +32,7 @@ export default function ConditionsPage() {
           <div className="flex flex-col gap-8 rounded-[2rem] border border-neutral-200 bg-white p-6 shadow-sm md:p-10">
 
             <Section title="1. Acceptation des conditions">
-              <p>En accédant et en utilisant le site salam-cameroun.com, vous acceptez sans réserve les présentes conditions générales d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser ce site.</p>
+              <p>En accédant et en utilisant le site www.salam-cameroun.com, vous acceptez sans réserve les présentes conditions générales d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser ce site.</p>
             </Section>
 
             <Section title="2. Accès au site">

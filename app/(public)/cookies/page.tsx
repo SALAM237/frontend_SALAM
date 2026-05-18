@@ -21,7 +21,7 @@ export default function CookiesPage() {
         title="des cookies"
         accentWord="Politique"
         accentPosition="start"
-        subtitle="Informations sur l'utilisation des cookies sur le site salam-cameroun.com."
+        subtitle="Informations sur l'utilisation des cookies sur le site www.salam-cameroun.com."
         breadcrumbs={[{ label: 'Cookies' }]}
       />
 

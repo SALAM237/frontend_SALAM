@@ -36,7 +36,7 @@ export default function MentionsLegalesPage() {
               <p><strong>Forme juridique :</strong> Association loi 1901</p>
               <p><strong>Siège social :</strong> Paris, Île-de-France, France</p>
               <p><strong>Email :</strong>{' '}<a href="mailto:contact@salam-cameroun.com" className="text-emerald-700 hover:underline">contact@salam-cameroun.com</a></p>
-              <p><strong>Site web :</strong>{' '}<a href="https://salam-cameroun.com" className="text-emerald-700 hover:underline">salam-cameroun.com</a></p>
+              <p><strong>Site web :</strong>{' '}<a href="https://www.salam-cameroun.com" className="text-emerald-700 hover:underline">www.salam-cameroun.com</a></p>
             </Section>
 
             <Section title="2. Directeur de la publication">
@@ -57,7 +57,7 @@ export default function MentionsLegalesPage() {
 
             <Section title="5. Données personnelles">
               <p>
-                Le site salam-cameroun.com collecte des données personnelles dans le cadre de la gestion des adhésions et des contacts. Ces données sont traitées conformément au Règlement Général sur la Protection des Données (RGPD).
+                Le site www.salam-cameroun.com collecte des données personnelles dans le cadre de la gestion des adhésions et des contacts. Ces données sont traitées conformément au Règlement Général sur la Protection des Données (RGPD).
               </p>
               <p className="mt-2">
                 Pour exercer vos droits (accès, rectification, suppression), contactez-nous à{' '}

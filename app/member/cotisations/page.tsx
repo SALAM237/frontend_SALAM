@@ -66,7 +66,7 @@ function ReceiptModal({ cot, user, onClose }: {
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40">Association</p>
                 <p className="text-lg font-black tracking-[0.12em] text-white">SALAM CAMEROUN</p>
-                <p className="text-[11px] text-white/40 mt-0.5">salam-cameroun.com</p>
+                <p className="text-[11px] text-white/40 mt-0.5">www.salam-cameroun.com</p>
               </div>
               <div className="text-right">
                 <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/30">Reçu N°</p>
