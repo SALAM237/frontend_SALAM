@@ -13,10 +13,12 @@ export function middleware(req: NextRequest) {
   const isAuth = req.cookies.get('salam_auth')?.value === '1';
   if (isAuth) return NextResponse.next();
 
-  const loginUrl = req.nextUrl.clone();
-  loginUrl.pathname = LOGIN_URL;
-  loginUrl.searchParams.set('redirect', pathname);
-  return NextResponse.redirect(loginUrl);
+  // TODO: réactiver quand l'auth est opérationnelle en production
+  // const loginUrl = req.nextUrl.clone();
+  // loginUrl.pathname = LOGIN_URL;
+  // loginUrl.searchParams.set('redirect', pathname);
+  // return NextResponse.redirect(loginUrl);
+  return NextResponse.next();
 }
 
 export const config = {
