@@ -18,6 +18,17 @@ const engagementAnimations = `
 .eng-slide-left  { animation: eng-slide-left  1.1s cubic-bezier(.22,1,.36,1) both; }
 .eng-slide-right { animation: eng-slide-right 1.1s cubic-bezier(.22,1,.36,1) both; animation-delay: 0.15s; }
 .eng-fade-badge  { animation: eng-fade-in     1.0s cubic-bezier(.22,1,.36,1) both; }
+
+@keyframes eng-title-in {
+  0%   { opacity: 0; transform: translateX(-50px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes eng-line-in {
+  0%   { opacity: 0; transform: translateX(50px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.eng-title-cascade { animation: eng-title-in 0.7s cubic-bezier(.39,.575,.565,1.000) both; }
+.eng-line-cascade  { animation: eng-line-in  0.7s cubic-bezier(.39,.575,.565,1.000) both; }
 `;
 
 const cards = [
@@ -118,7 +129,11 @@ export function EngagementSection() {
           </div>
 
           <div className="mt-8 mb-14 flex flex-col gap-[6px] md:mb-20 md:gap-2 lg:mt-8 lg:mb-16 lg:gap-3">
-            {cards.map((card, index) => (
+            {cards.map((card, index) => {
+              // Cascade : chaque carte attend que la précédente finisse (titre 0.7s + trait 0.2s = 0.9s par carte)
+              const titleDelay = index * 0.9;
+              const lineDelay  = titleDelay + 0.2;
+              return (
               <article
                 key={card.title}
                 className={
@@ -144,10 +159,16 @@ export function EngagementSection() {
 
                     <div className="relative z-10 flex items-center justify-between gap-4 w-full">
                       <div className="pl-8">
-                        <h3 className="text-[1.5rem] md:text-[1.8rem] lg:text-[clamp(1.65rem,2.8vw,2.3rem)] font-black leading-[0.95] tracking-[-0.05em] text-white">
+                        <h3
+                          className={'text-[1.5rem] md:text-[1.8rem] lg:text-[clamp(1.65rem,2.8vw,2.3rem)] font-black leading-[0.95] tracking-[-0.05em] text-white ' + (visible ? 'eng-title-cascade' : 'opacity-0')}
+                          style={visible ? { animationDelay: `${titleDelay}s` } : undefined}
+                        >
                           {card.title}
                         </h3>
-                        <div className={'mt-3 h-[4px] w-16 rounded-[6px] ' + card.lineColor} />
+                        <div
+                          className={'mt-3 h-[4px] w-16 rounded-[6px] ' + card.lineColor + ' ' + (visible ? 'eng-line-cascade' : 'opacity-0')}
+                          style={visible ? { animationDelay: `${lineDelay}s` } : undefined}
+                        />
                       </div>
 
                       <div
@@ -179,10 +200,16 @@ export function EngagementSection() {
                       </span>
 
                       <div className="relative z-10">
-                        <h3 className="mt-3 text-[clamp(1.1rem,1.8vw,1.5rem)] font-black leading-[0.94] tracking-[-0.05em] text-white">
+                        <h3
+                          className={'mt-3 text-[clamp(1.1rem,1.8vw,1.5rem)] font-black leading-[0.94] tracking-[-0.05em] text-white ' + (visible ? 'eng-title-cascade' : 'opacity-0')}
+                          style={visible ? { animationDelay: `${titleDelay}s` } : undefined}
+                        >
                           {card.title}
                         </h3>
-                        <div className={'mt-4 h-[4px] w-20 rounded-full ' + card.lineColor + ' transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:w-28'} />
+                        <div
+                          className={'mt-4 h-[4px] w-20 rounded-full ' + card.lineColor + ' transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:w-28 ' + (visible ? 'eng-line-cascade' : 'opacity-0')}
+                          style={visible ? { animationDelay: `${lineDelay}s` } : undefined}
+                        />
                       </div>
                     </div>
 
@@ -219,7 +246,8 @@ export function EngagementSection() {
                   </div>{/* outer grid */}
                 </div>{/* overflow-hidden wrapper */}
               </article>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
