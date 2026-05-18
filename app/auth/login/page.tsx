@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Loader2, MailWarning, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
+
+const PENDING_MSG = 'Veuillez vérifier votre email avant de vous connecter';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,9 +19,14 @@ export default function LoginPage() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
 
+  const [needsVerify, setNeedsVerify]     = useState(false);
+  const [resendStatus, setResendStatus]   = useState<'idle' | 'loading' | 'sent'>('idle');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setNeedsVerify(false);
+    setResendStatus('idle');
     setLoading(true);
 
     try {
@@ -40,10 +47,28 @@ export default function LoginPage() {
       setAuth(me.data, res.data.accessToken);
       router.push('/member/dashboard');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erreur de connexion');
+      const msg = err instanceof Error ? err.message : 'Erreur de connexion';
+      if (msg === PENDING_MSG) {
+        setNeedsVerify(true);
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResend = async () => {
+    setResendStatus('loading');
+    try {
+      await apiClient('/api/v1/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    } catch {
+      // réponse silencieuse côté backend — on affiche "envoyé" dans tous les cas
+    }
+    setResendStatus('sent');
   };
 
   return (
@@ -96,10 +121,48 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* Erreur générique */}
         {error && (
           <div className="flex items-start gap-2.5 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
             <div className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
             <p className="text-xs leading-relaxed text-red-700">{error}</p>
+          </div>
+        )}
+
+        {/* Bannière email non vérifié */}
+        {needsVerify && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <MailWarning size={17} className="mt-0.5 shrink-0 text-amber-600" />
+              <p className="text-xs leading-relaxed text-amber-800">
+                <span className="font-black">Email non vérifié.</span> Vérifiez votre boîte mail et cliquez sur le lien de confirmation avant de vous connecter.
+              </p>
+            </div>
+
+            {resendStatus === 'sent' ? (
+              <div className="flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-2.5">
+                <CheckCircle2 size={14} className="shrink-0 text-emerald-600" />
+                <p className="text-xs font-semibold text-emerald-700">
+                  Email renvoyé ! Vérifiez votre boîte mail (et les spams).
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between border-t border-amber-200 pt-3">
+                <p className="text-[11px] text-amber-700">Vous n&apos;avez pas reçu l&apos;email ?</p>
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendStatus === 'loading'}
+                  className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[11px] font-black text-white transition hover:bg-amber-700 disabled:opacity-60"
+                >
+                  {resendStatus === 'loading'
+                    ? <Loader2 size={11} className="animate-spin" />
+                    : <RefreshCw size={11} />
+                  }
+                  Renvoyer l&apos;email
+                </button>
+              </div>
+            )}
           </div>
         )}
 
