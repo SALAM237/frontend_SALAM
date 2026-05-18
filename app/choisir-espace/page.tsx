@@ -12,6 +12,7 @@ export default function ChoisirEspacePage() {
   const router  = useRouter();
   const { user, clearAuth } = useAuthStore();
 
+  // Redirect based on roles once store is hydrated
   useEffect(() => {
     if (!user) return;
     const admin  = hasAdminRole(user);
@@ -21,6 +22,17 @@ export default function ChoisirEspacePage() {
     if (!member) { router.replace('/bureau-executif');   return; }
     // both — stay on this page
   }, [user, router]);
+
+  // Fallback: if store never hydrates (page refresh without re-login), redirect to login
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!useAuthStore.getState().user) {
+        router.replace('/auth/login');
+      }
+    }, 800);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogout = async () => {
     try { await apiClient('/api/v1/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
