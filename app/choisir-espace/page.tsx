@@ -19,7 +19,7 @@ export default function ChoisirEspacePage() {
     const member = hasMemberAccess(user);
     if (!admin && !member) { router.replace('/auth/login'); return; }
     if (!admin)  { router.replace('/member/dashboard'); return; }
-    if (!member) { router.replace('/bureau-executif');   return; }
+    if (!member) { router.replace('/admin/dashboard');  return; }
     // both — stay on this page
   }, [user, router]);
 
@@ -119,7 +119,7 @@ export default function ChoisirEspacePage() {
           </Link>
 
           {/* Bureau Exécutif */}
-          <Link href="/bureau-executif"
+          <Link href="/admin/dashboard"
             className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] p-7 transition-all duration-200 hover:border-white/[0.15] hover:bg-white/[0.07] hover:shadow-[0_0_40px_rgba(255,255,255,0.04)]">
 
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.07]">

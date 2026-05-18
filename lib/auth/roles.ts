@@ -15,6 +15,6 @@ export function getPostLoginRedirect(user: AuthUser): string {
   const isMember = hasMemberAccess(user);
 
   if (isMember && isAdmin) return '/choisir-espace';
-  if (isAdmin)             return '/bureau-executif';
+  if (isAdmin)             return '/admin/dashboard';
   return '/member/dashboard';
 }
