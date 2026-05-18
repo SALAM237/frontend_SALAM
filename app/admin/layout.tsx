@@ -7,9 +7,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, UserPlus, CreditCard, CalendarDays,
   Images, Newspaper, Settings, LogOut, Menu, X, ChevronRight, Bell,
-  Banknote, FileText, History, MessageSquare,
+  Banknote, FileText, History, MessageSquare, Shield,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
+import { isSuperAdmin } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
 
 const NAV = [

@@ -10,6 +10,20 @@ export function hasMemberAccess(user: AuthUser | null): boolean {
   return user?.memberStatus === 'active';
 }
 
+export function isSuperAdmin(user: AuthUser | null): boolean {
+  return user?.roles.some(r => r.slug === 'super_admin') ?? false;
+}
+
+export function hasPermission(user: AuthUser | null, permission: string): boolean {
+  if (!user) return false;
+  const ep = user.effectivePermissions ?? [];
+  return ep.includes('*') || ep.includes(permission);
+}
+
+export function hasAnyPermission(user: AuthUser | null, permissions: string[]): boolean {
+  return permissions.some(p => hasPermission(user, p));
+}
+
 export function getPostLoginRedirect(user: AuthUser): string {
   const isAdmin  = hasAdminRole(user);
   const isMember = hasMemberAccess(user);

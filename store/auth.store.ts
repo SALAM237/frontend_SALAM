@@ -8,6 +8,10 @@ export interface AuthUser {
   memberStatus: 'pending' | 'active' | 'suspended' | 'rejected';
   roles: { name: string; slug: string; permissions: string[] }[];
   avatar?: string;
+  bureauPoste?: string | null;
+  customPermissions?: string[];
+  deniedPermissions?: string[];
+  effectivePermissions?: string[]; // ['*'] for super_admin, else computed list
 }
 
 interface AuthState {
