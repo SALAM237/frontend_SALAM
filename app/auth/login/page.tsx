@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+export const dynamic = 'force-dynamic';
+
+import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight, Loader2, MailWarning, RefreshCw, CheckCircle2 } from 'lucide-react';
@@ -16,10 +18,10 @@ function safeRedirect(url: string | null, fallback: string): string {
 
 const PENDING_MSG = 'Veuillez vérifier votre email avant de vous connecter';
 
-export default function LoginPage() {
-  const router       = useRouter();
-  const searchParams = useSearchParams();
-  const { setAuth }  = useAuthStore();
+function LoginForm() {
+  const router          = useRouter();
+  const searchParams    = useSearchParams();
+  const { setAuth, user } = useAuthStore();
 
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -27,8 +29,16 @@ export default function LoginPage() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
 
-  const [needsVerify, setNeedsVerify]     = useState(false);
-  const [resendStatus, setResendStatus]   = useState<'idle' | 'loading' | 'sent'>('idle');
+  const [needsVerify, setNeedsVerify]   = useState(false);
+  const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'sent'>('idle');
+
+  // Already authenticated — skip the form and honour the redirect param
+  useEffect(() => {
+    if (!user) return;
+    const fallback   = getPostLoginRedirect(user);
+    const redirectTo = safeRedirect(searchParams.get('redirect'), fallback);
+    router.replace(redirectTo);
+  }, [user, router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +63,7 @@ export default function LoginPage() {
       });
 
       setAuth(me.data, res.data.accessToken);
-      const fallback  = getPostLoginRedirect(me.data);
+      const fallback   = getPostLoginRedirect(me.data);
       const redirectTo = safeRedirect(searchParams.get('redirect'), fallback);
       router.push(redirectTo);
     } catch (err: unknown) {
@@ -202,5 +212,29 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+function LoginFallback() {
+  return (
+    <div className="space-y-8">
+      <div>
+        <div className="h-9 w-48 rounded-lg bg-neutral-100 animate-pulse" />
+        <div className="mt-2 h-4 w-64 rounded bg-neutral-50 animate-pulse" />
+      </div>
+      <div className="space-y-4">
+        <div className="h-12 rounded-xl bg-neutral-100 animate-pulse" />
+        <div className="h-12 rounded-xl bg-neutral-100 animate-pulse" />
+        <div className="h-12 rounded-xl bg-emerald-100 animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginForm />
+    </Suspense>
   );
 }
