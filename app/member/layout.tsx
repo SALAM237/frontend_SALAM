@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CreditCard, User, CalendarDays,
   MessageSquare, LogOut, Menu, X, ChevronRight, Bell,
-  Banknote, FileText, FolderOpen,
+  Banknote, FileText, FolderOpen, Images, Newspaper,
 } from 'lucide-react';
 
 const NAV = [
@@ -20,6 +20,8 @@ const NAV = [
   { label: 'Mes factures',  href: '/member/factures',    icon: FileText         },
   { label: 'Mes documents', href: '/member/documents',   icon: FolderOpen       },
   { label: 'Activités',     href: '/member/activites',   icon: CalendarDays     },
+  { label: 'Galerie',       href: '/member/galerie',     icon: Images           },
+  { label: 'Actualités',    href: '/member/actualites',  icon: Newspaper        },
   { label: 'Messages',      href: '/member/messages',    icon: MessageSquare    },
 ];
 

@@ -25,6 +25,16 @@ export const ARTICLE_CATEGORIES = [
   { value: 'vie_asso',     label: 'Vie associative' },
 ] as const;
 
+/* ── Public (no auth) ──────────────────────────────────────── */
+export function usePublicArticles() {
+  return useQuery({
+    queryKey: ['public-content'],
+    queryFn:  () => apiClient<ArticleDoc[]>('/api/v1/public/content'),
+    staleTime: 60_000,
+  });
+}
+
+/* ── Admin ─────────────────────────────────────────────────── */
 export function useArticles() {
   const token = useAuthStore(s => s.accessToken);
   return useQuery({
@@ -54,7 +64,7 @@ export function useUpdateArticle(id: string) {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
   return useMutation({
-    mutationFn: (payload: Partial<ArticleDoc>) =>
+    mutationFn: (payload: { title?: string; status?: string; data?: { excerpt?: string; content?: string; category?: string } }) =>
       apiClient<ArticleDoc>(`/api/v1/admin/content/${id}`, {
         method: 'PUT', body: JSON.stringify(payload), token: token ?? '',
       }),

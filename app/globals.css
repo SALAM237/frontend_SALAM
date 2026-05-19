@@ -70,10 +70,8 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden; /* clip has partial iOS support — hidden is universal */
   max-width: 100%;
-  /* Safe area for iPhone notch / Dynamic Island / home bar */
-  padding-top: env(safe-area-inset-top);
+  /* overflow-x uniquement sur body — évite de créer un contexte de scroll sur iOS */
 }
 
 body {

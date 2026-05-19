@@ -33,6 +33,28 @@ export const ACTIVITY_CATEGORIES = [
   { value: 'divers',             label: 'Divers'             },
 ] as const;
 
+/* ── Public (no auth) ──────────────────────────────────────── */
+export function usePublicActivities(category?: string) {
+  const qs = category && category !== 'all' ? `?category=${category}` : '';
+  return useQuery({
+    queryKey: ['public-activities', category],
+    queryFn:  () => apiClient<{ activities: ActivityDoc[]; total: number }>(`/api/v1/public/activities${qs}`),
+    staleTime: 60_000,
+  });
+}
+
+/* ── Member ────────────────────────────────────────────────── */
+export function useMemberActivities(category?: string) {
+  const token = useAuthStore(s => s.accessToken);
+  const qs = category && category !== 'all' ? `?category=${category}` : '';
+  return useQuery({
+    queryKey: ['member-activities', category],
+    queryFn:  () => apiClient<{ activities: ActivityDoc[]; total: number }>(`/api/v1/member/activities${qs}`, { token: token ?? '' }),
+    enabled:  !!token,
+  });
+}
+
+/* ── Admin ─────────────────────────────────────────────────── */
 export function useActivities(params?: { status?: string; category?: string }) {
   const token = useAuthStore(s => s.accessToken);
   const qs = new URLSearchParams();
