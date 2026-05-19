@@ -70,8 +70,10 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: clip;
+  overflow-x: hidden; /* clip has partial iOS support — hidden is universal */
   max-width: 100%;
+  /* Safe area for iPhone notch / Dynamic Island / home bar */
+  padding-top: env(safe-area-inset-top);
 }
 
 body {
@@ -81,17 +83,104 @@ body {
     radial-gradient(circle at 12% 22%, rgba(16, 185, 129, 0.16), transparent 28%),
     radial-gradient(circle at 50% 42%, rgba(220, 38, 38, 0.12),  transparent 30%),
     radial-gradient(circle at 88% 78%, rgba(250, 204, 21, 0.16), transparent 28%);
-  background-attachment: fixed;
+  /* background-attachment:fixed is broken on iOS Safari — use scroll */
+  background-attachment: scroll;
   color: #141414;
-  overflow-x: clip;
+  overflow-x: hidden;
   max-width: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Prevent pull-to-refresh interference */
+  overscroll-behavior-y: none;
 }
 
-/* Prevent iOS tap flash */
-a, button { -webkit-tap-highlight-color: transparent; }
+/* ── Universal touch / tap fixes ──────────────────────────── */
+
+/* Remove iOS/Android tap flash on ALL interactive elements */
+a, button, [role="button"], label, summary, input[type="submit"], input[type="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Eliminate 300ms tap delay (iOS < 13, older Honor/Huawei) */
+a, button, [role="button"], label, input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* Cursor pointer for all clickable items */
+a, button, [role="button"], label[for] {
+  cursor: pointer;
+}
+
+/* ── iOS input zoom prevention ────────────────────────────── */
+/* iOS Safari zooms when font-size < 16px on inputs */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="search"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="url"],
+  input[type="time"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* ── iOS select appearance ────────────────────────────────── */
+select {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ── iOS momentum scrolling on overflow containers ────────── */
+.overflow-y-auto,
+.overflow-y-scroll,
+[class*="overflow-y-auto"],
+[class*="overflow-y-scroll"] {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Touch-friendly active states (replaces hover on mobile) ─ */
+/* On touch devices hover "sticks" — active gives instant feedback */
+@media (hover: none) and (pointer: coarse) {
+  a:active,
+  button:active,
+  [role="button"]:active {
+    opacity: 0.72;
+    transform: scale(0.97);
+    transition: opacity 0.08s ease, transform 0.08s ease;
+  }
+
+  /* Disable hover transforms that stick on touch */
+  .card-salam:hover {
+    transform: none !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04) !important;
+  }
+}
+
+/* ── Backdrop filter — Safari/iOS needs -webkit- prefix ──── */
+.backdrop-blur-sm,
+.backdrop-blur,
+.backdrop-blur-md,
+.backdrop-blur-lg,
+.backdrop-blur-xl {
+  -webkit-backdrop-filter: var(--tw-backdrop-blur, blur(4px));
+}
+
+/* ── Modal / overlay overscroll lock ─────────────────────── */
+.modal-open { overscroll-behavior: contain; }
+
+/* ── iOS safe-area bottom spacing (home bar) ─────────────── */
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.mb-safe { margin-bottom:  env(safe-area-inset-bottom); }
 
 /* ─────────────────────────────────────────
    Layout utilities

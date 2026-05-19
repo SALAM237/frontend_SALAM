@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, Plus, X, Check, ChevronRight, Loader2, Search,
   Crown, Users, Key, AlertTriangle, Trash2, Edit3, UserCheck,
@@ -100,8 +101,8 @@ function CreateRoleModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* ─── Role editor (right panel) ───────────────────────────── */
-function RoleEditor({ role, onClose }: { role: RoleDoc; onClose: () => void }) {
+/* ─── Role editor (right panel or inline accordion) ───────── */
+function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose: () => void; compact?: boolean }) {
   const { data: permsData } = usePermissionsList();
   const grouped = permsData?.data?.grouped ?? {};
   const updateRole  = useUpdateRole(role._id);
@@ -161,7 +162,7 @@ function RoleEditor({ role, onClose }: { role: RoleDoc; onClose: () => void }) {
   const isSA = role.slug === 'super_admin';
 
   return (
-    <div className="flex h-full flex-col">
+    <div className={compact ? 'flex flex-col' : 'flex h-full flex-col'}>
       {/* Header */}
       <div className="flex items-start justify-between border-b border-neutral-100 px-6 py-4 shrink-0">
         <div className="min-w-0 flex-1">
@@ -221,7 +222,7 @@ function RoleEditor({ role, onClose }: { role: RoleDoc; onClose: () => void }) {
       )}
 
       {/* Permission list */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+      <div className={compact ? 'max-h-[55vh] overflow-y-auto px-4 py-3 space-y-4' : 'flex-1 overflow-y-auto px-4 py-3 space-y-4'}>
         {isSA ? (
           <div className="flex flex-col items-center py-10 text-center">
             <Crown size={32} className="mb-3 text-amber-400" />
@@ -651,31 +652,55 @@ export default function RolesPage() {
               {roles.map(role => {
                 const active = selectedRole?._id === role._id;
                 return (
-                  <button key={role._id} onClick={() => setSelectedRole(active ? null : role)}
-                    className={`w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${active ? 'border-emerald-500 bg-emerald-50' : 'border-neutral-100 bg-white hover:border-neutral-200 hover:bg-neutral-50'} shadow-sm`}>
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-emerald-100' : 'bg-neutral-100'}`}>
-                      {role.slug === 'super_admin'
-                        ? <Crown size={16} className="text-amber-500" />
-                        : <Shield size={16} className={active ? 'text-emerald-600' : 'text-neutral-400'} />
-                      }
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-black truncate ${active ? 'text-emerald-800' : 'text-neutral-900'}`}>{role.name}</p>
-                      <p className="text-[10px] text-neutral-400">
-                        {role.slug === 'super_admin' ? 'Accès total *' : `${role.permissions.length} permissions`}
-                        {role.isSystem && <span className="ml-2 text-blue-400">• Système</span>}
-                      </p>
-                    </div>
-                    <ChevronRight size={12} className={active ? 'text-emerald-500' : 'text-neutral-300'} />
-                  </button>
+                  <div key={role._id}>
+                    <button onClick={() => setSelectedRole(active ? null : role)}
+                      className={`w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${active ? 'border-emerald-500 bg-emerald-50' : 'border-neutral-100 bg-white hover:border-neutral-200 hover:bg-neutral-50'} shadow-sm`}>
+                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-emerald-100' : 'bg-neutral-100'}`}>
+                        {role.slug === 'super_admin'
+                          ? <Crown size={16} className="text-amber-500" />
+                          : <Shield size={16} className={active ? 'text-emerald-600' : 'text-neutral-400'} />
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-black truncate ${active ? 'text-emerald-800' : 'text-neutral-900'}`}>{role.name}</p>
+                        <p className="text-[10px] text-neutral-400">
+                          {role.slug === 'super_admin' ? 'Accès total *' : `${role.permissions.length} permissions`}
+                          {role.isSystem && <span className="ml-2 text-blue-400">• Système</span>}
+                        </p>
+                      </div>
+                      {/* Chevron : tourne 90° vers le bas sur mobile quand ouvert */}
+                      <ChevronRight
+                        size={12}
+                        className={`transition-transform duration-200 ${active ? 'rotate-90 lg:rotate-0 text-emerald-500' : 'text-neutral-300'}`}
+                      />
+                    </button>
+
+                    {/* ── Accordéon mobile/tablette (< lg) ── */}
+                    <AnimatePresence initial={false}>
+                      {active && (
+                        <motion.div
+                          key="accordion"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                          className="lg:hidden overflow-hidden"
+                        >
+                          <div className="mt-1 overflow-hidden rounded-xl border border-emerald-200 bg-white shadow-sm">
+                            <RoleEditor key={role._id} role={role} onClose={() => setSelectedRole(null)} compact />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Role editor panel */}
+          {/* Role editor panel — desktop uniquement */}
           {selectedRole && (
-            <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm" style={{ height: 'calc(100vh - 240px)', minHeight: 500 }}>
+            <div className="hidden lg:block overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm" style={{ height: 'calc(100vh - 240px)', minHeight: 500 }}>
               <RoleEditor key={selectedRole._id} role={selectedRole} onClose={() => setSelectedRole(null)} />
             </div>
           )}

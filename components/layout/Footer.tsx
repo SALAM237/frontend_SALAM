@@ -132,8 +132,8 @@ export function Footer() {
         </div>
       </div>
 
-      {/* ── Cameroon flag stripe ── */}
-      <div className="h-[5px] w-full flag-stripe-cm" />
+      {/* ── Cameroon flag stripe + iPhone home bar safe area ── */}
+      <div className="flag-stripe-cm w-full" style={{ height: 'max(5px, env(safe-area-inset-bottom))' }} />
     </footer>
   );
 }

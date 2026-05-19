@@ -12,7 +12,7 @@ type FormState = {
 };
 
 const ROLES    = ['Membre actif', 'Étudiant', 'Alumni', 'Bureau', 'Conseil des sages'];
-const ANTENNES = ['Paris', 'Casablanca', 'Rabat', 'Lyon', 'Bordeaux', 'Autre'];
+const ANTENNES = ['Paris', 'Lyon', 'Bordeaux', 'Yaoundé', 'Douala', 'Casablanca', 'Rabat', 'Autre'];
 
 function generateId() {
   const year = new Date().getFullYear();

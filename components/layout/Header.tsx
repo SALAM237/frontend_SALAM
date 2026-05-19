@@ -43,8 +43,9 @@ export function Header() {
   return (
     <>
       <header
-        className="sticky top-0 z-50 transition-all duration-300"
+        className="sticky z-50 transition-all duration-300"
         style={{
+          top: 'env(safe-area-inset-top, 0px)',
           background: 'rgba(255,255,255,0.94)',
           WebkitBackdropFilter: 'blur(14px)',
           backdropFilter: 'blur(14px)',
@@ -144,7 +145,7 @@ export function Header() {
               transition={{ duration: .32, ease: [0.16, 1, 0.3, 1] as [number,number,number,number] }}
               className="overflow-hidden border-t border-neutral-100 bg-white lg:hidden"
             >
-              <nav className="container-salam flex flex-col gap-1 py-4 pb-6" aria-label="Navigation mobile">
+              <nav className="container-salam flex flex-col gap-1 py-4" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }} aria-label="Navigation mobile">
                 {NAV.map(({ label, href }, i) => {
                   const active = pathname === href;
                   return (

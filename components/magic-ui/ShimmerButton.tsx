@@ -40,7 +40,7 @@ export function ShimmerButton({
     'transition-all duration-200 ease-out',
     'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
     'disabled:pointer-events-none disabled:opacity-50',
-    '-webkit-tap-highlight-color: transparent',
+    'active:scale-[0.96] active:brightness-90',
     variantCls[variant],
     sizeCls[size],
     className,
