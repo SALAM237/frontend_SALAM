@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { CreditCard, User, CalendarDays, MessageSquare, ArrowRight, Bell } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
+import { GenderIcon } from '@/components/ui/GenderIcon';
 import { useAuthStore } from '@/store/auth.store';
 
 const fadeUp  = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } };
@@ -14,12 +15,15 @@ export default function MemberDashboardPage() {
 
   const firstName = user?.firstName ?? '';
   const lastName  = user?.lastName  ?? '';
+  const gender    = user?.gender;
+  const civility  = gender === 'femme' ? 'Madame' : gender === 'homme' ? 'Monsieur' : null;
   const memberId  = user?._id ? `SALAM-${new Date().getFullYear()}-${user._id.slice(-4).toUpperCase()}` : '—';
 
   const memberCardData: MemberCardData = {
     id:        memberId,
     firstName: firstName || '—',
     lastName:  lastName  || '—',
+    gender,
     role:      'Membre actif',
     year:      new Date().getFullYear(),
   };
@@ -31,8 +35,11 @@ export default function MemberDashboardPage() {
       <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-900 via-[#0b1f15] to-[#061009] p-6 text-white">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-white/50">Bienvenue,</p>
-            <h1 className="text-2xl font-black tracking-[-0.03em]">
+            <p className="text-sm font-semibold text-white/50">
+              {civility ? `Bienvenue, ${civility}` : 'Bienvenue,'}
+            </p>
+            <h1 className="flex items-center gap-2 text-2xl font-black tracking-[-0.03em]">
+              <GenderIcon gender={gender} size={22} />
               {firstName || lastName ? `${firstName} ${lastName}` : 'Membre'} 👋
             </h1>
             <p className="mt-1 text-sm text-white/50">Membre actif</p>

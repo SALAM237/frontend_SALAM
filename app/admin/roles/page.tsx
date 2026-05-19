@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { isSuperAdmin } from '@/lib/auth/roles';
+import { GenderIcon } from '@/components/ui/GenderIcon';
 import {
   useRoles, useCreateRole, useUpdateRole, useDeleteRole,
   usePermissionsList,
@@ -311,6 +312,7 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2">
+          <GenderIcon gender={admin.gender} size={14} />
           <p className="font-black text-sm text-neutral-900">{admin.firstName} {admin.lastName}</p>
           {isSA && <Crown size={12} className="text-amber-500" />}
           {isSelf && <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-black text-emerald-700">Vous</span>}
@@ -901,6 +903,7 @@ export default function RolesPage() {
   const [editPoste,    setEditPoste]    = useState<AdminUser | null>(null);
   const [editPerms,    setEditPerms]    = useState<AdminUser | null>(null);
   const [permSearch,   setPermSearch]   = useState('');
+  const [riskFilter,   setRiskFilter]   = useState<string>('all');
 
   const { data: rolesData,    isLoading: rolesLoading }   = useRoles();
   const { data: adminsData,   isLoading: adminsLoading }  = useAdminUsers();
@@ -1074,16 +1077,25 @@ export default function RolesPage() {
       {/* ── PERMISSIONS TAB ── */}
       {tab === 'permissions' && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="relative flex-1 max-w-xs">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-48">
               <Search size={13} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
               <input value={permSearch} onChange={e => setPermSearch(e.target.value)}
                 placeholder="Filtrer les permissions…"
                 className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-4 text-sm focus:border-emerald-400 focus:outline-none" />
             </div>
-            <div className="flex items-center gap-2 text-[10px] font-black">
-              {Object.entries(RISK_STYLE).map(([k, cls]) => (
-                <span key={k} className={`rounded-full border px-2 py-0.5 ${cls}`}>{RISK_LABEL[k]}</span>
+            {/* Filtres par niveau de risque */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                onClick={() => setRiskFilter('all')}
+                className={`rounded-full border px-3 py-1 text-[10px] font-black transition ${riskFilter === 'all' ? 'border-neutral-400 bg-neutral-100 text-neutral-700' : 'border-neutral-200 text-neutral-400 hover:border-neutral-300'}`}>
+                Tous
+              </button>
+              {Object.entries(RISK_LABEL).map(([k, label]) => (
+                <button key={k} onClick={() => setRiskFilter(riskFilter === k ? 'all' : k)}
+                  className={`rounded-full border px-3 py-1 text-[10px] font-black transition ${riskFilter === k ? RISK_STYLE[k] : 'border-neutral-200 text-neutral-400 hover:border-neutral-300'}`}>
+                  {label}
+                </button>
               ))}
             </div>
           </div>
@@ -1091,9 +1103,11 @@ export default function RolesPage() {
           {permsLoading && <div className="h-64 rounded-2xl bg-neutral-100 animate-pulse" />}
 
           {!permsLoading && Object.entries(grouped).map(([mod, perms]) => {
-            const filteredPerms = permSearch
-              ? perms.filter(p => p.key.toLowerCase().includes(permSearch.toLowerCase()) || p.label.toLowerCase().includes(permSearch.toLowerCase()))
-              : perms;
+            const filteredPerms = perms.filter(p => {
+              const matchSearch = !permSearch || p.key.toLowerCase().includes(permSearch.toLowerCase()) || p.label.toLowerCase().includes(permSearch.toLowerCase());
+              const matchRisk   = riskFilter === 'all' || p.riskLevel === riskFilter;
+              return matchSearch && matchRisk;
+            });
             if (filteredPerms.length === 0) return null;
             return (
               <div key={mod} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">

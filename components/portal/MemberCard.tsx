@@ -4,6 +4,7 @@ export type MemberCardData = {
   id: string;
   firstName: string;
   lastName: string;
+  gender?: 'homme' | 'femme';
   role: string;
   antenne?: string;
   year: number;
@@ -71,6 +72,11 @@ export function MemberCard({ member, printable = false }: { member: MemberCardDa
         {/* Bottom row */}
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40">Titulaire</p>
+          {member.gender && (
+            <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-white/35 sm:text-[9px]">
+              {member.gender === 'femme' ? 'Madame' : 'Monsieur'}
+            </p>
+          )}
           <p className="mt-0.5 truncate text-[1.1rem] font-black leading-tight tracking-[-0.02em] text-white sm:text-[1.3rem]">
             {member.firstName} {member.lastName.toUpperCase()}
           </p>

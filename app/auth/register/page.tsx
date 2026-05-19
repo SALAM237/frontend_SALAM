@@ -19,6 +19,7 @@ const FILIERES = [
 type Step = 1 | 2;
 
 interface FormData {
+  gender: '' | 'homme' | 'femme';
   firstName: string; lastName: string;
   email: string; phone: string;
   pays: string; filiere: string;
@@ -27,7 +28,7 @@ interface FormData {
 }
 
 const EMPTY: FormData = {
-  firstName: '', lastName: '', email: '', phone: '',
+  gender: '', firstName: '', lastName: '', email: '', phone: '',
   pays: '', filiere: '', password: '', confirm: '', cgu: false,
 };
 
@@ -46,6 +47,7 @@ export default function RegisterPage() {
 
   const validateStep1 = () => {
     const e: typeof errors = {};
+    if (!form.gender)           e.gender    = 'Sélectionnez votre civilité';
     if (!form.firstName.trim()) e.firstName = 'Champ requis';
     if (!form.lastName.trim())  e.lastName  = 'Champ requis';
     if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = 'E-mail invalide';
@@ -79,6 +81,7 @@ export default function RegisterPage() {
       await apiClient('/api/v1/auth/register', {
         method: 'POST',
         body: JSON.stringify({
+          gender:    form.gender,
           firstName: form.firstName,
           lastName:  form.lastName,
           email:     form.email,
@@ -177,6 +180,40 @@ export default function RegisterPage() {
 
       {step === 1 && (
         <form onSubmit={handleNext} className="space-y-4" noValidate>
+
+          {/* Civilité */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">
+              Civilité <span className="text-red-400">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { value: 'homme', label: 'Monsieur' },
+                { value: 'femme', label: 'Madame' },
+              ] as { value: 'homme' | 'femme'; label: string }[]).map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => set('gender', opt.value)}
+                  className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-black transition-all ${
+                    form.gender === opt.value
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
+                      : errors.gender
+                      ? 'border-red-300 text-neutral-500 hover:border-red-400'
+                      : 'border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700'
+                  }`}
+                >
+                  {opt.value === 'homme'
+                    ? <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className={form.gender === 'homme' ? 'text-blue-500' : 'text-neutral-400'}><circle cx="12" cy="7" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2H6z"/></svg>
+                    : <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className={form.gender === 'femme' ? 'text-pink-500' : 'text-neutral-400'}><circle cx="12" cy="7" r="4"/><path d="M12 13c-3 0-5.5 1.3-7 3.3V21h14v-4.7C17.5 14.3 15 13 12 13z"/></svg>
+                  }
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {errors.gender && <p className="text-[11px] text-red-500">{errors.gender}</p>}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <Field label="Prénom" error={errors.firstName}>
               <input type="text" autoComplete="given-name" required

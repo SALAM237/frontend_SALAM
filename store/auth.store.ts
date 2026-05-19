@@ -5,6 +5,7 @@ export interface AuthUser {
   email: string;
   firstName: string;
   lastName: string;
+  gender?: 'homme' | 'femme';
   memberStatus: 'pending' | 'active' | 'suspended' | 'rejected';
   roles: { name: string; slug: string; permissions: string[] }[];
   avatar?: string;

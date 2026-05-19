@@ -7,6 +7,7 @@ export interface AdminUser {
   _id: string;
   firstName: string;
   lastName: string;
+  gender?: 'homme' | 'femme';
   email: string;
   memberStatus: string;
   bureauPoste?: string | null;
