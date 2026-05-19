@@ -74,7 +74,7 @@ function ArticleForm({
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Statut</label>
             <div className="flex gap-3">
-              {[{ v: 'draft', l: 'Brouillon' }, { v: 'published', l: 'Publier' }].map(({ v, l }) => (
+              {([{ v: 'draft', l: 'Brouillon' }, { v: 'published', l: 'Publier' }] as const).map(({ v, l }) => (
                 <button key={v} type="button" onClick={() => setF(p => ({ ...p, status: v }))}
                   className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-black transition ${f.status === v ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'}`}>
                   {l}
