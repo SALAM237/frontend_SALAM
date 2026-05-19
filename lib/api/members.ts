@@ -146,6 +146,41 @@ export function useSuspendMember() {
   });
 }
 
+/* ── CSV bulk import ──────────────────────────────────────── */
+
+export interface CsvImportMember {
+  firstName:   string;
+  lastName:    string;
+  email:       string;
+  phone?:      string;
+  bureauPoste?: string;
+}
+
+export interface ImportResult {
+  created: number;
+  skipped: number;
+  emailed: number;
+  errors:  { row: number; reason: string }[];
+}
+
+export function useImportMembersCSV() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc    = useQueryClient();
+  return useMutation({
+    mutationFn: (members: CsvImportMember[]) =>
+      apiClient<ImportResult>('/api/v1/admin/members/bulk-import', {
+        method: 'POST',
+        body:   JSON.stringify({ members }),
+        token:  token ?? '',
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
+      qc.invalidateQueries({ queryKey: ['admin-stats'] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 /* ── Member self-service ──────────────────────────────────── */
 
 export function useUpdateProfile() {
