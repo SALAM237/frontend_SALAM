@@ -57,8 +57,8 @@ export default function DemoAdminMessagesPage() {
           <FlaskConical size={13} />
           Mode démo — données fictives
         </div>
-        <Link href="/admin/dashboard" className="text-xs font-semibold text-yellow-700 hover:text-yellow-900 transition-colors">
-          ← Portail admin
+        <Link href="/demo/admin" className="text-xs font-semibold text-yellow-700 hover:text-yellow-900 transition-colors">
+          ← Dashboard démo
         </Link>
       </div>
 

@@ -1,19 +1,30 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, FlaskConical } from 'lucide-react';
-import { useAuthStore } from '@/store/auth.store';
-import { getPostLoginRedirect } from '@/lib/auth/roles';
+
+function readCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  return document.cookie.split(';').find(c => c.trim().startsWith(name + '='))?.split('=')[1] ?? null;
+}
 
 export default function DemoLayout({ children }: { children: React.ReactNode }) {
-  const user = useAuthStore(s => s.user);
-  const backHref  = user ? getPostLoginRedirect(user) : '/';
-  const backLabel = user ? 'Mon espace' : 'Retour au site';
+  const [backHref,  setBackHref]  = useState('/');
+  const [backLabel, setBackLabel] = useState('Retour au site');
+
+  useEffect(() => {
+    if (readCookie('salam_auth') !== '1') return;
+    const space = readCookie('salam_space');
+    if (space === 'admin')  { setBackHref('/admin/dashboard');  setBackLabel('Mon espace admin');  return; }
+    if (space === 'member') { setBackHref('/member/dashboard'); setBackLabel('Mon espace membre'); return; }
+    setBackHref('/choisir-espace');
+    setBackLabel('Mon espace');
+  }, []);
 
   return (
     <>
-      {/* Demo banner */}
-      <div className="flex items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2.5 sm:px-6">
+      <div className="sticky top-0 z-50 flex items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2.5 sm:px-6">
         <div className="flex items-center gap-2">
           <FlaskConical size={14} className="shrink-0 text-amber-600" />
           <span className="text-[11px] font-black uppercase tracking-[0.12em] text-amber-700">
@@ -27,7 +38,6 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
           <ArrowLeft size={11} /> {backLabel}
         </Link>
       </div>
-
       {children}
     </>
   );
