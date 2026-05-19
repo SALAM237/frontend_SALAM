@@ -360,45 +360,116 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
   );
 }
 
-/* ─── Poste modal ─────────────────────────────────────────── */
-function PosteModal({ admin, onClose }: { admin: AdminUser; onClose: () => void }) {
-  const [poste, setPoste] = useState(admin.bureauPoste ?? '');
-  const assign = useAssignPoste();
+/* ─── Edit admin modal (poste + type de rôle) ─────────────── */
+function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => void }) {
+  const isSA = (admin.roles ?? []).some(r => r.slug === 'super_admin');
+
+  const [poste,    setPoste]    = useState(admin.bureauPoste ?? '');
+  const [roleSlug, setRoleSlug] = useState<'admin' | 'super_admin'>(isSA ? 'super_admin' : 'admin');
+  const [saving,   setSaving]   = useState(false);
+
+  const assign  = useAssignPoste();
+  const promote = usePromoteAdmin();
+  const revoke  = useRevokeAdmin();
+
+  const roleChanged  = (roleSlug === 'super_admin') !== isSA;
+  const posteChanged = poste !== (admin.bureauPoste ?? '');
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      if (roleChanged) {
+        if (roleSlug === 'super_admin') {
+          await promote.mutateAsync({ userId: admin._id, roleSlug: 'super_admin' });
+        } else {
+          // Rétrograder : retirer tous les rôles admin, puis ré-attribuer admin
+          await revoke.mutateAsync(admin._id);
+          await promote.mutateAsync({ userId: admin._id, roleSlug: 'admin' });
+        }
+      }
+      if (posteChanged) {
+        await assign.mutateAsync({ userId: admin._id, poste: poste || null });
+      }
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+
+        {/* En-tête */}
         <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
           <div>
-            <p className="font-black text-neutral-900">Poste du bureau</p>
+            <p className="font-black text-neutral-900">Modifier l'administrateur</p>
             <p className="text-xs text-neutral-500 mt-0.5">{admin.firstName} {admin.lastName}</p>
           </div>
           <button onClick={onClose}><X size={16} className="text-neutral-400" /></button>
         </div>
-        <div className="px-6 py-5 space-y-2">
-          <label className="block text-xs font-black uppercase tracking-[0.1em] text-neutral-500 mb-2">Sélectionner un poste</label>
-          <div className="space-y-1.5">
-            <button
-              onClick={() => setPoste('')}
-              className={`w-full rounded-xl border px-4 py-2.5 text-left text-sm transition ${poste === '' ? 'border-neutral-400 bg-neutral-50 font-black text-neutral-700' : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'}`}>
-              Aucun poste
-            </button>
-            {BUREAU_POSTES.map(p => (
-              <button key={p} onClick={() => setPoste(p)}
-                className={`w-full rounded-xl border px-4 py-2.5 text-left text-sm transition ${poste === p ? 'border-emerald-500 bg-emerald-50 font-black text-emerald-700' : 'border-neutral-200 text-neutral-700 hover:border-emerald-300'}`}>
-                {p}
+
+        <div className="px-6 py-5 space-y-5">
+
+          {/* Type de rôle */}
+          <div className="space-y-2">
+            <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Type d'administrateur</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setRoleSlug('admin')}
+                className={`flex flex-col items-start rounded-xl border p-3 text-left transition ${roleSlug === 'admin' ? 'border-emerald-500 bg-emerald-50' : 'border-neutral-200 hover:border-neutral-300'}`}>
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <Shield size={13} className={roleSlug === 'admin' ? 'text-emerald-600' : 'text-neutral-400'} />
+                  <span className={`text-sm font-black ${roleSlug === 'admin' ? 'text-emerald-800' : 'text-neutral-700'}`}>Administrateur</span>
+                </div>
+                <span className="text-[10px] leading-tight text-neutral-400">Accès selon les permissions du rôle</span>
+                {roleSlug === 'admin' && <div className="mt-2 h-0.5 w-5 rounded-full bg-emerald-500" />}
               </button>
-            ))}
+              <button onClick={() => setRoleSlug('super_admin')}
+                className={`flex flex-col items-start rounded-xl border p-3 text-left transition ${roleSlug === 'super_admin' ? 'border-amber-400 bg-amber-50' : 'border-neutral-200 hover:border-neutral-300'}`}>
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <Crown size={13} className={roleSlug === 'super_admin' ? 'text-amber-600' : 'text-neutral-400'} />
+                  <span className={`text-sm font-black ${roleSlug === 'super_admin' ? 'text-amber-800' : 'text-neutral-700'}`}>Super Admin</span>
+                </div>
+                <span className="text-[10px] leading-tight text-neutral-400">Accès total — toutes permissions</span>
+                {roleSlug === 'super_admin' && <div className="mt-2 h-0.5 w-5 rounded-full bg-amber-500" />}
+              </button>
+            </div>
+            {roleChanged && roleSlug === 'admin' && (
+              <p className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] text-amber-700">
+                <AlertTriangle size={11} className="shrink-0" />
+                La rétrogradation révoque temporairement l'accès puis le ré-attribue en tant qu'admin.
+              </p>
+            )}
+          </div>
+
+          {/* Poste du bureau */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Poste du bureau</p>
+            <div className="space-y-1">
+              <button onClick={() => setPoste('')}
+                className={`w-full rounded-xl border px-4 py-2.5 text-left text-sm transition ${poste === '' ? 'border-neutral-400 bg-neutral-50 font-black text-neutral-700' : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'}`}>
+                Aucun poste
+              </button>
+              <div className="max-h-44 overflow-y-auto space-y-1 pr-0.5">
+                {BUREAU_POSTES.map(p => (
+                  <button key={p} onClick={() => setPoste(p)}
+                    className={`w-full rounded-xl border px-4 py-2.5 text-left text-sm transition ${poste === p ? 'border-emerald-500 bg-emerald-50 font-black text-emerald-700' : 'border-neutral-200 text-neutral-700 hover:border-emerald-300'}`}>
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
+
         <div className="flex gap-3 border-t border-neutral-100 px-6 py-4">
           <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600">Annuler</button>
           <button
-            onClick={() => assign.mutate({ userId: admin._id, poste: poste || null }, { onSuccess: () => onClose() })}
-            disabled={assign.isPending}
+            onClick={handleSave}
+            disabled={saving || (!roleChanged && !posteChanged)}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-60">
-            {assign.isPending && <Loader2 size={13} className="animate-spin" />}
-            Confirmer
+            {saving && <Loader2 size={13} className="animate-spin" />}
+            Enregistrer
           </button>
         </div>
       </div>
@@ -617,7 +688,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
 /* ─── Custom perms modal ──────────────────────────────────── */
 function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () => void }) {
   const { data: permsData } = usePermissionsList();
-  const grouped  = permsData?.data?.grouped  ?? {} as Record<string, PermissionDoc[]>;
+  const grouped  = (permsData?.data?.grouped  ?? {}) as Record<string, PermissionDoc[]>;
   const allPerms = useMemo(() => Object.values(grouped).flat(), [grouped]);
 
   const [customSet, setCustomSet] = useState<Set<string>>(new Set(admin.customPermissions));
@@ -625,7 +696,7 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
   const [search,    setSearch]    = useState('');
   const update = useUpdateCustomPerms();
 
-  /* ── Filtrage par recherche ── */
+  /* ── Filtrage ── */
   const filteredGroups = useMemo(() => {
     if (!search) return Object.entries(grouped);
     return Object.entries(grouped)
@@ -636,7 +707,7 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
       .filter(([, perms]) => perms.length > 0);
   }, [grouped, search]);
 
-  /* ── Tout sélectionner (global) ── */
+  /* ── Tout sélectionner global ── */
   const allCustom = allPerms.length > 0 && allPerms.every(p => customSet.has(p.key));
   const allDenied = allPerms.length > 0 && allPerms.every(p => deniedSet.has(p.key));
 
@@ -651,12 +722,12 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
     setCustomSet(prev => { const n = new Set(prev); allPerms.forEach(p => n.delete(p.key)); return n; });
   };
 
-  /* ── Par permission ── */
-  const toggleCustom = (key: string) => {
+  /* ── Par permission (boutons) ── */
+  const grantPerm = (key: string) => {
     setCustomSet(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
     setDeniedSet(prev => { const n = new Set(prev); n.delete(key); return n; });
   };
-  const toggleDenied = (key: string) => {
+  const denyPerm = (key: string) => {
     setDeniedSet(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
     setCustomSet(prev => { const n = new Set(prev); n.delete(key); return n; });
   };
@@ -703,19 +774,20 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
           </div>
         </div>
 
-        {/* En-tête des colonnes + tout sélectionner global */}
-        <div className="border-b border-neutral-100 px-5 py-2 shrink-0 bg-neutral-50 flex items-center">
+        {/* En-têtes colonnes + TOUT sélectionner */}
+        <div className="border-b border-neutral-100 px-4 py-1.5 shrink-0 bg-neutral-50 flex items-center">
           <span className="flex-1 text-[10px] font-black uppercase tracking-wide text-neutral-400">Permission</span>
-          <div className="flex items-center gap-5 shrink-0">
-            <label className="flex flex-col items-center gap-0.5 cursor-pointer select-none">
+          {/* Colonnes alignées avec les boutons des lignes */}
+          <div className="flex items-center gap-2 shrink-0">
+            <label className="flex w-[86px] flex-col items-center gap-0.5 cursor-pointer select-none">
               <input type="checkbox" checked={allCustom} onChange={toggleAllCustom}
-                className="h-4 w-4 rounded cursor-pointer accent-emerald-600" />
-              <span className="text-[9px] font-black text-emerald-700 uppercase">TOUT +</span>
+                className="h-3.5 w-3.5 rounded cursor-pointer accent-emerald-600" />
+              <span className="text-[9px] font-black text-emerald-700 uppercase tracking-wide">Tout +</span>
             </label>
-            <label className="flex flex-col items-center gap-0.5 cursor-pointer select-none">
+            <label className="flex w-[78px] flex-col items-center gap-0.5 cursor-pointer select-none">
               <input type="checkbox" checked={allDenied} onChange={toggleAllDenied}
-                className="h-4 w-4 rounded cursor-pointer accent-red-500" />
-              <span className="text-[9px] font-black text-red-600 uppercase">TOUT −</span>
+                className="h-3.5 w-3.5 rounded cursor-pointer accent-red-500" />
+              <span className="text-[9px] font-black text-red-600 uppercase tracking-wide">Tout −</span>
             </label>
           </div>
         </div>
@@ -732,20 +804,20 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
             return (
               <div key={mod} className="overflow-hidden rounded-xl border border-neutral-100">
                 {/* En-tête module */}
-                <div className="flex items-center gap-3 px-4 py-2 bg-neutral-50">
+                <div className="flex items-center px-4 py-2 bg-neutral-50">
                   <span className="flex-1 text-[10px] font-black uppercase tracking-[0.1em] text-neutral-600">
                     {MODULE_LABELS[mod] ?? mod}
                     <span className="ml-2 font-normal normal-case text-neutral-400">({perms.length})</span>
                   </span>
-                  <div className="flex items-center gap-5 shrink-0">
-                    <label className="cursor-pointer" title="Tout accorder ce module">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <label className="flex w-[86px] items-center justify-center cursor-pointer" title="Tout accorder ce module">
                       <input type="checkbox"
                         checked={allModCustom}
                         ref={el => { if (el) el.indeterminate = someModCustom && !allModCustom; }}
                         onChange={() => toggleModuleCustom(perms)}
                         className="h-3.5 w-3.5 rounded cursor-pointer accent-emerald-600" />
                     </label>
-                    <label className="cursor-pointer" title="Tout refuser ce module">
+                    <label className="flex w-[78px] items-center justify-center cursor-pointer" title="Tout refuser ce module">
                       <input type="checkbox"
                         checked={allModDenied}
                         ref={el => { if (el) el.indeterminate = someModDenied && !allModDenied; }}
@@ -755,34 +827,33 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
                   </div>
                 </div>
 
-                {/* Permissions du module */}
+                {/* Permissions */}
                 <div className="divide-y divide-neutral-50">
                   {perms.map(p => {
                     const isCustom = customSet.has(p.key);
                     const isDenied = deniedSet.has(p.key);
                     return (
                       <div key={p.key}
-                        className={`flex items-center gap-3 px-4 py-2.5 transition ${isCustom ? 'bg-emerald-50/50' : isDenied ? 'bg-red-50/40' : 'hover:bg-neutral-50'}`}>
-                        {/* Checkboxes à gauche */}
-                        <div className="flex items-center gap-5 shrink-0">
-                          <label className="cursor-pointer" title="Accorder">
-                            <input type="checkbox" checked={isCustom} onChange={() => toggleCustom(p.key)}
-                              className="h-4 w-4 rounded cursor-pointer accent-emerald-600" />
-                          </label>
-                          <label className="cursor-pointer" title="Refuser">
-                            <input type="checkbox" checked={isDenied} onChange={() => toggleDenied(p.key)}
-                              className="h-4 w-4 rounded cursor-pointer accent-red-500" />
-                          </label>
-                        </div>
-                        {/* Nom de la permission */}
+                        className={`flex items-center px-4 py-2.5 transition ${isCustom ? 'bg-emerald-50/50' : isDenied ? 'bg-red-50/40' : 'hover:bg-neutral-50'}`}>
                         <div className="flex-1 min-w-0">
                           <p className={`text-xs font-semibold ${isCustom ? 'text-emerald-800' : isDenied ? 'text-red-700' : 'text-neutral-800'}`}>{p.label}</p>
                           <p className="font-mono text-[10px] text-neutral-400">{p.key}</p>
                         </div>
-                        {/* Niveau de risque */}
-                        <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-black ${RISK_STYLE[p.riskLevel]}`}>
+                        <span className={`mx-3 shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-black ${RISK_STYLE[p.riskLevel]}`}>
                           {RISK_LABEL[p.riskLevel]}
                         </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => grantPerm(p.key)}
+                            className={`w-[86px] rounded-full border px-2 py-0.5 text-[10px] font-black transition ${isCustom ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-400 hover:border-emerald-300 hover:text-emerald-600'}`}>
+                            + accordée
+                          </button>
+                          <button
+                            onClick={() => denyPerm(p.key)}
+                            className={`w-[78px] rounded-full border px-2 py-0.5 text-[10px] font-black transition ${isDenied ? 'border-red-400 bg-red-50 text-red-600' : 'border-neutral-200 text-neutral-400 hover:border-red-300 hover:text-red-500'}`}>
+                            − refusée
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -1049,9 +1120,9 @@ export default function RolesPage() {
       )}
 
       {/* Modals */}
-      {showCreate  && <CreateRoleModal onClose={() => setShowCreate(false)} />}
-      {showPromote && <PromoteModal    onClose={() => setShowPromote(false)} />}
-      {editPoste   && <PosteModal  admin={editPoste} onClose={() => setEditPoste(null)} />}
+      {showCreate  && <CreateRoleModal  onClose={() => setShowCreate(false)} />}
+      {showPromote && <PromoteModal     onClose={() => setShowPromote(false)} />}
+      {editPoste   && <EditAdminModal   admin={editPoste} onClose={() => setEditPoste(null)} />}
       {editPerms   && <CustomPermsModal admin={editPerms} onClose={() => setEditPerms(null)} />}
     </div>
   );
