@@ -1,33 +1,43 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, MapPin, Clock, Send, CheckCircle, Phone } from 'lucide-react';
+import { Mail, MapPin, Clock, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import { PageHero } from '@/components/public/PageHero';
 import Link from 'next/link';
+import { useContactForm } from '@/lib/api/public';
 
 const SUBJECTS = [
-  { value: 'adhesion', label: 'Adhésion / Devenir membre' },
-  { value: 'activites', label: 'Activités & événements' },
+  { value: 'adhesion',    label: 'Adhésion / Devenir membre' },
+  { value: 'activites',   label: 'Activités & événements' },
   { value: 'partenariat', label: 'Partenariat' },
-  { value: 'presse', label: 'Presse & médias' },
-  { value: 'don', label: 'Don & soutien financier' },
-  { value: 'autre', label: 'Autre' },
+  { value: 'presse',      label: 'Presse & médias' },
+  { value: 'don',         label: 'Don & soutien financier' },
+  { value: 'autre',       label: 'Autre' },
 ];
 
 export default function ContactPage() {
-  const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [sent,  setSent]  = useState(false);
+  const [form,  setForm]  = useState({ name: '', email: '', subject: '', message: '', phone: '' });
+  const [honey, setHoney] = useState('');
+
+  const contact = useContactForm();
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    setLoading(false);
-    setSent(true);
+    contact.mutate(
+      {
+        name:    form.name,
+        email:   form.email,
+        subject: form.subject,
+        message: form.message,
+        phone:   form.phone || undefined,
+        _honey:  honey || undefined,
+      },
+      { onSuccess: () => setSent(true) },
+    );
   };
 
   const inputCls = "h-11 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 text-sm text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/12";
@@ -61,7 +71,7 @@ export default function ContactPage() {
                     </p>
                   </div>
                   <button
-                    onClick={() => { setSent(false); setForm({ name: '', email: '', subject: '', message: '' }); }}
+                    onClick={() => { setSent(false); setForm({ name: '', email: '', subject: '', message: '', phone: '' }); }}
                     className="text-sm font-bold text-emerald-600 underline underline-offset-2 hover:text-emerald-700"
                   >
                     Envoyer un autre message
@@ -70,7 +80,27 @@ export default function ContactPage() {
               ) : (
                 <>
                   <h2 className="mb-6 text-xl font-black text-neutral-900">Envoyez-nous un message</h2>
+
+                  {contact.isError && (
+                    <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      <AlertCircle size={15} className="shrink-0" />
+                      {contact.error instanceof Error ? contact.error.message : 'Une erreur est survenue. Veuillez réessayer.'}
+                    </div>
+                  )}
+
                   <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                    {/* honeypot — hidden from humans, filled by bots */}
+                    <input
+                      type="text"
+                      name="_honey"
+                      value={honey}
+                      onChange={e => setHoney(e.target.value)}
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      autoComplete="off"
+                      className="hidden"
+                    />
+
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[11px] font-black uppercase tracking-widest text-neutral-400">Prénom & nom *</label>
@@ -101,10 +131,10 @@ export default function ContactPage() {
 
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={contact.isPending}
                       className="flex h-12 items-center justify-center gap-2 rounded-full bg-emerald-600 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20 disabled:opacity-60"
                     >
-                      {loading ? (
+                      {contact.isPending ? (
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                       ) : (
                         <><Send size={14} /> Envoyer le message</>
@@ -126,9 +156,9 @@ export default function ContactPage() {
                 <h3 className="mb-5 font-black text-neutral-900">Informations de contact</h3>
                 <div className="flex flex-col gap-4">
                   {[
-                    { Icon: Mail, label: 'Email officiel', value: 'contact@salam-cameroun.com', href: 'mailto:contact@salam-cameroun.com' },
-                    { Icon: MapPin, label: 'Localisation', value: 'Paris, Île-de-France', href: undefined },
-                    { Icon: Clock, label: 'Délai de réponse', value: 'Sous 48h ouvrées', href: undefined },
+                    { Icon: Mail,  label: 'Email officiel',   value: 'contact@salam-cameroun.com', href: 'mailto:contact@salam-cameroun.com' },
+                    { Icon: MapPin, label: 'Localisation',    value: 'Paris, Île-de-France',       href: undefined },
+                    { Icon: Clock,  label: 'Délai de réponse', value: 'Sous 48h ouvrées',          href: undefined },
                   ].map(({ Icon, label, value, href }) => (
                     <div key={label} className="flex items-start gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100">

@@ -1,17 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle, Users, Award, MessageSquare, Calendar, Shield, Zap, Send } from 'lucide-react';
+import { CheckCircle, Users, Award, MessageSquare, Calendar, Shield, Zap, Send, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
+import { useAdhesionForm } from '@/lib/api/public';
 
 const AVANTAGES = [
-  { icon: Users, title: 'Réseau solidaire', text: 'Accès à la communauté SALAM — entraide, réseau Alumni, soutien mutuel.' },
-  { icon: Calendar, title: 'Activités exclusives', text: 'Inscription aux événements sportifs, culturels, conférences et ateliers.' },
-  { icon: Award, title: 'Carte membre', text: 'Carte membre numérique officielle de l\'association SALAM.' },
-  { icon: MessageSquare, title: 'Messagerie privée', text: 'Accès à la messagerie interne pour échanger avec les autres membres.' },
-  { icon: Shield, title: 'Accompagnement', text: 'Orientation, préparation administrative et accompagnement personnalisé.' },
-  { icon: Zap, title: 'Opportunités', text: 'Accès aux offres d\'emploi, stages et opportunités entrepreneuriales.' },
+  { icon: Users,         title: 'Réseau solidaire',   text: 'Accès à la communauté SALAM — entraide, réseau Alumni, soutien mutuel.' },
+  { icon: Calendar,      title: 'Activités exclusives', text: 'Inscription aux événements sportifs, culturels, conférences et ateliers.' },
+  { icon: Award,         title: 'Carte membre',        text: "Carte membre numérique officielle de l'association SALAM." },
+  { icon: MessageSquare, title: 'Messagerie privée',   text: 'Accès à la messagerie interne pour échanger avec les autres membres.' },
+  { icon: Shield,        title: 'Accompagnement',      text: 'Orientation, préparation administrative et accompagnement personnalisé.' },
+  { icon: Zap,           title: 'Opportunités',        text: "Accès aux offres d'emploi, stages et opportunités entrepreneuriales." },
 ];
 
 const ETAPES = [
@@ -21,19 +22,30 @@ const ETAPES = [
 ];
 
 export default function AdhesionPage() {
-  const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', city: '', motivation: '', type: 'etudiant' });
+  const [sent,  setSent]  = useState(false);
+  const [form,  setForm]  = useState({ firstName: '', lastName: '', email: '', phone: '', city: '', motivation: '', type: 'etudiant' });
+  const [honey, setHoney] = useState('');
+
+  const adhesion = useAdhesionForm();
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setLoading(false);
-    setSent(true);
+    adhesion.mutate(
+      {
+        firstName:  form.firstName,
+        lastName:   form.lastName,
+        email:      form.email,
+        city:       form.city,
+        type:       form.type,
+        motivation: form.motivation,
+        phone:      form.phone || undefined,
+        _honey:     honey || undefined,
+      },
+      { onSuccess: () => setSent(true) },
+    );
   };
 
   const inputCls = "h-11 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 text-sm text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/12";
@@ -135,6 +147,25 @@ export default function AdhesionPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                {/* honeypot — hidden from humans, filled by bots */}
+                <input
+                  type="text"
+                  name="_honey"
+                  value={honey}
+                  onChange={e => setHoney(e.target.value)}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  autoComplete="off"
+                  className="hidden"
+                />
+
+                {adhesion.isError && (
+                  <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <AlertCircle size={15} className="shrink-0" />
+                    {adhesion.error instanceof Error ? adhesion.error.message : 'Une erreur est survenue. Veuillez réessayer.'}
+                  </div>
+                )}
+
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-black uppercase tracking-widest text-neutral-400">Prénom *</label>
@@ -184,10 +215,13 @@ export default function AdhesionPage() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={adhesion.isPending}
                   className="flex h-12 items-center justify-center gap-2 rounded-full bg-emerald-600 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20 disabled:opacity-60"
                 >
-                  {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <><Send size={14} /> Envoyer ma demande</>}
+                  {adhesion.isPending
+                    ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    : <><Send size={14} /> Envoyer ma demande</>
+                  }
                 </button>
 
                 <p className="text-center text-[11px] text-neutral-400">
