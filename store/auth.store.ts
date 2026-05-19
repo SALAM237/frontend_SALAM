@@ -18,9 +18,10 @@ interface AuthState {
   user: AuthUser | null;
   accessToken: string | null;
 
-  setAuth: (user: AuthUser, accessToken: string) => void;
-  setToken: (accessToken: string) => void;
-  clearAuth: () => void;
+  setAuth:    (user: AuthUser, accessToken: string) => void;
+  setToken:   (accessToken: string) => void;
+  patchUser:  (patch: Partial<AuthUser>) => void;
+  clearAuth:  () => void;
 }
 
 export const useAuthStore = create<AuthState>()((set) => ({
@@ -36,6 +37,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
     set({ user, accessToken });
   },
   setToken:  (accessToken) => set({ accessToken }),
+  patchUser: (patch) => set(state => ({
+    user: state.user ? { ...state.user, ...patch } : null,
+  })),
   clearAuth: () => {
     if (typeof document !== 'undefined') {
       document.cookie = 'salam_auth=; path=/; max-age=0';

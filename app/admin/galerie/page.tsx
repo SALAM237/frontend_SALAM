@@ -55,7 +55,7 @@ function AlbumForm({
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Visibilité</label>
             <div className="flex gap-3">
-              {[{ v: 'public', l: 'Public', icon: Eye }, { v: 'members', l: 'Membres', icon: EyeOff }].map(({ v, l, icon: Icon }) => (
+              {([{ v: 'public', l: 'Public', icon: Eye }, { v: 'members', l: 'Membres', icon: EyeOff }] as const).map(({ v, l, icon: Icon }) => (
                 <button key={v} type="button" onClick={() => setVisibility(v)}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-black transition ${visibility === v ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'}`}>
                   <Icon size={13} /> {l}

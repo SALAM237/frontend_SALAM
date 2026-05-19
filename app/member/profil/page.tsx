@@ -8,8 +8,8 @@ import { useUpdateProfile } from '@/lib/api/members';
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 export default function ProfilPage() {
-  const user                            = useAuthStore(s => s.user);
-  const { setUser }                     = useAuthStore();
+  const user      = useAuthStore(s => s.user);
+  const patchUser = useAuthStore(s => s.patchUser);
   const fileRef                         = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar ?? null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -36,6 +36,7 @@ export default function ProfilPage() {
       { firstName: form.firstName, lastName: form.lastName, phone: form.phone || undefined },
       {
         onSuccess: () => {
+          patchUser({ firstName: form.firstName, lastName: form.lastName });
           setSaved(true);
           setTimeout(() => setSaved(false), 2500);
         },
@@ -65,7 +66,10 @@ export default function ProfilPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message ?? 'Erreur upload');
-      if (json.data?.avatar) setAvatarPreview(json.data.avatar);
+      if (json.data?.avatar) {
+        setAvatarPreview(json.data.avatar);
+        patchUser({ avatar: json.data.avatar });
+      }
     } catch (err) {
       console.error('[avatar upload]', err);
     } finally {
