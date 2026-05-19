@@ -30,6 +30,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
   setAuth: (user, accessToken) => {
     if (typeof document !== 'undefined') {
       document.cookie = 'salam_auth=1; path=/; SameSite=Lax; max-age=86400';
+      // Clear any previously chosen space so choisir-espace is always shown at each login
+      document.cookie = 'salam_space=; path=/; max-age=0';
     }
     set({ user, accessToken });
   },

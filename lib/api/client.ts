@@ -24,7 +24,12 @@ export async function apiClient<T = unknown>(
     headers,
   });
 
-  const json = await res.json();
-  if (!res.ok) throw new Error(json?.message ?? 'Erreur serveur');
-  return json as ApiResponse<T>;
+  let json: ApiResponse<T>;
+  try {
+    json = await res.json();
+  } catch {
+    throw new Error(`Erreur serveur (${res.status})`);
+  }
+  if (!res.ok) throw new Error((json as any)?.message ?? 'Erreur serveur');
+  return json;
 }

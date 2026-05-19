@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   Plus, X, Send, Eye, ChevronDown, Search,
   CalendarDays, Euro, FileText, CheckCircle2, Clock,
@@ -116,6 +116,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const [memberSearch,  setMemberSearch]  = useState('');
   const [cotisFilter,   setCotisFilter]   = useState<'all' | MemberListItem['cotisationStatus']>('all');
   const [errors,        setErrors]        = useState<Record<string, string>>({});
+  const recipientRef = useRef<HTMLDivElement>(null);
 
   const createInvoice = useCreateInvoice();
   const { data: membersData } = useAdminMembers({ limit: 200, status: 'active' });
@@ -235,14 +236,17 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Destinataires */}
-          <div className="space-y-3">
+          <div className="space-y-3" ref={recipientRef}>
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Destinataires</label>
             <div className="flex gap-2">
               <button type="button" onClick={() => setRecipientMode('all')}
                 className={`rounded-xl border px-4 py-2 text-xs font-black transition ${recipientMode === 'all' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300'}`}>
                 Tous les actifs
               </button>
-              <button type="button" onClick={() => setRecipientMode('select')}
+              <button type="button" onClick={() => {
+                  setRecipientMode('select');
+                  setTimeout(() => recipientRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                }}
                 className={`rounded-xl border px-4 py-2 text-xs font-black transition ${recipientMode === 'select' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300'}`}>
                 Sélection manuelle
               </button>
