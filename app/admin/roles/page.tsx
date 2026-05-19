@@ -406,95 +406,209 @@ function PosteModal({ admin, onClose }: { admin: AdminUser; onClose: () => void 
   );
 }
 
-/* ─── Promote modal ───────────────────────────────────────── */
+/* ─── Promote modal (2 étapes) ────────────────────────────── */
 function PromoteModal({ onClose }: { onClose: () => void }) {
-  const [search,       setSearch]       = useState('');
-  const [selectedId,   setSelectedId]   = useState('');
-  const [selectedName, setSelectedName] = useState('');
-  const [promoted,     setPromoted]     = useState(false);
+  const [step,          setStep]          = useState<'member' | 'config' | 'success'>('member');
+  const [search,        setSearch]        = useState('');
+  const [selectedId,    setSelectedId]    = useState('');
+  const [selectedName,  setSelectedName]  = useState('');
+  const [roleSlug,      setRoleSlug]      = useState<'admin' | 'super_admin'>('admin');
+  const [posteSearch,   setPosteSearch]   = useState('');
+  const [selectedPoste, setSelectedPoste] = useState('');
 
   const { data: membersData } = useAdminMembers({ search, limit: 20 });
   const promote = usePromoteAdmin();
+  const assign  = useAssignPoste();
   const members = membersData?.data?.data ?? [];
 
-  /* ── Success screen ── */
-  if (promoted) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
-          <div className="flex flex-col items-center gap-4 px-6 py-10 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-              <UserCheck size={28} className="text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-lg font-black text-neutral-900">Promotion confirmée !</p>
-              <p className="mt-2 text-sm text-neutral-500">
-                <strong className="text-neutral-800">{selectedName}</strong> est maintenant administrateur.
-              </p>
-              <p className="mt-1.5 text-xs text-emerald-700 font-semibold">
-                ✉ Un email de notification lui a été envoyé avec un lien de connexion.
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="mt-2 inline-flex h-10 items-center gap-2 rounded-full bg-emerald-600 px-6 text-sm font-black text-white transition hover:bg-emerald-700">
-              Fermer
-            </button>
+  const filteredPostes = useMemo(() =>
+    posteSearch
+      ? BUREAU_POSTES.filter(p => p.toLowerCase().includes(posteSearch.toLowerCase()))
+      : BUREAU_POSTES,
+  [posteSearch]);
+
+  const handleSelectPoste = (p: string) => { setSelectedPoste(p); setPosteSearch(p); };
+  const handleClearPoste  = () => { setSelectedPoste(''); setPosteSearch(''); };
+
+  const handlePromote = () => {
+    promote.mutate({ userId: selectedId, roleSlug }, {
+      onSuccess: () => {
+        if (selectedPoste) {
+          assign.mutate(
+            { userId: selectedId, poste: selectedPoste },
+            { onSuccess: () => setStep('success'), onError: () => setStep('success') },
+          );
+        } else {
+          setStep('success');
+        }
+      },
+    });
+  };
+
+  /* ── Succès ── */
+  if (step === 'success') return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+        <div className="flex flex-col items-center gap-4 px-6 py-10 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+            <UserCheck size={28} className="text-emerald-600" />
           </div>
+          <div>
+            <p className="text-lg font-black text-neutral-900">Promotion confirmée !</p>
+            <p className="mt-2 text-sm text-neutral-500">
+              <strong className="text-neutral-800">{selectedName}</strong> est maintenant{' '}
+              {roleSlug === 'super_admin' ? 'super administrateur' : 'administrateur'}.
+            </p>
+            {selectedPoste && (
+              <p className="mt-1 text-xs font-semibold text-emerald-700">Poste : {selectedPoste}</p>
+            )}
+            <p className="mt-1.5 text-xs font-semibold text-emerald-700">
+              ✉ Un email de notification lui a été envoyé avec un lien de connexion.
+            </p>
+          </div>
+          <button onClick={onClose}
+            className="mt-2 inline-flex h-10 items-center gap-2 rounded-full bg-emerald-600 px-6 text-sm font-black text-white transition hover:bg-emerald-700">
+            Fermer
+          </button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+
+        {/* En-tête */}
         <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
           <div>
-            <p className="font-black text-neutral-900">Promouvoir en administrateur</p>
-            <p className="text-xs text-neutral-500 mt-0.5">Rechercher un membre actif</p>
+            <p className="font-black text-neutral-900">
+              {step === 'member' ? 'Promouvoir un membre' : `Configurer — ${selectedName}`}
+            </p>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              {step === 'member' ? 'Étape 1 / 2 — Sélectionner un membre' : 'Étape 2 / 2 — Rôle & poste'}
+            </p>
           </div>
           <button onClick={onClose}><X size={16} className="text-neutral-400" /></button>
         </div>
-        <div className="px-6 py-5 space-y-3">
-          <div className="relative">
-            <Search size={13} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} autoFocus
-              placeholder="Nom ou email…"
-              className="h-10 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-4 text-sm focus:border-emerald-400 focus:outline-none" />
-          </div>
-          <div className="max-h-52 overflow-y-auto divide-y divide-neutral-50 rounded-xl border border-neutral-100">
-            {members.length === 0 && (
-              <p className="py-8 text-center text-xs text-neutral-400">Aucun résultat</p>
-            )}
-            {members.map(m => (
-              <label key={m._id} htmlFor={`promote-${m._id}`}
-                className="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-neutral-50">
-                <input type="radio" id={`promote-${m._id}`} name="promote-member"
-                  value={m._id} checked={selectedId === m._id}
-                  onChange={() => { setSelectedId(m._id); setSelectedName(`${m.firstName} ${m.lastName}`); }}
-                  className="accent-emerald-600" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
-                  <p className="text-xs text-neutral-400 truncate">{m.email}</p>
+
+        {/* ── Étape 1 : choix du membre ── */}
+        {step === 'member' && (
+          <>
+            <div className="px-6 py-5 space-y-3">
+              <div className="relative">
+                <Search size={13} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                <input value={search} onChange={e => setSearch(e.target.value)} autoFocus
+                  placeholder="Nom ou email…"
+                  className="h-10 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-4 text-sm focus:border-emerald-400 focus:outline-none" />
+              </div>
+              <div className="max-h-52 overflow-y-auto divide-y divide-neutral-50 rounded-xl border border-neutral-100">
+                {members.length === 0 && <p className="py-8 text-center text-xs text-neutral-400">Aucun résultat</p>}
+                {members.map(m => (
+                  <label key={m._id} htmlFor={`promote-${m._id}`}
+                    className="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-neutral-50">
+                    <input type="radio" id={`promote-${m._id}`} name="promote-member"
+                      value={m._id} checked={selectedId === m._id}
+                      onChange={() => { setSelectedId(m._id); setSelectedName(`${m.firstName} ${m.lastName}`); }}
+                      className="accent-emerald-600" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
+                      <p className="text-xs text-neutral-400 truncate">{m.email}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-3 border-t border-neutral-100 px-6 py-4">
+              <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600">Annuler</button>
+              <button disabled={!selectedId} onClick={() => setStep('config')}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white disabled:opacity-50">
+                Suivant <ChevronRight size={14} />
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── Étape 2 : rôle + poste ── */}
+        {step === 'config' && (
+          <>
+            <div className="px-6 py-5 space-y-5">
+
+              {/* Sélection du rôle */}
+              <div className="space-y-2">
+                <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Rôle à attribuer</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => setRoleSlug('admin')}
+                    className={`flex flex-col items-start rounded-xl border p-3 text-left transition ${roleSlug === 'admin' ? 'border-emerald-500 bg-emerald-50' : 'border-neutral-200 hover:border-neutral-300'}`}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Shield size={13} className={roleSlug === 'admin' ? 'text-emerald-600' : 'text-neutral-400'} />
+                      <span className={`text-sm font-black ${roleSlug === 'admin' ? 'text-emerald-800' : 'text-neutral-700'}`}>Administrateur</span>
+                    </div>
+                    <span className="text-[10px] text-neutral-400 leading-tight">Accès selon les permissions du rôle</span>
+                    {roleSlug === 'admin' && <div className="mt-2 h-0.5 w-5 rounded-full bg-emerald-500" />}
+                  </button>
+                  <button onClick={() => setRoleSlug('super_admin')}
+                    className={`flex flex-col items-start rounded-xl border p-3 text-left transition ${roleSlug === 'super_admin' ? 'border-amber-400 bg-amber-50' : 'border-neutral-200 hover:border-neutral-300'}`}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Crown size={13} className={roleSlug === 'super_admin' ? 'text-amber-600' : 'text-neutral-400'} />
+                      <span className={`text-sm font-black ${roleSlug === 'super_admin' ? 'text-amber-800' : 'text-neutral-700'}`}>Super Admin</span>
+                    </div>
+                    <span className="text-[10px] text-neutral-400 leading-tight">Accès total — toutes permissions</span>
+                    {roleSlug === 'super_admin' && <div className="mt-2 h-0.5 w-5 rounded-full bg-amber-500" />}
+                  </button>
                 </div>
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className="flex gap-3 border-t border-neutral-100 px-6 py-4">
-          <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600">Annuler</button>
-          <button
-            disabled={!selectedId || promote.isPending}
-            onClick={() => promote.mutate(
-              { userId: selectedId },
-              { onSuccess: () => setPromoted(true) },
-            )}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white disabled:opacity-50">
-            {promote.isPending && <Loader2 size={13} className="animate-spin" />}
-            Promouvoir
-          </button>
-        </div>
+              </div>
+
+              {/* Poste (combobox recherchable) */}
+              <div className="space-y-1.5">
+                <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Poste du bureau <span className="font-normal normal-case tracking-normal text-neutral-400">(optionnel)</span></p>
+                <div className="relative">
+                  <Search size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                  <input
+                    value={posteSearch}
+                    onChange={e => { setPosteSearch(e.target.value); if (e.target.value !== selectedPoste) setSelectedPoste(''); }}
+                    placeholder="Rechercher un poste…"
+                    className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-8 pr-8 text-sm focus:border-emerald-400 focus:outline-none" />
+                  {selectedPoste && (
+                    <button onClick={handleClearPoste}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-300 hover:text-neutral-500">
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-36 overflow-y-auto rounded-xl border border-neutral-100 divide-y divide-neutral-50">
+                  <button onClick={handleClearPoste}
+                    className={`w-full px-3 py-2 text-left text-xs transition ${!selectedPoste ? 'bg-neutral-50 font-black text-neutral-500' : 'text-neutral-400 hover:bg-neutral-50'}`}>
+                    Aucun poste
+                  </button>
+                  {filteredPostes.map(p => (
+                    <button key={p} onClick={() => handleSelectPoste(p)}
+                      className={`w-full px-3 py-2 text-left text-sm transition ${selectedPoste === p ? 'bg-emerald-50 font-black text-emerald-700' : 'text-neutral-700 hover:bg-neutral-50'}`}>
+                      {p}
+                    </button>
+                  ))}
+                  {filteredPostes.length === 0 && (
+                    <p className="px-3 py-3 text-center text-xs text-neutral-400">Aucun résultat</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 border-t border-neutral-100 px-6 py-4">
+              <button onClick={() => setStep('member')}
+                className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600">
+                Retour
+              </button>
+              <button
+                disabled={promote.isPending || assign.isPending}
+                onClick={handlePromote}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white disabled:opacity-50">
+                {(promote.isPending || assign.isPending) && <Loader2 size={13} className="animate-spin" />}
+                Promouvoir
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -503,17 +617,69 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
 /* ─── Custom perms modal ──────────────────────────────────── */
 function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () => void }) {
   const { data: permsData } = usePermissionsList();
-  const allPerms = permsData?.data?.permissions ?? [];
+  const grouped  = permsData?.data?.grouped  ?? {} as Record<string, PermissionDoc[]>;
+  const allPerms = useMemo(() => Object.values(grouped).flat(), [grouped]);
+
   const [customSet, setCustomSet] = useState<Set<string>>(new Set(admin.customPermissions));
   const [deniedSet, setDeniedSet] = useState<Set<string>>(new Set(admin.deniedPermissions));
   const [search,    setSearch]    = useState('');
   const update = useUpdateCustomPerms();
 
-  const filtered = allPerms.filter(p => !search || p.key.includes(search) || p.label.toLowerCase().includes(search.toLowerCase()));
+  /* ── Filtrage par recherche ── */
+  const filteredGroups = useMemo(() => {
+    if (!search) return Object.entries(grouped);
+    return Object.entries(grouped)
+      .map(([mod, perms]) => [mod, perms.filter(p =>
+        p.key.toLowerCase().includes(search.toLowerCase()) ||
+        p.label.toLowerCase().includes(search.toLowerCase()),
+      )] as [string, PermissionDoc[]])
+      .filter(([, perms]) => perms.length > 0);
+  }, [grouped, search]);
+
+  /* ── Tout sélectionner (global) ── */
+  const allCustom = allPerms.length > 0 && allPerms.every(p => customSet.has(p.key));
+  const allDenied = allPerms.length > 0 && allPerms.every(p => deniedSet.has(p.key));
+
+  const toggleAllCustom = () => {
+    if (allCustom) { setCustomSet(new Set()); return; }
+    setCustomSet(new Set(allPerms.map(p => p.key)));
+    setDeniedSet(prev => { const n = new Set(prev); allPerms.forEach(p => n.delete(p.key)); return n; });
+  };
+  const toggleAllDenied = () => {
+    if (allDenied) { setDeniedSet(new Set()); return; }
+    setDeniedSet(new Set(allPerms.map(p => p.key)));
+    setCustomSet(prev => { const n = new Set(prev); allPerms.forEach(p => n.delete(p.key)); return n; });
+  };
+
+  /* ── Par permission ── */
+  const toggleCustom = (key: string) => {
+    setCustomSet(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+    setDeniedSet(prev => { const n = new Set(prev); n.delete(key); return n; });
+  };
+  const toggleDenied = (key: string) => {
+    setDeniedSet(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+    setCustomSet(prev => { const n = new Set(prev); n.delete(key); return n; });
+  };
+
+  /* ── Par module ── */
+  const toggleModuleCustom = (perms: PermissionDoc[]) => {
+    const keys = perms.map(p => p.key);
+    const allOn = keys.every(k => customSet.has(k));
+    setCustomSet(prev => { const n = new Set(prev); keys.forEach(k => allOn ? n.delete(k) : n.add(k)); return n; });
+    if (!allOn) setDeniedSet(prev => { const n = new Set(prev); keys.forEach(k => n.delete(k)); return n; });
+  };
+  const toggleModuleDenied = (perms: PermissionDoc[]) => {
+    const keys = perms.map(p => p.key);
+    const allOn = keys.every(k => deniedSet.has(k));
+    setDeniedSet(prev => { const n = new Set(prev); keys.forEach(k => allOn ? n.delete(k) : n.add(k)); return n; });
+    if (!allOn) setCustomSet(prev => { const n = new Set(prev); keys.forEach(k => n.delete(k)); return n; });
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200 max-h-[90vh] flex flex-col">
+      <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200 max-h-[90vh] flex flex-col">
+
+        {/* En-tête */}
         <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 shrink-0">
           <div>
             <p className="font-black text-neutral-900">Permissions personnalisées</p>
@@ -522,56 +688,111 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
           <button onClick={onClose}><X size={16} className="text-neutral-400" /></button>
         </div>
 
-        <div className="border-b border-neutral-100 px-4 py-2 shrink-0 bg-neutral-50">
-          <div className="flex gap-4 text-[10px] font-black uppercase tracking-wide">
-            <span className="text-emerald-700">+ Accordée : {customSet.size}</span>
-            <span className="text-red-600">− Refusée : {deniedSet.size}</span>
-          </div>
+        {/* Compteurs */}
+        <div className="border-b border-neutral-100 px-5 py-2 shrink-0 bg-neutral-50 flex items-center gap-4">
+          <span className="text-[10px] font-black uppercase tracking-wide text-emerald-700">+ Accordée : {customSet.size}</span>
+          <span className="text-[10px] font-black uppercase tracking-wide text-red-600">− Refusée : {deniedSet.size}</span>
         </div>
 
+        {/* Recherche */}
         <div className="border-b border-neutral-100 px-4 py-2.5 shrink-0">
           <div className="relative">
             <Search size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filtrer…"
-              className="h-8 w-full rounded-lg border border-neutral-200 bg-white pl-8 pr-3 text-xs focus:outline-none" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filtrer les permissions…"
+              className="h-8 w-full rounded-lg border border-neutral-200 bg-white pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-400" />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto divide-y divide-neutral-50 px-4 py-2">
-          {filtered.map(p => {
-            const isCustom = customSet.has(p.key);
-            const isDenied = deniedSet.has(p.key);
+        {/* En-tête des colonnes + tout sélectionner global */}
+        <div className="border-b border-neutral-100 px-5 py-2 shrink-0 bg-neutral-50 flex items-center">
+          <span className="flex-1 text-[10px] font-black uppercase tracking-wide text-neutral-400">Permission</span>
+          <div className="flex items-center gap-5 shrink-0">
+            <label className="flex flex-col items-center gap-0.5 cursor-pointer select-none">
+              <input type="checkbox" checked={allCustom} onChange={toggleAllCustom}
+                className="h-4 w-4 rounded cursor-pointer accent-emerald-600" />
+              <span className="text-[9px] font-black text-emerald-700 uppercase">TOUT +</span>
+            </label>
+            <label className="flex flex-col items-center gap-0.5 cursor-pointer select-none">
+              <input type="checkbox" checked={allDenied} onChange={toggleAllDenied}
+                className="h-4 w-4 rounded cursor-pointer accent-red-500" />
+              <span className="text-[9px] font-black text-red-600 uppercase">TOUT −</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Liste groupée par module */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+          {filteredGroups.map(([mod, perms]) => {
+            const keys          = perms.map(p => p.key);
+            const allModCustom  = keys.every(k => customSet.has(k));
+            const someModCustom = keys.some(k => customSet.has(k));
+            const allModDenied  = keys.every(k => deniedSet.has(k));
+            const someModDenied = keys.some(k => deniedSet.has(k));
+
             return (
-              <div key={p.key} className="flex items-center gap-3 py-2.5">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-neutral-800">{p.label}</p>
-                  <p className="font-mono text-[10px] text-neutral-400">{p.key}</p>
+              <div key={mod} className="overflow-hidden rounded-xl border border-neutral-100">
+                {/* En-tête module */}
+                <div className="flex items-center gap-3 px-4 py-2 bg-neutral-50">
+                  <span className="flex-1 text-[10px] font-black uppercase tracking-[0.1em] text-neutral-600">
+                    {MODULE_LABELS[mod] ?? mod}
+                    <span className="ml-2 font-normal normal-case text-neutral-400">({perms.length})</span>
+                  </span>
+                  <div className="flex items-center gap-5 shrink-0">
+                    <label className="cursor-pointer" title="Tout accorder ce module">
+                      <input type="checkbox"
+                        checked={allModCustom}
+                        ref={el => { if (el) el.indeterminate = someModCustom && !allModCustom; }}
+                        onChange={() => toggleModuleCustom(perms)}
+                        className="h-3.5 w-3.5 rounded cursor-pointer accent-emerald-600" />
+                    </label>
+                    <label className="cursor-pointer" title="Tout refuser ce module">
+                      <input type="checkbox"
+                        checked={allModDenied}
+                        ref={el => { if (el) el.indeterminate = someModDenied && !allModDenied; }}
+                        onChange={() => toggleModuleDenied(perms)}
+                        className="h-3.5 w-3.5 rounded cursor-pointer accent-red-500" />
+                    </label>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    title="Accorder"
-                    onClick={() => {
-                      setCustomSet(prev => { const n = new Set(prev); isCustom ? n.delete(p.key) : n.add(p.key); return n; });
-                      setDeniedSet(prev => { const n = new Set(prev); n.delete(p.key); return n; });
-                    }}
-                    className={`rounded-full border px-2 py-0.5 text-[10px] font-black transition ${isCustom ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-400 hover:border-emerald-300'}`}>
-                    + accordée
-                  </button>
-                  <button
-                    title="Refuser"
-                    onClick={() => {
-                      setDeniedSet(prev => { const n = new Set(prev); isDenied ? n.delete(p.key) : n.add(p.key); return n; });
-                      setCustomSet(prev => { const n = new Set(prev); n.delete(p.key); return n; });
-                    }}
-                    className={`rounded-full border px-2 py-0.5 text-[10px] font-black transition ${isDenied ? 'border-red-400 bg-red-50 text-red-600' : 'border-neutral-200 text-neutral-400 hover:border-red-300'}`}>
-                    − refusée
-                  </button>
+
+                {/* Permissions du module */}
+                <div className="divide-y divide-neutral-50">
+                  {perms.map(p => {
+                    const isCustom = customSet.has(p.key);
+                    const isDenied = deniedSet.has(p.key);
+                    return (
+                      <div key={p.key}
+                        className={`flex items-center gap-3 px-4 py-2.5 transition ${isCustom ? 'bg-emerald-50/50' : isDenied ? 'bg-red-50/40' : 'hover:bg-neutral-50'}`}>
+                        {/* Checkboxes à gauche */}
+                        <div className="flex items-center gap-5 shrink-0">
+                          <label className="cursor-pointer" title="Accorder">
+                            <input type="checkbox" checked={isCustom} onChange={() => toggleCustom(p.key)}
+                              className="h-4 w-4 rounded cursor-pointer accent-emerald-600" />
+                          </label>
+                          <label className="cursor-pointer" title="Refuser">
+                            <input type="checkbox" checked={isDenied} onChange={() => toggleDenied(p.key)}
+                              className="h-4 w-4 rounded cursor-pointer accent-red-500" />
+                          </label>
+                        </div>
+                        {/* Nom de la permission */}
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs font-semibold ${isCustom ? 'text-emerald-800' : isDenied ? 'text-red-700' : 'text-neutral-800'}`}>{p.label}</p>
+                          <p className="font-mono text-[10px] text-neutral-400">{p.key}</p>
+                        </div>
+                        {/* Niveau de risque */}
+                        <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-black ${RISK_STYLE[p.riskLevel]}`}>
+                          {RISK_LABEL[p.riskLevel]}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
         </div>
 
+        {/* Pied de page */}
         <div className="flex gap-3 border-t border-neutral-100 px-6 py-4 shrink-0">
           <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600">Annuler</button>
           <button
