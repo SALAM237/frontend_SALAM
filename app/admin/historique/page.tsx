@@ -166,7 +166,7 @@ export default function HistoriquePage() {
             return (
               <div key={log._id} className="flex items-start gap-4 px-5 py-4 hover:bg-neutral-50/60 transition-colors">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
-                  {log.adminName.split(' ').map(w => w[0]).join('').slice(0, 2)}
+                  {(log.adminName ?? 'Sys').split(' ').map((w: string) => w[0] ?? '').join('').slice(0, 2) || 'SY'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">

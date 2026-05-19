@@ -2,17 +2,24 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight, Loader2, MailWarning, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { getPostLoginRedirect } from '@/lib/auth/roles';
 
+/* Refuse les redirections vers des URLs externes (open-redirect guard) */
+function safeRedirect(url: string | null, fallback: string): string {
+  if (!url || !url.startsWith('/') || url.startsWith('//')) return fallback;
+  return url;
+}
+
 const PENDING_MSG = 'Veuillez vérifier votre email avant de vous connecter';
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { setAuth } = useAuthStore();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const { setAuth }  = useAuthStore();
 
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -46,7 +53,9 @@ export default function LoginPage() {
       });
 
       setAuth(me.data, res.data.accessToken);
-      router.push(getPostLoginRedirect(me.data));
+      const fallback  = getPostLoginRedirect(me.data);
+      const redirectTo = safeRedirect(searchParams.get('redirect'), fallback);
+      router.push(redirectTo);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur de connexion';
       if (msg === PENDING_MSG) {

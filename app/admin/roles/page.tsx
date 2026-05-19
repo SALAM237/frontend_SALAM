@@ -298,9 +298,11 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
   onSuspend:  (id: string) => void;
   isSelf: boolean;
 }) {
-  const initials   = `${admin.firstName[0]}${admin.lastName[0]}`.toUpperCase();
-  const isSA       = admin.roles.some(r => r.slug === 'super_admin');
+  const initials    = `${admin.firstName?.[0] ?? '?'}${admin.lastName?.[0] ?? '?'}`.toUpperCase();
+  const isSA        = (admin.roles ?? []).some(r => r.slug === 'super_admin');
   const isSuspended = admin.memberStatus === 'suspended';
+  const customPerms = admin.customPermissions ?? [];
+  const deniedPerms = admin.deniedPermissions ?? [];
 
   return (
     <div className={`flex items-start gap-4 rounded-2xl border bg-white p-4 shadow-sm ${isSuspended ? 'border-red-100 opacity-60' : 'border-neutral-100'}`}>
@@ -323,11 +325,11 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
             <span key={r.slug} className="rounded-full bg-neutral-100 px-2 py-0.5 text-[9px] font-black text-neutral-600">{r.name}</span>
           ))}
         </div>
-        {admin.customPermissions.length > 0 && (
-          <p className="mt-1 text-[10px] text-blue-600">+{admin.customPermissions.length} perm. personnalisée{admin.customPermissions.length > 1 ? 's' : ''}</p>
+        {customPerms.length > 0 && (
+          <p className="mt-1 text-[10px] text-blue-600">+{customPerms.length} perm. personnalisée{customPerms.length > 1 ? 's' : ''}</p>
         )}
-        {admin.deniedPermissions.length > 0 && (
-          <p className="mt-0.5 text-[10px] text-red-500">−{admin.deniedPermissions.length} perm. refusée{admin.deniedPermissions.length > 1 ? 's' : ''}</p>
+        {deniedPerms.length > 0 && (
+          <p className="mt-0.5 text-[10px] text-red-500">−{deniedPerms.length} perm. refusée{deniedPerms.length > 1 ? 's' : ''}</p>
         )}
       </div>
       <div className="flex flex-col gap-1.5 shrink-0">
@@ -406,11 +408,43 @@ function PosteModal({ admin, onClose }: { admin: AdminUser; onClose: () => void 
 
 /* ─── Promote modal ───────────────────────────────────────── */
 function PromoteModal({ onClose }: { onClose: () => void }) {
-  const [search,     setSearch]     = useState('');
-  const [selectedId, setSelectedId] = useState('');
+  const [search,       setSearch]       = useState('');
+  const [selectedId,   setSelectedId]   = useState('');
+  const [selectedName, setSelectedName] = useState('');
+  const [promoted,     setPromoted]     = useState(false);
+
   const { data: membersData } = useAdminMembers({ search, limit: 20 });
   const promote = usePromoteAdmin();
   const members = membersData?.data?.data ?? [];
+
+  /* ── Success screen ── */
+  if (promoted) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+          <div className="flex flex-col items-center gap-4 px-6 py-10 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+              <UserCheck size={28} className="text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-lg font-black text-neutral-900">Promotion confirmée !</p>
+              <p className="mt-2 text-sm text-neutral-500">
+                <strong className="text-neutral-800">{selectedName}</strong> est maintenant administrateur.
+              </p>
+              <p className="mt-1.5 text-xs text-emerald-700 font-semibold">
+                ✉ Un email de notification lui a été envoyé avec un lien de connexion.
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="mt-2 inline-flex h-10 items-center gap-2 rounded-full bg-emerald-600 px-6 text-sm font-black text-white transition hover:bg-emerald-700">
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -438,7 +472,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
                 className="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-neutral-50">
                 <input type="radio" id={`promote-${m._id}`} name="promote-member"
                   value={m._id} checked={selectedId === m._id}
-                  onChange={() => setSelectedId(m._id)}
+                  onChange={() => { setSelectedId(m._id); setSelectedName(`${m.firstName} ${m.lastName}`); }}
                   className="accent-emerald-600" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
@@ -452,7 +486,10 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600">Annuler</button>
           <button
             disabled={!selectedId || promote.isPending}
-            onClick={() => promote.mutate({ userId: selectedId }, { onSuccess: () => onClose() })}
+            onClick={() => promote.mutate(
+              { userId: selectedId },
+              { onSuccess: () => setPromoted(true) },
+            )}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white disabled:opacity-50">
             {promote.isPending && <Loader2 size={13} className="animate-spin" />}
             Promouvoir
