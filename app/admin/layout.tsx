@@ -13,7 +13,9 @@ import { useAuthStore } from '@/store/auth.store';
 import { isSuperAdmin } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
 
-const NAV = [
+type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean };
+
+const BASE_NAV: NavItem[] = [
   { label: 'Tableau de bord',   href: '/admin/dashboard',         icon: LayoutDashboard },
   { label: 'Adhérents',         href: '/admin/adherents',         icon: Users },
   { label: 'Nouveau membre',    href: '/admin/adherents/nouveau', icon: UserPlus },
@@ -25,13 +27,15 @@ const NAV = [
   { label: 'Actualités',        href: '/admin/actualites',        icon: Newspaper },
   { label: 'Messages',          href: '/admin/messages',          icon: MessageSquare },
   { label: 'Historique',        href: '/admin/historique',        icon: History },
+  { label: 'Rôles & Accès',     href: '/admin/roles',             icon: Shield, superAdminOnly: true },
   { label: 'Paramètres',        href: '/admin/parametres',        icon: Settings },
 ];
 
-function AdminSidebar({ open, onClose, initials, displayName, adminRole, onLogout }: {
+function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauPoste, onLogout, nav }: {
   open: boolean; onClose: () => void;
-  initials: string; displayName: string; adminRole: string;
+  initials: string; displayName: string; adminRole: string; bureauPoste?: string | null;
   onLogout: () => void;
+  nav: NavItem[];
 }) {
   const pathname = usePathname();
 
@@ -75,7 +79,7 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, onLogou
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <p className="mb-2 px-2 text-[9px] font-black uppercase tracking-[0.22em] text-white/20">Navigation</p>
           <ul className="flex flex-col gap-0.5">
-            {NAV.map(({ label, href, icon: Icon }) => {
+            {nav.map(({ label, href, icon: Icon }) => {
               const active = pathname === href || (href !== '/admin/dashboard' && pathname.startsWith(href));
               return (
                 <li key={href}>
@@ -106,7 +110,9 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, onLogou
             </div>
             <div className="flex-1 min-w-0">
               <p className="truncate text-sm font-black text-white/80">{displayName}</p>
-              <p className="truncate text-[10px] text-white/30">{adminRole}</p>
+              <p className="truncate text-[10px] text-white/30">
+                {bureauPoste ?? adminRole}
+              </p>
             </div>
             <button onClick={onLogout} className="text-white/25 transition-colors hover:text-red-400" title="Déconnexion">
               <LogOut size={15} />
@@ -133,17 +139,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/auth/login');
   };
 
-  const currentPage = NAV.find(n => n.href === pathname || (n.href !== '/admin/dashboard' && pathname.startsWith(n.href)));
-  const initials = user ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() : 'A';
+  const SA  = isSuperAdmin(user);
+  const nav = BASE_NAV.filter(n => !n.superAdminOnly || SA);
+
+  const currentPage = nav.find(n => n.href === pathname || (n.href !== '/admin/dashboard' && pathname.startsWith(n.href)));
+  const initials    = user ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() : 'A';
   const displayName = user ? `${user.firstName} ${user.lastName}` : 'Administrateur';
-  const adminRole = user?.roles.find(r => ['admin', 'super_admin'].includes(r.slug))?.name ?? 'Admin';
+  const adminRole   = user?.roles.find(r => ['admin', 'super_admin'].includes(r.slug))?.name ?? 'Admin';
+  const bureauPoste = user?.bureauPoste ?? null;
 
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">
       <AdminSidebar
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
         initials={initials} displayName={displayName} adminRole={adminRole}
+        bureauPoste={bureauPoste}
         onLogout={handleLogout}
+        nav={nav}
       />
 
       {/* Main content */}

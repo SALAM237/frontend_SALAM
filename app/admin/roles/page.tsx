@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Shield, Plus, X, Check, ChevronRight, Loader2, Search,
   Crown, Users, Key, AlertTriangle, Trash2, Edit3, UserCheck,
-  ShieldOff, Settings,
+  ShieldOff, Ban,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { isSuperAdmin } from '@/lib/auth/roles';
@@ -15,7 +16,7 @@ import {
   type RoleDoc, type PermissionDoc,
 } from '@/lib/api/roles';
 import { useAdminUsers, usePromoteAdmin, useRevokeAdmin, type AdminUser } from '@/lib/api/admins';
-import { useAdminMembers } from '@/lib/api/members';
+import { useAdminMembers, useSuspendMember } from '@/lib/api/members';
 import { toast } from 'sonner';
 
 /* ─── Risk badge ──────────────────────────────────────────── */
@@ -288,18 +289,20 @@ function RoleEditor({ role, onClose }: { role: RoleDoc; onClose: () => void }) {
 }
 
 /* ─── Admin user card ─────────────────────────────────────── */
-function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, isSelf }: {
+function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSelf }: {
   admin: AdminUser;
   onEditPoste: (a: AdminUser) => void;
   onEditPerms: (a: AdminUser) => void;
-  onRevoke: (id: string) => void;
+  onRevoke:   (id: string) => void;
+  onSuspend:  (id: string) => void;
   isSelf: boolean;
 }) {
-  const initials = `${admin.firstName[0]}${admin.lastName[0]}`.toUpperCase();
-  const isSA     = admin.roles.some(r => r.slug === 'super_admin');
+  const initials   = `${admin.firstName[0]}${admin.lastName[0]}`.toUpperCase();
+  const isSA       = admin.roles.some(r => r.slug === 'super_admin');
+  const isSuspended = admin.memberStatus === 'suspended';
 
   return (
-    <div className="flex items-start gap-4 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
+    <div className={`flex items-start gap-4 rounded-2xl border bg-white p-4 shadow-sm ${isSuspended ? 'border-red-100 opacity-60' : 'border-neutral-100'}`}>
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
         {initials}
       </div>
@@ -308,6 +311,7 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, isSelf }: {
           <p className="font-black text-sm text-neutral-900">{admin.firstName} {admin.lastName}</p>
           {isSA && <Crown size={12} className="text-amber-500" />}
           {isSelf && <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-black text-emerald-700">Vous</span>}
+          {isSuspended && <span className="rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[9px] font-black text-red-600">Suspendu</span>}
         </div>
         <p className="text-[11px] text-neutral-400 truncate">{admin.email}</p>
         {admin.bureauPoste && (
@@ -335,10 +339,18 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, isSelf }: {
           <Key size={12} />
         </button>
         {!isSelf && !isSA && (
-          <button onClick={() => onRevoke(admin._id)} title="Révoquer l'accès admin"
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-100 text-red-300 transition hover:border-red-300 hover:text-red-600">
-            <ShieldOff size={12} />
-          </button>
+          <>
+            <button onClick={() => onRevoke(admin._id)} title="Révoquer l'accès admin"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-100 text-red-300 transition hover:border-red-300 hover:text-red-600">
+              <ShieldOff size={12} />
+            </button>
+            {!isSuspended && (
+              <button onClick={() => onSuspend(admin._id)} title="Bloquer le compte"
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-orange-100 text-orange-300 transition hover:border-orange-400 hover:text-orange-600">
+                <Ban size={12} />
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -544,8 +556,13 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
 type Tab = 'roles' | 'bureau' | 'permissions';
 
 export default function RolesPage() {
-  const user = useAuthStore(s => s.user);
-  const SA   = isSuperAdmin(user);
+  const user   = useAuthStore(s => s.user);
+  const SA     = isSuperAdmin(user);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user !== undefined && !SA) router.push('/admin/dashboard');
+  }, [SA, user, router]);
 
   const [tab,          setTab]          = useState<Tab>('roles');
   const [selectedRole, setSelectedRole] = useState<RoleDoc | null>(null);
@@ -558,7 +575,8 @@ export default function RolesPage() {
   const { data: rolesData,    isLoading: rolesLoading }   = useRoles();
   const { data: adminsData,   isLoading: adminsLoading }  = useAdminUsers();
   const { data: permsData,    isLoading: permsLoading }   = usePermissionsList();
-  const revokeAdmin = useRevokeAdmin();
+  const revokeAdmin   = useRevokeAdmin();
+  const suspendMember = useSuspendMember();
 
   const roles   = rolesData?.data   ?? [];
   const admins  = adminsData?.data  ?? [];
@@ -579,6 +597,11 @@ export default function RolesPage() {
   const handleRevoke = (id: string) => {
     if (!confirm('Révoquer l\'accès administrateur de cet utilisateur ?')) return;
     revokeAdmin.mutate(id);
+  };
+
+  const handleSuspend = (id: string) => {
+    if (!confirm('Bloquer ce compte ? L\'utilisateur ne pourra plus se connecter.')) return;
+    suspendMember.mutate(id);
   };
 
   return (
@@ -681,6 +704,7 @@ export default function RolesPage() {
                 onEditPoste={setEditPoste}
                 onEditPerms={setEditPerms}
                 onRevoke={handleRevoke}
+                onSuspend={handleSuspend}
               />
             ))}
           </div>

@@ -4,9 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, CheckCircle2, Shield, Bell, Globe, Lock, Palette } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/auth.store';
+import { isSuperAdmin } from '@/lib/auth/roles';
 
 export default function ParametresPage() {
   const router = useRouter();
+  const user   = useAuthStore(s => s.user);
+  const SA     = isSuperAdmin(user);
   const [saved, setSaved] = useState(false);
   const [assocName, setAssocName] = useState('Association SALAM Cameroun');
   const [email, setEmail] = useState('contact@salam-cameroun.com');
@@ -29,7 +33,11 @@ export default function ParametresPage() {
   };
 
   const handleViewAccess = () => {
-    toast.info('Gestion des rôles et accès disponible dans la rubrique Adhérents.');
+    if (SA) {
+      router.push('/admin/roles');
+    } else {
+      toast.info('Cette section est réservée au super administrateur.');
+    }
   };
 
   const handleMaintenanceToggle = () => {
