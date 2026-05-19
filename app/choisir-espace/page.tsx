@@ -8,9 +8,22 @@ import { useAuthStore } from '@/store/auth.store';
 import { hasAdminRole, hasMemberAccess } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
 
+const SPACE_COOKIE = 'salam_space';
+const COOKIE_OPTS  = 'path=/; SameSite=Lax; max-age=86400';
+
 export default function ChoisirEspacePage() {
   const router  = useRouter();
   const { user, clearAuth } = useAuthStore();
+
+  // If a space was already chosen (this session), go there directly
+  useEffect(() => {
+    const current = document.cookie
+      .split(';')
+      .find(c => c.trim().startsWith(SPACE_COOKIE + '='))
+      ?.split('=')[1];
+    if (current === 'admin')  { router.replace('/admin/dashboard');  return; }
+    if (current === 'member') { router.replace('/member/dashboard'); return; }
+  }, [router]);
 
   // Redirect based on roles once store is hydrated
   useEffect(() => {
@@ -18,10 +31,11 @@ export default function ChoisirEspacePage() {
     const admin  = hasAdminRole(user);
     const member = hasMemberAccess(user);
     if (!admin && !member) { router.replace('/auth/login'); return; }
-    if (!admin)  { router.replace('/member/dashboard'); return; }
-    if (!member) { router.replace('/admin/dashboard');  return; }
-    // both — stay on this page
-  }, [user, router]);
+    if (!admin)  { handleSelectSpace('member'); return; }
+    if (!member) { handleSelectSpace('admin');  return; }
+    // both — stay on this page for user to choose
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Fallback: if store never hydrates (page refresh without re-login), redirect to login
   useEffect(() => {
@@ -33,6 +47,11 @@ export default function ChoisirEspacePage() {
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleSelectSpace = (space: 'member' | 'admin') => {
+    document.cookie = `${SPACE_COOKIE}=${space}; ${COOKIE_OPTS}`;
+    router.push(space === 'admin' ? '/admin/dashboard' : '/member/dashboard');
+  };
 
   const handleLogout = async () => {
     try { await apiClient('/api/v1/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
@@ -86,15 +105,16 @@ export default function ChoisirEspacePage() {
             <span className="text-emerald-400">{user.firstName}</span>
           </h1>
           <p className="mt-3 text-sm text-white/40">
-            Choisissez l'espace auquel vous souhaitez accéder.
+            Choisissez l&apos;espace auquel vous souhaitez accéder.
           </p>
         </div>
 
         <div className="grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-2">
 
           {/* Espace membre */}
-          <Link href="/member/dashboard"
-            className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.07] p-7 transition-all duration-200 hover:border-emerald-400/40 hover:bg-emerald-500/[0.12] hover:shadow-[0_0_40px_rgba(16,185,129,0.1)]">
+          <button
+            onClick={() => handleSelectSpace('member')}
+            className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.07] p-7 text-left transition-all duration-200 hover:border-emerald-400/40 hover:bg-emerald-500/[0.12] hover:shadow-[0_0_40px_rgba(16,185,129,0.1)]">
 
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/15">
               <Users size={22} className="text-emerald-400" />
@@ -116,11 +136,12 @@ export default function ChoisirEspacePage() {
 
             {/* Lueur */}
             <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-500/10 blur-2xl" />
-          </Link>
+          </button>
 
           {/* Bureau Exécutif */}
-          <Link href="/admin/dashboard"
-            className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] p-7 transition-all duration-200 hover:border-white/[0.15] hover:bg-white/[0.07] hover:shadow-[0_0_40px_rgba(255,255,255,0.04)]">
+          <button
+            onClick={() => handleSelectSpace('admin')}
+            className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] p-7 text-left transition-all duration-200 hover:border-white/[0.15] hover:bg-white/[0.07] hover:shadow-[0_0_40px_rgba(255,255,255,0.04)]">
 
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.07]">
               <ShieldCheck size={22} className="text-white/70" />
@@ -146,7 +167,7 @@ export default function ChoisirEspacePage() {
                 {user.roles[0].name}
               </span>
             )}
-          </Link>
+          </button>
 
         </div>
       </main>

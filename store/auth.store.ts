@@ -37,6 +37,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
   clearAuth: () => {
     if (typeof document !== 'undefined') {
       document.cookie = 'salam_auth=; path=/; max-age=0';
+      document.cookie = 'salam_space=; path=/; max-age=0';
     }
     set({ user: null, accessToken: null });
   },
