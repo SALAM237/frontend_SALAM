@@ -54,7 +54,7 @@ const COMMISSION_GROUPS = [
   'Commission Orientation', 'Commission Solidarité', 'Commission Insertion',
 ];
 
-const COUNCIL_GROUPS = ['Conseil des sages'];
+const COUNCIL_POSTES = ['Membre sage', 'Conseiller', 'Sage conseiller'];
 
 const FEMININE_BUREAU_POSTES: Record<string, string> = {
   president: 'Présidente',
@@ -89,21 +89,21 @@ function normalizeBureauPoste(value?: string | null) {
 
 function getCategoryOptions(category: BureauCategory) {
   if (category === 'commission') return COMMISSION_GROUPS;
-  if (category === 'council') return COUNCIL_GROUPS;
+  if (category === 'council') return COUNCIL_POSTES;
   return EXECUTIVE_POSTES;
 }
 
 function buildBureauAssignment(category: BureauCategory, selection: string) {
   if (!selection) return { poste: null, category: null, group: null };
   if (category === 'commission') return { poste: 'Responsable', category, group: selection };
-  if (category === 'council') return { poste: 'Membre sage', category, group: 'Conseil des sages' };
+  if (category === 'council') return { poste: selection, category, group: 'Conseil des sages' };
   return { poste: selection, category, group: 'Bureau exécutif' };
 }
 
 function getInitialBureauSelection(admin: AdminUser) {
   const category = (admin.bureauCategory ?? 'executive') as BureauCategory;
   if (category === 'commission') return admin.bureauGroup ?? '';
-  if (category === 'council') return admin.bureauGroup ?? 'Conseil des sages';
+  if (category === 'council') return admin.bureauPoste ?? 'Membre sage';
   return admin.bureauPoste ?? '';
 }
 
@@ -573,7 +573,7 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
           {/* Poste du bureau */}
           <div className="space-y-1.5">
             <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
-              {bureauCategory === 'commission' ? 'Commission' : bureauCategory === 'council' ? 'Groupe' : 'Poste du bureau'}
+              {bureauCategory === 'commission' ? 'Commission' : bureauCategory === 'council' ? 'Poste conseil' : 'Poste du bureau'}
             </p>
             <div className="space-y-1">
               <button onClick={() => setPoste('')}
@@ -851,7 +851,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
               {/* Poste (combobox recherchable) */}
               <div className="space-y-1.5">
                 <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
-                  {bureauCategory === 'commission' ? 'Commission' : bureauCategory === 'council' ? 'Groupe' : 'Poste du bureau'} <span className="font-normal normal-case tracking-normal text-neutral-400">(optionnel)</span>
+                  {bureauCategory === 'commission' ? 'Commission' : bureauCategory === 'council' ? 'Poste conseil' : 'Poste du bureau'} <span className="font-normal normal-case tracking-normal text-neutral-400">(optionnel)</span>
                 </p>
                 <div className="relative">
                   <Search size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />

@@ -205,7 +205,7 @@ export default function MemberBureauPage() {
         </div>
       )}
 
-      {!isLoading && members.length > 0 && (
+      {!isLoading && (
         <>
           <Section title="Bureau exécutif" eyebrow="Direction">
             {EXECUTIVE_ORDER.map(poste => {

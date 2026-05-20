@@ -32,6 +32,7 @@ const memberNav: NavItem[] = [
   { label: 'Mon espace', href: '/demo/member', icon: LayoutDashboard },
   { label: 'Ma carte', href: '/demo/member/carte', icon: CreditCard },
   { label: 'Mon profil', href: '/demo/member/profil', icon: User },
+  { label: 'Bureau & commissions', href: '/demo/member/bureau', icon: Users },
   { label: 'Cotisations', href: '/demo/member/cotisations', icon: Banknote },
   { label: 'Mes factures', href: '/demo/member/factures', icon: FileText },
   { label: 'Mes documents', href: '/demo/member/documents', icon: FolderOpen },
