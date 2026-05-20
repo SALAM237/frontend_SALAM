@@ -8,7 +8,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Banknote, Bell, CalendarDays, ChevronRight, CreditCard, FileText, FolderOpen,
   History, Images, LayoutDashboard, Menu, MessageSquare, Newspaper, Settings,
-  Shield, User, UserPlus, Users, X,
+  Shield, User, Users, X, Globe, LogOut,
 } from 'lucide-react';
 import { demoAdminUser, demoMemberProfile } from '@/data/demo/demo-portal';
 
@@ -17,7 +17,6 @@ type NavItem = { label: string; href: string; icon: React.ElementType };
 const adminNav: NavItem[] = [
   { label: 'Tableau de bord', href: '/demo/admin', icon: LayoutDashboard },
   { label: 'Adherents', href: '/demo/admin/adherents', icon: Users },
-  { label: 'Cartes membres', href: '/demo/admin/cartes', icon: CreditCard },
   { label: "Frais d'adhesion", href: '/demo/admin/cotisations', icon: Banknote },
   { label: 'Facturation', href: '/demo/admin/facturation', icon: FileText },
   { label: 'Activites', href: '/demo/admin/activites', icon: CalendarDays },
@@ -61,7 +60,8 @@ function DemoSidebar({ type, nav, open, onClose }: { type: 'admin' | 'member'; n
         )}
       </AnimatePresence>
       <aside
-        className={`fixed left-0 top-[41px] z-40 flex h-[calc(100%-41px)] w-64 flex-col bg-gradient-to-b from-[#07140d] via-[#0b1f15] to-[#061009] shadow-[4px_0_40px_rgba(0,0,0,0.4)] transition-transform duration-300 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col bg-gradient-to-b from-[#07140d] via-[#0b1f15] to-[#061009] shadow-[4px_0_40px_rgba(0,0,0,0.4)] transition-transform duration-300 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <div className="h-[4px] w-full shrink-0" style={{ background: 'linear-gradient(90deg, #0B8F3A 33%, #C8102E 33%, #C8102E 66%, #F7C600 66%)' }} />
         <div className="flex items-center gap-3 border-b border-white/[0.06] px-5 py-4">
@@ -115,6 +115,9 @@ function DemoSidebar({ type, nav, open, onClose }: { type: 'admin' | 'member'; n
               <p className="truncate text-sm font-black text-white/80">{type === 'admin' ? demoAdminUser.name : `${demoMemberProfile.firstName} ${demoMemberProfile.lastName}`}</p>
               <p className="truncate text-[10px] text-white/30">{type === 'admin' ? demoAdminUser.poste : demoMemberProfile.status}</p>
             </div>
+            <Link href="/demo" className="text-white/25 transition-colors hover:text-red-400" title="Quitter la demo">
+              <LogOut size={15} />
+            </Link>
           </div>
         </div>
       </aside>
@@ -124,15 +127,16 @@ function DemoSidebar({ type, nav, open, onClose }: { type: 'admin' | 'member'; n
 
 export function DemoPortalShell({ type, title, children }: { type: 'admin' | 'member'; title: string; children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const nav = type === 'admin' ? adminNav : memberNav;
   const initials = type === 'admin' ? demoAdminUser.initials : demoMemberProfile.initials;
-  const label = type === 'admin' ? 'Admin demo' : 'Espace membre demo';
+  const label = type === 'admin' ? 'Admin' : 'Espace membre';
 
   return (
-    <div className="flex min-h-[calc(100vh-41px)] bg-[#f4f6f5]">
+    <div className="flex min-h-screen bg-[#f4f6f5]">
       <DemoSidebar type={type} nav={nav} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
-        <header className="sticky top-[41px] z-20 flex h-14 items-center gap-4 border-b border-neutral-200/80 bg-white/95 px-5 backdrop-blur-sm">
+        <header className="sticky z-20 flex h-14 items-center gap-4 border-b border-neutral-200/80 bg-white/95 px-5 backdrop-blur-sm" style={{ top: 'env(safe-area-inset-top, 0px)' }}>
           <button
             onClick={() => setSidebarOpen(true)}
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700 lg:hidden"
@@ -145,10 +149,37 @@ export function DemoPortalShell({ type, title, children }: { type: 'admin' | 'me
             <span className="truncate font-black text-neutral-800">{title}</span>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <button className="relative grid h-8 w-8 place-items-center rounded-lg border border-neutral-200 text-neutral-500">
-              <Bell size={15} />
-              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-500" />
-            </button>
+            <Link
+              href="/demo"
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700"
+            >
+              <Globe size={13} />
+              <span className="hidden sm:inline">Voir le site</span>
+            </Link>
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen(v => !v)}
+                className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700"
+              >
+                <Bell size={15} />
+                {type === 'admin' && <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-500" />}
+              </button>
+              {notifOpen && (
+                <>
+                  <div className="fixed inset-0 z-[99]" onClick={() => setNotifOpen(false)} />
+                  <div className="absolute right-0 top-full z-[100] mt-2 w-72 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-xl">
+                    <div className="border-b border-neutral-100 px-4 py-3">
+                      <p className="text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Notifications</p>
+                    </div>
+                    <div className="flex flex-col items-center py-10 text-center">
+                      <Bell size={28} className="mb-3 text-neutral-200" />
+                      <p className="text-sm font-semibold text-neutral-400">Aucune notification</p>
+                      <p className="mt-1 text-xs text-neutral-300">Vous etes a jour !</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
               {initials}
             </div>

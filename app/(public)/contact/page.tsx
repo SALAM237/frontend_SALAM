@@ -21,6 +21,7 @@ export default function ContactPage() {
   const [sent,  setSent]  = useState(false);
   const [form,  setForm]  = useState({ name: '', email: '', subject: '', message: '', phone: '' });
   const [honey, setHoney] = useState('');
+  const [formErrors, setFormErrors] = useState<{ subject?: string; message?: string }>({});
 
   const contact = useContactForm();
 
@@ -29,6 +30,11 @@ export default function ContactPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const errs: { subject?: string; message?: string } = {};
+    if (!form.subject) errs.subject = 'Veuillez sélectionner un sujet.';
+    if (form.message.trim().length < 10) errs.message = 'Votre message doit comporter au moins 10 caractères.';
+    if (Object.keys(errs).length) { setFormErrors(errs); return; }
+    setFormErrors({});
     contact.mutate(
       {
         name:    form.name,
@@ -116,19 +122,34 @@ export default function ContactPage() {
 
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[11px] font-black uppercase tracking-widest text-neutral-400">Sujet *</label>
-                      <select required value={form.subject} onChange={set('subject')} className={`${inputCls} cursor-pointer appearance-none`}>
+                      <select
+                        value={form.subject}
+                        onChange={e => { set('subject')(e); if (formErrors.subject) setFormErrors(f => ({ ...f, subject: undefined })); }}
+                        className={`${inputCls} cursor-pointer appearance-none ${formErrors.subject ? 'border-red-400 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+                      >
                         <option value="">Sélectionnez un sujet</option>
                         {SUBJECTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
+                      {formErrors.subject && (
+                        <p className="flex items-center gap-1 text-xs text-red-600">
+                          <AlertCircle size={12} className="shrink-0" /> {formErrors.subject}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[11px] font-black uppercase tracking-widest text-neutral-400">Message *</label>
                       <textarea
-                        required rows={5} value={form.message} onChange={set('message')}
-                        placeholder="Décrivez votre demande..."
-                        className="w-full resize-none rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/12"
+                        required rows={5} value={form.message}
+                        onChange={e => { set('message')(e); if (formErrors.message) setFormErrors(f => ({ ...f, message: undefined })); }}
+                        placeholder="Décrivez votre demande... (min. 10 caractères)"
+                        className={`w-full resize-none rounded-xl border bg-neutral-50 p-4 text-sm text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:bg-white focus:ring-2 ${formErrors.message ? 'border-red-400 focus:border-red-500 focus:ring-red-500/10' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/12'}`}
                       />
+                      {formErrors.message && (
+                        <p className="flex items-center gap-1 text-xs text-red-600">
+                          <AlertCircle size={12} className="shrink-0" /> {formErrors.message}
+                        </p>
+                      )}
                     </div>
 
                     <button

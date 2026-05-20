@@ -27,6 +27,7 @@ export default function AdhesionPage() {
   const [sent,  setSent]  = useState(false);
   const [form,  setForm]  = useState({ firstName: '', lastName: '', email: '', phone: '', city: '', motivation: '', type: 'etudiant' });
   const [honey, setHoney] = useState('');
+  const [formErrors, setFormErrors] = useState<{ motivation?: string }>({});
 
   const adhesion = useAdhesionForm();
 
@@ -35,6 +36,12 @@ export default function AdhesionPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const errs: { motivation?: string } = {};
+    if (form.motivation.trim().length < 10) {
+      errs.motivation = 'Votre motivation doit comporter au moins 10 caractères.';
+    }
+    if (Object.keys(errs).length) { setFormErrors(errs); return; }
+    setFormErrors({});
     adhesion.mutate(
       {
         firstName:  form.firstName,
@@ -209,10 +216,15 @@ export default function AdhesionPage() {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-black uppercase tracking-widest text-neutral-400">Motivation *</label>
                   <textarea
-                    required rows={4} value={form.motivation} onChange={set('motivation')}
-                    placeholder="Pourquoi souhaitez-vous rejoindre SALAM ?"
-                    className="w-full resize-none rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/12"
+                    required rows={4} value={form.motivation} onChange={e => { set('motivation')(e); if (formErrors.motivation) setFormErrors({}); }}
+                    placeholder="Pourquoi souhaitez-vous rejoindre SALAM ? (min. 10 caractères)"
+                    className={`w-full resize-none rounded-xl border bg-neutral-50 p-4 text-sm text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:bg-white focus:ring-2 ${formErrors.motivation ? 'border-red-400 focus:border-red-500 focus:ring-red-500/10' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/12'}`}
                   />
+                  {formErrors.motivation && (
+                    <p className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle size={12} className="shrink-0" /> {formErrors.motivation}
+                    </p>
+                  )}
                 </div>
 
                 <button
