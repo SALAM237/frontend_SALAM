@@ -36,6 +36,17 @@ function fmt(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function fmtDate(d?: string) {
+  if (!d) return 'Jamais';
+  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function csvEscape(v: string | number | undefined | null): string {
+  const s = v === undefined || v === null ? '' : String(v);
+  if (s.includes('"') || s.includes(',') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
 export default function AdminAdherentsPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<MemberStatus | 'all'>('all');
@@ -74,6 +85,35 @@ export default function AdminAdherentsPage() {
     e.preventDefault();
     e.stopPropagation();
     handleDelete(id);
+  };
+
+  const exportToCSV = () => {
+    const headers = [
+      'N° ID', 'Prénom', 'Nom', 'Email', 'Téléphone', 'Genre',
+      'Année promotionnaire', 'Statut', 'Cotisation', 'Dernière connexion', 'Date inscription',
+    ];
+    const rows = displayed.map(m => [
+      csvEscape(m.memberId),
+      csvEscape(m.firstName),
+      csvEscape(m.lastName),
+      csvEscape(m.email),
+      csvEscape(m.phone ?? 'Non renseigné'),
+      csvEscape(m.gender === 'femme' ? 'Madame' : m.gender === 'homme' ? 'Monsieur' : 'Non renseigné'),
+      csvEscape(m.promotionYear),
+      csvEscape(statusConfig[m.memberStatus]?.label ?? m.memberStatus),
+      csvEscape(cotisationConfig[m.cotisationStatus]?.label ?? m.cotisationStatus),
+      csvEscape(fmtDate(m.lastLoginAt)),
+      csvEscape(fmt(m.createdAt)),
+    ].join(','));
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `adherents_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -123,8 +163,12 @@ export default function AdminAdherentsPage() {
               {label}
             </button>
           ))}
-          <button className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-600 hover:border-neutral-300 sm:px-4">
-            <Download size={13} /> Exporter
+          <button
+            onClick={exportToCSV}
+            disabled={displayed.length === 0}
+            className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-600 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40 sm:px-4"
+          >
+            <Download size={13} /> Exporter ({displayed.length})
           </button>
         </div>
       </div>
@@ -148,8 +192,10 @@ export default function AdminAdherentsPage() {
                     <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Membre</th>
                     <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">N° ID</th>
                     <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Email</th>
+                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Téléphone</th>
                     <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Statut</th>
                     <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Cotisation</th>
+                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Dernière conn.</th>
                     <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Inscription</th>
                     <th className="px-5 py-3.5" />
                   </tr>
@@ -172,6 +218,7 @@ export default function AdminAdherentsPage() {
                         </td>
                         <td className="px-5 py-3.5"><span className="font-mono text-xs text-neutral-500">{m.memberId}</span></td>
                         <td className="px-5 py-3.5 text-xs text-neutral-500">{m.email}</td>
+                        <td className="px-5 py-3.5 text-xs text-neutral-500">{m.phone ?? <span className="text-neutral-300">—</span>}</td>
                         <td className="px-5 py-3.5">
                           <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black ${s.cls}`}>
                             <SI size={10} /> {s.label}
@@ -182,6 +229,7 @@ export default function AdminAdherentsPage() {
                             {c.label}
                           </span>
                         </td>
+                        <td className="px-5 py-3.5 text-xs text-neutral-400">{fmtDate(m.lastLoginAt)}</td>
                         <td className="px-5 py-3.5 text-xs text-neutral-400">{fmt(m.createdAt)}</td>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center justify-end gap-1.5">

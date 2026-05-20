@@ -5,6 +5,7 @@ import { User, Mail, Phone, MapPin, Save, CheckCircle2, Lock, Shield, Camera, Lo
 import { useAuthStore } from '@/store/auth.store';
 import { useUpdateProfile } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
+import { assetUrl } from '@/lib/assets';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
@@ -12,7 +13,7 @@ export default function ProfilPage() {
   const user      = useAuthStore(s => s.user);
   const patchUser = useAuthStore(s => s.patchUser);
   const fileRef                         = useRef<HTMLInputElement>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar ?? null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(assetUrl(user?.avatar) || null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [form, setForm] = useState({
@@ -68,7 +69,7 @@ export default function ProfilPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message ?? 'Erreur upload');
       if (json.data?.avatar) {
-        setAvatarPreview(json.data.avatar);
+        setAvatarPreview(assetUrl(json.data.avatar) || json.data.avatar);
         patchUser({ avatar: json.data.avatar });
       }
     } catch (err) {

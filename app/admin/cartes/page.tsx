@@ -6,6 +6,7 @@ import { ArrowLeft, CreditCard, Search, Loader2, Users } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
+import { assetUrl } from '@/lib/assets';
 
 function toCardData(m: MemberListItem): MemberCardData {
   return {
@@ -14,7 +15,7 @@ function toCardData(m: MemberListItem): MemberCardData {
     lastName:  m.lastName,
     role:      'Membre actif',
     year:      new Date().getFullYear(),
-    photo:     m.avatar,
+    photo:     assetUrl(m.avatar) || m.avatar,
   };
 }
 
@@ -135,7 +136,7 @@ export default function CartesPage() {
                         {/* Avatar */}
                         {m.avatar ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={m.avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                          <img src={assetUrl(m.avatar) || m.avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
                         ) : (
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[11px] font-black text-white">
                             {formatInitials(m.firstName, m.lastName)}

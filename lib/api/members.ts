@@ -17,6 +17,8 @@ export interface MemberListItem {
   lastLoginAt?: string;
   memberId: string;
   cotisationStatus: 'paid' | 'unpaid' | 'exempt';
+  gender?: 'homme' | 'femme';
+  promotionYear?: number;
 }
 
 export interface MemberDetail extends MemberListItem {

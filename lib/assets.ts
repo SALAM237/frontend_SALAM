@@ -9,10 +9,7 @@ export function assetUrl(url?: string | null) {
 
   try {
     const parsed = new URL(clean);
-    if (
-      (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') &&
-      parsed.pathname.startsWith('/uploads/')
-    ) {
+    if (parsed.pathname.startsWith('/uploads/')) {
       return `${API_ORIGIN}${parsed.pathname}`;
     }
   } catch {
