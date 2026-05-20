@@ -47,7 +47,7 @@ export default function DemoActiviteDetailPage({ params }: { params: { slug: str
           <FlaskConical size={13} />
           Mode démo — données fictives
         </div>
-        <Link href="/activites" className="text-xs font-semibold text-yellow-700 hover:text-yellow-900">
+        <Link href="/demo/activites" className="text-xs font-semibold text-yellow-700 hover:text-yellow-900">
           ← Version production
         </Link>
       </div>
@@ -137,7 +137,7 @@ export default function DemoActiviteDetailPage({ params }: { params: { slug: str
             </div>
 
             <Link
-              href="/adhesion"
+              href="/demo/member"
               className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-5 text-center transition-all hover:bg-emerald-100"
             >
               <p className="text-xs font-black uppercase tracking-[0.15em] text-emerald-700">Rejoindre SALAM</p>

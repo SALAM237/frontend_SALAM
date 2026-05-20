@@ -45,7 +45,7 @@ export default function DemoGaleriePage() {
           <FlaskConical size={13} />
           Mode démo — données fictives
         </div>
-        <Link href="/galerie" className="text-xs font-semibold text-yellow-700 hover:text-yellow-900">
+        <Link href="/demo/galerie" className="text-xs font-semibold text-yellow-700 hover:text-yellow-900">
           ← Version production
         </Link>
       </div>
@@ -114,7 +114,7 @@ export default function DemoGaleriePage() {
           <div className="mt-10 rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-6 text-center">
             <p className="text-sm font-black text-emerald-800">Galerie privée réservée aux membres</p>
             <p className="mt-1 text-xs text-emerald-600">Accédez à l'intégralité des photos exclusives en rejoignant SALAM.</p>
-            <Link href="/adhesion" className="mt-4 inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-5 text-xs font-black text-white hover:bg-emerald-700 transition-all">
+            <Link href="/demo/member" className="mt-4 inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-5 text-xs font-black text-white hover:bg-emerald-700 transition-all">
               Devenir membre →
             </Link>
           </div>

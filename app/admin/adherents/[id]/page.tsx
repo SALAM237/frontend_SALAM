@@ -1,15 +1,34 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, CreditCard, Mail, Phone, MapPin, Calendar, Edit, CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import {
+  ArrowLeft, CreditCard, Mail, Phone, MapPin, Calendar,
+  Edit, CheckCircle2, Clock, Loader2, Trash2,
+} from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
-import { useAdminMember } from '@/lib/api/members';
+import { useAdminMember, useHardDeleteMember } from '@/lib/api/members';
+import { useAuthStore } from '@/store/auth.store';
 
 export default function AdherentDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+  const { id }       = use(params);
+  const router       = useRouter();
   const { data, isLoading, isError } = useAdminMember(id);
-  const member = data?.data;
+  const member       = data?.data;
+
+  const user         = useAuthStore(s => s.user);
+  const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
+
+  const hardDelete   = useHardDeleteMember();
+  const [confirming, setConfirming] = useState(false);
+
+  const handleDelete = () => {
+    if (!confirming) { setConfirming(true); return; }
+    hardDelete.mutate(id, {
+      onSuccess: () => router.push('/admin/adherents'),
+    });
+  };
 
   if (isLoading) return (
     <div className="flex min-h-[300px] items-center justify-center">
@@ -26,7 +45,7 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
     </div>
   );
 
-  const year = new Date().getFullYear();
+  const year     = new Date().getFullYear();
   const isActive = member.memberStatus === 'active';
 
   const cardData: MemberCardData = {
@@ -47,16 +66,46 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">{member.firstName} {member.lastName}</h1>
-          <p className="text-sm text-neutral-500 font-mono">{member.memberId}</p>
+          <p className="font-mono text-sm text-neutral-500">{member.memberId}</p>
         </div>
-        <div className="flex gap-2">
-          <button className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-sm font-semibold text-neutral-600 hover:border-neutral-300">
-            <Edit size={13} /> Modifier
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
           <span className={`inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-xs font-black ${isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-yellow-50 text-yellow-700'}`}>
             {isActive ? <CheckCircle2 size={12} /> : <Clock size={12} />}
             {isActive ? 'Actif' : 'En attente'}
           </span>
+          <button className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-sm font-semibold text-neutral-600 hover:border-neutral-300">
+            <Edit size={13} /> Modifier
+          </button>
+
+          {/* Supprimer — super_admin uniquement */}
+          {isSuperAdmin && (
+            confirming ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-red-600">Supprimer définitivement ?</span>
+                <button
+                  onClick={handleDelete}
+                  disabled={hardDelete.isPending}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full bg-red-500 px-4 text-xs font-black text-white hover:bg-red-600 disabled:opacity-60"
+                >
+                  {hardDelete.isPending ? <Loader2 size={13} className="animate-spin" /> : 'Confirmer'}
+                </button>
+                <button
+                  onClick={() => setConfirming(false)}
+                  className="inline-flex h-9 items-center rounded-full border border-neutral-200 px-3 text-xs font-semibold text-neutral-600 hover:border-neutral-300"
+                >
+                  Annuler
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleDelete}
+                title="Supprimer définitivement"
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-red-200 px-4 text-xs font-semibold text-red-500 hover:border-red-400 hover:bg-red-50"
+              >
+                <Trash2 size={13} /> Supprimer
+              </button>
+            )
+          )}
         </div>
       </div>
 
@@ -113,10 +162,10 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
               QR → association-salam.org/verify/{member.memberId}
             </p>
             <div className="mt-4 flex gap-2">
-              <button className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:border-neutral-300">
+              <button className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:border-neutral-300">
                 <CreditCard size={13} /> Télécharger
               </button>
-              <button className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700">
+              <button className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700">
                 Envoyer par email
               </button>
             </div>

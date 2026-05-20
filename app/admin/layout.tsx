@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, Users, UserPlus, CreditCard, CalendarDays,
+  LayoutDashboard, Users, CalendarDays,
   Images, Newspaper, Settings, LogOut, Menu, X, ChevronRight, Bell,
   Banknote, FileText, History, MessageSquare, Shield, Loader2, Globe,
 } from 'lucide-react';
@@ -19,8 +19,6 @@ type NavItem = { label: string; href: string; icon: React.ElementType; superAdmi
 const BASE_NAV: NavItem[] = [
   { label: 'Tableau de bord',   href: '/admin/dashboard',         icon: LayoutDashboard },
   { label: 'Adhérents',         href: '/admin/adherents',         icon: Users },
-  { label: 'Nouveau membre',    href: '/admin/adherents/nouveau', icon: UserPlus },
-  { label: 'Cartes membres',    href: '/admin/cartes',            icon: CreditCard },
   { label: "Frais d'adhésion",  href: '/admin/cotisations',       icon: Banknote },
   { label: 'Facturation',       href: '/admin/facturation',       icon: FileText },
   { label: 'Activités',         href: '/admin/activites',         icon: CalendarDays },

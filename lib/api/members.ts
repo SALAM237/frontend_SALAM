@@ -185,6 +185,31 @@ export function useImportMembersCSV() {
   });
 }
 
+export function useHardDeleteMember() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc    = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient(`/api/v1/admin/members/${id}/hard`, { method: 'DELETE', token: token ?? '' }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
+      qc.invalidateQueries({ queryKey: ['admin-stats'] });
+      toast.success((res as any).message ?? 'Membre supprimé');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useResendInvitation() {
+  const token = useAuthStore(s => s.accessToken);
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient(`/api/v1/admin/members/${id}/resend-invitation`, { method: 'POST', token: token ?? '' }),
+    onSuccess: res => toast.success((res as any).message ?? 'Invitation renvoyée'),
+    onError:   (err: Error) => toast.error(err.message),
+  });
+}
+
 /* ── Member self-service ──────────────────────────────────── */
 
 export function useUpdateProfile() {

@@ -30,7 +30,8 @@ export function usePublicArticles() {
   return useQuery({
     queryKey: ['public-content'],
     queryFn:  () => apiClient<ArticleDoc[]>('/api/v1/public/content'),
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchInterval: 30_000,
   });
 }
 

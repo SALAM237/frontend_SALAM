@@ -1,1 +1,20 @@
-export const demoPermissions = ['members.read','members.create','members.update','members.validate','roles.read','roles.create','roles.update','roles.assign','activities.read','activities.create','activities.update','activities.publish','gallery.upload','gallery.moderate','messages.send','messages.moderate','settings.update','audit.read'];
+export const demoPermissions = [
+  { key: 'members.read', label: 'Lire les membres', module: 'members', riskLevel: 'low' },
+  { key: 'members.create', label: 'Creer des membres', module: 'members', riskLevel: 'medium' },
+  { key: 'members.update', label: 'Modifier les membres', module: 'members', riskLevel: 'medium' },
+  { key: 'members.validate', label: 'Valider les adhesions', module: 'members', riskLevel: 'high' },
+  { key: 'roles.read', label: 'Lire les roles', module: 'roles', riskLevel: 'low' },
+  { key: 'roles.create', label: 'Creer des roles', module: 'roles', riskLevel: 'high' },
+  { key: 'roles.update', label: 'Modifier les roles', module: 'roles', riskLevel: 'high' },
+  { key: 'roles.assign', label: 'Assigner les roles', module: 'roles', riskLevel: 'critical' },
+  { key: 'activities.read', label: 'Lire les activites', module: 'events', riskLevel: 'low' },
+  { key: 'activities.create', label: 'Creer des activites', module: 'events', riskLevel: 'medium' },
+  { key: 'activities.update', label: 'Modifier les activites', module: 'events', riskLevel: 'medium' },
+  { key: 'activities.publish', label: 'Publier les activites', module: 'events', riskLevel: 'high' },
+  { key: 'gallery.upload', label: 'Ajouter des medias', module: 'gallery', riskLevel: 'medium' },
+  { key: 'gallery.moderate', label: 'Moderer la galerie', module: 'gallery', riskLevel: 'high' },
+  { key: 'messages.send', label: 'Envoyer des messages', module: 'messages', riskLevel: 'medium' },
+  { key: 'messages.moderate', label: 'Moderer les messages', module: 'messages', riskLevel: 'high' },
+  { key: 'settings.update', label: 'Modifier les parametres', module: 'settings', riskLevel: 'critical' },
+  { key: 'audit.read', label: 'Lire l historique', module: 'settings', riskLevel: 'low' },
+];

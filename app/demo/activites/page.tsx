@@ -42,7 +42,7 @@ export default function DemoActivitesPage() {
           <FlaskConical size={13} />
           Mode démo — données fictives
         </div>
-        <Link href="/activites" className="text-xs font-semibold text-yellow-700 hover:text-yellow-900 transition-colors">
+        <Link href="/demo/activites" className="text-xs font-semibold text-yellow-700 hover:text-yellow-900 transition-colors">
           ← Version production
         </Link>
       </div>

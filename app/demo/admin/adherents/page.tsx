@@ -1,115 +1,174 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Users, Search, ArrowLeft } from 'lucide-react';
+import { UserPlus, Search, Eye, CheckCircle2, Clock, XCircle, Download } from 'lucide-react';
+import { DemoPortalShell } from '../../_components/DemoShell';
+import { demoMembers } from '@/data/demo/demo-members';
 
-const MEMBERS = [
-  { id: '1', name: 'Amina Diallo',     email: 'amina.d@email.com',    status: 'active',  cotis: 'paid',    antenne: 'Paris',     date: '12/03/2024' },
-  { id: '2', name: 'Boris Tamko',      email: 'b.tamko@email.com',    status: 'pending', cotis: 'pending', antenne: 'Lyon',      date: '08/05/2024' },
-  { id: '3', name: 'Youssef Mansouri', email: 'y.m@email.com',        status: 'active',  cotis: 'paid',    antenne: 'Paris',     date: '02/01/2024' },
-  { id: '4', name: 'Sophie Nkolo',     email: 's.nkolo@email.com',    status: 'active',  cotis: 'exempt',  antenne: 'Bordeaux',  date: '28/11/2023' },
-  { id: '5', name: 'Pierre Nguemo',    email: 'p.n@email.com',        status: 'pending', cotis: 'unpaid',  antenne: 'Paris',     date: '25/04/2024' },
-  { id: '6', name: 'Fatoumata Bah',    email: 'f.bah@email.com',      status: 'active',  cotis: 'paid',    antenne: 'Marseille', date: '14/02/2024' },
-  { id: '7', name: 'Karim Ouédraogo',  email: 'k.o@email.com',        status: 'active',  cotis: 'paid',    antenne: 'Lyon',      date: '07/06/2023' },
-  { id: '8', name: 'Nadia El Fassi',   email: 'n.el@email.com',       status: 'active',  cotis: 'unpaid',  antenne: 'Paris',     date: '03/03/2024' },
+type MemberStatus = 'active' | 'pending' | 'suspended';
+
+const statusConfig: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
+  active: { label: 'Actif', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle2 },
+  pending: { label: 'En attente', cls: 'bg-yellow-50  text-yellow-700  border-yellow-100', icon: Clock },
+  suspended: { label: 'Suspendu', cls: 'bg-red-50     text-red-700     border-red-100', icon: XCircle },
+  rejected: { label: 'Refuse', cls: 'bg-neutral-50 text-neutral-500 border-neutral-200', icon: XCircle },
+};
+
+const cotisationConfig: Record<string, { label: string; cls: string }> = {
+  paid: { label: 'Payee', cls: 'bg-emerald-50 text-emerald-700' },
+  unpaid: { label: 'Impayee', cls: 'bg-red-50 text-red-600' },
+  exempt: { label: 'Exempte', cls: 'bg-neutral-50 text-neutral-400' },
+};
+
+const FILTER_OPTIONS: { label: string; value: MemberStatus | 'all' }[] = [
+  { label: 'Tous', value: 'all' },
+  { label: 'Actifs', value: 'active' },
+  { label: 'En attente', value: 'pending' },
+  { label: 'Suspendus', value: 'suspended' },
 ];
 
-const STATUS_STYLE: Record<string, string> = {
-  active:  'bg-emerald-50 text-emerald-700 border-emerald-200',
-  pending: 'bg-amber-50   text-amber-700   border-amber-200',
-};
-const STATUS_LABEL: Record<string, string> = { active: 'Actif', pending: 'En attente' };
-const COTIS_STYLE: Record<string, string>  = {
-  paid:    'bg-emerald-50 text-emerald-700',
-  unpaid:  'bg-red-50 text-red-600',
-  exempt:  'bg-blue-50 text-blue-700',
-  pending: 'bg-neutral-100 text-neutral-500',
-};
-const COTIS_LABEL: Record<string, string>  = { paid: 'À jour', unpaid: 'Impayé', exempt: 'Exempté', pending: '—' };
+function fmt(d: string) {
+  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
-export default function DemoAdminAdherents() {
+export default function DemoAdminMembersPage() {
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<MemberStatus | 'all'>('all');
 
-  const filtered = MEMBERS.filter(m =>
-    `${m.name} ${m.email} ${m.antenne}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const displayed = useMemo(() =>
+    demoMembers.filter(member => {
+      const matchStatus = filter === 'all' || member.memberStatus === filter;
+      const matchSearch = `${member.firstName} ${member.lastName} ${member.email} ${member.memberId}`
+        .toLowerCase().includes(search.toLowerCase());
+      return matchStatus && matchSearch;
+    }),
+  [filter, search]);
 
   return (
-    <div className="min-h-[calc(100vh-40px)] bg-[#f4f6f5]">
-      <header className="border-b border-neutral-200/80 bg-white/95 px-5 py-4">
-        <div className="mx-auto max-w-5xl flex items-center gap-4">
-          <Link href="/demo/admin" className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 hover:text-neutral-700 transition">
-            <ArrowLeft size={13} /> Dashboard
+    <DemoPortalShell type="admin" title="Adherents">
+      <div className="mx-auto max-w-6xl space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Adherents</h1>
+            <p className="mt-0.5 text-sm text-neutral-500">{demoMembers.length} membres au total</p>
+          </div>
+          <Link href="/demo/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white transition-all hover:bg-emerald-700">
+            <UserPlus size={14} /> Nouveau membre
           </Link>
-          <div className="h-4 w-px bg-neutral-200" />
-          <div className="flex items-center gap-2">
-            <Users size={16} className="text-emerald-600" />
-            <h1 className="text-sm font-black text-neutral-900">
-              Adhérents <span className="font-normal text-neutral-400">({filtered.length})</span>
-            </h1>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="relative w-full sm:min-w-[200px] sm:flex-1">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Rechercher un membre..."
+              value={search}
+              onChange={event => setSearch(event.target.value)}
+              className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {FILTER_OPTIONS.map(({ label, value }) => (
+              <button
+                key={value}
+                onClick={() => setFilter(value)}
+                className={`h-9 rounded-xl border px-3 text-xs font-bold transition-all sm:px-4 ${
+                  filter === value
+                    ? 'border-emerald-500 bg-emerald-600 text-white'
+                    : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300 hover:text-emerald-700'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            <button className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-600 hover:border-neutral-300 sm:px-4">
+              <Download size={13} /> Exporter
+            </button>
           </div>
         </div>
-      </header>
 
-      <main className="mx-auto max-w-5xl space-y-4 p-5">
-        <div className="relative max-w-xs">
-          <Search size={13} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-          <input
-            value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher un adhérent…"
-            className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-4 text-sm focus:border-emerald-400 focus:outline-none"
-          />
-        </div>
-
-        <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
-          <div className="overflow-x-auto">
+        <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm">
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-neutral-100 bg-neutral-50 text-left">
-                  <th className="px-4 py-3 text-[10px] font-black uppercase tracking-[0.1em] text-neutral-500">Membre</th>
-                  <th className="hidden px-4 py-3 text-[10px] font-black uppercase tracking-[0.1em] text-neutral-500 md:table-cell">Antenne</th>
-                  <th className="px-4 py-3 text-[10px] font-black uppercase tracking-[0.1em] text-neutral-500">Statut</th>
-                  <th className="px-4 py-3 text-[10px] font-black uppercase tracking-[0.1em] text-neutral-500">Cotisation</th>
-                  <th className="hidden px-4 py-3 text-[10px] font-black uppercase tracking-[0.1em] text-neutral-500 sm:table-cell">Inscription</th>
+                <tr className="border-b border-neutral-100 bg-neutral-50/60">
+                  <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Membre</th>
+                  <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">No ID</th>
+                  <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Email</th>
+                  <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Statut</th>
+                  <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Cotisation</th>
+                  <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Inscription</th>
+                  <th className="px-5 py-3.5" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50">
-                {filtered.map(m => (
-                  <tr key={m.id} className="hover:bg-neutral-50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-black text-emerald-700">
-                          {m.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                {displayed.map((member) => {
+                  const s = statusConfig[member.memberStatus] ?? statusConfig.pending;
+                  const SI = s.icon;
+                  const c = cotisationConfig[member.cotisationStatus] ?? cotisationConfig.unpaid;
+                  return (
+                    <tr key={member._id} className="group transition-colors hover:bg-neutral-50/40">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[11px] font-black text-white">
+                            {member.firstName[0]}{member.lastName[0]}
+                          </div>
+                          <p className="font-semibold text-neutral-900">{member.firstName} {member.lastName}</p>
                         </div>
-                        <div>
-                          <p className="font-semibold text-neutral-900">{m.name}</p>
-                          <p className="text-xs text-neutral-400">{m.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="hidden px-4 py-3 text-sm text-neutral-500 md:table-cell">{m.antenne}</td>
-                    <td className="px-4 py-3">
-                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${STATUS_STYLE[m.status]}`}>
-                        {STATUS_LABEL[m.status]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${COTIS_STYLE[m.cotis]}`}>
-                        {COTIS_LABEL[m.cotis]}
-                      </span>
-                    </td>
-                    <td className="hidden px-4 py-3 text-xs text-neutral-400 sm:table-cell">{m.date}</td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-5 py-3.5"><span className="font-mono text-xs text-neutral-500">{member.memberId}</span></td>
+                      <td className="px-5 py-3.5 text-xs text-neutral-500">{member.email}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black ${s.cls}`}>
+                          <SI size={10} /> {s.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black ${c.cls}`}>
+                          {c.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-neutral-400">{fmt(member.createdAt)}</td>
+                      <td className="px-5 py-3.5">
+                        <Link href={`/demo/admin/adherents/${member._id}`} className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 opacity-0 transition-all group-hover:opacity-100 hover:border-emerald-300 hover:text-emerald-700">
+                          <Eye size={13} />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-          {filtered.length === 0 && (
-            <div className="py-12 text-center text-sm text-neutral-400">Aucun résultat</div>
+
+          <div className="divide-y divide-neutral-50 md:hidden">
+            {displayed.map((member) => {
+              const s = statusConfig[member.memberStatus] ?? statusConfig.pending;
+              return (
+                <Link key={member._id} href={`/demo/admin/adherents/${member._id}`} className="flex items-center gap-3 px-4 py-4 transition-colors hover:bg-neutral-50">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
+                    {member.firstName[0]}{member.lastName[0]}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-neutral-900">{member.firstName} {member.lastName}</p>
+                    <p className="text-xs text-neutral-400">{member.memberId} - {member.email}</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${s.cls}`}>{s.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {displayed.length === 0 && (
+            <div className="py-12 text-center">
+              <p className="text-sm font-semibold text-neutral-400">Aucun membre trouve</p>
+            </div>
           )}
         </div>
-      </main>
-    </div>
+      </div>
+    </DemoPortalShell>
   );
 }

@@ -51,6 +51,8 @@ export function useMemberActivities(category?: string) {
     queryKey: ['member-activities', category],
     queryFn:  () => apiClient<{ activities: ActivityDoc[]; total: number }>(`/api/v1/member/activities${qs}`, { token: token ?? '' }),
     enabled:  !!token,
+    staleTime: 0,
+    refetchInterval: 30_000,
   });
 }
 

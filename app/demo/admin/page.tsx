@@ -1,152 +1,185 @@
 'use client';
 
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import {
-  LayoutDashboard, Users, Calendar, MessageSquare,
-  Images, Settings, Shield, Clock, ChevronRight,
+  Users, UserPlus, CreditCard, CalendarDays, TrendingUp, Activity,
+  ArrowRight, MoreHorizontal, CheckCircle2, Clock, XCircle,
 } from 'lucide-react';
+import { DemoPortalShell } from '../_components/DemoShell';
+import { demoMembers } from '@/data/demo/demo-members';
+import { demoCotisations } from '@/data/demo/demo-portal';
 
-const NAV_ITEMS = [
-  { label: 'Tableau de bord', href: '/demo/admin',           icon: LayoutDashboard },
-  { label: 'Adhérents',       href: '/demo/admin/adherents', icon: Users           },
-  { label: 'Activités',       href: '/demo/admin/activites', icon: Calendar        },
-  { label: 'Messages',        href: '/demo/admin/messages',  icon: MessageSquare   },
-  { label: 'Galerie',         href: '/demo/admin/galerie',   icon: Images          },
-  { label: 'Rôles & Accès',   href: '/demo/admin/roles',     icon: Shield          },
-  { label: 'Paramètres',      href: '/demo/admin/settings',  icon: Settings        },
+const fadeUp = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
+const container = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
+
+const QUICK_ACTIONS = [
+  { label: 'Nouveau membre', href: '/demo/admin/adherents/nouveau', icon: UserPlus, desc: 'Creer une fiche adherent', color: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-100 hover:border-emerald-200' },
+  { label: 'Emettre une carte', href: '/demo/admin/cartes', icon: CreditCard, desc: 'Generer une carte membre + QR', color: 'bg-blue-50 hover:bg-blue-100 border-blue-100 hover:border-blue-200' },
+  { label: 'Voir les adherents', href: '/demo/admin/adherents', icon: Users, desc: 'Gerer la liste des membres', color: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-100 hover:border-yellow-200' },
+  { label: 'Activites', href: '/demo/admin/activites', icon: CalendarDays, desc: 'Gerer les evenements', color: 'bg-purple-50 hover:bg-purple-100 border-purple-100 hover:border-purple-200' },
 ];
 
-const STATS = [
-  { label: 'Membres actifs', value: '47', sub: '+3 ce mois',   colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', icon: Users         },
-  { label: 'En attente',     value: '3',  sub: 'À valider',    colorClass: 'text-amber-600',   bgClass: 'bg-amber-50',   icon: Clock         },
-  { label: 'Activités',      value: '12', sub: 'Ce trimestre', colorClass: 'text-blue-600',    bgClass: 'bg-blue-50',    icon: Calendar      },
-  { label: 'Messages',       value: '8',  sub: 'Non lus',      colorClass: 'text-red-500',     bgClass: 'bg-red-50',     icon: MessageSquare },
-];
-
-const RECENT_MEMBERS = [
-  { name: 'Amina Diallo',     email: 'amina.d@email.com',    status: 'active',  cotis: 'paid',    date: '12/05/2024' },
-  { name: 'Boris Tamko',      email: 'b.tamko@email.com',    status: 'pending', cotis: 'pending', date: '08/05/2024' },
-  { name: 'Youssef Mansouri', email: 'y.mansouri@email.com', status: 'active',  cotis: 'paid',    date: '02/05/2024' },
-  { name: 'Sophie Nkolo',     email: 's.nkolo@email.com',    status: 'active',  cotis: 'exempt',  date: '28/04/2024' },
-  { name: 'Pierre Nguemo',    email: 'p.nguemo@email.com',   status: 'pending', cotis: 'unpaid',  date: '25/04/2024' },
-];
-
-const STATUS_STYLE: Record<string, string> = {
-  active:  'bg-emerald-50 text-emerald-700 border-emerald-200',
-  pending: 'bg-amber-50   text-amber-700   border-amber-200',
+const statusStyle: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
+  active: { label: 'Actif', cls: 'bg-emerald-50 text-emerald-700', icon: CheckCircle2 },
+  pending: { label: 'En attente', cls: 'bg-yellow-50 text-yellow-700', icon: Clock },
+  suspended: { label: 'Suspendu', cls: 'bg-red-50 text-red-700', icon: XCircle },
+  rejected: { label: 'Refuse', cls: 'bg-neutral-50 text-neutral-500', icon: XCircle },
 };
-const STATUS_LABEL: Record<string, string>  = { active: 'Actif', pending: 'En attente' };
-const COTIS_STYLE:  Record<string, string>  = {
-  paid:    'bg-emerald-50 text-emerald-700',
-  unpaid:  'bg-red-50 text-red-600',
-  exempt:  'bg-blue-50 text-blue-700',
-  pending: 'bg-neutral-100 text-neutral-500',
-};
-const COTIS_LABEL: Record<string, string> = { paid: 'À jour', unpaid: 'Impayé', exempt: 'Exempté', pending: '—' };
+
+function fmt(d: string) {
+  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 export default function DemoAdminDashboard() {
+  const active = demoMembers.filter(member => member.memberStatus === 'active').length;
+  const pending = demoMembers.filter(member => member.memberStatus === 'pending').length;
+  const paid = demoCotisations.filter(item => item.status === 'paid').length;
+
+  const statCards = [
+    { label: 'Adherents actifs', value: String(active), delta: `${demoMembers.length} au total`, icon: Users, color: 'bg-emerald-100 text-emerald-700' },
+    { label: 'Nouvelles demandes', value: String(pending), delta: 'En attente de validation', icon: UserPlus, color: 'bg-blue-100 text-blue-700' },
+    { label: 'Cotisations payees', value: String(paid), delta: '2026', icon: CreditCard, color: 'bg-yellow-100 text-yellow-700' },
+    { label: 'Activites a venir', value: '3', delta: 'Donnees fictives', icon: CalendarDays, color: 'bg-red-100 text-red-700' },
+  ];
+
   return (
-    <div className="flex min-h-[calc(100vh-40px)] bg-[#f4f6f5]">
-
-      {/* Sidebar — visible lg+ */}
-      <aside className="hidden w-56 shrink-0 flex-col bg-gradient-to-b from-[#07140d] via-[#0b1f15] to-[#061009] lg:flex">
-        <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700">
-            <Shield size={14} className="text-white" />
-          </div>
+    <DemoPortalShell type="admin" title="Tableau de bord">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black tracking-[0.16em] text-white">SALAM</p>
-            <p className="text-[9px] font-semibold tracking-widest text-white/35">ADMIN DÉMO</p>
+            <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">Tableau de bord</h1>
+            <p className="mt-0.5 text-sm text-neutral-500">
+              Bienvenue, Nadia<span className="hidden sm:inline"> - {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+            </p>
           </div>
+          <Link href="/demo/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20">
+            <UserPlus size={14} /> <span className="hidden sm:inline">Nouveau membre</span>
+          </Link>
         </div>
-        <nav className="flex-1 px-2 py-3">
-          {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
-            <Link key={href} href={href}
-              className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all mb-0.5 ${
-                href === '/demo/admin'
-                  ? 'bg-emerald-500/15 text-emerald-400'
-                  : 'text-white/50 hover:bg-white/[0.05] hover:text-white/80'
-              }`}>
-              <Icon size={14} className={href === '/demo/admin' ? 'text-emerald-400' : 'text-white/30'} />
-              {label}
-            </Link>
-          ))}
-        </nav>
-        <div className="border-t border-white/[0.06] p-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-700 text-xs font-black text-white">LV</div>
-            <div>
-              <p className="text-xs font-black text-white/80">Lionel VICK</p>
-              <p className="text-[9px] text-white/30">Super Admin · Démo</p>
-            </div>
-          </div>
-        </div>
-      </aside>
 
-      {/* Main */}
-      <div className="flex-1 min-w-0">
-        <header className="flex h-14 items-center justify-between border-b border-neutral-200/80 bg-white/95 px-5">
-          <h2 className="font-black text-neutral-800">Tableau de bord</h2>
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">LV</div>
-        </header>
-
-        <main className="p-5 space-y-5">
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {STATS.map(s => (
-              <div key={s.label} className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
-                <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${s.bgClass}`}>
-                  <s.icon size={16} className={s.colorClass} />
+        <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {statCards.map(({ label, value, delta, icon: Icon, color }) => (
+            <motion.div key={label} variants={fadeUp} className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
+                  <Icon size={18} />
                 </div>
-                <p className="text-2xl font-black text-neutral-900">{s.value}</p>
-                <p className="text-xs font-semibold text-neutral-500">{s.label}</p>
-                <p className={`mt-0.5 text-[10px] font-semibold ${s.colorClass}`}>{s.sub}</p>
+                <MoreHorizontal size={16} className="text-neutral-300" />
               </div>
-            ))}
-          </div>
+              <div>
+                <p className="text-[2rem] font-black leading-none tracking-[-0.05em] text-neutral-900">{value}</p>
+                <p className="mt-1 text-xs font-semibold text-neutral-500">{label}</p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <TrendingUp size={12} className="text-emerald-500" />
+                <span className="text-[11px] font-semibold text-emerald-600">{delta}</span>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
 
-          {/* Recent members */}
-          <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-3.5">
-              <p className="text-sm font-black text-neutral-900">Adhérents récents</p>
-              <Link href="/demo/admin/adherents" className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700">
-                Voir tout <ChevronRight size={12} />
+        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+          <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+              <h2 className="font-black text-neutral-900">Derniers adherents</h2>
+              <Link href="/demo/admin/adherents" className="flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700">
+                Voir tous <ArrowRight size={11} />
               </Link>
             </div>
-            <div className="divide-y divide-neutral-50">
-              {RECENT_MEMBERS.map(m => (
-                <div key={m.email} className="flex items-center gap-3 px-5 py-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-black text-emerald-700">
-                    {m.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-neutral-50 bg-neutral-50/50">
+                    <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Membre</th>
+                    <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">No ID</th>
+                    <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Statut</th>
+                    <th className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Date</th>
+                    <th className="px-5 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-50">
+                  {demoMembers.map((member) => {
+                    const s = statusStyle[member.memberStatus] ?? statusStyle.pending;
+                    const StatusIcon = s.icon;
+                    return (
+                      <tr key={member._id} className="group transition-colors hover:bg-neutral-50/50">
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
+                              {member.firstName[0]}{member.lastName[0]}
+                            </div>
+                            <p className="font-semibold text-neutral-900">{member.firstName} {member.lastName}</p>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5"><span className="font-mono text-xs text-neutral-500">{member.memberId}</span></td>
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black ${s.cls}`}>
+                            <StatusIcon size={10} /> {s.label}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-xs text-neutral-400">{fmt(member.createdAt)}</td>
+                        <td className="px-5 py-3.5">
+                          <Link href={`/demo/admin/adherents/${member._id}`} className="text-xs font-bold text-emerald-600 opacity-0 transition-opacity group-hover:opacity-100 hover:text-emerald-700">
+                            Voir
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="divide-y divide-neutral-50 sm:hidden">
+              {demoMembers.map((member) => {
+                const s = statusStyle[member.memberStatus] ?? statusStyle.pending;
+                return (
+                  <div key={member._id} className="flex items-center gap-3 px-4 py-3.5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
+                      {member.firstName[0]}{member.lastName[0]}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-neutral-900">{member.firstName} {member.lastName}</p>
+                      <p className="text-xs text-neutral-400">{member.memberId}</p>
+                    </div>
+                    <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${s.cls}`}>{s.label}</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-neutral-900 truncate">{m.name}</p>
-                    <p className="text-xs text-neutral-400 truncate">{m.email}</p>
-                  </div>
-                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${STATUS_STYLE[m.status]}`}>
-                    {STATUS_LABEL[m.status]}
-                  </span>
-                  <span className={`hidden sm:inline-block shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${COTIS_STYLE[m.cotis]}`}>
-                    {COTIS_LABEL[m.cotis]}
-                  </span>
-                  <span className="hidden md:block shrink-0 text-xs text-neutral-400">{m.date}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          {/* Mobile quick links */}
-          <div className="grid grid-cols-2 gap-3 lg:hidden">
-            {NAV_ITEMS.filter(n => n.href !== '/demo/admin').map(({ label, href, icon: Icon }) => (
-              <Link key={href} href={href}
-                className="flex items-center gap-3 rounded-xl border border-neutral-100 bg-white px-4 py-3 shadow-sm transition hover:border-emerald-200">
-                <Icon size={16} className="text-emerald-600" />
-                <span className="text-sm font-semibold text-neutral-700">{label}</span>
-              </Link>
-            ))}
+          <div className="flex flex-col gap-4">
+            <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
+              <h2 className="mb-4 font-black text-neutral-900">Actions rapides</h2>
+              <div className="flex flex-col gap-2">
+                {QUICK_ACTIONS.map(({ label, href, icon: Icon, desc, color }) => (
+                  <Link key={href} href={href} className={`flex items-center gap-3 rounded-xl border p-3.5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-sm ${color}`}>
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/60 shadow-sm">
+                      <Icon size={16} className="text-neutral-700" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-black text-neutral-900">{label}</p>
+                      <p className="text-[11px] text-neutral-500">{desc}</p>
+                    </div>
+                    <ArrowRight size={14} className="shrink-0 text-neutral-400" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Activity size={14} className="text-emerald-600" />
+                <h2 className="font-black text-neutral-900">Activite recente</h2>
+              </div>
+              <div className="mt-4 flex flex-col items-center justify-center py-4 text-center text-neutral-400">
+                <p className="text-xs font-semibold">Aucune activite reelle</p>
+                <p className="mt-0.5 text-[10px]">Les actions demo restent locales.</p>
+              </div>
+            </div>
           </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </DemoPortalShell>
   );
 }

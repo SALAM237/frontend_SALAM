@@ -30,6 +30,8 @@ export function useMemberAlbums() {
     queryKey: ['member-gallery'],
     queryFn:  () => apiClient<AlbumDoc[]>('/api/v1/member/gallery', { token: token ?? '' }),
     enabled:  !!token,
+    staleTime: 0,
+    refetchInterval: 30_000,
   });
 }
 

@@ -2,31 +2,34 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { UserPlus, Search, Eye, CheckCircle2, Clock, XCircle, Download, Loader2 } from 'lucide-react';
-import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
+import {
+  UserPlus, CreditCard, Search, Eye, CheckCircle2, Clock, XCircle,
+  Download, Loader2, Trash2, Mail,
+} from 'lucide-react';
+import { useAdminMembers, useHardDeleteMember, useResendInvitation, type MemberListItem } from '@/lib/api/members';
+import { useAuthStore } from '@/store/auth.store';
 
 type MemberStatus = 'active' | 'pending' | 'suspended';
 
 const statusConfig: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
-  active:    { label: 'Actif',      cls: 'bg-emerald-50 text-emerald-700 border-emerald-100',   icon: CheckCircle2 },
-  pending:   { label: 'En attente', cls: 'bg-yellow-50  text-yellow-700  border-yellow-100',    icon: Clock        },
-  suspended: { label: 'Suspendu',   cls: 'bg-red-50     text-red-700     border-red-100',        icon: XCircle      },
-  rejected:  { label: 'Refusé',     cls: 'bg-neutral-50 text-neutral-500 border-neutral-200',   icon: XCircle      },
+  active:    { label: 'Actif',      cls: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle2 },
+  pending:   { label: 'En attente', cls: 'bg-yellow-50  text-yellow-700  border-yellow-100',  icon: Clock        },
+  suspended: { label: 'Suspendu',   cls: 'bg-red-50     text-red-700     border-red-100',      icon: XCircle      },
+  rejected:  { label: 'Refusé',     cls: 'bg-neutral-50 text-neutral-500 border-neutral-200', icon: XCircle      },
 };
 
 const cotisationConfig: Record<string, { label: string; cls: string }> = {
-  paid:   { label: 'Payée',    cls: 'bg-emerald-50 text-emerald-700' },
-  unpaid: { label: 'Impayée',  cls: 'bg-red-50 text-red-600'        },
-  exempt: { label: 'Exempté',  cls: 'bg-neutral-50 text-neutral-400' },
+  paid:   { label: 'Payée',   cls: 'bg-emerald-50 text-emerald-700' },
+  unpaid: { label: 'Impayée', cls: 'bg-red-50 text-red-600'        },
+  exempt: { label: 'Exempté', cls: 'bg-neutral-50 text-neutral-400' },
 };
 
 const FILTER_OPTIONS: { label: string; value: MemberStatus | 'all' }[] = [
-  { label: 'Tous',      value: 'all'       },
-  { label: 'Actifs',    value: 'active'    },
-  { label: 'En attente',value: 'pending'   },
-  { label: 'Suspendus', value: 'suspended' },
+  { label: 'Tous',       value: 'all'       },
+  { label: 'Actifs',     value: 'active'    },
+  { label: 'En attente', value: 'pending'   },
+  { label: 'Suspendus',  value: 'suspended' },
 ];
-
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -35,12 +38,16 @@ function fmt(d: string) {
 export default function AdminAdherentsPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<MemberStatus | 'all'>('all');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const { data, isLoading } = useAdminMembers({ status: filter, search, limit: 100 });
+  const user        = useAuthStore(s => s.user);
+  const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
 
-  const members = useMemo<MemberListItem[]>(() => {
-    return data?.data?.data ?? [];
-  }, [data]);
+  const { data, isLoading }  = useAdminMembers({ status: filter, search, limit: 100 });
+  const hardDelete           = useHardDeleteMember();
+  const resendInvitation     = useResendInvitation();
+
+  const members = useMemo<MemberListItem[]>(() => data?.data?.data ?? [], [data]);
 
   const displayed = useMemo(() =>
     members.filter(m => {
@@ -50,6 +57,23 @@ export default function AdminAdherentsPage() {
       return matchStatus && matchSearch;
     }),
   [members, filter, search]);
+
+  const handleDelete = (id: string) => {
+    if (confirmDeleteId !== id) { setConfirmDeleteId(id); return; }
+    hardDelete.mutate(id, { onSettled: () => setConfirmDeleteId(null) });
+  };
+
+  const handleResend = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resendInvitation.mutate(id);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleDelete(id);
+  };
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -62,9 +86,14 @@ export default function AdminAdherentsPage() {
             {isLoading ? 'Chargement…' : `${data?.data?.total ?? members.length} membres au total`}
           </p>
         </div>
-        <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white transition-all hover:bg-emerald-700">
-          <UserPlus size={14} /> Nouveau membre
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/cartes" className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 transition-all hover:border-emerald-300 hover:text-emerald-700">
+            <CreditCard size={14} /> Cartes membres
+          </Link>
+          <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white transition-all hover:bg-emerald-700">
+            <UserPlus size={14} /> Nouveau membre
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -79,7 +108,6 @@ export default function AdminAdherentsPage() {
             className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
           />
         </div>
-
         <div className="flex flex-wrap gap-1.5">
           {FILTER_OPTIONS.map(({ label, value }) => (
             <button
@@ -111,7 +139,7 @@ export default function AdminAdherentsPage() {
 
         {!isLoading && (
           <>
-            {/* Desktop */}
+            {/* ── Desktop ───────────────────────────────────── */}
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
@@ -127,9 +155,10 @@ export default function AdminAdherentsPage() {
                 </thead>
                 <tbody className="divide-y divide-neutral-50">
                   {displayed.map((m) => {
-                    const s = statusConfig[m.memberStatus] ?? statusConfig.pending;
+                    const s  = statusConfig[m.memberStatus] ?? statusConfig.pending;
                     const SI = s.icon;
-                    const c = cotisationConfig[m.cotisationStatus] ?? cotisationConfig.unpaid;
+                    const c  = cotisationConfig[m.cotisationStatus] ?? cotisationConfig.unpaid;
+                    const isConfirming = confirmDeleteId === m._id;
                     return (
                       <tr key={m._id} className="group transition-colors hover:bg-neutral-50/40">
                         <td className="px-5 py-3.5">
@@ -154,12 +183,48 @@ export default function AdminAdherentsPage() {
                         </td>
                         <td className="px-5 py-3.5 text-xs text-neutral-400">{fmt(m.createdAt)}</td>
                         <td className="px-5 py-3.5">
-                          <Link
-                            href={`/admin/adherents/${m._id}`}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 opacity-0 transition-all group-hover:opacity-100 hover:border-emerald-300 hover:text-emerald-700"
-                          >
-                            <Eye size={13} />
-                          </Link>
+                          <div className="flex items-center justify-end gap-1.5 opacity-0 transition-all group-hover:opacity-100">
+                            {/* Resend invitation — pending only */}
+                            {m.memberStatus === 'pending' && (
+                              <button
+                                onClick={e => handleResend(e, m._id)}
+                                disabled={resendInvitation.isPending}
+                                title="Renvoyer l'invitation"
+                                className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-200 text-blue-500 hover:border-blue-400 hover:bg-blue-50 disabled:opacity-40"
+                              >
+                                {resendInvitation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
+                              </button>
+                            )}
+
+                            {/* View detail */}
+                            <Link
+                              href={`/admin/adherents/${m._id}`}
+                              className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700"
+                            >
+                              <Eye size={13} />
+                            </Link>
+
+                            {/* Hard delete — super_admin only */}
+                            {isSuperAdmin && (
+                              isConfirming ? (
+                                <button
+                                  onClick={e => handleDeleteClick(e, m._id)}
+                                  disabled={hardDelete.isPending}
+                                  className="flex h-7 items-center gap-1 rounded-lg border border-red-400 bg-red-500 px-2 text-[10px] font-black text-white hover:bg-red-600 disabled:opacity-50"
+                                >
+                                  {hardDelete.isPending ? <Loader2 size={11} className="animate-spin" /> : 'Confirmer'}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={e => handleDeleteClick(e, m._id)}
+                                  title="Supprimer définitivement"
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-100 text-red-400 hover:border-red-300 hover:bg-red-50"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -168,21 +233,60 @@ export default function AdminAdherentsPage() {
               </table>
             </div>
 
-            {/* Mobile cards */}
+            {/* ── Mobile cards ──────────────────────────────── */}
             <div className="divide-y divide-neutral-50 md:hidden">
               {displayed.map((m) => {
                 const s = statusConfig[m.memberStatus] ?? statusConfig.pending;
+                const isConfirming = confirmDeleteId === m._id;
                 return (
-                  <Link key={m._id} href={`/admin/adherents/${m._id}`} className="flex items-center gap-3 px-4 py-4 transition-colors hover:bg-neutral-50">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-                      {m.firstName[0]}{m.lastName[0]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
-                      <p className="text-xs text-neutral-400">{m.memberId} · {m.email}</p>
-                    </div>
+                  <div key={m._id} className="flex items-center gap-3 px-4 py-4 transition-colors hover:bg-neutral-50">
+                    {/* Avatar + info — clickable */}
+                    <Link href={`/admin/adherents/${m._id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
+                        {m.firstName[0]}{m.lastName[0]}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
+                        <p className="truncate text-xs text-neutral-400">{m.memberId} · {m.email}</p>
+                      </div>
+                    </Link>
+
                     <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${s.cls}`}>{s.label}</span>
-                  </Link>
+
+                    {/* Actions */}
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {m.memberStatus === 'pending' && (
+                        <button
+                          onClick={e => handleResend(e, m._id)}
+                          disabled={resendInvitation.isPending}
+                          title="Renvoyer l'invitation"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 text-blue-500 hover:bg-blue-50 disabled:opacity-40"
+                        >
+                          <Mail size={14} />
+                        </button>
+                      )}
+
+                      {isSuperAdmin && (
+                        isConfirming ? (
+                          <button
+                            onClick={e => handleDeleteClick(e, m._id)}
+                            disabled={hardDelete.isPending}
+                            className="flex h-8 items-center gap-1 rounded-lg border border-red-400 bg-red-500 px-2 text-[10px] font-black text-white"
+                          >
+                            {hardDelete.isPending ? <Loader2 size={12} className="animate-spin" /> : 'OK ?'}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={e => handleDeleteClick(e, m._id)}
+                            title="Supprimer définitivement"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 text-red-400 hover:border-red-300 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
                 );
               })}
             </div>
