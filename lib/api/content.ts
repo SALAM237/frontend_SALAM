@@ -35,6 +35,15 @@ export function usePublicArticles() {
   });
 }
 
+export function usePublicArticle(id: string) {
+  return useQuery({
+    queryKey: ['public-article', id],
+    queryFn:  () => apiClient<ArticleDoc>(`/api/v1/public/content/${id}`),
+    enabled:  !!id,
+    staleTime: 60_000,
+  });
+}
+
 /* ── Admin ─────────────────────────────────────────────────── */
 export function useArticles() {
   const token = useAuthStore(s => s.accessToken);

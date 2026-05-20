@@ -43,6 +43,15 @@ export function usePublicActivities(category?: string) {
   });
 }
 
+export function usePublicActivity(slug: string) {
+  return useQuery({
+    queryKey: ['public-activity', slug],
+    queryFn:  () => apiClient<ActivityDoc>(`/api/v1/public/activities/${slug}`),
+    enabled:  !!slug,
+    staleTime: 60_000,
+  });
+}
+
 /* ── Member ────────────────────────────────────────────────── */
 export function useMemberActivities(category?: string) {
   const token = useAuthStore(s => s.accessToken);

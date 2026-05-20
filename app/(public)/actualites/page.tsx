@@ -65,17 +65,22 @@ export default function ActualitesPage() {
           {!isLoading && filtered.length > 0 && (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((n: any) => (
-                <div key={n._id} className="group flex flex-col gap-3 rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+                <Link key={n._id} href={`/actualites/${n._id}`} className="group flex flex-col gap-3 rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md">
                   <div className="aspect-[16/9] rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50" />
                   <span className="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
                     <Tag size={10} />{ARTICLE_CATEGORIES.find(c => c.value === n.data?.category)?.label ?? n.data?.category ?? 'Général'}
                   </span>
-                  <h3 className="font-black text-neutral-900 line-clamp-2">{n.title}</h3>
+                  <h3 className="font-black text-neutral-900 line-clamp-2 group-hover:text-emerald-700 transition-colors">{n.title}</h3>
                   {n.data?.excerpt && <p className="text-xs text-neutral-500 line-clamp-2">{n.data.excerpt}</p>}
-                  <span className="text-xs text-neutral-400">
-                    {new Date(n.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                  </span>
-                </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-neutral-400">
+                      {new Date(n.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 group-hover:gap-2 transition-all">
+                      Lire <ArrowRight size={11} />
+                    </span>
+                  </div>
+                </Link>
               ))}
             </div>
           )}

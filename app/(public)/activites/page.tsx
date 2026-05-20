@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Calendar, MapPin, Users, ArrowRight, Search, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Users, ArrowRight, Search, Loader2, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 import { usePublicActivities, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
@@ -86,21 +86,24 @@ export default function ActivitesPage() {
           {!isLoading && filtered.length > 0 && (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((a, i) => (
-                <div key={a._id} className="group flex flex-col gap-4 rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+                <Link key={a._id} href={`/activites/${a.slug}`} className="group flex flex-col gap-4 rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md">
                   <div className={`aspect-[16/9] rounded-xl bg-gradient-to-br ${COVERS[i % COVERS.length]}`} />
                   <div className="flex flex-col gap-2">
                     <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[11px] font-bold ${CAT_COLORS[a.category] ?? 'bg-neutral-100 text-neutral-600'}`}>
                       {ACTIVITY_CATEGORIES.find(c => c.value === a.category)?.label ?? a.category}
                     </span>
-                    <h3 className="font-black text-neutral-900">{a.title}</h3>
+                    <h3 className="font-black text-neutral-900 group-hover:text-emerald-700 transition-colors">{a.title}</h3>
                     {a.description && <p className="text-xs text-neutral-500 line-clamp-2">{a.description}</p>}
                     <div className="flex flex-wrap gap-3 text-xs text-neutral-400">
                       {a.startDate && <span className="flex items-center gap-1"><Calendar size={12} />{new Date(a.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
-                      {a.location   && <span className="flex items-center gap-1"><MapPin size={12} />{a.location}</span>}
-                      {a.capacity   && <span className="flex items-center gap-1"><Users size={12} />{a.capacity} places</span>}
+                      {a.location  && <span className="flex items-center gap-1"><MapPin size={12} />{a.location}</span>}
+                      {a.capacity  && <span className="flex items-center gap-1"><Users size={12} />{a.capacity} places</span>}
                     </div>
+                    <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-emerald-600 group-hover:gap-2 transition-all">
+                      Voir le détail <ArrowRight size={11} />
+                    </span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
