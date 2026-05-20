@@ -87,7 +87,7 @@ export default function AdminAdherentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/admin/cartes" className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 transition-all hover:border-emerald-300 hover:text-emerald-700">
+          <Link href="/admin/cartes" className="inline-flex h-9 items-center gap-2 rounded-full border border-yellow-300 bg-yellow-200 px-4 text-sm font-semibold text-yellow-800 transition-all hover:bg-yellow-300">
             <CreditCard size={14} /> Cartes membres
           </Link>
           <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white transition-all hover:bg-emerald-700">
@@ -183,14 +183,14 @@ export default function AdminAdherentsPage() {
                         </td>
                         <td className="px-5 py-3.5 text-xs text-neutral-400">{fmt(m.createdAt)}</td>
                         <td className="px-5 py-3.5">
-                          <div className="flex items-center justify-end gap-1.5 opacity-0 transition-all group-hover:opacity-100">
+                          <div className="flex items-center justify-end gap-1.5">
                             {/* Resend invitation — pending only */}
                             {m.memberStatus === 'pending' && (
                               <button
                                 onClick={e => handleResend(e, m._id)}
                                 disabled={resendInvitation.isPending}
                                 title="Renvoyer l'invitation"
-                                className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-200 text-blue-500 hover:border-blue-400 hover:bg-blue-50 disabled:opacity-40"
+                                className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-200 text-blue-500 transition-all hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:opacity-40"
                               >
                                 {resendInvitation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
                               </button>
@@ -199,7 +199,7 @@ export default function AdminAdherentsPage() {
                             {/* View detail */}
                             <Link
                               href={`/admin/adherents/${m._id}`}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700"
+                              className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition-all hover:border-emerald-600 hover:bg-emerald-600 hover:text-white"
                             >
                               <Eye size={13} />
                             </Link>
@@ -210,7 +210,7 @@ export default function AdminAdherentsPage() {
                                 <button
                                   onClick={e => handleDeleteClick(e, m._id)}
                                   disabled={hardDelete.isPending}
-                                  className="flex h-7 items-center gap-1 rounded-lg border border-red-400 bg-red-500 px-2 text-[10px] font-black text-white hover:bg-red-600 disabled:opacity-50"
+                                  className="flex h-7 items-center gap-1 rounded-lg border border-red-500 bg-red-500 px-2 text-[10px] font-black text-white hover:bg-red-600 disabled:opacity-50"
                                 >
                                   {hardDelete.isPending ? <Loader2 size={11} className="animate-spin" /> : 'Confirmer'}
                                 </button>
@@ -218,7 +218,7 @@ export default function AdminAdherentsPage() {
                                 <button
                                   onClick={e => handleDeleteClick(e, m._id)}
                                   title="Supprimer définitivement"
-                                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-100 text-red-400 hover:border-red-300 hover:bg-red-50"
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-200 text-red-400 transition-all hover:border-red-500 hover:bg-red-500 hover:text-white"
                                 >
                                   <Trash2 size={12} />
                                 </button>

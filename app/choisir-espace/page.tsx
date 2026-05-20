@@ -142,29 +142,29 @@ export default function ChoisirEspacePage() {
           {/* Bureau Exécutif */}
           <button
             onClick={() => handleSelectSpace('admin')}
-            className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] p-7 text-left transition-all duration-200 hover:border-white/[0.15] hover:bg-white/[0.07] hover:shadow-[0_0_40px_rgba(255,255,255,0.04)]">
+            className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-yellow-300 bg-yellow-200 p-7 text-left transition-all duration-200 hover:border-yellow-400 hover:bg-yellow-300 hover:shadow-[0_0_40px_rgba(234,179,8,0.15)]">
 
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.07]">
-              <ShieldCheck size={22} className="text-white/70" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-300/60">
+              <ShieldCheck size={22} className="text-yellow-800" />
             </div>
 
             <div className="flex-1">
-              <h2 className="text-base font-black tracking-[-0.02em] text-white">
+              <h2 className="text-base font-black tracking-[-0.02em] text-yellow-900">
                 Bureau Exécutif
               </h2>
-              <p className="mt-1.5 text-xs leading-relaxed text-white/40">
+              <p className="mt-1.5 text-xs leading-relaxed text-yellow-700">
                 Gestion des membres, activités, cotisations et paramètres.
               </p>
             </div>
 
-            <div className="flex items-center gap-1.5 text-xs font-black text-white/50">
+            <div className="flex items-center gap-1.5 text-xs font-black text-yellow-800">
               Accéder
               <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
             </div>
 
             {/* Badge rôle */}
             {user.roles[0] && (
-              <span className="absolute right-4 top-4 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white/30">
+              <span className="absolute right-4 top-4 rounded-full border border-yellow-400 bg-yellow-300/60 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-yellow-800">
                 {user.roles[0].name}
               </span>
             )}

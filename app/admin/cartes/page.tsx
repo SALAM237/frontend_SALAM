@@ -45,10 +45,9 @@ export default function CartesPage() {
       <div className="flex flex-wrap items-center gap-3">
         <Link
           href="/admin/adherents"
-          className="group flex h-9 items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 text-sm font-semibold text-neutral-500 shadow-sm transition-all hover:border-emerald-300 hover:text-emerald-700 hover:shadow-emerald-500/10"
+          className="group flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-all hover:border-emerald-300 hover:text-emerald-700"
         >
-          <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-0.5" />
-          <span className="hidden sm:inline">Adhérents</span>
+          <ArrowLeft size={15} className="transition-transform group-hover:-translate-x-0.5" />
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Cartes membres</h1>
