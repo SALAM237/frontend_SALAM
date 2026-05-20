@@ -85,7 +85,9 @@ function Field({ label, value, onChange, placeholder, type = 'text', required = 
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">{label}</label>
+      <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+        {label}{required && <span className="ml-0.5 text-red-500">*</span>}
+      </label>
       <input
         type={type} value={value} onChange={onChange} placeholder={placeholder} required={required}
         className="h-10 w-full rounded-xl border border-neutral-200 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"

@@ -140,7 +140,7 @@ function CreatePasswordContent() {
         {/* Mot de passe */}
         <div className="space-y-1.5">
           <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">
-            Mot de passe
+            Mot de passe <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input
@@ -185,7 +185,7 @@ function CreatePasswordContent() {
         {/* Confirmation */}
         <div className="space-y-1.5">
           <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">
-            Confirmer le mot de passe
+            Confirmer le mot de passe <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input

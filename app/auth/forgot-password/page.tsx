@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-1.5">
           <label htmlFor="email" className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">
-            Adresse e-mail
+            Adresse e-mail <span className="text-red-500">*</span>
           </label>
           <input
             id="email" type="email" autoComplete="email" required

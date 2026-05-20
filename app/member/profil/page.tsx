@@ -140,8 +140,8 @@ export default function ProfilPage() {
         <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
           <p className="mb-4 text-sm font-black text-neutral-900">Informations personnelles</p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <F icon={User}  label="Prénom"    value={form.firstName} onChange={set('firstName')} />
-            <F icon={User}  label="Nom"       value={form.lastName}  onChange={set('lastName')}  />
+            <F icon={User}  label="Prénom"    value={form.firstName} onChange={set('firstName')} required />
+            <F icon={User}  label="Nom"       value={form.lastName}  onChange={set('lastName')}  required />
             <F icon={Mail}  label="Email"     value={form.email}     onChange={set('email')}     type="email" readOnly />
             <F icon={Phone} label="Téléphone" value={form.phone}     onChange={set('phone')}     placeholder="+33 6 00 00 00 00" />
             <F icon={MapPin} label="Ville"    value={form.city}      onChange={set('city')}      placeholder="Paris" />
@@ -189,14 +189,16 @@ export default function ProfilPage() {
   );
 }
 
-function F({ icon: Icon, label, value, onChange, type = 'text', readOnly, placeholder }: {
+function F({ icon: Icon, label, value, onChange, type = 'text', readOnly, placeholder, required }: {
   icon: React.ElementType; label: string; value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  type?: string; readOnly?: boolean; placeholder?: string;
+  type?: string; readOnly?: boolean; placeholder?: string; required?: boolean;
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">{label}</label>
+      <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+        {label}{required && <span className="ml-0.5 text-red-500">*</span>}
+      </label>
       <div className="relative">
         <Icon size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
         <input type={type} value={value} onChange={onChange} readOnly={readOnly} placeholder={placeholder}

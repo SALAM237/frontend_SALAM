@@ -114,7 +114,7 @@ function LoginForm() {
 
         <div className="space-y-1.5">
           <label htmlFor="email" className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">
-            Adresse e-mail
+            Adresse e-mail <span className="text-red-500">*</span>
           </label>
           <input
             id="email" type="email" autoComplete="email" required
@@ -127,7 +127,7 @@ function LoginForm() {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label htmlFor="password" className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">
-              Mot de passe
+              Mot de passe <span className="text-red-500">*</span>
             </label>
             <Link href="/auth/forgot-password" className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700">
               Mot de passe oublié ?

@@ -220,19 +220,19 @@ export default function RegisterPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Prénom" error={errors.firstName}>
+            <Field label="Prénom" error={errors.firstName} required>
               <input type="text" autoComplete="given-name" required
                 value={form.firstName} onChange={e => set('firstName', e.target.value)}
                 placeholder="Jean" className={inputCls(!!errors.firstName)} />
             </Field>
-            <Field label="Nom" error={errors.lastName}>
+            <Field label="Nom" error={errors.lastName} required>
               <input type="text" autoComplete="family-name" required
                 value={form.lastName} onChange={e => set('lastName', e.target.value)}
                 placeholder="Kamga" className={inputCls(!!errors.lastName)} />
             </Field>
           </div>
 
-          <Field label="Adresse e-mail" error={errors.email}>
+          <Field label="Adresse e-mail" error={errors.email} required>
             <input type="email" autoComplete="email" required
               value={form.email} onChange={e => set('email', e.target.value)}
               placeholder="vous@exemple.com" className={inputCls(!!errors.email)} />
@@ -244,7 +244,7 @@ export default function RegisterPage() {
               placeholder="+212 6 00 00 00 00" className={inputCls(false)} />
           </Field>
 
-          <Field label="Pays de résidence" error={errors.pays}>
+          <Field label="Pays de résidence" error={errors.pays} required>
             <div className="relative">
               <select value={form.pays} onChange={e => set('pays', e.target.value)}
                 className={`${inputCls(!!errors.pays)} appearance-none pr-9`}>
@@ -255,7 +255,7 @@ export default function RegisterPage() {
             </div>
           </Field>
 
-          <Field label="Filière / Domaine d'études" error={errors.filiere}>
+          <Field label="Filière / Domaine d'études" error={errors.filiere} required>
             <div className="relative">
               <select value={form.filiere} onChange={e => set('filiere', e.target.value)}
                 className={`${inputCls(!!errors.filiere)} appearance-none pr-9`}>
@@ -266,7 +266,7 @@ export default function RegisterPage() {
             </div>
           </Field>
 
-          <Field label="Promotionnaire (année)" error={errors.promotionYear}>
+          <Field label="Promotionnaire (année)" error={errors.promotionYear} required>
             <input type="number" min="1970" max="2100" required
               value={form.promotionYear} onChange={e => set('promotionYear', e.target.value)}
               placeholder={String(new Date().getFullYear())}
@@ -283,7 +283,7 @@ export default function RegisterPage() {
       {step === 2 && (
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
 
-          <Field label="Mot de passe" error={errors.password}>
+          <Field label="Mot de passe" error={errors.password} required>
             <div className="relative">
               <input type={showPwd ? 'text' : 'password'} autoComplete="new-password" required
                 value={form.password} onChange={e => set('password', e.target.value)}
@@ -328,7 +328,7 @@ export default function RegisterPage() {
             )}
           </Field>
 
-          <Field label="Confirmer le mot de passe" error={errors.confirm}>
+          <Field label="Confirmer le mot de passe" error={errors.confirm} required>
             <div className="relative">
               <input type={showConf ? 'text' : 'password'} autoComplete="new-password" required
                 value={form.confirm} onChange={e => set('confirm', e.target.value)}
@@ -407,10 +407,12 @@ function inputCls(hasError: boolean) {
   }`;
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({ label, error, required, children }: { label: string; error?: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">{label}</label>
+      <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">
+        {label}{required && <span className="ml-0.5 text-red-500">*</span>}
+      </label>
       {children}
       {error && <p className="text-[11px] text-red-500">{error}</p>}
     </div>
