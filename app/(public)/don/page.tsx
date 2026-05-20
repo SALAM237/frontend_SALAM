@@ -5,6 +5,8 @@ import { Heart, Shield, CheckCircle, Send, Star } from 'lucide-react';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 
+export const revalidate = 3600;
+
 const MONTANTS = [10, 20, 50, 100, 200];
 
 const IMPACTS = [

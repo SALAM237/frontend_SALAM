@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Newspaper, ChevronRight } from 'lucide-react';
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = { title: 'Actualité SALAM' };
 
 export default function ActualiteDetailPage({ params }: { params: { slug: string } }) {

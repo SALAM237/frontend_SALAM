@@ -9,6 +9,7 @@ import {
   Images, Newspaper, Settings, LogOut, Menu, X, ChevronRight, Bell,
   Banknote, FileText, History, MessageSquare, Shield,
 } from 'lucide-react';
+import Image from 'next/image';
 import { useAuthStore } from '@/store/auth.store';
 import { isSuperAdmin } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
@@ -65,8 +66,7 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
 
         {/* Logo */}
         <div className="flex items-center gap-3 border-b border-white/[0.06] px-5 py-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/logo/logo_salam_wbg.png" alt="SALAM" className="h-9 w-9 rounded-full object-cover ring-1 ring-emerald-500/30" />
+          <Image src="/images/logo/logo_salam_wbg.png" alt="SALAM" width={36} height={36} className="h-9 w-9 rounded-full object-cover ring-1 ring-emerald-500/30" priority />
           <div>
             <p className="text-sm font-black tracking-[0.16em] text-white">SALAM</p>
             <p className="text-[10px] font-semibold tracking-widest text-white/35">ADMIN</p>

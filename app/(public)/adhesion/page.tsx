@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 import { useAdhesionForm } from '@/lib/api/public';
 
+export const revalidate = 3600;
+
 const AVANTAGES = [
   { icon: Users,         title: 'Réseau solidaire',   text: 'Accès à la communauté SALAM — entraide, réseau Alumni, soutien mutuel.' },
   { icon: Calendar,      title: 'Activités exclusives', text: 'Inscription aux événements sportifs, culturels, conférences et ateliers.' },

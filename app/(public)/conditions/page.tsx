@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: "Conditions d'utilisation",
   description: "Conditions générales d'utilisation du site SALAM Cameroun.",

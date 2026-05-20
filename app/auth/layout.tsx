@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -22,8 +23,14 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
           {/* Logo */}
           <Link href="/" className="group flex w-fit items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/logo/logo_salam_wbg.png" alt="SALAM" className="h-10 w-10 rounded-full object-cover ring-1 ring-emerald-500/30 transition group-hover:ring-emerald-400/60" />
+            <Image
+              src="/images/logo/logo_salam_wbg.png"
+              alt="SALAM"
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-full object-cover ring-1 ring-emerald-500/30 transition group-hover:ring-emerald-400/60"
+              priority
+            />
             <div>
               <p className="text-sm font-black tracking-[0.2em] text-white">SALAM</p>
               <p className="text-[9px] font-semibold tracking-[0.18em] text-white/30">ASSOCIATION</p>
@@ -43,7 +50,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                 <span className="text-emerald-400">votre avenir.</span>
               </h1>
               <p className="mt-4 text-sm leading-relaxed text-white/45">
-                Rejoignez une communauté d'étudiants et de diplômés camerounais qui construisent ensemble un avenir ambitieux.
+                Rejoignez une communauté d&apos;étudiants et de diplômés camerounais qui construisent ensemble un avenir ambitieux.
               </p>
             </div>
 
@@ -63,8 +70,14 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="flex items-center gap-3 border-b border-neutral-200/80 bg-white px-5 py-4 lg:hidden">
           <div className="h-[3px] w-6 rounded-full" style={{ background: 'linear-gradient(90deg, #0B8F3A 33%, #C8102E 33%, #C8102E 66%, #F7C600 66%)' }} />
           <Link href="/" className="flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/logo/logo_salam_wbg.png" alt="SALAM" className="h-7 w-7 rounded-full object-cover" />
+            <Image
+              src="/images/logo/logo_salam_wbg.png"
+              alt="SALAM"
+              width={28}
+              height={28}
+              className="h-7 w-7 rounded-full object-cover"
+              priority
+            />
             <span className="text-sm font-black tracking-[0.15em] text-neutral-800">SALAM</span>
           </Link>
         </div>

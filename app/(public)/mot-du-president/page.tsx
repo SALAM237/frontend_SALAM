@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+
+export const revalidate = 86400;
 import { Quote } from 'lucide-react';
 import { PageHero } from '@/components/public/PageHero';
 

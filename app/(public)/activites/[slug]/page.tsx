@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Calendar, MapPin, Users, Clock, Tag, ChevronRight } from 'lucide-react';
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = { title: 'Activité SALAM' };
 
 export default function ActivityDetailPage({ params }: { params: { slug: string } }) {

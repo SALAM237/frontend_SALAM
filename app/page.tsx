@@ -1,3 +1,5 @@
+export const revalidate = 3600;
+
 import { HeroSection }      from '@/components/public/HeroSection';
 import { MarqueeSection }   from '@/components/public/MarqueeSection';
 import SalamStatsSection    from '@/components/public/SalamStatsSection';

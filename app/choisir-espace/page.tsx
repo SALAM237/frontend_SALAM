@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Users, ShieldCheck, ArrowRight, LogOut } from 'lucide-react';
+import Image from 'next/image';
 import { useAuthStore } from '@/store/auth.store';
 import { hasAdminRole, hasMemberAccess } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
@@ -77,9 +78,8 @@ export default function ChoisirEspacePage() {
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-5 sm:px-10">
         <Link href="/" className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/logo/logo_salam_wbg.png" alt="SALAM"
-            className="h-9 w-9 rounded-full object-cover ring-1 ring-emerald-500/30" />
+          <Image src="/images/logo/logo_salam_wbg.png" alt="SALAM" width={36} height={36}
+            className="h-9 w-9 rounded-full object-cover ring-1 ring-emerald-500/30" priority />
           <div>
             <p className="text-sm font-black tracking-[0.2em] text-white">SALAM</p>
             <p className="text-[9px] font-semibold tracking-[0.18em] text-white/30">ASSOCIATION</p>

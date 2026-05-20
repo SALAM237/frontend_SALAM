@@ -294,18 +294,12 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.3, delay: 0.9, ease: EASE }}
-            className="mx-auto max-w-4xl text-[clamp(1.6rem,3.8vw,3.6rem)] font-black leading-[0.93] tracking-[-0.06em] text-white drop-shadow-[0_18px_50px_rgba(0,0,0,0.55)] lg:mx-0"
+            className="mx-auto max-w-4xl text-[clamp(1.4rem,3.4vw,3rem)] font-black leading-[1.18] tracking-[-0.03em] text-white drop-shadow-[0_18px_50px_rgba(0,0,0,0.55)] lg:mx-0"
           >
-            <span className="block">Ensemble,</span>
-            <span className="block">construisons</span>
-            <span className="block">notre avenir.</span>
-            <span className="mt-3 block tracking-[0.035em]">
-              <span className="text-emerald-300">S</span>
-              <span className="text-red-400">A</span>
-              <span className="text-yellow-300">L</span>
-              <span className="text-red-400">A</span>
-              <span className="text-emerald-300">M</span>
-            </span>
+            <span className="block">Valorisons <span className="text-emerald-300"> nos acquis.</span> </span>
+            <span className="block">Renforçons <span className="text-red-400">notre cohésion.</span> </span>
+            <span className="block">Faisons grandir <span className="text-yellow-300">notre réseau.</span></span>
+            
           </motion.h1>
 
           {/* Description */}
@@ -313,9 +307,12 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, delay: 1.5, ease: EASE }}
-            className="mx-auto mt-4 max-w-xl text-[0.75rem] leading-6 text-white/[0.82] drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] lg:mx-0 lg:mt-5 lg:text-[clamp(0.92rem,1.15vw,1.02rem)] lg:leading-7"
+            className="mx-auto mt-4 max-w-xl text-[0.75rem] leading-6 text-white/[0.82] drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] lg:mx-0 lg:mt-5 lg:text-[clamp(0.92rem,1.15vw,1rem)] lg:leading-7"
           >
-            Une communauté d&apos;anciens étudiants camerounais du Maroc engagée pour accompagner les plus jeunes, favoriser l&apos;intégration professionnelle et contribuer au développement du Cameroun.
+           Un réseau dynamique des anciens étudiants camerounais formés au Royaume du Maroc.
+            <br />
+            La SALAM œuvre à construire une communauté forte, engagée et tournée vers l’avenir, à travers la solidarité, le réseautage, le partage d’expériences et la valorisation des compétences.
+
           </motion.p>
 
           {/* CTAs */}

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight, Loader2, ShieldAlert, MailWarning, RefreshCw, CheckCircle2 } from 'lucide-react';
+import Image from 'next/image';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { hasAdminRole } from '@/lib/auth/roles';
@@ -94,9 +95,8 @@ export default function BureauConnexionPage() {
 
           {/* Logo */}
           <Link href="/" className="group flex w-fit items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/logo/logo_salam_wbg.png" alt="SALAM"
-              className="h-10 w-10 rounded-full object-cover ring-1 ring-emerald-500/30 transition group-hover:ring-emerald-400/60" />
+            <Image src="/images/logo/logo_salam_wbg.png" alt="SALAM" width={40} height={40}
+              className="h-10 w-10 rounded-full object-cover ring-1 ring-emerald-500/30 transition group-hover:ring-emerald-400/60" priority />
             <div>
               <p className="text-sm font-black tracking-[0.2em] text-white">SALAM</p>
               <p className="text-[9px] font-semibold tracking-[0.18em] text-white/30">ASSOCIATION</p>
@@ -149,8 +149,7 @@ export default function BureauConnexionPage() {
           <div className="h-[3px] w-6 rounded-full"
             style={{ background: 'linear-gradient(90deg, #0B8F3A 33%, #C8102E 33%, #C8102E 66%, #F7C600 66%)' }} />
           <Link href="/" className="flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/logo/logo_salam_wbg.png" alt="SALAM" className="h-7 w-7 rounded-full object-cover" />
+            <Image src="/images/logo/logo_salam_wbg.png" alt="SALAM" width={28} height={28} className="h-7 w-7 rounded-full object-cover" priority />
             <span className="text-sm font-black tracking-[0.15em] text-neutral-800">SALAM</span>
           </Link>
         </div>

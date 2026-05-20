@@ -3,19 +3,102 @@ import path from 'path';
 
 const NOINDEX = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
 
+const SECURITY_HEADERS = [
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  {
+    key: 'Strict-Transport-Security',
+    value: 'max-age=63072000; includeSubDomains; preload',
+  },
+  {
+    key: 'Content-Security-Policy',
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://salam-cameroun.com https://www.salam-cameroun.com https://backendsalam-production.up.railway.app https://backend.salam-cameroun.com",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; '),
+  },
+];
+
 const nextConfig: NextConfig = {
-  images: { remotePatterns: [{ protocol: 'https', hostname: '**' }] },
-  experimental: { staleTimes: { dynamic: 30, static: 180 } },
+  poweredByHeader: false, // ne pas exposer "X-Powered-By: Next.js"
+
+  compress: true, // gzip/brotli compression (actif par défaut, explicite ici)
+
+  images: {
+    formats: ['image/avif', 'image/webp'], // AVIF en priorité (meilleure compression)
+    remotePatterns: [
+      // Backend Railway (prod + dev)
+      { protocol: 'https', hostname: 'backendsalam-production.up.railway.app' },
+      { protocol: 'https', hostname: 'backend.salam-cameroun.com' },
+      // QR code generator (carte membre)
+      { protocol: 'https', hostname: 'api.qrserver.com' },
+      // Avatars ou assets CDN futurs
+      { protocol: 'https', hostname: '*.cloudinary.com' },
+      { protocol: 'https', hostname: '*.r2.cloudflarestorage.com' },
+    ],
+    // Tailles de device pour srcSet optimal mobile Afrique
+    deviceSizes: [375, 640, 750, 828, 1080, 1200, 1920],
+    imageSizes:  [16, 32, 48, 64, 96, 128, 256],
+    minimumCacheTTL: 86400, // cache images 24h côté Next
+  },
+
+  experimental: {
+    staleTimes: { dynamic: 30, static: 180 },
+    optimizePackageImports: ['lucide-react'], // framer-motion exclus — effets de bord incompatibles
+  },
+
   turbopack: { root: path.resolve(__dirname) },
+
   async headers() {
     return [
-      { source: '/member/:path*',               headers: NOINDEX },
-      { source: '/admin/:path*',                headers: NOINDEX },
-      { source: '/choisir-espace',              headers: NOINDEX },
-      { source: '/auth/:path*',                 headers: NOINDEX },
-      { source: '/bureau-executif/connexion',   headers: NOINDEX },
-      { source: '/demo/admin/:path*',           headers: NOINDEX },
+      {
+        source: '/:path*',
+        headers: SECURITY_HEADERS,
+      },
+      {
+        source: '/member/:path*',
+        headers: [...SECURITY_HEADERS, ...NOINDEX],
+      },
+      {
+        source: '/admin/:path*',
+        headers: [...SECURITY_HEADERS, ...NOINDEX],
+      },
+      {
+        source: '/choisir-espace',
+        headers: [...SECURITY_HEADERS, ...NOINDEX],
+      },
+      {
+        source: '/auth/:path*',
+        headers: [...SECURITY_HEADERS, ...NOINDEX],
+      },
+      {
+        source: '/bureau-executif/connexion',
+        headers: [...SECURITY_HEADERS, ...NOINDEX],
+      },
+      {
+        source: '/demo/admin/:path*',
+        headers: [...SECURITY_HEADERS, ...NOINDEX],
+      },
+      // Cache long sur les assets statiques (images, fonts, JS)
+      {
+        source: '/_next/static/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        source: '/images/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=3600' }],
+      },
     ];
   },
 };
+
 export default nextConfig;

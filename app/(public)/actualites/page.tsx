@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 import { usePublicArticles, ARTICLE_CATEGORIES } from '@/lib/api/content';
 
+export const revalidate = 3600;
+
 const CATS = [
   { id: 'all', label: 'Toutes' },
   ...ARTICLE_CATEGORIES.map(c => ({ id: c.value, label: c.label })),

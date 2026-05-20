@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: 'Politique cookies',
   description: "Politique d'utilisation des cookies — SALAM Cameroun.",

@@ -7,6 +7,8 @@ import { PageHero } from '@/components/public/PageHero';
 import { usePublicAlbums, type AlbumDoc } from '@/lib/api/gallery';
 import { Lightbox, useLightbox } from '@/components/ui/Lightbox';
 
+export const revalidate = 3600;
+
 const COVERS = [
   'from-emerald-400 to-teal-600', 'from-blue-400 to-indigo-600',
   'from-purple-400 to-pink-600',  'from-amber-400 to-orange-500',

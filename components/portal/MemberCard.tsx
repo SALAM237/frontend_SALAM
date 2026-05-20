@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 export type MemberCardData = {
   id: string;
   firstName: string;
@@ -53,8 +55,7 @@ export function MemberCard({ member, printable = false }: { member: MemberCardDa
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/logo/logo_salam_wbg.png" alt="SALAM" className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-white/20 sm:h-9 sm:w-9" />
+              <Image src="/images/logo/logo_salam_wbg.png" alt="SALAM" width={36} height={36} className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-white/20 sm:h-9 sm:w-9" />
               <div className="min-w-0">
                 <p className="text-[10px] font-black tracking-[0.22em] text-white sm:text-[11px]">SALAM</p>
                 <p className="text-[7px] font-medium tracking-[0.1em] text-white/45 sm:text-[8px]">SOLIDAIRE ASSOCIATIVE</p>

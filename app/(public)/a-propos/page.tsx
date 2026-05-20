@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+
+export const revalidate = 86400; // 24h — page quasi-statique
 import { Globe, Heart, Users, Target, Lightbulb, Zap, BookOpen, Briefcase, HandHeart, Megaphone } from 'lucide-react';
 import { PageHero } from '@/components/public/PageHero';
 

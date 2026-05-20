@@ -6,6 +6,8 @@ import { PageHero } from '@/components/public/PageHero';
 import Link from 'next/link';
 import { useContactForm } from '@/lib/api/public';
 
+export const revalidate = 3600;
+
 const SUBJECTS = [
   { value: 'adhesion',    label: 'Adhésion / Devenir membre' },
   { value: 'activites',   label: 'Activités & événements' },

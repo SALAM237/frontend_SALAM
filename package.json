@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "latest",
+    "@sentry/nextjs": "^10.53.1",
     "@tanstack/react-query": "latest",
     "@tanstack/react-table": "latest",
     "bcrypt": "^6.0.0",

@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, type ElementType } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+
+export const revalidate = 86400;
 import {
   GraduationCap, Briefcase, HandHeart, TrendingUp,
   AlertCircle, CheckCircle2, ArrowRight, Building2,

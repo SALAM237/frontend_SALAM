@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Users } from 'lucide-react';
+
+export const revalidate = 86400;
 import { PageHero } from '@/components/public/PageHero';
 
 export const metadata: Metadata = {

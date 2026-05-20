@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: 'Politique de confidentialité',
   description: "Politique de confidentialité de l'association SALAM Cameroun — RGPD.",
