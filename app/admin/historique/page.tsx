@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useState, useMemo } from 'react';
 import { Search, ChevronDown, Filter, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuditLogs, type AuditLogDoc } from '@/lib/api/audit-logs';
@@ -42,6 +40,7 @@ const CATEGORIES = [
 ];
 
 function actionCategory(action: string): string {
+  if (!action) return 'settings';
   if (action.startsWith('cotisation.reminder')) return 'reminder';
   return action.split('.')[0];
 }
@@ -59,7 +58,7 @@ function fmtLog(log: AuditLogDoc): { date: string; time: string } {
 }
 
 function logDetailsStr(log: AuditLogDoc): string {
-  const d = log.details;
+  const d = log.details ?? {};
   const parts: string[] = [];
   if (d.memberName)     parts.push(String(d.memberName));
   if (d.year)           parts.push(`Année ${d.year}`);
