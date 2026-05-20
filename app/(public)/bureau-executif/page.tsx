@@ -10,11 +10,23 @@ const PLACEHOLDER_PHOTO = '/images/gallery/image_parallax_SALAM.png';
 const PRESIDENT_PHOTO = '/images/bureau/aoua_presidente_salam_2_bn.jpg';
 const FEMININE_BUREAU_POSTES: Record<string, string> = {
   president: 'Présidente',
+  'president e': 'Présidente',
   'vice president': 'Vice-Présidente',
+  'vice president e': 'Vice-Présidente',
   'secretaire general': 'Secrétaire Générale',
+  'secretaire general e': 'Secrétaire Générale',
   'secretaire adjoint': 'Secrétaire Adjointe',
+  'secretaire adjoint e': 'Secrétaire Adjointe',
   tresorier: 'Trésorière',
+  'tresorier e': 'Trésorière',
   'tresorier adjoint': 'Trésorière Adjointe',
+  'tresorier e adjoint e': 'Trésorière Adjointe',
+  responsable: 'Responsable',
+  'membre sage': 'Membre sage',
+  conseiller: 'Conseillère',
+  'conseiller e': 'Conseillère',
+  'sage conseiller': 'Sage conseillère',
+  'sage conseiller e': 'Sage conseillère',
 };
 
 const KNOWN_POSTES = [
@@ -54,9 +66,9 @@ function getYear(date: string) {
 }
 
 function formatBureauTitle(member: BureauMember) {
-  if (member.title) return member.title;
-  if (member.gender !== 'femme') return member.bureauPoste;
-  return FEMININE_BUREAU_POSTES[normalizePoste(member.bureauPoste)] ?? member.bureauPoste;
+  const title = member.title ?? member.bureauPoste;
+  if (member.gender?.toLowerCase() !== 'femme') return title;
+  return FEMININE_BUREAU_POSTES[normalizePoste(title)] ?? FEMININE_BUREAU_POSTES[normalizePoste(member.bureauPoste)] ?? title;
 }
 
 function MemberCard({ member }: { member: BureauMember }) {

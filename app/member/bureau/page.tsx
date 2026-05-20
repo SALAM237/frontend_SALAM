@@ -6,6 +6,27 @@ import { assetUrl } from '@/lib/assets';
 
 const PLACEHOLDER_PHOTO = '/images/gallery/image_parallax_SALAM.png';
 
+const FEMININE_BUREAU_POSTES: Record<string, string> = {
+  president: 'Présidente',
+  'president e': 'Présidente',
+  'vice president': 'Vice-Présidente',
+  'vice president e': 'Vice-Présidente',
+  'secretaire general': 'Secrétaire Générale',
+  'secretaire general e': 'Secrétaire Générale',
+  'secretaire adjoint': 'Secrétaire Adjointe',
+  'secretaire adjoint e': 'Secrétaire Adjointe',
+  tresorier: 'Trésorière',
+  'tresorier e': 'Trésorière',
+  'tresorier adjoint': 'Trésorière Adjointe',
+  'tresorier e adjoint e': 'Trésorière Adjointe',
+  responsable: 'Responsable',
+  'membre sage': 'Membre sage',
+  conseiller: 'Conseillère',
+  'conseiller e': 'Conseillère',
+  'sage conseiller': 'Sage conseillère',
+  'sage conseiller e': 'Sage conseillère',
+};
+
 const COMMISSION_DESCRIPTIONS: Record<string, string> = {
   'Commission Culturelle': 'Organisation des événements culturels, valorisation des cultures camerounaise et marocaine.',
   'Commission Sport': 'Tournois, activités sportives et promotion du sport comme vecteur de cohésion sociale.',
@@ -43,8 +64,9 @@ function categoryLabel(member: BureauMember) {
 }
 
 function memberTitle(member: BureauMember) {
-  if (member.bureauCategory === 'commission') return member.title ?? 'Responsable';
-  return member.title ?? member.bureauPoste;
+  const title = member.bureauCategory === 'commission' ? (member.title ?? 'Responsable') : (member.title ?? member.bureauPoste);
+  if (member.gender?.toLowerCase() !== 'femme') return title;
+  return FEMININE_BUREAU_POSTES[normalize(title)] ?? FEMININE_BUREAU_POSTES[normalize(member.bureauPoste)] ?? title;
 }
 
 function TeamCard({ member, badge }: { member: BureauMember; badge: string }) {

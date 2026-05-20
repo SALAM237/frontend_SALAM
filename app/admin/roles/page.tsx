@@ -56,6 +56,37 @@ const COMMISSION_GROUPS = [
 
 const COUNCIL_GROUPS = ['Conseil des sages'];
 
+const FEMININE_BUREAU_POSTES: Record<string, string> = {
+  president: 'Présidente',
+  'president e': 'Présidente',
+  'vice president': 'Vice-Présidente',
+  'vice president e': 'Vice-Présidente',
+  'secretaire general': 'Secrétaire Générale',
+  'secretaire general e': 'Secrétaire Générale',
+  'secretaire adjoint': 'Secrétaire Adjointe',
+  'secretaire adjoint e': 'Secrétaire Adjointe',
+  tresorier: 'Trésorière',
+  'tresorier e': 'Trésorière',
+  'tresorier adjoint': 'Trésorière Adjointe',
+  'tresorier e adjoint e': 'Trésorière Adjointe',
+  responsable: 'Responsable',
+  'membre sage': 'Membre sage',
+  conseiller: 'Conseillère',
+  'conseiller e': 'Conseillère',
+  'sage conseiller': 'Sage conseillère',
+  'sage conseiller e': 'Sage conseillère',
+};
+
+function normalizeBureauPoste(value?: string | null) {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\(e\)/g, ' e')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
 function getCategoryOptions(category: BureauCategory) {
   if (category === 'commission') return COMMISSION_GROUPS;
   if (category === 'council') return COUNCIL_GROUPS;
@@ -74,6 +105,12 @@ function getInitialBureauSelection(admin: AdminUser) {
   if (category === 'commission') return admin.bureauGroup ?? '';
   if (category === 'council') return admin.bureauGroup ?? 'Conseil des sages';
   return admin.bureauPoste ?? '';
+}
+
+function displayBureauPoste(admin: AdminUser) {
+  const poste = admin.bureauPoste ?? '';
+  if (admin.gender?.toLowerCase() !== 'femme') return poste;
+  return FEMININE_BUREAU_POSTES[normalizeBureauPoste(poste)] ?? poste;
 }
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -359,7 +396,7 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
         </div>
         <p className="text-[11px] text-neutral-400 truncate">{admin.email}</p>
         {admin.bureauPoste && (
-          <p className="mt-0.5 text-[10px] font-black text-emerald-700 uppercase tracking-wide">{admin.bureauPoste}</p>
+          <p className="mt-0.5 text-[10px] font-black text-emerald-700 uppercase tracking-wide">{displayBureauPoste(admin)}</p>
         )}
         <div className="mt-1.5 flex flex-wrap gap-1">
           {admin.roles.map(r => (
