@@ -62,6 +62,13 @@ function LoginForm() {
         token: res.data.accessToken,
       });
 
+      // Poser les cookies httpOnly sécurisés (salam_access + salam_role)
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: res.data.accessToken }),
+      });
+
       setAuth(me.data, res.data.accessToken);
       const fallback   = getPostLoginRedirect(me.data);
       const redirectTo = safeRedirect(searchParams.get('redirect'), fallback);

@@ -14,12 +14,10 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
   const [backLabel, setBackLabel] = useState('Retour au site');
 
   useEffect(() => {
-    if (readCookie('salam_auth') !== '1') return;
+    // salam_space est le seul cookie de session lisible côté JS (salam_access est httpOnly)
     const space = readCookie('salam_space');
     if (space === 'admin')  { setBackHref('/admin/dashboard');  setBackLabel('Mon espace admin');  return; }
     if (space === 'member') { setBackHref('/member/dashboard'); setBackLabel('Mon espace membre'); return; }
-    setBackHref('/choisir-espace');
-    setBackLabel('Mon espace');
   }, []);
 
   return (

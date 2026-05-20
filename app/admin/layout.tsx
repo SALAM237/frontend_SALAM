@@ -7,11 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, UserPlus, CreditCard, CalendarDays,
   Images, Newspaper, Settings, LogOut, Menu, X, ChevronRight, Bell,
-  Banknote, FileText, History, MessageSquare, Shield,
+  Banknote, FileText, History, MessageSquare, Shield, Loader2,
 } from 'lucide-react';
 import Image from 'next/image';
-import { useAuthStore } from '@/store/auth.store';
-import { isSuperAdmin } from '@/lib/auth/roles';
+import { useAuthStore, type AuthUser } from '@/store/auth.store';
+import { isSuperAdmin, hasAdminRole } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
 
 type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean };
@@ -128,17 +128,77 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen,   setNotifOpen]   = useState(false);
+  const [restoring,   setRestoring]   = useState(true);
   const pathname = usePathname();
-  const { user, clearAuth } = useAuthStore();
+  const { user, clearAuth, restoreAuth } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
+  // Restauration de session après rechargement de page (Zustand est vide)
+  useEffect(() => {
+    if (user) {
+      setRestoring(false);
+      return;
+    }
+
+    const restore = async () => {
+      try {
+        // Récupérer un nouvel access token via le refresh token httpOnly
+        const refreshRes = await apiClient<{ accessToken: string }>(
+          '/api/v1/auth/refresh', { method: 'POST' },
+        );
+        const token = refreshRes.data.accessToken;
+
+        // Charger les données utilisateur
+        const meRes = await apiClient<AuthUser>('/api/v1/auth/me', { token });
+
+        // Vérifier le rôle admin (double-check côté client)
+        if (!hasAdminRole(meRes.data)) {
+          clearAuth();
+          await fetch('/api/auth/session', { method: 'DELETE' });
+          router.replace('/');
+          return;
+        }
+
+        // Renouveler les cookies httpOnly avec le nouveau token
+        await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessToken: token }),
+        });
+
+        restoreAuth(meRes.data, token);
+      } catch {
+        // Session expirée ou invalide → retour au login admin
+        clearAuth();
+        await fetch('/api/auth/session', { method: 'DELETE' });
+        router.replace('/bureau-executif/connexion');
+      } finally {
+        setRestoring(false);
+      }
+    };
+
+    restore();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleLogout = async () => {
     try { await apiClient('/api/v1/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
+    // Effacer les cookies httpOnly côté serveur
+    await fetch('/api/auth/session', { method: 'DELETE' });
     clearAuth();
-    router.push('/auth/login');
+    router.push('/bureau-executif/connexion');
   };
+
+  // Écran de chargement pendant la restauration de session
+  if (restoring) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f6f5]">
+        <Loader2 className="animate-spin text-emerald-600" size={24} />
+      </div>
+    );
+  }
 
   const SA  = isSuperAdmin(user);
   const nav = BASE_NAV.filter(n => !n.superAdminOnly || SA);

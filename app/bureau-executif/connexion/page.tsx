@@ -49,6 +49,13 @@ export default function BureauConnexionPage() {
         return;
       }
 
+      // Poser les cookies httpOnly sécurisés (salam_access + salam_role)
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: res.data.accessToken }),
+      });
+
       setAuth(me.data, res.data.accessToken);
       router.push('/admin/dashboard');
     } catch (err: unknown) {

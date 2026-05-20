@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useAuthStore } from '@/store/auth.store';
+import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { apiClient } from '@/lib/api/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CreditCard, User, CalendarDays,
   MessageSquare, LogOut, Menu, X, ChevronRight, Bell,
-  Banknote, FileText, FolderOpen, Images, Newspaper,
+  Banknote, FileText, FolderOpen, Images, Newspaper, Loader2,
 } from 'lucide-react';
 
 const NAV = [
@@ -134,17 +134,67 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, onLogout 
 export default function MemberLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen,   setNotifOpen]   = useState(false);
+  const [restoring,   setRestoring]   = useState(true);
   const pathname = usePathname();
-  const { user, clearAuth } = useAuthStore();
+  const { user, clearAuth, restoreAuth } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
+  // Restauration de session après rechargement de page (Zustand est vide)
+  useEffect(() => {
+    if (user) {
+      setRestoring(false);
+      return;
+    }
+
+    const restore = async () => {
+      try {
+        const refreshRes = await apiClient<{ accessToken: string }>(
+          '/api/v1/auth/refresh', { method: 'POST' },
+        );
+        const token = refreshRes.data.accessToken;
+
+        const meRes = await apiClient<AuthUser>('/api/v1/auth/me', { token });
+
+        // Renouveler les cookies httpOnly avec le nouveau token
+        await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessToken: token }),
+        });
+
+        restoreAuth(meRes.data, token);
+      } catch {
+        // Session expirée → retour au login
+        clearAuth();
+        await fetch('/api/auth/session', { method: 'DELETE' });
+        router.replace('/auth/login');
+      } finally {
+        setRestoring(false);
+      }
+    };
+
+    restore();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleLogout = async () => {
     try { await apiClient('/api/v1/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
+    // Effacer les cookies httpOnly côté serveur
+    await fetch('/api/auth/session', { method: 'DELETE' });
     clearAuth();
     router.push('/auth/login');
   };
+
+  // Écran de chargement pendant la restauration de session
+  if (restoring) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f6f5]">
+        <Loader2 className="animate-spin text-emerald-600" size={24} />
+      </div>
+    );
+  }
 
   const currentPage = NAV.find(n => n.href === pathname);
   const firstName  = user?.firstName ?? '';

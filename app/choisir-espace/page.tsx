@@ -56,6 +56,7 @@ export default function ChoisirEspacePage() {
 
   const handleLogout = async () => {
     try { await apiClient('/api/v1/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
+    await fetch('/api/auth/session', { method: 'DELETE' });
     clearAuth();
     router.push('/auth/login');
   };
