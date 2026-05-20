@@ -6,26 +6,31 @@ import {
   UserPlus, CheckCircle2, CreditCard, ArrowLeft,
   Upload, FileSpreadsheet, AlertTriangle, Loader2,
   CheckSquare2, Square, Users, MailCheck, MailX, SkipForward,
+  UserCheck,
 } from 'lucide-react';
 import Papa from 'papaparse';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
-import { useImportMembersCSV, type CsvImportMember, type ImportResult } from '@/lib/api/members';
+import { useCreateMember, useImportMembersCSV, type CsvImportMember, type ImportResult } from '@/lib/api/members';
 
 /* ─── Types ─────────────────────────────────────────────── */
 type Mode      = 'single' | 'csv';
 type FormState = {
+  gender: string;
   firstName: string; lastName: string; email: string; phone: string;
   city: string; country: string; role: string; antenne: string; motivation: string;
+  promotionYear: string;
 };
 type CsvRawRow = Record<string, string>;
 type MappedRow = {
-  raw:         CsvRawRow;
-  firstName:   string;
-  lastName:    string;
-  email:       string;
-  phone:       string;
-  bureauPoste: string;
-  canCreate:   boolean;
+  raw:          CsvRawRow;
+  firstName:    string;
+  lastName:     string;
+  email:        string;
+  phone:        string;
+  bureauPoste:  string;
+  gender:       string;
+  promotionYear: string;
+  canCreate:    boolean;
 };
 
 /* ─── Constants ─────────────────────────────────────────── */
@@ -56,13 +61,19 @@ function detect(row: CsvRawRow, variants: string[]): string {
 }
 
 function mapRow(row: CsvRawRow): MappedRow {
-  const firstName   = detect(row, ['prenom', 'firstname', 'first_name', 'prénom', 'given']);
-  const lastName    = detect(row, ['nom', 'lastname', 'last_name', 'family_name', 'surname']);
-  const email       = detect(row, ['email', 'mail', 'courriel', 'e-mail']);
-  const phone       = detect(row, ['telephone', 'tel', 'phone', 'portable', 'mobile', 'whatsapp']);
-  const bureauPoste = detect(row, ['poste', 'fonction', 'role', 'position', 'titre', 'bureau']);
+  const firstName    = detect(row, ['prenom', 'firstname', 'first_name', 'prénom', 'given']);
+  const lastName     = detect(row, ['nom', 'lastname', 'last_name', 'family_name', 'surname']);
+  const email        = detect(row, ['email', 'mail', 'courriel', 'e-mail']);
+  const phone        = detect(row, ['telephone', 'tel', 'phone', 'portable', 'mobile', 'whatsapp']);
+  const bureauPoste  = detect(row, ['poste', 'fonction', 'role', 'position', 'titre', 'bureau']);
+  const promotionYear = detect(row, ['promotion', 'promotionnaire', 'annee', 'annee', 'year', 'promo', 'cohorte']);
+  const genderRaw    = detect(row, ['civilite', 'civilite', 'genre', 'gender', 'sexe']);
+  const g = genderRaw.toLowerCase();
+  const gender = g.startsWith('f') || g === 'mme' || g === 'madame' ? 'femme'
+    : g.startsWith('h') || g === 'm' || g === 'mr' || g === 'monsieur' ? 'homme'
+    : '';
   return {
-    raw: row, firstName, lastName, email, phone, bureauPoste,
+    raw: row, firstName, lastName, email, phone, bureauPoste, gender, promotionYear,
     canCreate: !!(firstName && lastName && email),
   };
 }
@@ -104,14 +115,15 @@ export default function NouveauAdherentPage() {
   /* ── Mode ────────────────────────────────────── */
   const [mode, setMode] = useState<Mode>('single');
 
-  /* ── Single member states (inchangés) ────────── */
-  const [step,        setStep]    = useState<'form' | 'preview' | 'done'>('form');
-  const [loading,     setLoading] = useState(false);
-  const [generatedId]             = useState(generateId);
+  /* ── Single member states ────────────────────── */
+  const [step,     setStep] = useState<'form' | 'preview' | 'done'>('form');
+  const [generatedId]       = useState(generateId);
   const [form, setForm] = useState<FormState>({
-    firstName: '', lastName: '', email: '', phone: '',
+    gender: '', firstName: '', lastName: '', email: '', phone: '',
     city: '', country: 'Cameroun', role: 'Membre actif', antenne: 'Paris', motivation: '',
+    promotionYear: '',
   });
+  const createMember = useCreateMember();
 
   /* ── CSV states ──────────────────────────────── */
   const [csvHeaders,    setCsvHeaders]    = useState<string[]>([]);
@@ -128,21 +140,34 @@ export default function NouveauAdherentPage() {
       setForm(prev => ({ ...prev, [k]: e.target.value }));
 
   const cardData: MemberCardData = {
-    id: generatedId, firstName: form.firstName || 'Prénom', lastName: form.lastName || 'Nom',
+    id: generatedId,
+    firstName: form.firstName || 'Prénom',
+    lastName:  form.lastName  || 'Nom',
+    gender:    (form.gender as 'homme' | 'femme') || undefined,
     role: form.role, antenne: form.antenne, year: new Date().getFullYear(),
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.firstName || !form.lastName || !form.email) return;
+    if (!form.gender || !form.firstName || !form.lastName || !form.email || !form.promotionYear) return;
     setStep('preview');
   };
 
   const handleValidate = async () => {
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setLoading(false);
-    setStep('done');
+    try {
+      await createMember.mutateAsync({
+        firstName:     form.firstName,
+        lastName:      form.lastName,
+        email:         form.email,
+        phone:         form.phone || undefined,
+        memberStatus:  'active',
+        gender:        (form.gender as 'homme' | 'femme') || undefined,
+        promotionYear: form.promotionYear ? Number(form.promotionYear) : undefined,
+      });
+      setStep('done');
+    } catch {
+      // useCreateMember's onError affiche le toast d'erreur
+    }
   };
 
   /* ── Handlers CSV ────────────────────────────── */
@@ -195,11 +220,13 @@ export default function NouveauAdherentPage() {
     setCsvError(null);
 
     const members: CsvImportMember[] = [...selectedSet].map(i => ({
-      firstName:   csvRows[i].firstName,
-      lastName:    csvRows[i].lastName,
-      email:       csvRows[i].email,
-      phone:       csvRows[i].phone  || undefined,
-      bureauPoste: csvRows[i].bureauPoste || undefined,
+      firstName:    csvRows[i].firstName,
+      lastName:     csvRows[i].lastName,
+      email:        csvRows[i].email,
+      phone:        csvRows[i].phone        || undefined,
+      bureauPoste:  csvRows[i].bureauPoste  || undefined,
+      gender:       (csvRows[i].gender as 'homme' | 'femme') || undefined,
+      promotionYear: csvRows[i].promotionYear ? Number(csvRows[i].promotionYear) : undefined,
     }));
 
     importCSV.mutate(members, {
@@ -249,11 +276,13 @@ export default function NouveauAdherentPage() {
       <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
         <div className="grid gap-3 text-sm sm:grid-cols-2">
           {[
-            ['Prénom',   form.firstName], ['Nom',      form.lastName],
-            ['Email',    form.email],     ['Téléphone',form.phone || '—'],
-            ['Ville',    form.city || '—'],['Pays',    form.country],
-            ['Rôle',     form.role],      ['Antenne',  form.antenne],
-            ['N° membre',generatedId],
+            ['Civilité',       form.gender === 'femme' ? 'Madame' : form.gender === 'homme' ? 'Monsieur' : '—'],
+            ['Prénom',         form.firstName], ['Nom', form.lastName],
+            ['Email',          form.email],     ['Téléphone', form.phone || '—'],
+            ['Promotionnaire', form.promotionYear || '—'],
+            ['Ville',          form.city || '—'], ['Pays', form.country],
+            ['Rôle',           form.role], ['Antenne', form.antenne],
+            ['N° membre',      generatedId],
           ].map(([label, value]) => (
             <div key={label}>
               <p className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">{label}</p>
@@ -273,9 +302,12 @@ export default function NouveauAdherentPage() {
         <button onClick={() => setStep('form')} className="inline-flex h-10 items-center gap-2 rounded-full border border-neutral-200 px-5 text-sm font-semibold text-neutral-700 hover:border-neutral-300">
           <ArrowLeft size={14} /> Modifier
         </button>
-        <button onClick={handleValidate} disabled={loading}
+        <button onClick={handleValidate} disabled={createMember.isPending}
           className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-60">
-          {loading ? 'Enregistrement…' : <><CheckCircle2 size={14} /> Valider et créer la fiche</>}
+          {createMember.isPending
+            ? <><Loader2 size={14} className="animate-spin" /> Enregistrement…</>
+            : <><CheckCircle2 size={14} /> Valider et créer la fiche</>
+          }
         </button>
       </div>
     </div>
@@ -375,13 +407,34 @@ export default function NouveauAdherentPage() {
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-black text-white">1</span>
               Identité
             </p>
+            {/* Civilité */}
+            <div className="mb-4">
+              <p className="mb-1.5 text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+                Civilité <span className="text-red-500">*</span>
+              </p>
+              <div className="flex gap-3">
+                {([{ value: 'homme', label: 'Monsieur' }, { value: 'femme', label: 'Madame' }] as const).map(opt => (
+                  <button key={opt.value} type="button"
+                    onClick={() => setForm(prev => ({ ...prev, gender: opt.value }))}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-black transition ${
+                      form.gender === opt.value
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
+                        : 'border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700'
+                    }`}>
+                    <UserCheck size={14} className={form.gender === opt.value ? 'text-emerald-600' : 'text-neutral-400'} />
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Prénom *" value={form.firstName} onChange={set('firstName')} placeholder="Jean" required />
-              <Field label="Nom *"    value={form.lastName}  onChange={set('lastName')}  placeholder="Kamga" required />
-              <Field label="Email *"  value={form.email}     onChange={set('email')}     placeholder="jean@email.com" type="email" required />
-              <Field label="Téléphone" value={form.phone}    onChange={set('phone')}     placeholder="+33 6 00 00 00 00" />
-              <Field label="Ville"    value={form.city}      onChange={set('city')}      placeholder="Paris" />
-              <Field label="Pays"     value={form.country}   onChange={set('country')}   placeholder="Cameroun" />
+              <Field label="Prénom *"         value={form.firstName}    onChange={set('firstName')}    placeholder="Jean"              required />
+              <Field label="Nom *"            value={form.lastName}     onChange={set('lastName')}     placeholder="Kamga"             required />
+              <Field label="Email *"          value={form.email}        onChange={set('email')}        placeholder="jean@email.com"    type="email" required />
+              <Field label="Téléphone"        value={form.phone}        onChange={set('phone')}        placeholder="+33 6 00 00 00 00" />
+              <Field label="Promotionnaire *" value={form.promotionYear} onChange={set('promotionYear')} placeholder={String(new Date().getFullYear())} type="number" required />
+              <Field label="Ville"            value={form.city}         onChange={set('city')}         placeholder="Paris" />
+              <Field label="Pays"             value={form.country}      onChange={set('country')}      placeholder="Cameroun" />
             </div>
           </div>
 
@@ -542,6 +595,11 @@ export default function NouveauAdherentPage() {
 
                           {/* Colonne détection */}
                           <td className="px-4 py-3">
+                            {row.gender && (
+                              <p className="text-[9px] font-black uppercase tracking-wide text-blue-600 mb-0.5">
+                                {row.gender === 'femme' ? 'Madame' : 'Monsieur'}
+                              </p>
+                            )}
                             <p className="font-black text-neutral-900">
                               {row.firstName || <span className="text-red-400 font-normal">Prénom ?</span>}{' '}
                               {row.lastName  || <span className="text-red-400 font-normal">Nom ?</span>}
@@ -549,6 +607,9 @@ export default function NouveauAdherentPage() {
                             <p className={`mt-0.5 ${row.email ? 'text-neutral-500' : 'text-amber-600 font-semibold'}`}>
                               {row.email || 'Email manquant — compte non créé'}
                             </p>
+                            {row.promotionYear && (
+                              <p className="mt-0.5 text-[10px] font-semibold text-purple-600">Promotion {row.promotionYear}</p>
+                            )}
                             {row.bureauPoste && (
                               <p className="mt-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-700">{row.bureauPoste}</p>
                             )}

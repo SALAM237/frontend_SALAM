@@ -23,13 +23,14 @@ interface FormData {
   firstName: string; lastName: string;
   email: string; phone: string;
   pays: string; filiere: string;
+  promotionYear: string;
   password: string; confirm: string;
   cgu: boolean;
 }
 
 const EMPTY: FormData = {
   gender: '', firstName: '', lastName: '', email: '', phone: '',
-  pays: '', filiere: '', password: '', confirm: '', cgu: false,
+  pays: '', filiere: '', promotionYear: '', password: '', confirm: '', cgu: false,
 };
 
 export default function RegisterPage() {
@@ -53,6 +54,9 @@ export default function RegisterPage() {
     if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = 'E-mail invalide';
     if (!form.pays)    e.pays    = 'Sélectionnez un pays';
     if (!form.filiere) e.filiere = 'Sélectionnez une filière';
+    const py = Number(form.promotionYear);
+    if (!form.promotionYear.trim() || isNaN(py) || py < 1970 || py > 2100)
+      e.promotionYear = 'Année invalide (ex : 2022)';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -81,12 +85,13 @@ export default function RegisterPage() {
       await apiClient('/api/v1/auth/register', {
         method: 'POST',
         body: JSON.stringify({
-          gender:    form.gender,
-          firstName: form.firstName,
-          lastName:  form.lastName,
-          email:     form.email,
-          password:  form.password,
-          phone:     form.phone || undefined,
+          gender:        form.gender,
+          firstName:     form.firstName,
+          lastName:      form.lastName,
+          email:         form.email,
+          password:      form.password,
+          phone:         form.phone || undefined,
+          promotionYear: Number(form.promotionYear),
         }),
       });
       setSuccess(true);
@@ -259,6 +264,13 @@ export default function RegisterPage() {
               </select>
               <ChevronDown size={14} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
             </div>
+          </Field>
+
+          <Field label="Promotionnaire (année)" error={errors.promotionYear}>
+            <input type="number" min="1970" max="2100" required
+              value={form.promotionYear} onChange={e => set('promotionYear', e.target.value)}
+              placeholder={String(new Date().getFullYear())}
+              className={inputCls(!!errors.promotionYear)} />
           </Field>
 
           <button type="submit"

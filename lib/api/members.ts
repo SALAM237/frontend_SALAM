@@ -39,11 +39,13 @@ export interface MembersListResponse {
 }
 
 export interface CreateMemberPayload {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
+  firstName:     string;
+  lastName:      string;
+  email:         string;
+  phone?:        string;
   memberStatus?: MemberStatus;
+  gender?:       'homme' | 'femme';
+  promotionYear?: number;
 }
 
 export interface UpdateMemberPayload {
@@ -149,11 +151,13 @@ export function useSuspendMember() {
 /* ── CSV bulk import ──────────────────────────────────────── */
 
 export interface CsvImportMember {
-  firstName:   string;
-  lastName:    string;
-  email:       string;
-  phone?:      string;
-  bureauPoste?: string;
+  firstName:     string;
+  lastName:      string;
+  email:         string;
+  phone?:        string;
+  bureauPoste?:  string;
+  gender?:       'homme' | 'femme';
+  promotionYear?: number;
 }
 
 export interface ImportResult {

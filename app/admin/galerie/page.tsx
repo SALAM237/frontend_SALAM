@@ -98,8 +98,9 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
 
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
-    addImages.mutate(e.target.files);
+    const files = Array.from(e.target.files);
     e.target.value = '';
+    addImages.mutate(files);
   };
 
   return (
