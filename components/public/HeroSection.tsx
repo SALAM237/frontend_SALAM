@@ -289,37 +289,57 @@ export function HeroSection() {
             <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-yellow-300 lg:h-2 lg:w-2" /> Réussite</span>
           </motion.div>
 
-          {/* H1 */}
-          <motion.h1
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.3, delay: 0.9, ease: EASE }}
-            className="mx-auto max-w-4xl text-[clamp(1.4rem,3.4vw,3rem)] font-black leading-[1.18] tracking-[-0.03em] text-white drop-shadow-[0_18px_50px_rgba(0,0,0,0.55)] lg:mx-0"
-          >
-            <span className="block">Valorisons <span className="text-emerald-300"> nos acquis.</span> </span>
-            <span className="block">Renforçons <span className="text-red-400">notre cohésion.</span> </span>
-            <span className="block">Faisons grandir <span className="text-yellow-300">notre réseau.</span></span>
-            
-          </motion.h1>
+          {/* H1 — apparition en cascade ligne par ligne */}
+          <h1 className="mx-auto max-w-4xl text-[clamp(1.4rem,3.4vw,3rem)] font-black leading-[1.18] tracking-[-0.03em] text-white drop-shadow-[0_18px_50px_rgba(0,0,0,0.55)] lg:mx-0">
+            <motion.span
+              className="block"
+              initial={{ opacity: 0, y: 28 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.1, delay: 1.0, ease: EASE }}
+            >
+              Valorisons <span className="text-emerald-300">nos acquis.</span>
+            </motion.span>
+            <motion.span
+              className="block"
+              initial={{ opacity: 0, y: 28 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.1, delay: 1.4, ease: EASE }}
+            >
+              Renforçons <span className="text-red-400">notre cohésion.</span>
+            </motion.span>
+            <motion.span
+              className="block"
+              initial={{ opacity: 0, y: 28 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.1, delay: 2.0, ease: EASE }}
+            >
+              Faisons grandir <span className="text-yellow-300">notre réseau.</span>
+            </motion.span>
+          </h1>
 
-          {/* Description */}
+          {/* Description — deux phrases apparaissant successivement */}
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, delay: 1.5, ease: EASE }}
+            transition={{ duration: 1.0, delay: 2.3, ease: EASE }}
             className="mx-auto mt-4 max-w-xl text-[0.75rem] leading-6 text-white/[0.82] drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] lg:mx-0 lg:mt-5 lg:text-[clamp(0.92rem,1.15vw,1rem)] lg:leading-7"
           >
-           Un réseau dynamique des anciens étudiants camerounais formés au Royaume du Maroc.
-            <br />
+            Un réseau dynamique des anciens étudiants camerounais formés au Royaume du Maroc.
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.0, delay: 2.8, ease: EASE }}
+            className="mx-auto mt-2 max-w-xl text-[0.75rem] leading-6 text-white/[0.82] drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] lg:mx-0 lg:text-[clamp(0.92rem,1.15vw,1rem)] lg:leading-7"
+          >
             La SALAM œuvre à construire une communauté forte, engagée et tournée vers l’avenir, à travers la solidarité, le réseautage, le partage d’expériences et la valorisation des compétences.
-
           </motion.p>
 
           {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.1, delay: 2.1, ease: EASE }}
+            transition={{ duration: 1.1, delay: 3.1, ease: EASE }}
             className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:items-stretch lg:mt-6 lg:gap-3 lg:justify-start"
           >
             <Link href="/adhesion" className="inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2 text-[0.75rem] font-extrabold text-white shadow-2xl shadow-emerald-950/35 transition hover:-translate-y-0.5 hover:from-red-400 hover:to-red-400 lg:gap-2 lg:px-5 lg:py-2.5 lg:text-[0.92rem]">
