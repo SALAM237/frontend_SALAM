@@ -2,6 +2,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LayoutGrid } from 'lucide-react';
+import { useAuthStore, type AuthUser } from '@/store/auth.store';
+import { getPostLoginRedirect } from '@/lib/auth/roles';
+import { apiClient } from '@/lib/api/client';
 
 type IconProps = {
   className?: string;
@@ -85,6 +89,31 @@ export function HeroSection() {
   const [navVisible, setNavVisible] = useState(true);
   const [navScrolled, setNavScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const { user, restoreAuth } = useAuthStore();
+
+  // Restauration silencieuse de session depuis les cookies httpOnly
+  useEffect(() => {
+    if (user) return;
+    const tryRestore = async () => {
+      try {
+        const refreshRes = await apiClient<{ accessToken: string }>(
+          '/api/v1/auth/refresh', { method: 'POST' },
+        );
+        const token = refreshRes.data.accessToken;
+        const meRes = await apiClient<AuthUser>('/api/v1/auth/me', { token });
+        await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessToken: token }),
+        });
+        restoreAuth(meRes.data, token);
+      } catch {
+        // Non connecté — aucune action
+      }
+    };
+    tryRestore();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let lastY = window.scrollY;
@@ -200,10 +229,23 @@ export function HeroSection() {
             <Link href="/demo" className="hidden items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-bold text-white/90 backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/20 lg:inline-flex">
               <SparklesIcon className="h-3.5 w-3.5" /> Démo
             </Link>
-            {/* Desktop: Connexion */}
-            <Link href="/auth/login" className="hidden items-center gap-2 rounded-full bg-emerald-800 px-4 py-2 text-sm font-bold text-white shadow-xl shadow-emerald-950/40 transition hover:-translate-y-0.5 hover:bg-emerald-700 lg:inline-flex">
-              <UsersIcon className="h-4 w-4" /> Connexion
-            </Link>
+            {/* Desktop: Connexion / Mon espace */}
+            {user ? (
+              <Link
+                href={getPostLoginRedirect(user)}
+                className="hidden items-center gap-2 rounded-full bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-xl shadow-emerald-950/40 transition hover:-translate-y-0.5 hover:bg-emerald-600 lg:inline-flex"
+              >
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-[10px] font-black">
+                  {user.firstName[0]}{user.lastName[0]}
+                </span>
+                {user.firstName} {user.lastName[0]}.
+                <LayoutGrid size={13} />
+              </Link>
+            ) : (
+              <Link href="/auth/login" className="hidden items-center gap-2 rounded-full bg-emerald-800 px-4 py-2 text-sm font-bold text-white shadow-xl shadow-emerald-950/40 transition hover:-translate-y-0.5 hover:bg-emerald-700 lg:inline-flex">
+                <UsersIcon className="h-4 w-4" /> Connexion
+              </Link>
+            )}
 
             {/* Mobile/tablet: burger → X animé */}
             <button
@@ -260,13 +302,27 @@ export function HeroSection() {
                 >
                   <SparklesIcon className="h-4 w-4" /> Voir la démo
                 </Link>
-                <Link
-                  href="/auth/login"
-                  className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-700 to-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-950/40 transition hover:from-emerald-600 hover:to-emerald-500"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <UsersIcon className="h-4 w-4" /> Connexion
-                </Link>
+                {user ? (
+                  <Link
+                    href={getPostLoginRedirect(user)}
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-700 to-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-950/40 transition hover:from-emerald-600 hover:to-emerald-500"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-[10px] font-black">
+                      {user.firstName[0]}{user.lastName[0]}
+                    </span>
+                    {user.firstName} {user.lastName[0]}. — Mon espace
+                    <LayoutGrid size={13} />
+                  </Link>
+                ) : (
+                  <Link
+                    href="/auth/login"
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-700 to-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-950/40 transition hover:from-emerald-600 hover:to-emerald-500"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <UsersIcon className="h-4 w-4" /> Connexion
+                  </Link>
+                )}
               </div>
             </motion.div>
           )}
