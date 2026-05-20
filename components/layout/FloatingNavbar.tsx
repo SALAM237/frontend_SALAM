@@ -13,6 +13,7 @@ const navItems = [
   { label: 'Accueil', href: '/' },
   { label: 'A propos', href: '/a-propos' },
   { label: 'Missions', href: '/missions' },
+  { label: 'Bureau', href: '/bureau-executif' },
   { label: 'Activites', href: '/activites' },
   { label: 'Galerie', href: '/galerie' },
   { label: 'Actualites', href: '/actualites' },

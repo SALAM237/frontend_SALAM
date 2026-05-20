@@ -67,29 +67,29 @@ function MemberCard({ member }: { member: BureauMember }) {
   const year = member.nominationYear ?? member.bureauNominationYear ?? getYear(member.createdAt);
 
   return (
-    <article className="group relative aspect-[4/5] min-h-[340px] w-[clamp(18.55rem,88vw,22.25rem)] overflow-hidden rounded-[1.65rem] border border-white/70 bg-neutral-950 shadow-[0_18px_50px_rgba(15,23,42,0.14)] ring-1 ring-black/5 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_26px_70px_rgba(6,78,59,0.22)] sm:w-full">
+    <article tabIndex={0} className="team-touch-card group relative aspect-[4/5] min-h-[340px] w-[clamp(18.55rem,88vw,22.25rem)] overflow-hidden rounded-[1.65rem] border border-white/70 bg-neutral-950 shadow-[0_18px_50px_rgba(15,23,42,0.14)] ring-1 ring-black/5 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_26px_70px_rgba(6,78,59,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 sm:w-full">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={photo}
         alt={`${name} - ${title}`}
-        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+        className="team-touch-card__image absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-active:scale-110 group-focus-visible:scale-110"
       />
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-black/0 opacity-90 transition-opacity duration-500 group-hover:opacity-95" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-black/0 opacity-90 transition-opacity duration-500 group-hover:opacity-95 group-active:opacity-95" />
 
       <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
-        <div className="translate-y-0 transition-transform duration-500 group-hover:-translate-y-1">
-          <p className="text-xl font-black leading-tight tracking-[-0.03em] text-white transition-all duration-500 group-hover:text-sm group-hover:font-bold group-hover:tracking-normal group-hover:text-yellow-300">
+        <div className="translate-y-0 transition-transform duration-500 group-hover:-translate-y-1 group-active:-translate-y-1">
+          <p className="text-xl font-black leading-tight tracking-[-0.03em] text-white transition-all duration-500 group-hover:text-sm group-hover:font-bold group-hover:tracking-normal group-hover:text-yellow-300 group-active:text-sm group-active:font-bold group-active:tracking-normal group-active:text-yellow-300">
             {name}
           </p>
-          <h3 className="mt-1 max-w-[13rem] text-sm font-black uppercase leading-tight tracking-[0.12em] text-emerald-300 transition-all duration-500 group-hover:max-w-full group-hover:text-[clamp(1.55rem,3vw,2.2rem)] group-hover:normal-case group-hover:tracking-[-0.04em] group-hover:text-white">
+          <h3 className="mt-1 max-w-[13rem] text-sm font-black uppercase leading-tight tracking-[0.12em] text-emerald-300 transition-all duration-500 group-hover:max-w-full group-hover:text-[clamp(1.55rem,3vw,2.2rem)] group-hover:normal-case group-hover:tracking-[-0.04em] group-hover:text-white group-active:max-w-full group-active:text-[clamp(1.55rem,3vw,2.2rem)] group-active:normal-case group-active:tracking-[-0.04em] group-active:text-white">
             {title}
           </h3>
           <div className="mt-3 flex items-center gap-2">
             <span className="inline-flex rounded-full border border-white/15 bg-white/12 px-3 py-1 text-[11px] font-black text-white/85 backdrop-blur-md">
               Depuis {year}
             </span>
-            <span className="h-px flex-1 bg-white/20 transition-colors duration-500 group-hover:bg-yellow-300/70" />
+            <span className="h-px flex-1 bg-white/20 transition-colors duration-500 group-hover:bg-yellow-300/70 group-active:bg-yellow-300/70" />
           </div>
         </div>
       </div>

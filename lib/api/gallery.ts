@@ -55,6 +55,8 @@ export function useCreateAlbum() {
       }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-gallery'] });
+      qc.invalidateQueries({ queryKey: ['public-gallery'] });
+      qc.invalidateQueries({ queryKey: ['member-gallery'] });
       toast.success((res as any).message ?? 'Album créé');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -71,6 +73,8 @@ export function useUpdateAlbum(id: string) {
       }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-gallery'] });
+      qc.invalidateQueries({ queryKey: ['public-gallery'] });
+      qc.invalidateQueries({ queryKey: ['member-gallery'] });
       toast.success((res as any).message ?? 'Album mis à jour');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -116,6 +120,8 @@ export function useAddImagesToAlbum(albumId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-gallery'] });
+      qc.invalidateQueries({ queryKey: ['public-gallery'] });
+      qc.invalidateQueries({ queryKey: ['member-gallery'] });
       toast.success('Photos ajoutées');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -130,6 +136,8 @@ export function useRemoveImageFromAlbum(albumId: string) {
       apiClient(`/api/v1/admin/gallery/${albumId}/images/${idx}`, { method: 'DELETE', token: token ?? '' }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-gallery'] });
+      qc.invalidateQueries({ queryKey: ['public-gallery'] });
+      qc.invalidateQueries({ queryKey: ['member-gallery'] });
       toast.success((res as any).message ?? 'Photo supprimée');
     },
     onError: (err: Error) => toast.error(err.message),

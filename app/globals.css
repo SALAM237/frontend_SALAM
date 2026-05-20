@@ -149,9 +149,26 @@ select {
   a:active,
   button:active,
   [role="button"]:active {
-    opacity: 0.72;
-    transform: scale(0.97);
-    transition: opacity 0.08s ease, transform 0.08s ease;
+    opacity: 0.78;
+    filter: brightness(0.96);
+    transition: opacity 0.08s ease, filter 0.08s ease;
+  }
+
+  a,
+  button,
+  [role="button"] {
+    min-height: 32px;
+  }
+
+  .team-touch-card {
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .team-touch-card:active .team-touch-card__image,
+  .team-touch-card:focus-visible .team-touch-card__image {
+    transform: scale(1.1);
   }
 
   /* Disable hover transforms that stick on touch */
