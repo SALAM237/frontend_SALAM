@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { UserPlus, CheckCircle2, CreditCard, ArrowLeft, FileSpreadsheet, UserCheck } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { DemoPortalShell } from '../../../_components/DemoShell';
+import { formatFirstName, formatFullName, formatLastName } from '@/lib/format-name';
 
 type Mode = 'single' | 'csv';
 type Step = 'form' | 'preview' | 'done';
@@ -59,7 +60,7 @@ export default function DemoAdminNewMemberPage() {
         <div className="mx-auto max-w-lg py-12 text-center">
           <div className="mb-6 flex justify-center"><div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100"><CheckCircle2 size={40} className="text-emerald-600" /></div></div>
           <h2 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Membre cree avec succes !</h2>
-          <p className="mt-2 text-sm text-neutral-500">La fiche de <strong>{form.firstName} {form.lastName}</strong> a ete enregistree en demo.<br />Numero d'adherent : <span className="font-mono font-bold text-emerald-700">{generatedId}</span></p>
+          <p className="mt-2 text-sm text-neutral-500">La fiche de <strong>{formatFullName(form.firstName, form.lastName)}</strong> a ete enregistree en demo.<br />Numero d'adherent : <span className="font-mono font-bold text-emerald-700">{generatedId}</span></p>
           <div className="mt-8 flex flex-col items-center gap-3">
             <div className="mx-auto w-full max-w-[400px]"><MemberCard member={cardData} /></div>
             <div className="flex gap-3"><Link href="/demo/admin/adherents" className="inline-flex h-10 items-center gap-2 rounded-full border border-neutral-200 px-5 text-sm font-semibold text-neutral-700 hover:border-neutral-300"><ArrowLeft size={14} /> Retour a la liste</Link><Link href="/demo/admin/cartes" className="inline-flex h-10 items-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white hover:bg-emerald-700"><CreditCard size={14} /> Gerer les cartes</Link></div>
@@ -74,7 +75,7 @@ export default function DemoAdminNewMemberPage() {
       <DemoPortalShell type="admin" title="Nouveau membre">
         <div className="mx-auto max-w-2xl space-y-6">
           <div><h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Apercu de la fiche</h1><p className="mt-0.5 text-sm text-neutral-500">Verifiez les informations avant de creer le membre.</p></div>
-          <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm"><div className="grid gap-3 text-sm sm:grid-cols-2">{[['Civilite', form.gender === 'femme' ? 'Madame' : 'Monsieur'], ['Prenom', form.firstName], ['Nom', form.lastName], ['Email', form.email], ['Telephone', form.phone || '-'], ['Promotionnaire', form.promotionYear || '-'], ['Ville', form.city || '-'], ['Pays', form.country], ['Role', form.role], ['Antenne', form.antenne], ['No membre', generatedId]].map(([label, value]) => <div key={label}><p className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">{label}</p><p className="mt-0.5 font-semibold text-neutral-900">{value}</p></div>)}</div></div>
+          <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm"><div className="grid gap-3 text-sm sm:grid-cols-2">{[['Civilite', form.gender === 'femme' ? 'Madame' : 'Monsieur'], ['Prenom', formatFirstName(form.firstName)], ['Nom', formatLastName(form.lastName)], ['Email', form.email], ['Telephone', form.phone || '-'], ['Promotionnaire', form.promotionYear || '-'], ['Ville', form.city || '-'], ['Pays', form.country], ['Role', form.role], ['Antenne', form.antenne], ['No membre', generatedId]].map(([label, value]) => <div key={label}><p className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">{label}</p><p className="mt-0.5 font-semibold text-neutral-900">{value}</p></div>)}</div></div>
           <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm"><p className="mb-4 text-sm font-black text-neutral-900">Carte de membre generee</p><div className="flex justify-center overflow-x-auto"><MemberCard member={cardData} /></div></div>
           <div className="flex gap-3"><button onClick={() => setStep('form')} className="inline-flex h-10 items-center gap-2 rounded-full border border-neutral-200 px-5 text-sm font-semibold text-neutral-700 hover:border-neutral-300"><ArrowLeft size={14} /> Modifier</button><button onClick={() => setStep('done')} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white hover:bg-emerald-700"><CheckCircle2 size={14} /> Valider et creer la fiche</button></div>
         </div>

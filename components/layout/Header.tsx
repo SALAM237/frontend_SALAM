@@ -7,6 +7,7 @@ import { Menu, X, ArrowRight, LayoutGrid } from 'lucide-react';
 import { SalamLogo } from '@/components/brand/SalamLogo';
 import { useAuthStore } from '@/store/auth.store';
 import { getPostLoginRedirect } from '@/lib/auth/roles';
+import { formatInitials, formatShortName } from '@/lib/format-name';
 
 const NAV = [
   { label: 'À propos',   href: '/a-propos' },
@@ -37,8 +38,8 @@ export function Header() {
   }, [open]);
 
   const userSpace  = user ? getPostLoginRedirect(user) : '/auth/login';
-  const initials   = user ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() : '';
-  const shortName  = user ? `${user.firstName} ${user.lastName[0]}.` : '';
+  const initials   = user ? formatInitials(user.firstName, user.lastName) : '';
+  const shortName  = user ? formatShortName(user.firstName, user.lastName) : '';
 
   return (
     <>

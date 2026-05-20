@@ -11,6 +11,7 @@ import {
   type CotisationStatus, type AdminCotisationRow,
 } from '@/lib/api/cotisations';
 import type { AuditLogDoc } from '@/lib/api/audit-logs';
+import { formatFullName, formatInitials } from '@/lib/format-name';
 
 /* ─── Types locaux (UI only) ────────────────────────────── */
 interface MemberRow {
@@ -194,7 +195,7 @@ function ReceiptModal({ member, year, onClose }: { member: MemberRow; year: numb
         </div>
         <div className="px-6 py-4 space-y-3">
           {[
-            { label: 'Adhérent',         value: `${member.firstName} ${member.lastName}` },
+            { label: 'Adhérent',         value: formatFullName(member.firstName, member.lastName) },
             { label: 'N° membre',        value: member.memberId },
             { label: 'Année',            value: String(year) },
             { label: 'Montant',          value: '30,00 €' },
@@ -243,7 +244,7 @@ function PaymentModal({ member, onConfirm, onClose, loading }: {
         <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
           <div>
             <h3 className="font-black text-neutral-900">Confirmer le paiement</h3>
-            <p className="text-xs text-neutral-500 mt-0.5">{member.firstName} {member.lastName} · {member.memberId}</p>
+            <p className="text-xs text-neutral-500 mt-0.5">{formatFullName(member.firstName, member.lastName)} · {member.memberId}</p>
           </div>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
         </div>
@@ -423,10 +424,10 @@ export default function CotisationsAdminPage() {
                 <div key={member.userId} className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-neutral-50/60">
                   <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${cfg.dot} shadow-sm`} />
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
-                    {member.firstName[0]}{member.lastName[0]}
+                    {formatInitials(member.firstName, member.lastName)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-black text-sm text-neutral-900">{member.firstName} {member.lastName}</p>
+                    <p className="font-black text-sm text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
                     <p className="text-[11px] text-neutral-400 font-mono">{member.memberId}</p>
                   </div>
                   <div className="hidden w-28 text-right sm:block">

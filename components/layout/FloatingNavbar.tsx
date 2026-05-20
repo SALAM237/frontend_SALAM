@@ -8,6 +8,7 @@ import { ArrowUpRight, LayoutGrid, Sparkles, Users } from 'lucide-react';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { getPostLoginRedirect } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
+import { formatInitials, formatShortName } from '@/lib/format-name';
 
 const navItems = [
   { label: 'Accueil', href: '/' },
@@ -147,9 +148,9 @@ export function FloatingNavbar() {
               className="hidden items-center gap-2 rounded-full bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-xl shadow-emerald-950/40 transition hover:-translate-y-0.5 hover:bg-emerald-600 lg:inline-flex"
             >
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-[10px] font-black">
-                {user.firstName[0]}{user.lastName[0]}
+                {formatInitials(user.firstName, user.lastName)}
               </span>
-              {user.firstName} {user.lastName[0]}.
+              {formatShortName(user.firstName, user.lastName)}
               <LayoutGrid size={13} />
             </Link>
           ) : (
@@ -219,9 +220,9 @@ export function FloatingNavbar() {
                   onClick={() => setMenuOpen(false)}
                 >
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-[10px] font-black">
-                    {user.firstName[0]}{user.lastName[0]}
+                    {formatInitials(user.firstName, user.lastName)}
                   </span>
-                  {user.firstName} {user.lastName[0]}. - Mon espace
+                  {formatShortName(user.firstName, user.lastName)} - Mon espace
                   <LayoutGrid size={13} />
                 </Link>
               ) : (

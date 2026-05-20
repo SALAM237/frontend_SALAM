@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, Plus, X, Check, ChevronRight, Loader2, Search,
@@ -22,6 +22,7 @@ import { useAdminUsers, usePromoteAdmin, useRevokeAdmin, type AdminUser } from '
 import { useAdminMembers, useSuspendMember } from '@/lib/api/members';
 import { toast } from 'sonner';
 import { assetUrl } from '@/lib/assets';
+import { formatFullName, formatInitials } from '@/lib/format-name';
 
 /* ─── Risk badge ──────────────────────────────────────────── */
 const RISK_STYLE: Record<string, string> = {
@@ -43,8 +44,8 @@ const BUREAU_CATEGORIES: { id: BureauCategory; label: string; hint: string }[] =
 ];
 
 const EXECUTIVE_POSTES = [
-  'Président(e)', 'Vice-Président(e)', 'Secrétaire Général(e)', 'Secrétaire Adjoint(e)',
-  'Trésorier(e)', 'Trésorier(e) Adjoint(e)', 'Responsable Communication',
+  'Président', 'Vice-Président', 'Secrétaire Général', 'Secrétaire Adjoint',
+  'Trésorier', 'Trésorier Adjoint', 'Responsable Communication',
   'Responsable Partenariats', 'Responsable Événements',
   'Responsable Insertion', 'Responsable Solidarité',
 ];
@@ -87,6 +88,13 @@ function normalizeBureauPoste(value?: string | null) {
     .trim();
 }
 
+function cleanGenericBureauTitle(value?: string | null) {
+  return (value ?? '')
+    .replace(/\s*\(e\)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function getCategoryOptions(category: BureauCategory) {
   if (category === 'commission') return COMMISSION_GROUPS;
   if (category === 'council') return COUNCIL_POSTES;
@@ -97,18 +105,18 @@ function buildBureauAssignment(category: BureauCategory, selection: string) {
   if (!selection) return { poste: null, category: null, group: null };
   if (category === 'commission') return { poste: 'Responsable', category, group: selection };
   if (category === 'council') return { poste: selection, category, group: 'Conseil des sages' };
-  return { poste: selection, category, group: 'Bureau exécutif' };
+  return { poste: cleanGenericBureauTitle(selection), category, group: 'Bureau exécutif' };
 }
 
 function getInitialBureauSelection(admin: AdminUser) {
   const category = (admin.bureauCategory ?? 'executive') as BureauCategory;
   if (category === 'commission') return admin.bureauGroup ?? '';
   if (category === 'council') return admin.bureauPoste ?? 'Membre sage';
-  return admin.bureauPoste ?? '';
+  return cleanGenericBureauTitle(admin.bureauPoste);
 }
 
 function displayBureauPoste(admin: AdminUser) {
-  const poste = admin.bureauPoste ?? '';
+  const poste = cleanGenericBureauTitle(admin.bureauPoste);
   if (admin.gender?.toLowerCase() !== 'femme') return poste;
   return FEMININE_BUREAU_POSTES[normalizeBureauPoste(poste)] ?? poste;
 }
@@ -375,7 +383,7 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
   onSuspend:  (id: string) => void;
   isSelf: boolean;
 }) {
-  const initials    = `${admin.firstName?.[0] ?? '?'}${admin.lastName?.[0] ?? '?'}`.toUpperCase();
+  const initials    = formatInitials(admin.firstName, admin.lastName, '??');
   const isSA        = (admin.roles ?? []).some(r => r.slug === 'super_admin');
   const isSuspended = admin.memberStatus === 'suspended';
   const customPerms = admin.customPermissions ?? [];
@@ -389,7 +397,7 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <GenderIcon gender={admin.gender} size={14} />
-          <p className="font-black text-sm text-neutral-900">{admin.firstName} {admin.lastName}</p>
+          <p className="font-black text-sm text-neutral-900">{formatFullName(admin.firstName, admin.lastName)}</p>
           {isSA && <Crown size={12} className="text-amber-500" />}
           {isSelf && <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-black text-emerald-700">Vous</span>}
           {isSuspended && <span className="rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[9px] font-black text-red-600">Suspendu</span>}
@@ -515,7 +523,7 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
         <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
           <div>
             <p className="font-black text-neutral-900">Modifier l'administrateur</p>
-            <p className="text-xs text-neutral-500 mt-0.5">{admin.firstName} {admin.lastName}</p>
+            <p className="text-xs text-neutral-500 mt-0.5">{formatFullName(admin.firstName, admin.lastName)}</p>
           </div>
           <button onClick={onClose}><X size={16} className="text-neutral-400" /></button>
         </div>
@@ -781,10 +789,10 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
                     className="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-neutral-50">
                     <input type="radio" id={`promote-${m._id}`} name="promote-member"
                       value={m._id} checked={selectedId === m._id}
-                      onChange={() => { setSelectedId(m._id); setSelectedName(`${m.firstName} ${m.lastName}`); }}
+                      onChange={() => { setSelectedId(m._id); setSelectedName(formatFullName(m.firstName, m.lastName)); }}
                       className="accent-emerald-600" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
+                      <p className="text-sm font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                       <p className="text-xs text-neutral-400 truncate">{m.email}</p>
                     </div>
                   </label>
@@ -1021,7 +1029,7 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
         <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 shrink-0">
           <div>
             <p className="font-black text-neutral-900">Permissions personnalisées</p>
-            <p className="text-xs text-neutral-500 mt-0.5">{admin.firstName} {admin.lastName}</p>
+            <p className="text-xs text-neutral-500 mt-0.5">{formatFullName(admin.firstName, admin.lastName)}</p>
           </div>
           <button onClick={onClose}><X size={16} className="text-neutral-400" /></button>
         </div>
@@ -1156,12 +1164,16 @@ export default function RolesPage() {
   const user   = useAuthStore(s => s.user);
   const SA     = isSuperAdmin(user);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (user !== undefined && !SA) router.push('/admin/dashboard');
   }, [SA, user, router]);
 
-  const [tab,          setTab]          = useState<Tab>('roles');
+  const [tab,          setTab]          = useState<Tab>(() => {
+    const requestedTab = searchParams.get('tab');
+    return requestedTab === 'bureau' || requestedTab === 'permissions' ? requestedTab : 'roles';
+  });
   const [selectedRole, setSelectedRole] = useState<RoleDoc | null>(null);
   const [showCreate,   setShowCreate]   = useState(false);
   const [showPromote,  setShowPromote]  = useState(false);
@@ -1169,6 +1181,13 @@ export default function RolesPage() {
   const [editPerms,    setEditPerms]    = useState<AdminUser | null>(null);
   const [permSearch,   setPermSearch]   = useState('');
   const [riskFilter,   setRiskFilter]   = useState<string>('all');
+
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    if (requestedTab === 'bureau' || requestedTab === 'permissions' || requestedTab === 'roles') {
+      setTab(requestedTab);
+    }
+  }, [searchParams]);
 
   const { data: rolesData,    isLoading: rolesLoading }   = useRoles();
   const { data: adminsData,   isLoading: adminsLoading }  = useAdminUsers();

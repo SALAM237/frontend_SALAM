@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { UserPlus, Search, Eye, CheckCircle2, Clock, XCircle, Download } from 'lucide-react';
 import { DemoPortalShell } from '../../_components/DemoShell';
 import { demoMembers } from '@/data/demo/demo-members';
+import { formatFullName, formatInitials } from '@/lib/format-name';
 
 type MemberStatus = 'active' | 'pending' | 'suspended';
 
@@ -114,9 +115,9 @@ export default function DemoAdminMembersPage() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[11px] font-black text-white">
-                            {member.firstName[0]}{member.lastName[0]}
+                            {formatInitials(member.firstName, member.lastName)}
                           </div>
-                          <p className="font-semibold text-neutral-900">{member.firstName} {member.lastName}</p>
+                          <p className="font-semibold text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
                         </div>
                       </td>
                       <td className="px-5 py-3.5"><span className="font-mono text-xs text-neutral-500">{member.memberId}</span></td>
@@ -150,10 +151,10 @@ export default function DemoAdminMembersPage() {
               return (
                 <Link key={member._id} href={`/demo/admin/adherents/${member._id}`} className="flex items-center gap-3 px-4 py-4 transition-colors hover:bg-neutral-50">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-                    {member.firstName[0]}{member.lastName[0]}
+                    {formatInitials(member.firstName, member.lastName)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-neutral-900">{member.firstName} {member.lastName}</p>
+                    <p className="font-semibold text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
                     <p className="text-xs text-neutral-400">{member.memberId} - {member.email}</p>
                   </div>
                   <span className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[10px] font-black leading-none ${s.cls}`}>{s.label}</span>

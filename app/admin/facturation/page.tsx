@@ -11,6 +11,7 @@ import {
   type InvoiceDoc,
 } from '@/lib/api/invoices';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
+import { formatFullName } from '@/lib/format-name';
 
 /* ─── Helpers ─────────────────────────────────────────── */
 type InvoiceStatus = 'draft' | 'sent' | 'closed';
@@ -302,7 +303,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                         onChange={() => toggleMember(m._id)}
                         className="h-4 w-4 cursor-pointer rounded border-neutral-300 accent-emerald-600" />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-black text-neutral-900">{m.firstName} {m.lastName}</p>
+                        <p className="truncate text-xs font-black text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                         <p className="truncate font-mono text-[10px] text-neutral-400">{m.memberId}</p>
                       </div>
                       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black ${COTIS_BADGE[m.cotisationStatus]}`}>

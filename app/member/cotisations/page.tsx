@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { CheckCircle2, XCircle, ShieldOff, Download, X, Loader2 } from 'lucide-react';
 import { useMemberCotisations, type CotisationDoc, type CotisationStatus } from '@/lib/api/cotisations';
 import { useAuthStore } from '@/store/auth.store';
+import { formatFullName } from '@/lib/format-name';
 
 /* ─── Status config ──────────────────────────────────────── */
 const STATUS_CFG: Record<CotisationStatus, { badge: string; label: string; icon: React.ReactNode; dot: string }> = {
@@ -84,7 +85,7 @@ function ReceiptModal({ cot, user, onClose }: {
 
           <div className="space-y-0 rounded-xl border border-neutral-100 overflow-hidden mb-5">
             {[
-              { label: 'Adhérent',         value: `${user.firstName} ${user.lastName}` },
+              { label: 'Adhérent',         value: formatFullName(user.firstName, user.lastName) },
               { label: 'N° Membre',        value: memberId, mono: true },
               { label: 'Produit',          value: `Frais d'adhésion — ${cot.year}` },
               { label: 'Date de paiement', value: fmt(cot.paidAt) },

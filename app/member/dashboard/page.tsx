@@ -6,6 +6,7 @@ import { CreditCard, User, CalendarDays, MessageSquare, ArrowRight, Bell } from 
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { GenderIcon } from '@/components/ui/GenderIcon';
 import { useAuthStore } from '@/store/auth.store';
+import { formatFirstName, formatFullName } from '@/lib/format-name';
 
 const fadeUp  = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
@@ -13,8 +14,8 @@ const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 export default function MemberDashboardPage() {
   const { user } = useAuthStore();
 
-  const firstName = user?.firstName ?? '';
-  const lastName  = user?.lastName  ?? '';
+  const firstName = formatFirstName(user?.firstName ?? '');
+  const lastName  = user?.lastName ?? '';
   const gender    = user?.gender;
   const civility  = gender === 'femme' ? 'Madame' : gender === 'homme' ? 'Monsieur' : null;
   const memberId  = user?._id ? `SALAM-${new Date().getFullYear()}-${user._id.slice(-4).toUpperCase()}` : '—';
@@ -40,7 +41,7 @@ export default function MemberDashboardPage() {
             </p>
             <h1 className="flex items-center gap-2 text-2xl font-black tracking-[-0.03em]">
               <GenderIcon gender={gender} size={22} />
-              {firstName || lastName ? `${firstName} ${lastName}` : 'Membre'} 👋
+              {firstName || lastName ? formatFullName(firstName, lastName) : 'Membre'} 👋
             </h1>
             <p className="mt-1 text-sm text-white/50">Membre actif</p>
           </div>

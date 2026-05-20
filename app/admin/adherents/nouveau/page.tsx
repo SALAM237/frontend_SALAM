@@ -11,6 +11,7 @@ import {
 import Papa from 'papaparse';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { useCreateMember, useImportMembersCSV, type CsvImportMember, type ImportResult } from '@/lib/api/members';
+import { formatFirstName, formatFullName, formatLastName } from '@/lib/format-name';
 
 /* ─── Types ─────────────────────────────────────────────── */
 type Mode      = 'single' | 'csv';
@@ -60,12 +61,19 @@ function detect(row: CsvRawRow, variants: string[]): string {
   return '';
 }
 
+function cleanGenericBureauTitle(value?: string | null) {
+  return (value ?? '')
+    .replace(/\s*\(e\)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function mapRow(row: CsvRawRow): MappedRow {
   const firstName    = detect(row, ['prenom', 'firstname', 'first_name', 'prénom', 'given']);
   const lastName     = detect(row, ['nom', 'lastname', 'last_name', 'family_name', 'surname']);
   const email        = detect(row, ['email', 'mail', 'courriel', 'e-mail']);
   const phone        = detect(row, ['telephone', 'tel', 'phone', 'portable', 'mobile', 'whatsapp']);
-  const bureauPoste  = detect(row, ['poste', 'fonction', 'role', 'position', 'titre', 'bureau']);
+  const bureauPoste  = cleanGenericBureauTitle(detect(row, ['poste', 'fonction', 'role', 'position', 'titre', 'bureau']));
   const promotionYear = detect(row, ['promotion', 'promotionnaire', 'annee', 'annee', 'year', 'promo', 'cohorte']);
   const genderRaw    = detect(row, ['civilite', 'civilite', 'genre', 'gender', 'sexe']);
   const g = genderRaw.toLowerCase();
@@ -226,7 +234,7 @@ export default function NouveauAdherentPage() {
       lastName:     csvRows[i].lastName,
       email:        csvRows[i].email,
       phone:        csvRows[i].phone        || undefined,
-      bureauPoste:  csvRows[i].bureauPoste  || undefined,
+      bureauPoste:  cleanGenericBureauTitle(csvRows[i].bureauPoste) || undefined,
       gender:       (csvRows[i].gender as 'homme' | 'femme') || undefined,
       promotionYear: csvRows[i].promotionYear ? Number(csvRows[i].promotionYear) : undefined,
     }));
@@ -251,7 +259,7 @@ export default function NouveauAdherentPage() {
       </div>
       <h2 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Membre créé avec succès !</h2>
       <p className="mt-2 text-sm text-neutral-500">
-        La fiche de <strong>{form.firstName} {form.lastName}</strong> a été enregistrée.<br />
+        La fiche de <strong>{formatFullName(form.firstName, form.lastName)}</strong> a été enregistrée.<br />
         Numéro d&apos;adhérent : <span className="font-mono font-bold text-emerald-700">{generatedId}</span>
       </p>
       <div className="mt-8 flex flex-col items-center gap-3">
@@ -279,7 +287,7 @@ export default function NouveauAdherentPage() {
         <div className="grid gap-3 text-sm sm:grid-cols-2">
           {[
             ['Civilité',       form.gender === 'femme' ? 'Madame' : form.gender === 'homme' ? 'Monsieur' : '—'],
-            ['Prénom',         form.firstName], ['Nom', form.lastName],
+            ['Prénom',         formatFirstName(form.firstName)], ['Nom', formatLastName(form.lastName)],
             ['Email',          form.email],     ['Téléphone', form.phone || '—'],
             ['Promotionnaire', form.promotionYear || '—'],
             ['Ville',          form.city || '—'], ['Pays', form.country],

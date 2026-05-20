@@ -3,10 +3,11 @@
 import { Save, User } from 'lucide-react';
 import { DemoCard, DemoPortalShell } from '../../_components/DemoShell';
 import { demoMemberProfile } from '@/data/demo/demo-portal';
+import { formatFirstName, formatLastName } from '@/lib/format-name';
 
 export default function DemoMemberProfilePage() {
   const fields = [
-    ['Prenom', demoMemberProfile.firstName], ['Nom', demoMemberProfile.lastName], ['Email', demoMemberProfile.email],
+    ['Prenom', formatFirstName(demoMemberProfile.firstName)], ['Nom', formatLastName(demoMemberProfile.lastName)], ['Email', demoMemberProfile.email],
     ['Telephone', demoMemberProfile.phone], ['Ville', demoMemberProfile.city], ['Profession', demoMemberProfile.profession],
   ];
   return (

@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { useAuthStore } from '@/store/auth.store';
 import { hasAdminRole, hasMemberAccess } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
+import { formatFirstName } from '@/lib/format-name';
 
 const SPACE_COOKIE = 'salam_space';
 const COOKIE_OPTS  = 'path=/; SameSite=Lax; max-age=86400';
@@ -103,7 +104,7 @@ export default function ChoisirEspacePage() {
           </p>
           <h1 className="text-[1.9rem] font-black leading-[1.1] tracking-[-0.04em] text-white sm:text-[2.4rem]">
             Bonjour,{' '}
-            <span className="text-emerald-400">{user.firstName}</span>
+            <span className="text-emerald-400">{formatFirstName(user.firstName)}</span>
           </h1>
           <p className="mt-3 text-sm text-white/40">
             Choisissez l&apos;espace auquel vous souhaitez accéder.

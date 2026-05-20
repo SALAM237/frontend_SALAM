@@ -3,6 +3,7 @@
 import { Loader2, Users } from 'lucide-react';
 import { useMemberBureau, type BureauMember } from '@/lib/api/roles';
 import { assetUrl } from '@/lib/assets';
+import { formatFullName } from '@/lib/format-name';
 
 const PLACEHOLDER_PHOTO = '/images/gallery/image_parallax_SALAM.png';
 
@@ -38,8 +39,8 @@ const COMMISSION_DESCRIPTIONS: Record<string, string> = {
 };
 
 const EXECUTIVE_ORDER = [
-  'Président(e)', 'Vice-Président(e)', 'Secrétaire Général(e)', 'Secrétaire Adjoint(e)',
-  'Trésorier(e)', 'Trésorier(e) Adjoint(e)', 'Responsable Communication',
+  'Président', 'Vice-Président', 'Secrétaire Général', 'Secrétaire Adjoint',
+  'Trésorier', 'Trésorier Adjoint', 'Responsable Communication',
   'Responsable Partenariats', 'Responsable Événements',
   'Responsable Insertion', 'Responsable Solidarité',
 ];
@@ -57,6 +58,13 @@ function normalize(value?: string | null) {
     .trim();
 }
 
+function cleanGenericBureauTitle(value?: string | null) {
+  return (value ?? '')
+    .replace(/\s*\(e\)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function categoryLabel(member: BureauMember) {
   if (member.bureauCategory === 'commission') return member.bureauGroup ?? member.categoryLabel ?? 'Commission';
   if (member.bureauCategory === 'council') return 'Conseil des sages';
@@ -64,13 +72,13 @@ function categoryLabel(member: BureauMember) {
 }
 
 function memberTitle(member: BureauMember) {
-  const title = member.bureauCategory === 'commission' ? (member.title ?? 'Responsable') : (member.title ?? member.bureauPoste);
+  const title = cleanGenericBureauTitle(member.bureauCategory === 'commission' ? (member.title ?? 'Responsable') : (member.title ?? member.bureauPoste));
   if (member.gender?.toLowerCase() !== 'femme') return title;
   return FEMININE_BUREAU_POSTES[normalize(title)] ?? FEMININE_BUREAU_POSTES[normalize(member.bureauPoste)] ?? title;
 }
 
 function TeamCard({ member, badge }: { member: BureauMember; badge: string }) {
-  const name = `${member.firstName} ${member.lastName.toUpperCase()}`;
+  const name = formatFullName(member.firstName, member.lastName);
   const title = memberTitle(member);
   const year = member.nominationYear ?? member.bureauNominationYear ?? new Date(member.createdAt).getFullYear();
   const photo = assetUrl(member.image ?? member.bureauPhoto) || PLACEHOLDER_PHOTO;

@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { User, Mail, Phone, MapPin, Save, CheckCircle2, Lock, Shield, Camera, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { useUpdateProfile } from '@/lib/api/members';
+import { formatFullName, formatInitials } from '@/lib/format-name';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
@@ -77,9 +78,7 @@ export default function ProfilPage() {
     }
   };
 
-  const initials = form.firstName && form.lastName
-    ? `${form.firstName[0]}${form.lastName[0]}`
-    : '?';
+  const initials = formatInitials(form.firstName, form.lastName, '?');
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
@@ -111,7 +110,7 @@ export default function ProfilPage() {
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="font-black text-neutral-900">{form.firstName} {form.lastName}</p>
+          <p className="font-black text-neutral-900">{formatFullName(form.firstName, form.lastName)}</p>
           <p className="text-sm text-neutral-500">Membre actif</p>
           {user?._id && (
             <p className="mt-1 font-mono text-xs text-emerald-600">

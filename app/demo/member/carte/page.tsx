@@ -5,6 +5,7 @@ import { CreditCard, Download, Share2, CheckCircle2, Smartphone, Info, Loader2, 
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { DemoPortalShell } from '../../_components/DemoShell';
 import { demoMemberProfile } from '@/data/demo/demo-portal';
+import { formatFullName } from '@/lib/format-name';
 
 export default function DemoMemberCardPage() {
   const [downloaded, setDownloaded] = useState(false);
@@ -103,7 +104,7 @@ export default function DemoMemberCardPage() {
             </div>
             <div className="space-y-3">
               {[
-                { label: 'Nom complet', value: `${demoMemberProfile.firstName} ${demoMemberProfile.lastName}` },
+                { label: 'Nom complet', value: formatFullName(demoMemberProfile.firstName, demoMemberProfile.lastName) },
                 { label: 'No membre', value: memberId },
                 { label: 'Role', value: 'Membre actif' },
                 { label: 'Validite', value: `Annee ${year}` },

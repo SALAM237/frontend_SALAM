@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAdminStats } from '@/lib/api/dashboard';
 import { useAuthStore } from '@/store/auth.store';
+import { formatFirstName, formatFullName, formatInitials } from '@/lib/format-name';
 
 const fadeUp = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
@@ -76,7 +77,7 @@ export default function AdminDashboardPage() {
         <div>
           <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">Tableau de bord</h1>
           <p className="mt-0.5 text-sm text-neutral-500">
-            Bienvenue{user ? `, ${user.firstName}` : ''}<span className="hidden sm:inline"> · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+            Bienvenue{user ? `, ${formatFirstName(user.firstName)}` : ''}<span className="hidden sm:inline"> · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
           </p>
         </div>
         <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20">
@@ -149,9 +150,9 @@ export default function AdminDashboardPage() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
-                            {m.firstName[0]}{m.lastName[0]}
+                            {formatInitials(m.firstName, m.lastName)}
                           </div>
-                          <p className="font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
+                          <p className="font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
@@ -187,10 +188,10 @@ export default function AdminDashboardPage() {
               return (
                 <div key={m._id} className="flex items-center gap-3 px-4 py-3.5">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-                    {m.firstName[0]}{m.lastName[0]}
+                    {formatInitials(m.firstName, m.lastName)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
+                    <p className="font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                     <p className="text-xs text-neutral-400">{m.memberId}</p>
                   </div>
                   <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${s.cls}`}>{s.label}</span>

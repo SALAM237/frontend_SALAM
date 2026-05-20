@@ -9,6 +9,7 @@ import {
 import { DemoPortalShell } from '../_components/DemoShell';
 import { demoMembers } from '@/data/demo/demo-members';
 import { demoCotisations } from '@/data/demo/demo-portal';
+import { formatFullName, formatInitials } from '@/lib/format-name';
 
 const fadeUp = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
@@ -107,9 +108,9 @@ export default function DemoAdminDashboard() {
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
-                              {member.firstName[0]}{member.lastName[0]}
+                              {formatInitials(member.firstName, member.lastName)}
                             </div>
-                            <p className="font-semibold text-neutral-900">{member.firstName} {member.lastName}</p>
+                            <p className="font-semibold text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
                           </div>
                         </td>
                         <td className="px-5 py-3.5"><span className="font-mono text-xs text-neutral-500">{member.memberId}</span></td>
@@ -136,10 +137,10 @@ export default function DemoAdminDashboard() {
                 return (
                   <div key={member._id} className="flex items-center gap-3 px-4 py-3.5">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-                      {member.firstName[0]}{member.lastName[0]}
+                      {formatInitials(member.firstName, member.lastName)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-neutral-900">{member.firstName} {member.lastName}</p>
+                      <p className="font-semibold text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
                       <p className="text-xs text-neutral-400">{member.memberId}</p>
                     </div>
                     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black leading-none ${s.cls}`}>{s.label}</span>

@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { PageHero } from '@/components/public/PageHero';
 import { usePublicBureau, type BureauMember } from '@/lib/api/roles';
 import { assetUrl } from '@/lib/assets';
+import { formatFullName } from '@/lib/format-name';
 
 const PLACEHOLDER_PHOTO = '/images/gallery/image_parallax_SALAM.png';
 const PRESIDENT_PHOTO = '/images/bureau/aoua_presidente_salam_2_bn.jpg';
@@ -30,12 +31,12 @@ const FEMININE_BUREAU_POSTES: Record<string, string> = {
 };
 
 const KNOWN_POSTES = [
-  { key: 'president', label: 'Président(e)', aliases: ['presidente', 'president e'] },
-  { key: 'vice president', label: 'Vice-Président(e)', aliases: ['vice presidente', 'vice president e'] },
-  { key: 'secretaire general', label: 'Secrétaire Général(e)', aliases: ['secretaire generale'] },
-  { key: 'secretaire adjoint', label: 'Secrétaire Adjoint(e)', aliases: ['secretaire adjointe'] },
-  { key: 'tresorier', label: 'Trésorier(e)', aliases: ['tresoriere'] },
-  { key: 'tresorier adjoint', label: 'Trésorier(e) Adjoint(e)', aliases: ['tresoriere adjointe'] },
+  { key: 'president', label: 'Président', aliases: ['presidente', 'president e'] },
+  { key: 'vice president', label: 'Vice-Président', aliases: ['vice presidente', 'vice president e'] },
+  { key: 'secretaire general', label: 'Secrétaire Général', aliases: ['secretaire generale'] },
+  { key: 'secretaire adjoint', label: 'Secrétaire Adjoint', aliases: ['secretaire adjointe'] },
+  { key: 'tresorier', label: 'Trésorier', aliases: ['tresoriere'] },
+  { key: 'tresorier adjoint', label: 'Trésorier Adjoint', aliases: ['tresoriere adjointe'] },
   { key: 'responsable communication', label: 'Responsable Communication', aliases: [] },
   { key: 'responsable partenariats', label: 'Responsable Partenariats', aliases: [] },
   { key: 'responsable evenements', label: 'Responsable Événements', aliases: ['responsable evenement'] },
@@ -53,6 +54,13 @@ function normalizePoste(value?: string | null) {
     .trim();
 }
 
+function cleanGenericBureauTitle(value?: string | null) {
+  return (value ?? '')
+    .replace(/\s*\(e\)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function matchesPoste(memberPoste: string, poste: (typeof KNOWN_POSTES)[number]) {
   const normalized = normalizePoste(memberPoste);
   const candidates = [poste.key, ...poste.aliases].map(normalizePoste);
@@ -66,7 +74,7 @@ function getYear(date: string) {
 }
 
 function formatBureauTitle(member: BureauMember) {
-  const title = member.title ?? member.bureauPoste;
+  const title = cleanGenericBureauTitle(member.title ?? member.bureauPoste);
   if (member.gender?.toLowerCase() !== 'femme') return title;
   return FEMININE_BUREAU_POSTES[normalizePoste(title)] ?? FEMININE_BUREAU_POSTES[normalizePoste(member.bureauPoste)] ?? title;
 }
@@ -75,7 +83,7 @@ function MemberCard({ member }: { member: BureauMember }) {
   const isPresident = normalizePoste(member.bureauPoste).includes('president');
   const title = formatBureauTitle(member);
   const photo = assetUrl(member.image ?? member.bureauPhoto) || (isPresident ? PRESIDENT_PHOTO : PLACEHOLDER_PHOTO);
-  const name = `${member.firstName} ${member.lastName.toUpperCase()}`;
+  const name = formatFullName(member.firstName, member.lastName);
   const year = member.nominationYear ?? member.bureauNominationYear ?? getYear(member.createdAt);
 
   return (

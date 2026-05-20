@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { apiClient } from '@/lib/api/client';
+import { formatFirstName, formatFullName, formatInitials } from '@/lib/format-name';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CreditCard, User, CalendarDays,
@@ -17,7 +18,7 @@ const NAV = [
   { label: 'Mon espace',    href: '/member/dashboard',   icon: LayoutDashboard },
   { label: 'Ma carte',      href: '/member/carte',       icon: CreditCard       },
   { label: 'Mon profil',    href: '/member/profil',      icon: User             },
-  { label: 'Bureau & commissions', href: '/member/bureau', icon: Users          },
+  { label: 'Bureau',        href: '/member/bureau',      icon: Users            },
   { label: 'Cotisations',   href: '/member/cotisations', icon: Banknote         },
   { label: 'Mes factures',  href: '/member/factures',    icon: FileText         },
   { label: 'Mes documents', href: '/member/documents',   icon: FolderOpen       },
@@ -73,7 +74,7 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, onLogout 
         <div className="mx-3 my-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] p-3">
           <p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-400/70">Carte membre</p>
           <p className="mt-1 text-sm font-black text-white">
-            {firstName || lastName ? `${firstName} ${lastName}` : '—'}
+            {firstName || lastName ? formatFullName(firstName, lastName) : '—'}
           </p>
           <Link
             href="/member/carte"
@@ -118,7 +119,7 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, onLogout 
             </div>
             <div className="flex-1 min-w-0">
               <p className="truncate text-sm font-black text-white/80">
-                {firstName || lastName ? `${firstName} ${lastName}` : '—'}
+                {firstName || lastName ? formatFullName(firstName, lastName) : '—'}
               </p>
               <p className="truncate text-[10px] text-white/30">Membre actif</p>
             </div>
@@ -198,9 +199,9 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
   }
 
   const currentPage = NAV.find(n => n.href === pathname);
-  const firstName  = user?.firstName ?? '';
-  const lastName   = user?.lastName  ?? '';
-  const initials   = firstName && lastName ? `${firstName[0]}${lastName[0]}`.toUpperCase() : '…';
+  const firstName  = formatFirstName(user?.firstName ?? '');
+  const lastName   = user?.lastName ?? '';
+  const initials   = firstName && lastName ? formatInitials(firstName, lastName) : '…';
 
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">

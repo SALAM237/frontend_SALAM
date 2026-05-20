@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, CreditCard, Search, Loader2, Users } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
+import { formatFullName, formatInitials } from '@/lib/format-name';
 
 function toCardData(m: MemberListItem): MemberCardData {
   return {
@@ -137,13 +138,13 @@ export default function CartesPage() {
                           <img src={m.avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
                         ) : (
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[11px] font-black text-white">
-                            {m.firstName[0]}{m.lastName[0]}
+                            {formatInitials(m.firstName, m.lastName)}
                           </div>
                         )}
 
                         {/* Info */}
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold text-sm text-neutral-900">{m.firstName} {m.lastName}</p>
+                          <p className="truncate font-semibold text-sm text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                           <p className="font-mono text-[11px] text-neutral-400">{m.memberId}</p>
                         </div>
 

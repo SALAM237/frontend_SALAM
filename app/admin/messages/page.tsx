@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore } from '@/store/auth.store';
 import type { MembersListResponse } from '@/lib/api/members';
+import { formatFullName } from '@/lib/format-name';
 
 type Message = { id: number; from: string; subject: string; preview: string; date: string; read: boolean; body: string };
 type Recipient = { id: string; name: string; email: string };
@@ -34,7 +35,7 @@ function RecipientPicker({
       );
       return res.data.data.map(m => ({
         id:    m._id,
-        name:  `${m.firstName} ${m.lastName}`,
+        name:  formatFullName(m.firstName, m.lastName),
         email: m.email,
       }));
     },

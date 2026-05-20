@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { DemoPortalShell } from '../../_components/DemoShell';
 import { demoMembers } from '@/data/demo/demo-members';
+import { formatFullName, formatInitials } from '@/lib/format-name';
 
 type CotisationStatus = 'paid' | 'unpaid' | 'exempt';
 
@@ -117,7 +118,7 @@ function ReceiptModal({ member, year, onClose }: { member: MemberRow; year: numb
         </div>
         <div className="space-y-3 px-6 py-4">
           {[
-            ['Adherent', `${member.firstName} ${member.lastName}`],
+            ['Adherent', formatFullName(member.firstName, member.lastName)],
             ['No membre', member.memberId],
             ['Annee', String(year)],
             ['Montant', '30,00 EUR'],
@@ -151,7 +152,7 @@ function PaymentModal({ member, onConfirm, onClose }: { member: MemberRow; onCon
         <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
           <div>
             <h3 className="font-black text-neutral-900">Confirmer le paiement</h3>
-            <p className="mt-0.5 text-xs text-neutral-500">{member.firstName} {member.lastName} - {member.memberId}</p>
+            <p className="mt-0.5 text-xs text-neutral-500">{formatFullName(member.firstName, member.lastName)} - {member.memberId}</p>
           </div>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
         </div>
@@ -287,10 +288,10 @@ export default function DemoAdminCotisationsPage() {
                 <div key={member.userId} className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-neutral-50/60">
                   <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${cfg.dot} shadow-sm`} />
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
-                    {member.firstName[0]}{member.lastName[0]}
+                    {formatInitials(member.firstName, member.lastName)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-black text-neutral-900">{member.firstName} {member.lastName}</p>
+                    <p className="text-sm font-black text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
                     <p className="font-mono text-[11px] text-neutral-400">{member.memberId}</p>
                   </div>
                   <div className="hidden w-28 text-right sm:block">
@@ -343,7 +344,7 @@ export default function DemoAdminCotisationsPage() {
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[10px] font-black text-white">ND</div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-neutral-700"><span className="font-black text-neutral-900">Nadia Diallo</span><span className="mx-1 text-neutral-400">-</span><span className="text-[11px] text-neutral-400">Tresoriere</span></p>
-                    <p className="mt-0.5 text-xs text-neutral-600">{member.firstName} {member.lastName} - Annee {year}</p>
+                    <p className="mt-0.5 text-xs text-neutral-600">{formatFullName(member.firstName, member.lastName)} - Annee {year}</p>
                     <p className="mt-0.5 text-[11px] text-neutral-400">Non paye vers {index === 0 ? 'Paye' : 'Exempte'}</p>
                   </div>
                   <div className="shrink-0 text-right">

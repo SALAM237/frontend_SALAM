@@ -5,6 +5,7 @@ import { Plus, X, Send, Eye, Search, CalendarDays, Euro, FileText, CheckCircle2,
 import { DemoPortalShell } from '../../_components/DemoShell';
 import { demoInvoices } from '@/data/demo/demo-portal';
 import { demoMembers } from '@/data/demo/demo-members';
+import { formatFullName } from '@/lib/format-name';
 
 type DemoInvoice = typeof demoInvoices[number] & { _id: string; title: string; invoiceNumber: string; status: 'draft' | 'sent' | 'closed'; dueDate: string; recipients: { status: 'paid' | 'pending' }[]; description?: string; paymentLink?: string };
 
@@ -63,7 +64,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
               <div className="overflow-hidden rounded-xl border border-neutral-200">
                 <div className="relative border-b border-neutral-100"><Search size={13} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" /><input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder="Rechercher par nom ou prenom..." className="h-9 w-full bg-neutral-50 pl-9 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:bg-white" /></div>
                 <div className="max-h-44 divide-y divide-neutral-50 overflow-y-auto">
-                  {filteredMembers.map(m => <label key={m.id} className="flex cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-neutral-50"><input type="checkbox" checked={selected.includes(m.id)} onChange={() => setSelected(prev => prev.includes(m.id) ? prev.filter(id => id !== m.id) : [...prev, m.id])} className="h-4 w-4 rounded border-neutral-300 accent-emerald-600" /><div className="min-w-0 flex-1"><p className="truncate text-xs font-black text-neutral-900">{m.firstName} {m.lastName}</p><p className="truncate font-mono text-[10px] text-neutral-400">{m.memberId}</p></div></label>)}
+                  {filteredMembers.map(m => <label key={m.id} className="flex cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-neutral-50"><input type="checkbox" checked={selected.includes(m.id)} onChange={() => setSelected(prev => prev.includes(m.id) ? prev.filter(id => id !== m.id) : [...prev, m.id])} className="h-4 w-4 rounded border-neutral-300 accent-emerald-600" /><div className="min-w-0 flex-1"><p className="truncate text-xs font-black text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p><p className="truncate font-mono text-[10px] text-neutral-400">{m.memberId}</p></div></label>)}
                 </div>
               </div>
             )}

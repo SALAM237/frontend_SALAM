@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAdminMembers, useHardDeleteMember, useResendInvitation, type MemberListItem } from '@/lib/api/members';
 import { useAuthStore } from '@/store/auth.store';
+import { formatFullName, formatInitials } from '@/lib/format-name';
 
 type MemberStatus = 'active' | 'pending' | 'suspended';
 
@@ -164,9 +165,9 @@ export default function AdminAdherentsPage() {
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[11px] font-black text-white">
-                              {m.firstName[0]}{m.lastName[0]}
+                              {formatInitials(m.firstName, m.lastName)}
                             </div>
-                            <p className="font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
+                            <p className="font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                           </div>
                         </td>
                         <td className="px-5 py-3.5"><span className="font-mono text-xs text-neutral-500">{m.memberId}</span></td>
@@ -243,10 +244,10 @@ export default function AdminAdherentsPage() {
                     {/* Avatar + info — clickable */}
                     <Link href={`/admin/adherents/${m._id}`} className="flex min-w-0 flex-1 items-center gap-3">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-                        {m.firstName[0]}{m.lastName[0]}
+                        {formatInitials(m.firstName, m.lastName)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-neutral-900">{m.firstName} {m.lastName}</p>
+                        <p className="font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                         <p className="truncate text-xs text-neutral-400">{m.memberId} · {m.email}</p>
                       </div>
                     </Link>

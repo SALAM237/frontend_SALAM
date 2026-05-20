@@ -6,6 +6,7 @@ import { ArrowLeft, CreditCard, Search, Users } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { DemoPortalShell } from '../../_components/DemoShell';
 import { demoMembers } from '@/data/demo/demo-members';
+import { formatFullName, formatInitials } from '@/lib/format-name';
 
 export default function DemoAdminCardsPage() {
   const [search, setSearch] = useState('');
@@ -83,10 +84,10 @@ export default function DemoAdminCardsPage() {
               {filtered.map(member => (
                 <button key={member.id} onClick={() => setSelected(member)} className="flex w-full items-center gap-3 border-b border-neutral-50 px-4 py-3 text-left transition-colors hover:bg-neutral-50">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-                    {member.firstName[0]}{member.lastName[0]}
+                    {formatInitials(member.firstName, member.lastName)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-neutral-900">{member.firstName} {member.lastName}</p>
+                    <p className="font-semibold text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
                     <p className="text-xs text-neutral-400">{member.id} - {member.email}</p>
                   </div>
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ${member.role === 'Membre actif' ? 'bg-emerald-50 text-emerald-700' : 'bg-yellow-50 text-yellow-700'}`}>

@@ -11,6 +11,7 @@ import {
   Shield, User, Users, X, Globe, LogOut,
 } from 'lucide-react';
 import { demoAdminUser, demoMemberProfile } from '@/data/demo/demo-portal';
+import { formatFullName } from '@/lib/format-name';
 
 type NavItem = { label: string; href: string; icon: React.ElementType };
 
@@ -32,7 +33,7 @@ const memberNav: NavItem[] = [
   { label: 'Mon espace', href: '/demo/member', icon: LayoutDashboard },
   { label: 'Ma carte', href: '/demo/member/carte', icon: CreditCard },
   { label: 'Mon profil', href: '/demo/member/profil', icon: User },
-  { label: 'Bureau & commissions', href: '/demo/member/bureau', icon: Users },
+  { label: 'Bureau', href: '/demo/member/bureau', icon: Users },
   { label: 'Cotisations', href: '/demo/member/cotisations', icon: Banknote },
   { label: 'Mes factures', href: '/demo/member/factures', icon: FileText },
   { label: 'Mes documents', href: '/demo/member/documents', icon: FolderOpen },
@@ -78,7 +79,7 @@ function DemoSidebar({ type, nav, open, onClose }: { type: 'admin' | 'member'; n
         {type === 'member' && (
           <div className="mx-3 my-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] p-3">
             <p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-400/70">Carte membre</p>
-            <p className="mt-1 text-sm font-black text-white">{demoMemberProfile.firstName} {demoMemberProfile.lastName}</p>
+            <p className="mt-1 text-sm font-black text-white">{formatFullName(demoMemberProfile.firstName, demoMemberProfile.lastName)}</p>
             <Link href="/demo/member/carte" onClick={onClose} className="mt-2 flex items-center gap-1 text-[10px] font-bold text-emerald-400 hover:text-emerald-300">
               Voir ma carte <ChevronRight size={10} />
             </Link>
@@ -113,7 +114,7 @@ function DemoSidebar({ type, nav, open, onClose }: { type: 'admin' | 'member'; n
               {person.initials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-black text-white/80">{type === 'admin' ? demoAdminUser.name : `${demoMemberProfile.firstName} ${demoMemberProfile.lastName}`}</p>
+              <p className="truncate text-sm font-black text-white/80">{type === 'admin' ? demoAdminUser.name : formatFullName(demoMemberProfile.firstName, demoMemberProfile.lastName)}</p>
               <p className="truncate text-[10px] text-white/30">{type === 'admin' ? demoAdminUser.poste : demoMemberProfile.status}</p>
             </div>
             <Link href="/demo" className="text-white/25 transition-colors hover:text-red-400" title="Quitter la demo">

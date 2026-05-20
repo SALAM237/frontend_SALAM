@@ -7,6 +7,7 @@ import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard'
 import { GenderIcon } from '@/components/ui/GenderIcon';
 import { DemoPortalShell } from '../_components/DemoShell';
 import { demoMemberProfile } from '@/data/demo/demo-portal';
+import { formatFirstName, formatLastName } from '@/lib/format-name';
 
 const fadeUp = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
@@ -14,6 +15,8 @@ const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 export default function DemoMemberDashboard() {
   const firstName = demoMemberProfile.firstName;
   const lastName = demoMemberProfile.lastName;
+  const displayFirstName = formatFirstName(firstName);
+  const displayLastName = formatLastName(lastName);
   const gender: 'femme' = 'femme';
   const civility = 'Madame';
   const memberId = demoMemberProfile.id;
@@ -37,7 +40,7 @@ export default function DemoMemberDashboard() {
               <p className="text-sm font-semibold text-white/50">Bienvenue, {civility}</p>
               <h1 className="flex items-center gap-2 text-2xl font-black tracking-[-0.03em]">
                 <GenderIcon gender={gender} size={22} />
-                {firstName} {lastName}
+                {displayFirstName} {displayLastName}
               </h1>
               <p className="mt-1 text-sm text-white/50">Membre actif</p>
             </div>

@@ -10,6 +10,7 @@ import { DemoPortalShell } from '../../_components/DemoShell';
 import { demoMembers } from '@/data/demo/demo-members';
 import { demoRoles } from '@/data/demo/demo-roles';
 import { demoPermissions } from '@/data/demo/demo-permissions';
+import { formatFullName, formatInitials } from '@/lib/format-name';
 
 type Tab = 'roles' | 'bureau' | 'permissions';
 
@@ -255,9 +256,9 @@ export default function DemoAdminRolesPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               {admins.map(admin => (
                 <div key={admin.id} className="flex items-start gap-4 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">{admin.firstName[0]}{admin.lastName[0]}</div>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">{formatInitials(admin.firstName, admin.lastName)}</div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-black text-neutral-900">{admin.firstName} {admin.lastName}</p>
+                    <p className="text-sm font-black text-neutral-900">{formatFullName(admin.firstName, admin.lastName)}</p>
                     <p className="truncate text-[11px] text-neutral-400">{admin.email}</p>
                     <p className="mt-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-700">{admin.role}</p>
                   </div>

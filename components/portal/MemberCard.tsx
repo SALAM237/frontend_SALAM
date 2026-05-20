@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { formatFullName } from '@/lib/format-name';
 
 export type MemberCardData = {
   id: string;
@@ -79,7 +80,7 @@ export function MemberCard({ member, printable = false }: { member: MemberCardDa
             </p>
           )}
           <p className="mt-0.5 truncate text-[1.1rem] font-black leading-tight tracking-[-0.02em] text-white sm:text-[1.3rem]">
-            {member.firstName} {member.lastName.toUpperCase()}
+            {formatFullName(member.firstName, member.lastName)}
           </p>
 
           <div className="mt-1.5 flex items-end justify-between gap-2">

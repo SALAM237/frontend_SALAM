@@ -5,6 +5,7 @@ import { CreditCard, Download, Share2, CheckCircle2, Smartphone, Info, Loader2, 
 import { toast } from 'sonner';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { useAuthStore } from '@/store/auth.store';
+import { formatFullName } from '@/lib/format-name';
 
 /* ── Canvas helpers ─────────────────────────────────────── */
 
@@ -94,7 +95,7 @@ async function generateCardBlob(member: MemberCardData): Promise<Blob> {
 
   /* name */
   ctx.fillStyle = 'white'; ctx.font = 'bold 38px Arial';
-  const name = `${member.firstName} ${member.lastName.toUpperCase()}`;
+  const name = formatFullName(member.firstName, member.lastName);
   ctx.fillText(name, 30, H - 98, W - 240);
 
   /* role */
@@ -296,7 +297,7 @@ export default function MembreCartePage() {
           </div>
           <div className="space-y-3">
             {[
-              { label: 'Nom complet', value: user ? `${user.firstName} ${user.lastName}` : '—' },
+              { label: 'Nom complet', value: user ? formatFullName(user.firstName, user.lastName) : '—' },
               { label: 'N° membre',   value: memberId },
               { label: 'Rôle',        value: 'Membre actif' },
               { label: 'Validité',    value: `Année ${year}` },

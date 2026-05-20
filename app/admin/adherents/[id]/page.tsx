@@ -10,6 +10,7 @@ import {
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { useAdminMember, useHardDeleteMember } from '@/lib/api/members';
 import { useAuthStore } from '@/store/auth.store';
+import { formatFullName } from '@/lib/format-name';
 
 export default function AdherentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id }       = use(params);
@@ -65,7 +66,7 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
           <ArrowLeft size={15} />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">{member.firstName} {member.lastName}</h1>
+          <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">{formatFullName(member.firstName, member.lastName)}</h1>
           <p className="font-mono text-sm text-neutral-500">{member.memberId}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

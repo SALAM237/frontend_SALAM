@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, CalendarDays,
@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { isSuperAdmin, hasAdminRole } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
+import { formatFullName, formatInitials } from '@/lib/format-name';
 
 type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean };
 
@@ -27,8 +28,16 @@ const BASE_NAV: NavItem[] = [
   { label: 'Messages',          href: '/admin/messages',          icon: MessageSquare },
   { label: 'Historique',        href: '/admin/historique',        icon: History },
   { label: 'Rôles & Accès',     href: '/admin/roles',             icon: Shield, superAdminOnly: true },
+  { label: 'Bureau',            href: '/admin/bureau',            icon: Users },
   { label: 'Paramètres',        href: '/admin/parametres',        icon: Settings },
 ];
+
+function cleanGenericBureauTitle(value?: string | null) {
+  return (value ?? '')
+    .replace(/\s*\(e\)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauPoste, onLogout, nav }: {
   open: boolean; onClose: () => void;
@@ -37,6 +46,8 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
   nav: NavItem[];
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get('tab');
 
   return (
     <>
@@ -79,7 +90,11 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
           <p className="mb-2 px-2 text-[9px] font-black uppercase tracking-[0.22em] text-white/20">Navigation</p>
           <ul className="flex flex-col gap-0.5">
             {nav.map(({ label, href, icon: Icon }) => {
-              const active = pathname === href || (href !== '/admin/dashboard' && pathname.startsWith(href));
+              const [hrefPath, hrefQuery] = href.split('?');
+              const hrefTab = new URLSearchParams(hrefQuery ?? '').get('tab');
+              const active = hrefTab
+                ? pathname === hrefPath && currentTab === hrefTab
+                : pathname === hrefPath || (hrefPath !== '/admin/dashboard' && pathname.startsWith(hrefPath) && !(hrefPath === '/admin/roles' && currentTab === 'bureau'));
               return (
                 <li key={href}>
                   <Link
@@ -202,10 +217,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const nav = BASE_NAV.filter(n => !n.superAdminOnly || SA);
 
   const currentPage = nav.find(n => n.href === pathname || (n.href !== '/admin/dashboard' && pathname.startsWith(n.href)));
-  const initials    = user ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() : 'A';
-  const displayName = user ? `${user.firstName} ${user.lastName}` : 'Administrateur';
+  const initials    = user ? formatInitials(user.firstName, user.lastName, 'A') : 'A';
+  const displayName = user ? formatFullName(user.firstName, user.lastName) : 'Administrateur';
   const adminRole   = user?.roles.find(r => ['admin', 'super_admin'].includes(r.slug))?.name ?? 'Admin';
-  const bureauPoste = user?.bureauPoste ?? null;
+  const bureauPoste = cleanGenericBureauTitle(user?.bureauPoste) || null;
 
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">
