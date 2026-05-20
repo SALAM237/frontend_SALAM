@@ -386,6 +386,8 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
   const nominationYearChanged = Number(nominationYear) !== (admin.bureauNominationYear ?? CURRENT_YEAR);
   const nominationYearValid = !poste || (/^\d{4}$/.test(nominationYear) && Number(nominationYear) >= 1900 && Number(nominationYear) <= 2100);
   const photoChanged = !!photoFile;
+  const hasBureauPhoto = !!photoPreview;
+  const photoValid = !poste || hasBureauPhoto;
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -399,6 +401,10 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
       toast.error('Année de nomination requise');
       return;
     }
+    if (!photoValid) {
+      toast.error('Photo du bureau requise');
+      return;
+    }
     setSaving(true);
     try {
       if (roleChanged) {
@@ -409,15 +415,15 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
           await promote.mutateAsync({ userId: admin._id, roleSlug: 'admin' });
         }
       }
+      if (photoChanged && photoFile) {
+        await uploadPhoto.mutateAsync({ userId: admin._id, file: photoFile });
+      }
       if (posteChanged || (poste && nominationYearChanged)) {
         await assign.mutateAsync({
           userId: admin._id,
           poste: poste || null,
           nominationYear: poste ? Number(nominationYear) : null,
         });
-      }
-      if (photoChanged && photoFile) {
-        await uploadPhoto.mutateAsync({ userId: admin._id, file: photoFile });
       }
       onClose();
     } finally {
@@ -508,7 +514,7 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
                 )}
               </div>
               <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
-                Photo — carte équipe <span className="font-normal normal-case tracking-normal text-neutral-400">(jpg, png, webp)</span>
+                Photo — carte équipe <span className="font-normal normal-case tracking-normal text-red-500">*</span>
               </p>
               <label className="group relative flex cursor-pointer flex-col items-center gap-3 overflow-hidden rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-4 transition hover:border-emerald-400 hover:bg-emerald-50">
                 {photoPreview ? (
@@ -531,6 +537,9 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
                 )}
                 <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handlePhotoChange} />
               </label>
+              {!photoValid && (
+                <p className="text-[11px] font-semibold text-red-500">Photo obligatoire pour afficher ce membre dans l'équipe.</p>
+              )}
             </div>
           )}
         </div>
@@ -539,7 +548,7 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
           <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600">Annuler</button>
           <button
             onClick={handleSave}
-            disabled={saving || !nominationYearValid || (!roleChanged && !posteChanged && !(poste && nominationYearChanged) && !photoChanged)}
+            disabled={saving || !nominationYearValid || !photoValid || (!roleChanged && !posteChanged && !(poste && nominationYearChanged) && !photoChanged)}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-60">
             {saving && <Loader2 size={13} className="animate-spin" />}
             Enregistrer
@@ -575,6 +584,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
       : BUREAU_POSTES,
   [posteSearch]);
   const nominationYearValid = !selectedPoste || (/^\d{4}$/.test(nominationYear) && Number(nominationYear) >= 1900 && Number(nominationYear) <= 2100);
+  const photoValid = !selectedPoste || !!photoFile;
 
   const handleSelectPoste = (p: string) => { setSelectedPoste(p); setPosteSearch(p); };
   const handleClearPoste  = () => { setSelectedPoste(''); setPosteSearch(''); setNominationYear(String(CURRENT_YEAR)); setPhotoFile(null); setPhotoPreview(null); };
@@ -591,13 +601,17 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
       toast.error('Année de nomination requise');
       return;
     }
+    if (!photoValid) {
+      toast.error('Photo du bureau requise');
+      return;
+    }
     try {
       await promote.mutateAsync({ userId: selectedId, roleSlug });
-      if (selectedPoste) {
-        await assign.mutateAsync({ userId: selectedId, poste: selectedPoste, nominationYear: Number(nominationYear) });
-      }
       if (selectedPoste && photoFile) {
         await uploadPhoto.mutateAsync({ userId: selectedId, file: photoFile });
+      }
+      if (selectedPoste) {
+        await assign.mutateAsync({ userId: selectedId, poste: selectedPoste, nominationYear: Number(nominationYear) });
       }
       setStep('success');
     } catch {
@@ -771,7 +785,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
                     )}
                   </div>
                   <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
-                    Photo — carte équipe <span className="font-normal normal-case tracking-normal text-neutral-400">(jpg, png, webp)</span>
+                    Photo — carte équipe <span className="font-normal normal-case tracking-normal text-red-500">*</span>
                   </p>
                   <label className="group relative flex cursor-pointer flex-col items-center gap-3 overflow-hidden rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-4 transition hover:border-emerald-400 hover:bg-emerald-50">
                     {photoPreview ? (
@@ -794,6 +808,9 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
                     )}
                     <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handlePhotoChange} />
                   </label>
+                  {!photoValid && (
+                    <p className="text-[11px] font-semibold text-red-500">Photo obligatoire pour afficher ce membre dans l'équipe.</p>
+                  )}
                 </div>
               )}
             </div>
@@ -804,7 +821,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
                 Retour
               </button>
               <button
-                disabled={promote.isPending || assign.isPending || uploadPhoto.isPending || !nominationYearValid}
+                disabled={promote.isPending || assign.isPending || uploadPhoto.isPending || !nominationYearValid || !photoValid}
                 onClick={handlePromote}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white disabled:opacity-50">
                 {(promote.isPending || assign.isPending || uploadPhoto.isPending) && <Loader2 size={13} className="animate-spin" />}

@@ -195,6 +195,12 @@ export function useUploadBureauPhoto() {
         credentials: 'include',
         body: fd,
       });
+      const contentType = res.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) {
+        throw new Error(res.status === 404
+          ? "Route d'upload photo introuvable sur le backend"
+          : `Réponse backend invalide (${res.status})`);
+      }
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message ?? 'Erreur upload');
       return json;
