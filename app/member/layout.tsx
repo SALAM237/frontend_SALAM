@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CreditCard, User, CalendarDays,
   MessageSquare, LogOut, Menu, X, ChevronRight, Bell,
-  Banknote, FileText, FolderOpen, Images, Newspaper, Loader2,
+  Banknote, FileText, FolderOpen, Images, Newspaper, Loader2, Globe,
 } from 'lucide-react';
 
 const NAV = [
@@ -230,6 +230,15 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
           </div>
 
           <div className="ml-auto flex items-center gap-3">
+            <Link
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700"
+            >
+              <Globe size={13} />
+              <span className="hidden sm:inline">Voir le site</span>
+            </Link>
             <div className="relative">
               <button
                 onClick={() => setNotifOpen(v => !v)}
