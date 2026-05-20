@@ -1,8 +1,7 @@
 import type { Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { ConditionalHeader } from '@/components/layout/ConditionalHeader';
-import { Footer }            from '@/components/layout/Footer';
+import { Footer } from '@/components/layout/Footer';
 import { Providers }         from '@/components/shared/Providers';
 import { defaultMetadata, schemaOrg, organizationSchema, websiteSchema, faqSchema } from '@/lib/seo';
 
@@ -51,7 +50,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={inter.className}>
         <Providers>
-          <ConditionalHeader />
           {children}
           <Footer />
         </Providers>
