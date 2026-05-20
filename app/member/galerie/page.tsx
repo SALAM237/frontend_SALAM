@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Images, Loader2, Lock } from 'lucide-react';
 import { useMemberAlbums, type AlbumDoc } from '@/lib/api/gallery';
 import { Lightbox, useLightbox } from '@/components/ui/Lightbox';
+import { assetUrl } from '@/lib/assets';
 
 const COVERS = [
   'from-emerald-400 to-teal-600', 'from-blue-400 to-indigo-600',
@@ -45,7 +46,7 @@ function AlbumView({ album, onClose }: { album: AlbumDoc; onClose: () => void })
               <button key={i} onClick={() => lb.open(i)}
                 className="group aspect-square overflow-hidden rounded-xl border border-neutral-100 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.url} alt={img.alt ?? ''} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                <img src={assetUrl(img.url)} alt={img.alt ?? ''} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
               </button>
             ))}
           </div>
@@ -107,7 +108,7 @@ export default function MemberGaleriePage() {
                 <div className={`relative h-36 bg-gradient-to-br ${COVERS[i % COVERS.length]} overflow-hidden`}>
                   {cover && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={cover.url} alt={cover.alt ?? ''} className="h-full w-full object-cover" />
+                    <img src={assetUrl(cover.url)} alt={cover.alt ?? ''} className="h-full w-full object-cover" />
                   )}
                   {album.visibility === 'members' && (
                     <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 text-[9px] font-black text-white">

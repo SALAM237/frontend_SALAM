@@ -10,12 +10,15 @@ export interface BureauMember {
   firstName: string;
   lastName: string;
   gender?: 'homme' | 'femme';
+  bureauCategory?: 'executive' | 'commission' | 'council' | null;
+  bureauGroup?: string | null;
   bureauPoste: string;
   bureauNominationYear?: number | null;
   bureauPhoto?: string | null;
   image?: string | null;
   title?: string;
   nominationYear?: number | null;
+  categoryLabel?: string;
   createdAt: string;
 }
 
@@ -167,15 +170,22 @@ export function useAssignPoste() {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, poste, nominationYear }: { userId: string; poste: string | null; nominationYear?: number | null }) =>
+    mutationFn: ({ userId, poste, nominationYear, category, group }: {
+      userId: string;
+      poste: string | null;
+      nominationYear?: number | null;
+      category?: 'executive' | 'commission' | 'council' | null;
+      group?: string | null;
+    }) =>
       apiClient(`/api/v1/admin/users/${userId}/poste`, {
         method: 'PATCH',
-        body: JSON.stringify({ poste, nominationYear }),
+        body: JSON.stringify({ poste, nominationYear, category, group }),
         token: token ?? '',
       }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-admins'] });
       qc.invalidateQueries({ queryKey: ['public-bureau'] });
+      qc.invalidateQueries({ queryKey: ['member-bureau'] });
       toast.success((res as any).message ?? 'Poste mis à jour');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -208,6 +218,7 @@ export function useUploadBureauPhoto() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-admins'] });
       qc.invalidateQueries({ queryKey: ['public-bureau'] });
+      qc.invalidateQueries({ queryKey: ['member-bureau'] });
       toast.success('Photo du bureau mise à jour');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -230,6 +241,16 @@ export function usePublicBureau() {
       }
     },
     retry: false,
+    staleTime: 60_000,
+  });
+}
+
+export function useMemberBureau() {
+  const token = useAuthStore(s => s.accessToken);
+  return useQuery({
+    queryKey: ['member-bureau'],
+    queryFn: () => apiClient<BureauMember[]>('/api/v1/member/bureau', { token: token ?? '' }),
+    enabled: !!token,
     staleTime: 60_000,
   });
 }

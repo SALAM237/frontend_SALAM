@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { PageHero } from '@/components/public/PageHero';
 import { usePublicBureau, type BureauMember } from '@/lib/api/roles';
+import { assetUrl } from '@/lib/assets';
 
 const PLACEHOLDER_PHOTO = '/images/gallery/image_parallax_SALAM.png';
 const PRESIDENT_PHOTO = '/images/bureau/aoua_presidente_salam_2_bn.jpg';
@@ -61,7 +62,7 @@ function formatBureauTitle(member: BureauMember) {
 function MemberCard({ member }: { member: BureauMember }) {
   const isPresident = normalizePoste(member.bureauPoste).includes('president');
   const title = formatBureauTitle(member);
-  const photo = member.image ?? member.bureauPhoto ?? (isPresident ? PRESIDENT_PHOTO : PLACEHOLDER_PHOTO);
+  const photo = assetUrl(member.image ?? member.bureauPhoto) || (isPresident ? PRESIDENT_PHOTO : PLACEHOLDER_PHOTO);
   const name = `${member.firstName} ${member.lastName.toUpperCase()}`;
   const year = member.nominationYear ?? member.bureauNominationYear ?? getYear(member.createdAt);
 

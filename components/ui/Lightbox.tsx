@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { assetUrl } from '@/lib/assets';
 
 export interface LightboxImage { url: string; alt?: string }
 
@@ -62,7 +63,7 @@ export function Lightbox({ images, current, onClose, onPrev, onNext }: LightboxP
 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={img.url}
+        src={assetUrl(img.url)}
         alt={img.alt ?? ''}
         className="max-h-[88vh] max-w-[88vw] rounded-xl object-contain shadow-2xl"
         onClick={e => e.stopPropagation()}

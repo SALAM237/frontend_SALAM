@@ -10,6 +10,8 @@ export interface AdminUser {
   gender?: 'homme' | 'femme';
   email: string;
   memberStatus: string;
+  bureauCategory?: 'executive' | 'commission' | 'council' | null;
+  bureauGroup?: string | null;
   bureauPoste?: string | null;
   bureauNominationYear?: number | null;
   bureauPhoto?: string | null;

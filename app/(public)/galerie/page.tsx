@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 import { usePublicAlbums, type AlbumDoc } from '@/lib/api/gallery';
 import { Lightbox, useLightbox } from '@/components/ui/Lightbox';
+import { assetUrl } from '@/lib/assets';
 
 const COVERS = [
   'from-emerald-400 to-teal-600', 'from-blue-400 to-indigo-600',
@@ -46,7 +47,7 @@ function AlbumModal({ album, onClose, coverIndex }: { album: AlbumDoc; onClose: 
                   className="group aspect-square overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.url} alt={img.alt ?? ''} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                  <img src={assetUrl(img.url)} alt={img.alt ?? ''} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                 </button>
               ))}
             </div>
@@ -128,7 +129,7 @@ export default function GaleriePage() {
                     <div className={`relative h-44 bg-gradient-to-br ${COVERS[i % COVERS.length]} overflow-hidden`}>
                       {cover && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={cover.url} alt={cover.alt ?? ''} className="h-full w-full object-cover" />
+                        <img src={assetUrl(cover.url)} alt={cover.alt ?? ''} className="h-full w-full object-cover" />
                       )}
                     </div>
                     <div className="p-4">

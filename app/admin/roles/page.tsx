@@ -21,6 +21,7 @@ import { ImagePlus, Camera } from 'lucide-react';
 import { useAdminUsers, usePromoteAdmin, useRevokeAdmin, type AdminUser } from '@/lib/api/admins';
 import { useAdminMembers, useSuspendMember } from '@/lib/api/members';
 import { toast } from 'sonner';
+import { assetUrl } from '@/lib/assets';
 
 /* ─── Risk badge ──────────────────────────────────────────── */
 const RISK_STYLE: Record<string, string> = {
@@ -33,12 +34,47 @@ const RISK_LABEL: Record<string, string> = {
   low: 'Faible', medium: 'Moyen', high: 'Élevé', critical: 'Critique',
 };
 
-const BUREAU_POSTES = [
-  'Président', 'Vice-Président', 'Secrétaire Général', 'Secrétaire Adjoint',
-  'Trésorier', 'Trésorier Adjoint', 'Responsable Communication',
+type BureauCategory = 'executive' | 'commission' | 'council';
+
+const BUREAU_CATEGORIES: { id: BureauCategory; label: string; hint: string }[] = [
+  { id: 'executive', label: 'Bureau exécutif', hint: 'Postes élus de direction' },
+  { id: 'commission', label: 'Commissions', hint: 'Responsables de commissions' },
+  { id: 'council', label: 'Conseil des sages', hint: 'Membres sages' },
+];
+
+const EXECUTIVE_POSTES = [
+  'Président(e)', 'Vice-Président(e)', 'Secrétaire Général(e)', 'Secrétaire Adjoint(e)',
+  'Trésorier(e)', 'Trésorier(e) Adjoint(e)', 'Responsable Communication',
   'Responsable Partenariats', 'Responsable Événements',
   'Responsable Insertion', 'Responsable Solidarité',
 ];
+
+const COMMISSION_GROUPS = [
+  'Commission Culturelle', 'Commission Sport', 'Commission Communication', 'Commission IT',
+  'Commission Orientation', 'Commission Solidarité', 'Commission Insertion',
+];
+
+const COUNCIL_GROUPS = ['Conseil des sages'];
+
+function getCategoryOptions(category: BureauCategory) {
+  if (category === 'commission') return COMMISSION_GROUPS;
+  if (category === 'council') return COUNCIL_GROUPS;
+  return EXECUTIVE_POSTES;
+}
+
+function buildBureauAssignment(category: BureauCategory, selection: string) {
+  if (!selection) return { poste: null, category: null, group: null };
+  if (category === 'commission') return { poste: 'Responsable', category, group: selection };
+  if (category === 'council') return { poste: 'Membre sage', category, group: 'Conseil des sages' };
+  return { poste: selection, category, group: 'Bureau exécutif' };
+}
+
+function getInitialBureauSelection(admin: AdminUser) {
+  const category = (admin.bureauCategory ?? 'executive') as BureauCategory;
+  if (category === 'commission') return admin.bureauGroup ?? '';
+  if (category === 'council') return admin.bureauGroup ?? 'Conseil des sages';
+  return admin.bureauPoste ?? '';
+}
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -369,20 +405,23 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
 function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => void }) {
   const isSA = (admin.roles ?? []).some(r => r.slug === 'super_admin');
 
-  const [poste,      setPoste]      = useState(admin.bureauPoste ?? '');
+  const [bureauCategory, setBureauCategory] = useState<BureauCategory>((admin.bureauCategory ?? 'executive') as BureauCategory);
+  const [poste,      setPoste]      = useState(getInitialBureauSelection(admin));
   const [nominationYear, setNominationYear] = useState(String(admin.bureauNominationYear ?? CURRENT_YEAR));
   const [roleSlug,   setRoleSlug]   = useState<'admin' | 'super_admin'>(isSA ? 'super_admin' : 'admin');
   const [saving,     setSaving]     = useState(false);
   const [photoFile,  setPhotoFile]  = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>((admin as any).bureauPhoto ?? null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(assetUrl((admin as any).bureauPhoto) || null);
 
   const assign       = useAssignPoste();
   const promote      = usePromoteAdmin();
   const revoke       = useRevokeAdmin();
   const uploadPhoto  = useUploadBureauPhoto();
+  const categoryOptions = getCategoryOptions(bureauCategory);
+  const assignment = buildBureauAssignment(bureauCategory, poste);
 
   const roleChanged  = (roleSlug === 'super_admin') !== isSA;
-  const posteChanged = poste !== (admin.bureauPoste ?? '');
+  const posteChanged = bureauCategory !== (admin.bureauCategory ?? 'executive') || poste !== getInitialBureauSelection(admin);
   const nominationYearChanged = Number(nominationYear) !== (admin.bureauNominationYear ?? CURRENT_YEAR);
   const nominationYearValid = !poste || (/^\d{4}$/.test(nominationYear) && Number(nominationYear) >= 1900 && Number(nominationYear) <= 2100);
   const photoChanged = !!photoFile;
@@ -421,7 +460,7 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
       if (posteChanged || (poste && nominationYearChanged)) {
         await assign.mutateAsync({
           userId: admin._id,
-          poste: poste || null,
+          ...assignment,
           nominationYear: poste ? Number(nominationYear) : null,
         });
       }
@@ -477,16 +516,35 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
             )}
           </div>
 
+          {/* Catégorie bureau */}
+          <div className="space-y-2">
+            <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Catégorie</p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {BUREAU_CATEGORIES.map(category => (
+                <button
+                  key={category.id}
+                  onClick={() => { setBureauCategory(category.id); setPoste(''); }}
+                  className={`rounded-xl border p-3 text-left transition ${bureauCategory === category.id ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-neutral-200 text-neutral-600 hover:border-emerald-300'}`}
+                >
+                  <span className="block text-xs font-black">{category.label}</span>
+                  <span className="mt-1 block text-[10px] leading-tight text-neutral-400">{category.hint}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Poste du bureau */}
           <div className="space-y-1.5">
-            <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Poste du bureau</p>
+            <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+              {bureauCategory === 'commission' ? 'Commission' : bureauCategory === 'council' ? 'Groupe' : 'Poste du bureau'}
+            </p>
             <div className="space-y-1">
               <button onClick={() => setPoste('')}
                 className={`w-full rounded-xl border px-4 py-2.5 text-left text-sm transition ${poste === '' ? 'border-neutral-400 bg-neutral-50 font-black text-neutral-700' : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'}`}>
                 Aucun poste
               </button>
               <div className="max-h-36 overflow-y-auto space-y-1 pr-0.5">
-                {BUREAU_POSTES.map(p => (
+                {categoryOptions.map(p => (
                   <button key={p} onClick={() => setPoste(p)}
                     className={`w-full rounded-xl border px-4 py-2.5 text-left text-sm transition ${poste === p ? 'border-emerald-500 bg-emerald-50 font-black text-emerald-700' : 'border-neutral-200 text-neutral-700 hover:border-emerald-300'}`}>
                     {p}
@@ -566,6 +624,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
   const [selectedId,    setSelectedId]    = useState('');
   const [selectedName,  setSelectedName]  = useState('');
   const [roleSlug,      setRoleSlug]      = useState<'admin' | 'super_admin'>('admin');
+  const [bureauCategory, setBureauCategory] = useState<BureauCategory>('executive');
   const [posteSearch,   setPosteSearch]   = useState('');
   const [selectedPoste, setSelectedPoste] = useState('');
   const [nominationYear, setNominationYear] = useState(String(CURRENT_YEAR));
@@ -577,12 +636,14 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
   const assign      = useAssignPoste();
   const uploadPhoto = useUploadBureauPhoto();
   const members     = membersData?.data?.data ?? [];
+  const categoryOptions = getCategoryOptions(bureauCategory);
+  const assignment = buildBureauAssignment(bureauCategory, selectedPoste);
 
   const filteredPostes = useMemo(() =>
     posteSearch
-      ? BUREAU_POSTES.filter(p => p.toLowerCase().includes(posteSearch.toLowerCase()))
-      : BUREAU_POSTES,
-  [posteSearch]);
+      ? categoryOptions.filter(p => p.toLowerCase().includes(posteSearch.toLowerCase()))
+      : categoryOptions,
+  [categoryOptions, posteSearch]);
   const nominationYearValid = !selectedPoste || (/^\d{4}$/.test(nominationYear) && Number(nominationYear) >= 1900 && Number(nominationYear) <= 2100);
   const photoValid = !selectedPoste || !!photoFile;
 
@@ -611,7 +672,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
         await uploadPhoto.mutateAsync({ userId: selectedId, file: photoFile });
       }
       if (selectedPoste) {
-        await assign.mutateAsync({ userId: selectedId, poste: selectedPoste, nominationYear: Number(nominationYear) });
+        await assign.mutateAsync({ userId: selectedId, ...assignment, nominationYear: Number(nominationYear) });
       }
       setStep('success');
     } catch {
@@ -634,7 +695,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
               {roleSlug === 'super_admin' ? 'super administrateur' : 'administrateur'}.
             </p>
             {selectedPoste && (
-              <p className="mt-1 text-xs font-semibold text-emerald-700">Poste : {selectedPoste} depuis {nominationYear}</p>
+              <p className="mt-1 text-xs font-semibold text-emerald-700">{assignment.group ?? selectedPoste} depuis {nominationYear}</p>
             )}
             <p className="mt-1.5 text-xs font-semibold text-emerald-700">
               ✉ Un email de notification lui a été envoyé avec un lien de connexion.
@@ -733,9 +794,28 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
 
+              {/* Catégorie bureau */}
+              <div className="space-y-2">
+                <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Catégorie</p>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {BUREAU_CATEGORIES.map(category => (
+                    <button
+                      key={category.id}
+                      onClick={() => { setBureauCategory(category.id); handleClearPoste(); }}
+                      className={`rounded-xl border p-3 text-left transition ${bureauCategory === category.id ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-neutral-200 text-neutral-600 hover:border-emerald-300'}`}
+                    >
+                      <span className="block text-xs font-black">{category.label}</span>
+                      <span className="mt-1 block text-[10px] leading-tight text-neutral-400">{category.hint}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Poste (combobox recherchable) */}
               <div className="space-y-1.5">
-                <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Poste du bureau <span className="font-normal normal-case tracking-normal text-neutral-400">(optionnel)</span></p>
+                <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+                  {bureauCategory === 'commission' ? 'Commission' : bureauCategory === 'council' ? 'Groupe' : 'Poste du bureau'} <span className="font-normal normal-case tracking-normal text-neutral-400">(optionnel)</span>
+                </p>
                 <div className="relative">
                   <Search size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
                   <input

@@ -99,10 +99,17 @@ export function useAddImagesToAlbum(albumId: string) {
       const form = new FormData();
       Array.from(files).forEach(f => form.append('images', f));
       return fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}/api/v1/admin/gallery/${albumId}/images`,
+        `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '')}/api/v1/admin/gallery/${albumId}/images`,
         { method: 'POST', headers: { Authorization: `Bearer ${token}` }, credentials: 'include', body: form },
       ).then(async r => {
-        const j = await r.json();
+        const text = await r.text();
+        const j = text ? (() => {
+          try {
+            return JSON.parse(text);
+          } catch {
+            return { message: r.ok ? undefined : 'Route d\'upload galerie introuvable sur le backend' };
+          }
+        })() : {};
         if (!r.ok) throw new Error(j?.message ?? 'Erreur upload');
         return j;
       });

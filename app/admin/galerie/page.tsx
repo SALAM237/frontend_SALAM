@@ -11,6 +11,7 @@ import {
   type AlbumDoc,
 } from '@/lib/api/gallery';
 import { Lightbox, useLightbox } from '@/components/ui/Lightbox';
+import { assetUrl } from '@/lib/assets';
 
 const COVERS = [
   'from-emerald-400 to-teal-600', 'from-blue-400 to-indigo-600',
@@ -141,7 +142,7 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
               {images.map((img, i) => (
                 <div key={i} className="group relative aspect-square overflow-hidden rounded-xl border border-neutral-100 shadow-sm">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.url} alt={img.alt ?? ''}
+                  <img src={assetUrl(img.url)} alt={img.alt ?? ''}
                     className="h-full w-full cursor-pointer object-cover transition-transform duration-300 group-hover:scale-105"
                     onClick={() => lb.open(i)} />
                   <button
@@ -231,7 +232,7 @@ export default function AdminGaleriePage() {
               >
                 {a.images[0] && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={a.images[0].url} alt="" className="h-full w-full object-cover" />
+                  <img src={assetUrl(a.images[0].url)} alt="" className="h-full w-full object-cover" />
                 )}
                 {a.visibility === 'members' && (
                   <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 text-[9px] font-black text-white">
