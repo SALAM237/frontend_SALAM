@@ -11,6 +11,8 @@ export interface AdminUser {
   email: string;
   memberStatus: string;
   bureauPoste?: string | null;
+  bureauNominationYear?: number | null;
+  bureauPhoto?: string | null;
   roles: { name: string; slug: string; permissions: string[] }[];
   customPermissions: string[];
   deniedPermissions: string[];

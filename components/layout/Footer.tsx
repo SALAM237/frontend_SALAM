@@ -8,7 +8,7 @@ const NAV_COLS = [
     links: [
       ['À propos',    '/a-propos'],
       ['Nos valeurs', '/a-propos#valeurs'],
-      ["L'équipe",    '/a-propos#equipe'],
+      ["L'équipe",    '/bureau-executif'],
       ['Contact',     '/contact'],
     ],
   },

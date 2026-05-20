@@ -36,6 +36,8 @@ const nextConfig: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'], // AVIF en priorité (meilleure compression)
     remotePatterns: [
+      // Backend local (dev)
+      { protocol: 'http', hostname: 'localhost' },
       // Backend Railway (prod + dev)
       { protocol: 'https', hostname: 'backendsalam-production.up.railway.app' },
       { protocol: 'https', hostname: 'backend.salam-cameroun.com' },

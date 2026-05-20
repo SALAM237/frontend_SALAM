@@ -3,6 +3,22 @@ import { toast } from 'sonner';
 import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
 
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+
+export interface BureauMember {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  gender?: 'homme' | 'femme';
+  bureauPoste: string;
+  bureauNominationYear?: number | null;
+  bureauPhoto?: string | null;
+  image?: string | null;
+  title?: string;
+  nominationYear?: number | null;
+  createdAt: string;
+}
+
 export interface RoleDoc {
   _id: string;
   name: string;
@@ -151,17 +167,64 @@ export function useAssignPoste() {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, poste }: { userId: string; poste: string | null }) =>
+    mutationFn: ({ userId, poste, nominationYear }: { userId: string; poste: string | null; nominationYear?: number | null }) =>
       apiClient(`/api/v1/admin/users/${userId}/poste`, {
         method: 'PATCH',
-        body: JSON.stringify({ poste }),
+        body: JSON.stringify({ poste, nominationYear }),
         token: token ?? '',
       }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-admins'] });
+      qc.invalidateQueries({ queryKey: ['public-bureau'] });
       toast.success((res as any).message ?? 'Poste mis à jour');
     },
     onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useUploadBureauPhoto() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc    = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, file }: { userId: string; file: File }) => {
+      const fd = new FormData();
+      fd.append('photo', file);
+      const res = await fetch(`${API}/api/v1/admin/users/${userId}/bureau-photo`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        body: fd,
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.message ?? 'Erreur upload');
+      return json;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-admins'] });
+      qc.invalidateQueries({ queryKey: ['public-bureau'] });
+      toast.success('Photo du bureau mise à jour');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function usePublicBureau() {
+  return useQuery({
+    queryKey: ['public-bureau'],
+    queryFn: async (): Promise<{ data: BureauMember[] }> => {
+      try {
+        const res = await fetch(`${API}/api/v1/public/bureau`, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (!res.ok) return { data: [] };
+        const json = await res.json();
+        return { data: json?.data ?? [] };
+      } catch {
+        return { data: [] };
+      }
+    },
+    retry: false,
+    staleTime: 60_000,
   });
 }
 

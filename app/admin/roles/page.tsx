@@ -14,9 +14,10 @@ import { GenderIcon } from '@/components/ui/GenderIcon';
 import {
   useRoles, useCreateRole, useUpdateRole, useDeleteRole,
   usePermissionsList,
-  useAssignPoste, useUpdateCustomPerms,
+  useAssignPoste, useUpdateCustomPerms, useUploadBureauPhoto,
   type RoleDoc, type PermissionDoc,
 } from '@/lib/api/roles';
+import { ImagePlus, Camera } from 'lucide-react';
 import { useAdminUsers, usePromoteAdmin, useRevokeAdmin, type AdminUser } from '@/lib/api/admins';
 import { useAdminMembers, useSuspendMember } from '@/lib/api/members';
 import { toast } from 'sonner';
@@ -38,6 +39,8 @@ const BUREAU_POSTES = [
   'Responsable Partenariats', 'Responsable Événements',
   'Responsable Insertion', 'Responsable Solidarité',
 ];
+
+const CURRENT_YEAR = new Date().getFullYear();
 
 /* ─── Module labels ───────────────────────────────────────── */
 const MODULE_LABELS: Record<string, string> = {
@@ -362,35 +365,59 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
   );
 }
 
-/* ─── Edit admin modal (poste + type de rôle) ─────────────── */
+/* ─── Edit admin modal (poste + type de rôle + photo) ─────── */
 function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => void }) {
   const isSA = (admin.roles ?? []).some(r => r.slug === 'super_admin');
 
-  const [poste,    setPoste]    = useState(admin.bureauPoste ?? '');
-  const [roleSlug, setRoleSlug] = useState<'admin' | 'super_admin'>(isSA ? 'super_admin' : 'admin');
-  const [saving,   setSaving]   = useState(false);
+  const [poste,      setPoste]      = useState(admin.bureauPoste ?? '');
+  const [nominationYear, setNominationYear] = useState(String(admin.bureauNominationYear ?? CURRENT_YEAR));
+  const [roleSlug,   setRoleSlug]   = useState<'admin' | 'super_admin'>(isSA ? 'super_admin' : 'admin');
+  const [saving,     setSaving]     = useState(false);
+  const [photoFile,  setPhotoFile]  = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>((admin as any).bureauPhoto ?? null);
 
-  const assign  = useAssignPoste();
-  const promote = usePromoteAdmin();
-  const revoke  = useRevokeAdmin();
+  const assign       = useAssignPoste();
+  const promote      = usePromoteAdmin();
+  const revoke       = useRevokeAdmin();
+  const uploadPhoto  = useUploadBureauPhoto();
 
   const roleChanged  = (roleSlug === 'super_admin') !== isSA;
   const posteChanged = poste !== (admin.bureauPoste ?? '');
+  const nominationYearChanged = Number(nominationYear) !== (admin.bureauNominationYear ?? CURRENT_YEAR);
+  const nominationYearValid = !poste || (/^\d{4}$/.test(nominationYear) && Number(nominationYear) >= 1900 && Number(nominationYear) <= 2100);
+  const photoChanged = !!photoFile;
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setPhotoFile(f);
+    setPhotoPreview(URL.createObjectURL(f));
+  };
 
   const handleSave = async () => {
+    if (!nominationYearValid) {
+      toast.error('Année de nomination requise');
+      return;
+    }
     setSaving(true);
     try {
       if (roleChanged) {
         if (roleSlug === 'super_admin') {
           await promote.mutateAsync({ userId: admin._id, roleSlug: 'super_admin' });
         } else {
-          // Rétrograder : retirer tous les rôles admin, puis ré-attribuer admin
           await revoke.mutateAsync(admin._id);
           await promote.mutateAsync({ userId: admin._id, roleSlug: 'admin' });
         }
       }
-      if (posteChanged) {
-        await assign.mutateAsync({ userId: admin._id, poste: poste || null });
+      if (posteChanged || (poste && nominationYearChanged)) {
+        await assign.mutateAsync({
+          userId: admin._id,
+          poste: poste || null,
+          nominationYear: poste ? Number(nominationYear) : null,
+        });
+      }
+      if (photoChanged && photoFile) {
+        await uploadPhoto.mutateAsync({ userId: admin._id, file: photoFile });
       }
       onClose();
     } finally {
@@ -411,7 +438,7 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
           <button onClick={onClose}><X size={16} className="text-neutral-400" /></button>
         </div>
 
-        <div className="px-6 py-5 space-y-5">
+        <div className="max-h-[70vh] overflow-y-auto px-6 py-5 space-y-5">
 
           {/* Type de rôle */}
           <div className="space-y-2">
@@ -452,7 +479,7 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
                 className={`w-full rounded-xl border px-4 py-2.5 text-left text-sm transition ${poste === '' ? 'border-neutral-400 bg-neutral-50 font-black text-neutral-700' : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'}`}>
                 Aucun poste
               </button>
-              <div className="max-h-44 overflow-y-auto space-y-1 pr-0.5">
+              <div className="max-h-36 overflow-y-auto space-y-1 pr-0.5">
                 {BUREAU_POSTES.map(p => (
                   <button key={p} onClick={() => setPoste(p)}
                     className={`w-full rounded-xl border px-4 py-2.5 text-left text-sm transition ${poste === p ? 'border-emerald-500 bg-emerald-50 font-black text-emerald-700' : 'border-neutral-200 text-neutral-700 hover:border-emerald-300'}`}>
@@ -462,13 +489,57 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
               </div>
             </div>
           </div>
+
+          {/* Photo du bureau — visible seulement si un poste est sélectionné */}
+          {poste && (
+            <div className="space-y-4">
+              <div>
+                <p className="mb-1.5 text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Année de nomination</p>
+                <input
+                  value={nominationYear}
+                  onChange={e => setNominationYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  inputMode="numeric"
+                  required
+                  placeholder={String(CURRENT_YEAR)}
+                  className={`h-10 w-full rounded-xl border bg-white px-4 text-sm font-black text-neutral-800 focus:outline-none ${nominationYearValid ? 'border-neutral-200 focus:border-emerald-400' : 'border-red-300 focus:border-red-400'}`}
+                />
+                {!nominationYearValid && (
+                  <p className="mt-1 text-[11px] font-semibold text-red-500">Année obligatoire entre 1900 et 2100.</p>
+                )}
+              </div>
+              <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+                Photo — carte équipe <span className="font-normal normal-case tracking-normal text-neutral-400">(jpg, png, webp)</span>
+              </p>
+              <label className="group relative flex cursor-pointer flex-col items-center gap-3 overflow-hidden rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-4 transition hover:border-emerald-400 hover:bg-emerald-50">
+                {photoPreview ? (
+                  <>
+                    <img src={photoPreview} alt="Aperçu" className="h-28 w-28 rounded-xl object-cover shadow-sm" />
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                      <Camera size={12} /> Changer la photo
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-neutral-200 group-hover:bg-emerald-100 transition">
+                      <ImagePlus size={20} className="text-neutral-400 group-hover:text-emerald-600" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-black text-neutral-600 group-hover:text-emerald-700">Ajouter une photo</p>
+                      <p className="text-[10px] text-neutral-400">Cette photo s'affichera sur la page du bureau</p>
+                    </div>
+                  </>
+                )}
+                <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handlePhotoChange} />
+              </label>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 border-t border-neutral-100 px-6 py-4">
           <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600">Annuler</button>
           <button
             onClick={handleSave}
-            disabled={saving || (!roleChanged && !posteChanged)}
+            disabled={saving || !nominationYearValid || (!roleChanged && !posteChanged && !(poste && nominationYearChanged) && !photoChanged)}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-60">
             {saving && <Loader2 size={13} className="animate-spin" />}
             Enregistrer
@@ -488,34 +559,50 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
   const [roleSlug,      setRoleSlug]      = useState<'admin' | 'super_admin'>('admin');
   const [posteSearch,   setPosteSearch]   = useState('');
   const [selectedPoste, setSelectedPoste] = useState('');
+  const [nominationYear, setNominationYear] = useState(String(CURRENT_YEAR));
+  const [photoFile,     setPhotoFile]     = useState<File | null>(null);
+  const [photoPreview,  setPhotoPreview]  = useState<string | null>(null);
 
   const { data: membersData } = useAdminMembers({ search, limit: 20 });
-  const promote = usePromoteAdmin();
-  const assign  = useAssignPoste();
-  const members = membersData?.data?.data ?? [];
+  const promote     = usePromoteAdmin();
+  const assign      = useAssignPoste();
+  const uploadPhoto = useUploadBureauPhoto();
+  const members     = membersData?.data?.data ?? [];
 
   const filteredPostes = useMemo(() =>
     posteSearch
       ? BUREAU_POSTES.filter(p => p.toLowerCase().includes(posteSearch.toLowerCase()))
       : BUREAU_POSTES,
   [posteSearch]);
+  const nominationYearValid = !selectedPoste || (/^\d{4}$/.test(nominationYear) && Number(nominationYear) >= 1900 && Number(nominationYear) <= 2100);
 
   const handleSelectPoste = (p: string) => { setSelectedPoste(p); setPosteSearch(p); };
-  const handleClearPoste  = () => { setSelectedPoste(''); setPosteSearch(''); };
+  const handleClearPoste  = () => { setSelectedPoste(''); setPosteSearch(''); setNominationYear(String(CURRENT_YEAR)); setPhotoFile(null); setPhotoPreview(null); };
 
-  const handlePromote = () => {
-    promote.mutate({ userId: selectedId, roleSlug }, {
-      onSuccess: () => {
-        if (selectedPoste) {
-          assign.mutate(
-            { userId: selectedId, poste: selectedPoste },
-            { onSuccess: () => setStep('success'), onError: () => setStep('success') },
-          );
-        } else {
-          setStep('success');
-        }
-      },
-    });
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setPhotoFile(f);
+    setPhotoPreview(URL.createObjectURL(f));
+  };
+
+  const handlePromote = async () => {
+    if (!nominationYearValid) {
+      toast.error('Année de nomination requise');
+      return;
+    }
+    try {
+      await promote.mutateAsync({ userId: selectedId, roleSlug });
+      if (selectedPoste) {
+        await assign.mutateAsync({ userId: selectedId, poste: selectedPoste, nominationYear: Number(nominationYear) });
+      }
+      if (selectedPoste && photoFile) {
+        await uploadPhoto.mutateAsync({ userId: selectedId, file: photoFile });
+      }
+      setStep('success');
+    } catch {
+      // errors handled by hooks via toast
+    }
   };
 
   /* ── Succès ── */
@@ -533,7 +620,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
               {roleSlug === 'super_admin' ? 'super administrateur' : 'administrateur'}.
             </p>
             {selectedPoste && (
-              <p className="mt-1 text-xs font-semibold text-emerald-700">Poste : {selectedPoste}</p>
+              <p className="mt-1 text-xs font-semibold text-emerald-700">Poste : {selectedPoste} depuis {nominationYear}</p>
             )}
             <p className="mt-1.5 text-xs font-semibold text-emerald-700">
               ✉ Un email de notification lui a été envoyé avec un lien de connexion.
@@ -605,7 +692,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
         {/* ── Étape 2 : rôle + poste ── */}
         {step === 'config' && (
           <>
-            <div className="px-6 py-5 space-y-5">
+            <div className="max-h-[65vh] overflow-y-auto px-6 py-5 space-y-5">
 
               {/* Sélection du rôle */}
               <div className="space-y-2">
@@ -649,7 +736,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
                     </button>
                   )}
                 </div>
-                <div className="max-h-36 overflow-y-auto rounded-xl border border-neutral-100 divide-y divide-neutral-50">
+                <div className="max-h-32 overflow-y-auto rounded-xl border border-neutral-100 divide-y divide-neutral-50">
                   <button onClick={handleClearPoste}
                     className={`w-full px-3 py-2 text-left text-xs transition ${!selectedPoste ? 'bg-neutral-50 font-black text-neutral-500' : 'text-neutral-400 hover:bg-neutral-50'}`}>
                     Aucun poste
@@ -665,6 +752,50 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
                   )}
                 </div>
               </div>
+
+              {/* Photo bureau — visible si poste sélectionné */}
+              {selectedPoste && (
+                <div className="space-y-4">
+                  <div>
+                    <p className="mb-1.5 text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Année de nomination</p>
+                    <input
+                      value={nominationYear}
+                      onChange={e => setNominationYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      inputMode="numeric"
+                      required
+                      placeholder={String(CURRENT_YEAR)}
+                      className={`h-10 w-full rounded-xl border bg-white px-4 text-sm font-black text-neutral-800 focus:outline-none ${nominationYearValid ? 'border-neutral-200 focus:border-emerald-400' : 'border-red-300 focus:border-red-400'}`}
+                    />
+                    {!nominationYearValid && (
+                      <p className="mt-1 text-[11px] font-semibold text-red-500">Année obligatoire entre 1900 et 2100.</p>
+                    )}
+                  </div>
+                  <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+                    Photo — carte équipe <span className="font-normal normal-case tracking-normal text-neutral-400">(jpg, png, webp)</span>
+                  </p>
+                  <label className="group relative flex cursor-pointer flex-col items-center gap-3 overflow-hidden rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-4 transition hover:border-emerald-400 hover:bg-emerald-50">
+                    {photoPreview ? (
+                      <>
+                        <img src={photoPreview} alt="Aperçu" className="h-24 w-24 rounded-xl object-cover shadow-sm" />
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                          <Camera size={12} /> Changer la photo
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-neutral-200 group-hover:bg-emerald-100 transition">
+                          <ImagePlus size={20} className="text-neutral-400 group-hover:text-emerald-600" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-black text-neutral-600 group-hover:text-emerald-700">Ajouter une photo</p>
+                          <p className="text-[10px] text-neutral-400">S'affichera sur la carte bureau</p>
+                        </div>
+                      </>
+                    )}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handlePhotoChange} />
+                  </label>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 border-t border-neutral-100 px-6 py-4">
@@ -673,10 +804,10 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
                 Retour
               </button>
               <button
-                disabled={promote.isPending || assign.isPending}
+                disabled={promote.isPending || assign.isPending || uploadPhoto.isPending || !nominationYearValid}
                 onClick={handlePromote}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white disabled:opacity-50">
-                {(promote.isPending || assign.isPending) && <Loader2 size={13} className="animate-spin" />}
+                {(promote.isPending || assign.isPending || uploadPhoto.isPending) && <Loader2 size={13} className="animate-spin" />}
                 Promouvoir
               </button>
             </div>
