@@ -156,7 +156,7 @@ export default function DemoAdminMembersPage() {
                     <p className="font-semibold text-neutral-900">{member.firstName} {member.lastName}</p>
                     <p className="text-xs text-neutral-400">{member.memberId} - {member.email}</p>
                   </div>
-                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${s.cls}`}>{s.label}</span>
+                  <span className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[10px] font-black leading-none ${s.cls}`}>{s.label}</span>
                 </Link>
               );
             })}
