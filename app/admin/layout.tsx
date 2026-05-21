@@ -39,6 +39,44 @@ function cleanGenericBureauTitle(value?: string | null) {
     .trim();
 }
 
+function normalizeBureauPoste(value?: string | null) {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\(e\)/g, ' e')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+const FEMININE_BUREAU_POSTES: Record<string, string> = {
+  president: 'Présidente',
+  'president e': 'Présidente',
+  'vice president': 'Vice-Présidente',
+  'vice president e': 'Vice-Présidente',
+  'secretaire general': 'Secrétaire Générale',
+  'secretaire general e': 'Secrétaire Générale',
+  'secretaire adjoint': 'Secrétaire Adjointe',
+  'secretaire adjoint e': 'Secrétaire Adjointe',
+  tresorier: 'Trésorière',
+  'tresorier e': 'Trésorière',
+  'tresorier adjoint': 'Trésorière Adjointe',
+  'tresorier e adjoint e': 'Trésorière Adjointe',
+  responsable: 'Responsable',
+  'commissaire aux comptes': 'Commissaire aux comptes',
+  'membre sage': 'Membre sage',
+  conseiller: 'Conseillère',
+  'conseiller e': 'Conseillère',
+  'sage conseiller': 'Sage conseillère',
+  'sage conseiller e': 'Sage conseillère',
+};
+
+function formatBureauPosteForGender(poste?: string | null, gender?: string | null) {
+  const cleanPoste = cleanGenericBureauTitle(poste);
+  if (gender?.toLowerCase() !== 'femme') return cleanPoste;
+  return FEMININE_BUREAU_POSTES[normalizeBureauPoste(cleanPoste)] ?? cleanPoste;
+}
+
 function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauPoste, onLogout, nav }: {
   open: boolean; onClose: () => void;
   initials: string; displayName: string; adminRole: string; bureauPoste?: string | null;
@@ -227,7 +265,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const initials    = user ? formatInitials(user.firstName, user.lastName, 'A') : 'A';
   const displayName = user ? formatFullName(user.firstName, user.lastName) : 'Administrateur';
   const adminRole   = user?.roles.find(r => ['admin', 'super_admin'].includes(r.slug))?.name ?? 'Admin';
-  const bureauPoste = cleanGenericBureauTitle(user?.bureauPoste) || null;
+  const bureauPoste = formatBureauPosteForGender(user?.bureauPoste, user?.gender) || null;
 
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">

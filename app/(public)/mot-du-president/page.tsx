@@ -6,8 +6,8 @@ import { Quote } from 'lucide-react';
 import { PageHero } from '@/components/public/PageHero';
 
 export const metadata: Metadata = {
-  title: 'Mot du président',
-  description: "Message du président de l'association SALAM Cameroun.",
+  title: 'Mot de la présidente',
+  description: "Message de la présidente de l'association SALAM Cameroun.",
 };
 
 export default function MotDuPresidentPage() {
@@ -15,11 +15,11 @@ export default function MotDuPresidentPage() {
     <main>
       <PageHero
         badge="Leadership SALAM"
-        title="du président"
+        title="de la présidente"
         accentWord="Mot"
         accentPosition="start"
-        subtitle="Le message du président de l'association SALAM Cameroun — vision, engagements et perspectives."
-        breadcrumbs={[{ label: 'À propos', href: '/a-propos' }, { label: 'Mot du président' }]}
+        subtitle="Le message de la présidente de l'association SALAM Cameroun — vision, engagements et perspectives."
+        breadcrumbs={[{ label: 'À propos', href: '/a-propos' }, { label: 'Mot de la présidente' }]}
       />
 
       <section className="bg-[#fffdf8] px-5 py-[clamp(4rem,8vw,7rem)] md:px-8 lg:px-12">
@@ -34,7 +34,7 @@ export default function MotDuPresidentPage() {
                 </div>
               </div>
               <div className="text-center lg:text-left">
-                <p className="font-black text-neutral-900">Le Président</p>
+                <p className="font-black text-neutral-900">La Présidente</p>
                 <p className="text-sm text-emerald-700">Association SALAM Cameroun</p>
               </div>
               <div className="h-1 w-12 rounded-full bg-gradient-to-r from-emerald-600 via-red-500 to-yellow-500" />
@@ -48,7 +48,7 @@ export default function MotDuPresidentPage() {
                   Chers amis, chers membres, chers sympathisants,
                 </p>
                 <p className="text-[clamp(0.9rem,1.2vw,1rem)] leading-[1.9] text-neutral-600">
-                  C'est avec une immense fierté et une profonde gratitude que je prends la parole en tant que président de l'association SALAM Cameroun. Notre association est bien plus qu'un simple réseau : c'est une famille, un foyer pour chaque étudiant camerounais qui choisit de construire son avenir au Maroc ou en France.
+                  C'est avec une immense fierté et une profonde gratitude que je prends la parole en tant que présidente de l'association SALAM Cameroun. Notre association est bien plus qu'un simple réseau : c'est une famille, un foyer pour chaque étudiant camerounais qui choisit de construire son avenir au Maroc ou en France.
                 </p>
                 <p className="text-[clamp(0.9rem,1.2vw,1rem)] leading-[1.9] text-neutral-600">
                   Depuis notre création, nous avons accompagné des centaines d'étudiants dans leur parcours : de la préparation de leurs dossiers d'admission jusqu'à leur insertion socioprofessionnelle au Cameroun. Chaque réussite est la nôtre. Chaque étudiant qui trouve sa voie est la preuve que notre mission a du sens.
@@ -63,7 +63,7 @@ export default function MotDuPresidentPage() {
                   Je compte sur chacun d'entre vous. SALAM vous appartient.
                 </p>
                 <p className="mt-2 font-black text-neutral-900">
-                  Le Président — Association SALAM Cameroun
+                  La Présidente — Association SALAM Cameroun
                 </p>
               </div>
             </div>

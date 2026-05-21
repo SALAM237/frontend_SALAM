@@ -233,7 +233,7 @@ export default function AProposPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { href: '/mot-du-president',  label: 'Mot du président',  desc: "Le message et la vision du président de l'association", color: 'bg-red-600'     },
+              { href: '/mot-du-president',  label: 'Mot de la présidente',  desc: "Le message et la vision de la présidente de l'association", color: 'bg-red-600'     },
               { href: '/bureau-executif',   label: 'Bureau exécutif',   desc: "Les membres élus qui dirigent et coordonnent l'association", color: 'bg-emerald-600' },
               { href: '/conseil-des-sages', label: 'Conseil des sages', desc: "Les personnalités expérimentées qui guident et conseillent SALAM", color: 'bg-neutral-800' },
             ].map(({ href, label, desc, color }) => (

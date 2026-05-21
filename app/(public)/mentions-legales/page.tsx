@@ -42,7 +42,7 @@ export default function MentionsLegalesPage() {
             </Section>
 
             <Section title="2. Directeur de la publication">
-              <p>Le directeur de la publication est le Président en exercice de l'association SALAM Cameroun.</p>
+              <p>La directrice de la publication est la Présidente en exercice de l'association SALAM Cameroun.</p>
             </Section>
 
             <Section title="3. Hébergement">

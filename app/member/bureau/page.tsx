@@ -21,6 +21,7 @@ const FEMININE_BUREAU_POSTES: Record<string, string> = {
   'tresorier adjoint': 'Trésorière Adjointe',
   'tresorier e adjoint e': 'Trésorière Adjointe',
   responsable: 'Responsable',
+  'commissaire aux comptes': 'Commissaire aux comptes',
   'membre sage': 'Membre sage',
   conseiller: 'Conseillère',
   'conseiller e': 'Conseillère',
@@ -29,20 +30,23 @@ const FEMININE_BUREAU_POSTES: Record<string, string> = {
 };
 
 const COMMISSION_DESCRIPTIONS: Record<string, string> = {
-  'Commission Culturelle': 'Organisation des événements culturels, valorisation des cultures camerounaise et marocaine.',
-  'Commission Sport': 'Tournois, activités sportives et promotion du sport comme vecteur de cohésion sociale.',
   'Commission Communication': "Gestion des réseaux sociaux, communication externe et image de l'association.",
   'Commission IT': 'Développement numérique, outils digitaux et transformation numérique de SALAM.',
+  'Commission Culturelle': 'Organisation des événements culturels, valorisation des cultures camerounaise et marocaine.',
+  'Commission Sport': 'Tournois, activités sportives et promotion du sport comme vecteur de cohésion sociale.',
+  'Commission Emploi': "Réseau emploi, accompagnement professionnel et opportunités pour les membres.",
   'Commission Orientation': "Accompagnement des bacheliers, ateliers d'orientation et préparation aux études supérieures.",
-  'Commission Solidarité': 'Actions humanitaires, soutien aux personnes vulnérables et collectes de fonds.',
   'Commission Insertion': 'Réseau professionnel, forums emploi, accompagnement carrière et entrepreneuriat.',
+  'Commission Solidarité': 'Actions humanitaires, soutien aux personnes vulnérables et collectes de fonds.',
 };
 
 const EXECUTIVE_ORDER = [
   'Président', 'Vice-Président', 'Secrétaire Général', 'Secrétaire Adjoint',
-  'Trésorier', 'Trésorier Adjoint', 'Responsable Communication',
-  'Responsable Partenariats', 'Responsable Événements',
-  'Responsable Insertion', 'Responsable Solidarité',
+  'Trésorier', 'Commissaire aux comptes', 'Trésorier Adjoint',
+  'Responsable Communication', 'Responsable Informatique IT',
+  'Responsable Culture', 'Responsable Sport', 'Responsable Partenariats',
+  'Responsable Emploi, Insertion et Orientation (EIO)',
+  'Responsable Solidarité', 'Conseiller',
 ];
 
 const COMMISSION_ORDER = Object.keys(COMMISSION_DESCRIPTIONS);
@@ -65,8 +69,19 @@ const SLOT_ALIASES: Record<string, string> = {
   'secretaire adjointe': 'secretaire adjoint',
   tresoriere: 'tresorier',
   'tresoriere adjointe': 'tresorier adjoint',
+  'commissaire au compte': 'commissaire aux comptes',
+  'commissaire aux compte': 'commissaire aux comptes',
   conseillere: 'conseiller',
   'sage conseillere': 'sage conseiller',
+  'responsable informatique': 'responsable informatique it',
+  'responsable it': 'responsable informatique it',
+  'responsable culturelle': 'responsable culture',
+  'responsable sports': 'responsable sport',
+  'responsable emploi insertion orientation': 'responsable emploi insertion et orientation eio',
+  'responsable emploi': 'responsable emploi insertion et orientation eio',
+  'responsable insertion': 'responsable emploi insertion et orientation eio',
+  'responsable orientation': 'responsable emploi insertion et orientation eio',
+  'responsable eio': 'responsable emploi insertion et orientation eio',
 };
 
 function slotKey(value?: string | null) {
@@ -242,6 +257,18 @@ export default function MemberBureauPage() {
     ...COUNCIL_ORDER,
     ...council.map(councilGroupFor),
   ]);
+  const announcedExecutive = EXECUTIVE_ORDER
+    .map(poste => ({ poste, member: executive.find(item => matchesSlot(item, poste)) }))
+    .filter((item): item is { poste: string; member: BureauMember } => !!item.member);
+  const pendingExecutive = EXECUTIVE_ORDER.filter(
+    poste => !executive.some(item => matchesSlot(item, poste)),
+  );
+  const announcedCommissionGroups = commissionGroups.filter(group =>
+    commissions.some(item => slotKey(commissionGroupFor(item)) === slotKey(group)),
+  );
+  const pendingCommissionGroups = commissionGroups.filter(group =>
+    !commissions.some(item => slotKey(commissionGroupFor(item)) === slotKey(group)),
+  );
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
@@ -290,14 +317,14 @@ export default function MemberBureauPage() {
       {!isLoading && (
         <>
           <Section title="Bureau exécutif" eyebrow="Direction">
-            {EXECUTIVE_ORDER.map(poste => {
-              const member = executive.find(item => matchesSlot(item, poste));
-              return member
-                ? <TeamCard key={poste} member={member} badge="Bureau exécutif" />
-                : <EmptyCard key={poste} title={poste} badge="Bureau exécutif" />;
-            })}
+            {announcedExecutive.map(({ poste, member }) => (
+              <TeamCard key={poste} member={member} badge="Bureau exécutif" />
+            ))}
             {executiveExtras.map(member => (
               <TeamCard key={member._id} member={member} badge="Bureau exécutif" />
+            ))}
+            {pendingExecutive.map(poste => (
+              <EmptyCard key={poste} title={poste} badge="Bureau exécutif" />
             ))}
           </Section>
 
@@ -306,11 +333,13 @@ export default function MemberBureauPage() {
             eyebrow="Groupes de travail"
             description="Chaque commission est pilotée par un responsable chargé de coordonner les actions et les membres du groupe."
           >
-            {commissionGroups.map(group => {
+            {announcedCommissionGroups.map(group => {
               const groupMembers = commissions.filter(item => slotKey(commissionGroupFor(item)) === slotKey(group));
-              if (groupMembers.length === 0) return <EmptyCard key={group} title={group} badge={group} />;
               return <TeamCard key={group} member={groupMembers[0]} badge={group} />;
             })}
+            {pendingCommissionGroups.map(group => (
+              <EmptyCard key={group} title={group} badge={group} />
+            ))}
           </Section>
 
           <Section title="Conseil des sages" eyebrow="Conseil" description="Un espace de conseil et de transmission pour accompagner les grandes orientations de SALAM.">

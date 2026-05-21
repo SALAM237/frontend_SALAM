@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Palette, Dumbbell, Megaphone, Laptop, Users, BookOpen, Heart } from 'lucide-react';
+import { Briefcase, Palette, Dumbbell, Megaphone, Laptop, Users, BookOpen, Heart } from 'lucide-react';
 
 export const revalidate = 86400;
 import { PageHero } from '@/components/public/PageHero';
@@ -11,13 +11,14 @@ export const metadata: Metadata = {
 };
 
 const COMMISSIONS = [
-  { icon: Palette, title: 'Commission Culturelle', desc: 'Organisation des événements culturels, valorisation des cultures camerounaise et marocaine.', color: 'bg-purple-100 text-purple-700', border: 'border-purple-200' },
-  { icon: Dumbbell, title: 'Commission Sport', desc: 'Tournois, activités sportives et promotion du sport comme vecteur de cohésion sociale.', color: 'bg-blue-100 text-blue-700', border: 'border-blue-200' },
   { icon: Megaphone, title: 'Commission Communication', desc: 'Gestion des réseaux sociaux, communication externe et image de l\'association.', color: 'bg-pink-100 text-pink-700', border: 'border-pink-200' },
   { icon: Laptop, title: 'Commission IT', desc: 'Développement numérique, outils digitaux et transformation numérique de SALAM.', color: 'bg-cyan-100 text-cyan-700', border: 'border-cyan-200' },
+  { icon: Palette, title: 'Commission Culturelle', desc: 'Organisation des événements culturels, valorisation des cultures camerounaise et marocaine.', color: 'bg-purple-100 text-purple-700', border: 'border-purple-200' },
+  { icon: Dumbbell, title: 'Commission Sport', desc: 'Tournois, activités sportives et promotion du sport comme vecteur de cohésion sociale.', color: 'bg-blue-100 text-blue-700', border: 'border-blue-200' },
+  { icon: Briefcase, title: 'Commission Emploi', desc: 'Réseau emploi, accompagnement professionnel et opportunités pour les membres.', color: 'bg-orange-100 text-orange-700', border: 'border-orange-200' },
   { icon: BookOpen, title: 'Commission Orientation', desc: 'Accompagnement des bacheliers, ateliers d\'orientation et préparation aux études supérieures.', color: 'bg-yellow-100 text-yellow-700', border: 'border-yellow-200' },
-  { icon: Heart, title: 'Commission Solidarité', desc: 'Actions humanitaires, soutien aux personnes vulnérables et collectes de fonds.', color: 'bg-red-100 text-red-700', border: 'border-red-200' },
   { icon: Users, title: 'Commission Insertion', desc: 'Réseau professionnel, forums emploi, accompagnement carrière et entrepreneuriat.', color: 'bg-emerald-100 text-emerald-700', border: 'border-emerald-200' },
+  { icon: Heart, title: 'Commission Solidarité', desc: 'Actions humanitaires, soutien aux personnes vulnérables et collectes de fonds.', color: 'bg-red-100 text-red-700', border: 'border-red-200' },
 ];
 
 export default function CommissionsPage() {

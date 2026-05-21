@@ -45,15 +45,28 @@ const BUREAU_CATEGORIES: { id: BureauCategory; label: string; hint: string }[] =
 
 const EXECUTIVE_POSTES = [
   'Président', 'Vice-Président', 'Secrétaire Général', 'Secrétaire Adjoint',
-  'Trésorier', 'Trésorier Adjoint', 'Responsable Communication',
-  'Responsable Partenariats', 'Responsable Événements',
-  'Responsable Insertion', 'Responsable Solidarité',
+  'Trésorier', 'Commissaire aux comptes', 'Trésorier Adjoint',
+  'Responsable Communication', 'Responsable Informatique IT',
+  'Responsable Culture', 'Responsable Sport', 'Responsable Partenariats',
+  'Responsable Emploi, Insertion et Orientation (EIO)',
+  'Responsable Solidarité', 'Conseiller',
 ];
 
 const COMMISSION_GROUPS = [
-  'Commission Culturelle', 'Commission Sport', 'Commission Communication', 'Commission IT',
-  'Commission Orientation', 'Commission Solidarité', 'Commission Insertion',
+  'Commission Communication', 'Commission IT', 'Commission Culturelle', 'Commission Sport',
+  'Commission Emploi', 'Commission Orientation', 'Commission Insertion', 'Commission Solidarité',
 ];
+
+const COMMISSION_RESPONSABLES: Record<string, string> = {
+  'Commission Communication': 'Responsable Communication',
+  'Commission IT': 'Responsable Informatique IT',
+  'Commission Culturelle': 'Responsable Culture',
+  'Commission Sport': 'Responsable Sport',
+  'Commission Emploi': 'Responsable Emploi, Insertion et Orientation (EIO)',
+  'Commission Orientation': 'Responsable Emploi, Insertion et Orientation (EIO)',
+  'Commission Insertion': 'Responsable Emploi, Insertion et Orientation (EIO)',
+  'Commission Solidarité': 'Responsable Solidarité',
+};
 
 const COUNCIL_POSTES = ['Membre sage', 'Conseiller', 'Sage conseiller'];
 
@@ -71,6 +84,7 @@ const FEMININE_BUREAU_POSTES: Record<string, string> = {
   'tresorier adjoint': 'Trésorière Adjointe',
   'tresorier e adjoint e': 'Trésorière Adjointe',
   responsable: 'Responsable',
+  'commissaire aux comptes': 'Commissaire aux comptes',
   'membre sage': 'Membre sage',
   conseiller: 'Conseillère',
   'conseiller e': 'Conseillère',
@@ -115,7 +129,7 @@ function getCategoryOptions(category: BureauCategory, roles: RoleDoc[] = []) {
 
 function buildBureauAssignment(category: BureauCategory, selection: string) {
   if (!selection) return { poste: null, category: null, group: null };
-  if (category === 'commission') return { poste: 'Responsable', category, group: selection };
+  if (category === 'commission') return { poste: COMMISSION_RESPONSABLES[selection] ?? 'Responsable', category, group: selection };
   if (category === 'council') return { poste: selection, category, group: 'Conseil des sages' };
   return { poste: cleanGenericBureauTitle(selection), category, group: 'Bureau exécutif' };
 }

@@ -23,6 +23,7 @@ const FEMININE_BUREAU_POSTES: Record<string, string> = {
   'tresorier adjoint': 'Trésorière Adjointe',
   'tresorier e adjoint e': 'Trésorière Adjointe',
   responsable: 'Responsable',
+  'commissaire aux comptes': 'Commissaire aux comptes',
   'membre sage': 'Membre sage',
   conseiller: 'Conseillère',
   'conseiller e': 'Conseillère',
@@ -36,12 +37,26 @@ const KNOWN_POSTES = [
   { key: 'secretaire general', label: 'Secrétaire Général', aliases: ['secretaire generale'] },
   { key: 'secretaire adjoint', label: 'Secrétaire Adjoint', aliases: ['secretaire adjointe'] },
   { key: 'tresorier', label: 'Trésorier', aliases: ['tresoriere'] },
+  { key: 'commissaire aux comptes', label: 'Commissaire aux comptes', aliases: ['commissaire au compte', 'commissaire aux compte'] },
   { key: 'tresorier adjoint', label: 'Trésorier Adjoint', aliases: ['tresoriere adjointe'] },
   { key: 'responsable communication', label: 'Responsable Communication', aliases: [] },
+  { key: 'responsable informatique it', label: 'Responsable Informatique IT', aliases: ['responsable informatique', 'responsable it'] },
+  { key: 'responsable culture', label: 'Responsable Culture', aliases: ['responsable culturelle'] },
+  { key: 'responsable sport', label: 'Responsable Sport', aliases: ['responsable sports'] },
   { key: 'responsable partenariats', label: 'Responsable Partenariats', aliases: [] },
-  { key: 'responsable evenements', label: 'Responsable Événements', aliases: ['responsable evenement'] },
-  { key: 'responsable insertion', label: 'Responsable Insertion', aliases: [] },
+  {
+    key: 'responsable emploi insertion et orientation eio',
+    label: 'Responsable Emploi, Insertion et Orientation (EIO)',
+    aliases: [
+      'responsable emploi insertion orientation',
+      'responsable eio',
+      'responsable emploi',
+      'responsable insertion',
+      'responsable orientation',
+    ],
+  },
   { key: 'responsable solidarite', label: 'Responsable Solidarité', aliases: [] },
+  { key: 'conseiller', label: 'Conseiller', aliases: ['conseillere'] },
 ];
 
 function normalizePoste(value?: string | null) {
@@ -158,6 +173,8 @@ export default function BureauExecutifPage() {
   }));
   const matchedIds = new Set(matchedCards.map(card => card.member?._id).filter(Boolean));
   const extraMembers = members.filter(member => !matchedIds.has(member._id));
+  const announcedCards = matchedCards.filter(card => card.member);
+  const pendingCards = matchedCards.filter(card => !card.member);
 
   return (
     <main>
@@ -193,13 +210,14 @@ export default function BureauExecutifPage() {
 
           {!isLoading && (
             <div className="grid justify-items-center gap-5 sm:grid-cols-2 sm:justify-items-stretch md:grid-cols-3">
-              {matchedCards.map(({ key, label, member }) => (
-                member
-                  ? <MemberCard key={key} member={member} />
-                  : <PlaceholderCard key={key} poste={label} />
+              {announcedCards.map(({ key, member }) => (
+                member ? <MemberCard key={key} member={member} /> : null
               ))}
               {extraMembers.map(member => (
                 <MemberCard key={member._id} member={member} />
+              ))}
+              {pendingCards.map(({ key, label }) => (
+                <PlaceholderCard key={key} poste={label} />
               ))}
             </div>
           )}
@@ -224,7 +242,7 @@ export default function BureauExecutifPage() {
         <div className="mx-auto max-w-5xl">
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { href: '/mot-du-president', label: 'Mot du président', desc: "Le message du président de l'association" },
+              { href: '/mot-du-president', label: 'Mot de la présidente', desc: "Le message de la présidente de l'association" },
               { href: '/conseil-des-sages', label: 'Conseil des sages', desc: 'Les personnalités qui guident SALAM' },
               { href: '/commissions', label: 'Commissions', desc: 'Les groupes de travail thématiques' },
             ].map(({ href, label, desc }) => (
