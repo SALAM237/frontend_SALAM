@@ -3,11 +3,11 @@
 import { useState, useRef } from 'react';
 import {
   Images, Plus, X, Eye, EyeOff, Loader2, Trash2, Edit3,
-  Upload, ImagePlus,
+  Upload, ImagePlus, CheckSquare2, Square,
 } from 'lucide-react';
 import {
   useAlbums, useCreateAlbum, useUpdateAlbum, useDeleteAlbum,
-  useAddImagesToAlbum, useRemoveImageFromAlbum,
+  useAddImagesToAlbum, useRemoveImageFromAlbum, useReplaceImageInAlbum,
   type AlbumDoc,
 } from '@/lib/api/gallery';
 import { Lightbox, useLightbox } from '@/components/ui/Lightbox';
@@ -90,10 +90,14 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
   const album    = (data?.data ?? [] as AlbumDoc[]).find((a: AlbumDoc) => a._id === albumId);
 
   const fileRef   = useRef<HTMLInputElement>(null);
+  const replaceRef = useRef<HTMLInputElement>(null);
   const addImages = useAddImagesToAlbum(albumId);
   const removeImg = useRemoveImageFromAlbum(albumId);
+  const replaceImg = useReplaceImageInAlbum(albumId);
   const images    = album?.images ?? [];
   const lb        = useLightbox(images);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<number[]>([]);
 
   if (!album) return null;
 
@@ -102,6 +106,39 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
     const files = Array.from(e.target.files);
     e.target.value = '';
     addImages.mutate(files);
+  };
+
+  const toggleSelection = (idx: number) => {
+    setSelected(prev => prev.includes(idx) ? prev.filter(item => item !== idx) : [...prev, idx]);
+  };
+
+  const toggleSelectAll = () => {
+    setSelected(prev => prev.length === images.length ? [] : images.map((_, idx) => idx));
+  };
+
+  const handleBulkDelete = async () => {
+    if (selected.length === 0) return;
+    if (!confirm(`Supprimer ${selected.length} image${selected.length > 1 ? 's' : ''} sélectionnée${selected.length > 1 ? 's' : ''} ?`)) return;
+    for (const idx of [...selected].sort((a, b) => b - a)) {
+      await removeImg.mutateAsync(idx);
+    }
+    setSelected([]);
+    setSelectMode(false);
+  };
+
+  const handleReplaceClick = () => {
+    if (selected.length !== 1) return;
+    if (!confirm('Remplacer cette image par une nouvelle image ?')) return;
+    replaceRef.current?.click();
+  };
+
+  const handleReplaceFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || selected.length !== 1) return;
+    await replaceImg.mutateAsync({ idx: selected[0], file });
+    setSelected([]);
+    setSelectMode(false);
   };
 
   return (
@@ -117,6 +154,16 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
             <p className="text-xs text-neutral-400">{images.length} photo{images.length !== 1 ? 's' : ''}</p>
           </div>
           <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
+          <input ref={replaceRef} type="file" accept="image/*" className="hidden" onChange={handleReplaceFile} />
+          {images.length > 0 && (
+            <button
+              onClick={() => { setSelectMode(v => !v); setSelected([]); }}
+              className={`inline-flex h-9 items-center gap-2 rounded-full border px-4 text-xs font-black transition-colors shrink-0 ${selectMode ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-600 hover:border-emerald-300 hover:text-emerald-700'}`}
+            >
+              {selectMode ? <CheckSquare2 size={13} /> : <Square size={13} />}
+              Sélection image
+            </button>
+          )}
           <button
             onClick={() => fileRef.current?.click()}
             disabled={addImages.isPending}
@@ -128,6 +175,28 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
+          {selectMode && images.length > 0 && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-neutral-100 bg-neutral-50 p-3">
+              <button onClick={toggleSelectAll}
+                className="inline-flex h-8 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-600 hover:border-emerald-300 hover:text-emerald-700">
+                {selected.length === images.length ? <CheckSquare2 size={13} /> : <Square size={13} />}
+                Tout sélectionner
+              </button>
+              <span className="text-xs font-semibold text-neutral-400">{selected.length} image{selected.length > 1 ? 's' : ''} sélectionnée{selected.length > 1 ? 's' : ''}</span>
+              <div className="ml-auto flex gap-2">
+                <button onClick={handleReplaceClick} disabled={selected.length !== 1 || replaceImg.isPending}
+                  className="inline-flex h-8 items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 text-xs font-black text-blue-700 transition disabled:cursor-not-allowed disabled:opacity-40">
+                  {replaceImg.isPending ? <Loader2 size={13} className="animate-spin" /> : <Edit3 size={13} />}
+                  Modifier
+                </button>
+                <button onClick={handleBulkDelete} disabled={selected.length === 0 || removeImg.isPending}
+                  className="inline-flex h-8 items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-black text-red-700 transition disabled:cursor-not-allowed disabled:opacity-40">
+                  {removeImg.isPending ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          )}
           {images.length === 0 ? (
             <div className="flex flex-col items-center py-20 text-center">
               <Upload size={40} className="mb-3 text-neutral-200" />
@@ -140,21 +209,29 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {images.map((img, i) => (
-                <div key={i} className="group relative aspect-square overflow-hidden rounded-xl border border-neutral-100 shadow-sm">
+                <div key={i} className={`group relative aspect-square overflow-hidden rounded-xl border shadow-sm ${selected.includes(i) ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-neutral-100'}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={assetUrl(img.url)} alt={img.alt ?? ''}
                     className="h-full w-full cursor-pointer object-cover transition-transform duration-300 group-hover:scale-105"
-                    onClick={() => lb.open(i)} />
-                  <button
-                    onClick={() => {
-                      if (!confirm('Supprimer cette photo ?')) return;
-                      removeImg.mutate(i);
-                    }}
-                    className="absolute right-1.5 top-1.5 hidden h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white/80 transition hover:bg-red-600/90 hover:text-white group-hover:flex"
-                    title="Supprimer"
-                  >
-                    <Trash2 size={11} />
-                  </button>
+                    onClick={() => selectMode ? toggleSelection(i) : lb.open(i)} />
+                  {selectMode && (
+                    <button onClick={() => toggleSelection(i)}
+                      className="absolute left-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-emerald-700 shadow-sm">
+                      {selected.includes(i) ? <CheckSquare2 size={16} /> : <Square size={16} />}
+                    </button>
+                  )}
+                  {!selectMode && (
+                    <button
+                      onClick={() => {
+                        if (!confirm('Supprimer cette photo ?')) return;
+                        removeImg.mutate(i);
+                      }}
+                      className="absolute right-1.5 top-1.5 hidden h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white/80 transition hover:bg-red-600/90 hover:text-white group-hover:flex"
+                      title="Supprimer"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

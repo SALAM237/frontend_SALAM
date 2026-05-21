@@ -95,10 +95,22 @@ function cleanGenericBureauTitle(value?: string | null) {
     .trim();
 }
 
-function getCategoryOptions(category: BureauCategory) {
-  if (category === 'commission') return COMMISSION_GROUPS;
-  if (category === 'council') return COUNCIL_POSTES;
-  return EXECUTIVE_POSTES;
+function uniqueOptions(values: string[]) {
+  return [...new Set(values.map(cleanGenericBureauTitle).filter(Boolean))];
+}
+
+function rolePoste(role: RoleDoc) {
+  return cleanGenericBureauTitle(role.bureauGroup || role.name);
+}
+
+function getCategoryOptions(category: BureauCategory, roles: RoleDoc[] = []) {
+  const roleOptions = roles
+    .filter(role => role.bureauCategory === category)
+    .map(rolePoste);
+
+  if (category === 'commission') return uniqueOptions([...COMMISSION_GROUPS, ...roleOptions]);
+  if (category === 'council') return uniqueOptions([...COUNCIL_POSTES, ...roleOptions]);
+  return uniqueOptions([...EXECUTIVE_POSTES, ...roleOptions]);
 }
 
 function buildBureauAssignment(category: BureauCategory, selection: string) {
@@ -137,6 +149,8 @@ function CreateRoleModal({ onClose }: { onClose: () => void }) {
   const [name,        setName]        = useState('');
   const [slug,        setSlug]        = useState('');
   const [description, setDescription] = useState('');
+  const [bureauCategory, setBureauCategory] = useState<BureauCategory>('executive');
+  const [bureauGroup, setBureauGroup] = useState('');
   const createRole = useCreateRole();
 
   const autoSlug = (v: string) => v.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
@@ -163,7 +177,35 @@ function CreateRoleModal({ onClose }: { onClose: () => void }) {
             <input value={slug} onChange={e => setSlug(autoSlug(e.target.value))}
               placeholder="responsable_partenariats"
               className="h-10 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 font-mono text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10" />
+            <p className="mt-1 text-[10px] leading-relaxed text-neutral-400">
+              Identifiant technique unique du rôle, utilisé par le code et les permissions. Il ne doit pas changer souvent.
+            </p>
           </div>
+          <div className="space-y-2">
+            <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Catégorie du poste</p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {BUREAU_CATEGORIES.map(category => (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => { setBureauCategory(category.id); if (category.id !== 'commission') setBureauGroup(''); }}
+                  className={`rounded-xl border p-2.5 text-left transition ${bureauCategory === category.id ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-neutral-200 text-neutral-600 hover:border-emerald-300'}`}
+                >
+                  <span className="block text-[11px] font-black">{category.label}</span>
+                  <span className="mt-0.5 block text-[9px] leading-tight text-neutral-400">{category.hint}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          {bureauCategory === 'commission' && (
+            <div>
+              <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Commission associée</label>
+              <input value={bureauGroup} onChange={e => setBureauGroup(e.target.value)}
+                placeholder="Ex: Commission Culturelle"
+                className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-4 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10" />
+              <p className="mt-1 text-[10px] leading-relaxed text-neutral-400">Si vide, le nom du rôle sera utilisé dans la liste.</p>
+            </div>
+          )}
           <div>
             <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Description</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)}
@@ -175,7 +217,7 @@ function CreateRoleModal({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300">Annuler</button>
           <button
             disabled={!name.trim() || !slug.trim() || createRole.isPending}
-            onClick={() => createRole.mutate({ name, slug, description, permissions: [] }, { onSuccess: () => onClose() })}
+            onClick={() => createRole.mutate({ name, slug, description, permissions: [], bureauCategory, bureauGroup: bureauCategory === 'commission' ? bureauGroup : null }, { onSuccess: () => onClose() })}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50">
             {createRole.isPending && <Loader2 size={13} className="animate-spin" />}
             Créer le rôle
@@ -447,7 +489,7 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
 }
 
 /* ─── Edit admin modal (poste + type de rôle + photo) ─────── */
-function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => void }) {
+function EditAdminModal({ admin, onClose, roles }: { admin: AdminUser; onClose: () => void; roles: RoleDoc[] }) {
   const isSA = (admin.roles ?? []).some(r => r.slug === 'super_admin');
 
   const [bureauCategory, setBureauCategory] = useState<BureauCategory>((admin.bureauCategory ?? 'executive') as BureauCategory);
@@ -462,7 +504,7 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
   const promote      = usePromoteAdmin();
   const revoke       = useRevokeAdmin();
   const uploadPhoto  = useUploadBureauPhoto();
-  const categoryOptions = getCategoryOptions(bureauCategory);
+  const categoryOptions = getCategoryOptions(bureauCategory, roles);
   const assignment = buildBureauAssignment(bureauCategory, poste);
 
   const roleChanged  = (roleSlug === 'super_admin') !== isSA;
@@ -663,7 +705,7 @@ function EditAdminModal({ admin, onClose }: { admin: AdminUser; onClose: () => v
 }
 
 /* ─── Promote modal (2 étapes) ────────────────────────────── */
-function PromoteModal({ onClose }: { onClose: () => void }) {
+function PromoteModal({ onClose, roles }: { onClose: () => void; roles: RoleDoc[] }) {
   const [step,          setStep]          = useState<'member' | 'config' | 'success'>('member');
   const [search,        setSearch]        = useState('');
   const [selectedId,    setSelectedId]    = useState('');
@@ -681,7 +723,7 @@ function PromoteModal({ onClose }: { onClose: () => void }) {
   const assign      = useAssignPoste();
   const uploadPhoto = useUploadBureauPhoto();
   const members     = membersData?.data?.data ?? [];
-  const categoryOptions = getCategoryOptions(bureauCategory);
+  const categoryOptions = getCategoryOptions(bureauCategory, roles);
   const assignment = buildBureauAssignment(bureauCategory, selectedPoste);
 
   const filteredPostes = useMemo(() =>
@@ -1419,8 +1461,8 @@ export default function RolesPage() {
 
       {/* Modals */}
       {showCreate  && <CreateRoleModal  onClose={() => setShowCreate(false)} />}
-      {showPromote && <PromoteModal     onClose={() => setShowPromote(false)} />}
-      {editPoste   && <EditAdminModal   admin={editPoste} onClose={() => setEditPoste(null)} />}
+      {showPromote && <PromoteModal     roles={roles} onClose={() => setShowPromote(false)} />}
+      {editPoste   && <EditAdminModal   admin={editPoste} roles={roles} onClose={() => setEditPoste(null)} />}
       {editPerms   && <CustomPermsModal admin={editPerms} onClose={() => setEditPerms(null)} />}
     </div>
   );

@@ -143,3 +143,36 @@ export function useRemoveImageFromAlbum(albumId: string) {
     onError: (err: Error) => toast.error(err.message),
   });
 }
+
+export function useReplaceImageInAlbum(albumId: string) {
+  const token = useAuthStore(s => s.accessToken);
+  const qc    = useQueryClient();
+  return useMutation({
+    mutationFn: ({ idx, file }: { idx: number; file: File }) => {
+      const form = new FormData();
+      form.append('images', file);
+      return fetch(
+        `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '')}/api/v1/admin/gallery/${albumId}/images/${idx}`,
+        { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, credentials: 'include', body: form },
+      ).then(async r => {
+        const text = await r.text();
+        const j = text ? (() => {
+          try {
+            return JSON.parse(text);
+          } catch {
+            return { message: r.ok ? undefined : 'Route de remplacement galerie introuvable sur le backend' };
+          }
+        })() : {};
+        if (!r.ok) throw new Error(j?.message ?? 'Erreur remplacement');
+        return j;
+      });
+    },
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['admin-gallery'] });
+      qc.invalidateQueries({ queryKey: ['public-gallery'] });
+      qc.invalidateQueries({ queryKey: ['member-gallery'] });
+      toast.success((res as any).message ?? 'Photo remplacée');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}

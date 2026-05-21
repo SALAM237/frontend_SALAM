@@ -186,7 +186,7 @@ export default function AdminAdherentsPage() {
           <>
             {/* ── Desktop ───────────────────────────────────── */}
             <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-sm">
+              <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-neutral-100 bg-neutral-50/60">
                     <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Membre</th>
@@ -213,12 +213,12 @@ export default function AdminAdherentsPage() {
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[11px] font-black text-white">
                               {formatInitials(m.firstName, m.lastName)}
                             </div>
-                            <p className="font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
+                            <p className="max-w-[9.5rem] truncate text-xs font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                           </div>
                         </td>
-                        <td className="px-5 py-3.5"><span className="font-mono text-xs text-neutral-500">{m.memberId}</span></td>
-                        <td className="px-5 py-3.5 text-xs text-neutral-500">{m.email}</td>
-                        <td className="px-5 py-3.5 text-xs text-neutral-500">{m.phone ?? <span className="text-neutral-300">—</span>}</td>
+                        <td className="px-5 py-3.5"><span className="font-mono text-[11px] text-neutral-500">{m.memberId}</span></td>
+                        <td className="max-w-[11rem] truncate px-5 py-3.5 text-[11px] text-neutral-500">{m.email}</td>
+                        <td className="max-w-[8rem] truncate px-5 py-3.5 text-[11px] text-neutral-500">{m.phone ?? <span className="text-neutral-300">—</span>}</td>
                         <td className="px-5 py-3.5">
                           <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black ${s.cls}`}>
                             <SI size={10} /> {s.label}
@@ -229,8 +229,8 @@ export default function AdminAdherentsPage() {
                             {c.label}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-xs text-neutral-400">{fmtDate(m.lastLoginAt)}</td>
-                        <td className="px-5 py-3.5 text-xs text-neutral-400">{fmt(m.createdAt)}</td>
+                        <td className="whitespace-nowrap px-5 py-3.5 text-[11px] text-neutral-400">{fmtDate(m.lastLoginAt)}</td>
+                        <td className="whitespace-nowrap px-5 py-3.5 text-[11px] text-neutral-400">{fmt(m.createdAt)}</td>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center justify-end gap-1.5">
                             {/* Resend invitation — pending only */}

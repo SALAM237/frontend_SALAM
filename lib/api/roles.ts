@@ -27,6 +27,8 @@ export interface RoleDoc {
   name: string;
   slug: string;
   description?: string;
+  bureauCategory?: 'executive' | 'commission' | 'council' | null;
+  bureauGroup?: string | null;
   permissions: string[];
   isSystem: boolean;
   createdAt: string;
@@ -69,7 +71,7 @@ export function useCreateRole() {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { name: string; slug: string; description?: string; permissions: string[] }) =>
+    mutationFn: (payload: { name: string; slug: string; description?: string; permissions: string[]; bureauCategory?: string | null; bureauGroup?: string | null }) =>
       apiClient<RoleDoc>('/api/v1/admin/roles', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -87,7 +89,7 @@ export function useUpdateRole(id: string) {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { name?: string; description?: string; permissions?: string[] }) =>
+    mutationFn: (payload: { name?: string; description?: string; permissions?: string[]; bureauCategory?: string | null; bureauGroup?: string | null }) =>
       apiClient<RoleDoc>(`/api/v1/admin/roles/${id}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
@@ -248,10 +250,11 @@ export function usePublicBureau() {
 export function useMemberBureau() {
   const token = useAuthStore(s => s.accessToken);
   return useQuery({
-    queryKey: ['member-bureau'],
+    queryKey: ['member-bureau', token],
     queryFn: () => apiClient<BureauMember[]>('/api/v1/member/bureau', { token: token ?? '' }),
     enabled: !!token,
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 }
 

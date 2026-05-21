@@ -65,6 +65,20 @@ function cleanGenericBureauTitle(value?: string | null) {
     .trim();
 }
 
+function uniqueByNormalized(values: string[]) {
+  const seen = new Set<string>();
+  return values.filter(value => {
+    const key = normalize(value);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function isNonEmptyString(value: string | null | undefined): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
 function categoryLabel(member: BureauMember) {
   if (member.bureauCategory === 'commission') return member.bureauGroup ?? member.categoryLabel ?? 'Commission';
   if (member.bureauCategory === 'council') return 'Conseil des sages';
@@ -168,6 +182,20 @@ export default function MemberBureauPage() {
   const executive = members.filter(member => (member.bureauCategory ?? 'executive') === 'executive');
   const commissions = members.filter(member => member.bureauCategory === 'commission');
   const council = members.filter(member => member.bureauCategory === 'council');
+  const executiveSlotIds = new Set(
+    EXECUTIVE_ORDER
+      .map(poste => executive.find(item => normalize(item.bureauPoste) === normalize(poste))?._id)
+      .filter(isNonEmptyString),
+  );
+  const executiveExtras = executive.filter(member => !executiveSlotIds.has(member._id));
+  const commissionGroups = uniqueByNormalized([
+    ...COMMISSION_ORDER,
+    ...commissions.map(member => member.bureauGroup ?? member.categoryLabel).filter(isNonEmptyString),
+  ]);
+  const councilGroups = uniqueByNormalized([
+    ...COUNCIL_ORDER,
+    ...council.map(member => member.bureauGroup ?? 'Conseil des sages').filter(isNonEmptyString),
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
@@ -222,6 +250,9 @@ export default function MemberBureauPage() {
                 ? <TeamCard key={poste} member={member} badge="Bureau exécutif" />
                 : <EmptyCard key={poste} title={poste} badge="Bureau exécutif" />;
             })}
+            {executiveExtras.map(member => (
+              <TeamCard key={member._id} member={member} badge="Bureau exécutif" />
+            ))}
           </Section>
 
           <Section
@@ -229,16 +260,15 @@ export default function MemberBureauPage() {
             eyebrow="Groupes de travail"
             description="Chaque commission est pilotée par un responsable chargé de coordonner les actions et les membres du groupe."
           >
-            {COMMISSION_ORDER.map(group => {
-              const member = commissions.find(item => normalize(item.bureauGroup) === normalize(group));
-              return member
-                ? <TeamCard key={group} member={member} badge={group} />
-                : <EmptyCard key={group} title={group} badge={group} />;
+            {commissionGroups.map(group => {
+              const groupMembers = commissions.filter(item => normalize(item.bureauGroup) === normalize(group));
+              if (groupMembers.length === 0) return <EmptyCard key={group} title={group} badge={group} />;
+              return groupMembers.map(member => <TeamCard key={member._id} member={member} badge={group} />);
             })}
           </Section>
 
           <Section title="Conseil des sages" eyebrow="Conseil" description="Un espace de conseil et de transmission pour accompagner les grandes orientations de SALAM.">
-            {COUNCIL_ORDER.map(group => {
+            {councilGroups.map(group => {
               const groupMembers = council.filter(item => normalize(item.bureauGroup) === normalize(group));
               if (groupMembers.length === 0) return <EmptyCard key={group} title="Membre sage" badge={group} />;
               return groupMembers.map(member => <TeamCard key={member._id} member={member} badge={group} />);
