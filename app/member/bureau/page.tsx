@@ -79,6 +79,36 @@ function isNonEmptyString(value: string | null | undefined): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function firstMeaningfulLabel(values: Array<string | null | undefined>, fallback: string) {
+  const ignored = new Set(['commissions', 'commission', 'responsable', 'bureau executif']);
+  return values.find(value => {
+    const key = normalize(value);
+    return key && !ignored.has(key);
+  }) ?? fallback;
+}
+
+function matchesSlot(member: BureauMember, slot: string) {
+  const slotKey = normalize(slot);
+  const candidates = [
+    member.bureauPoste,
+    member.title,
+    member.bureauGroup,
+    member.categoryLabel,
+  ].filter(isNonEmptyString);
+
+  return candidates.some(candidate => normalize(candidate) === slotKey);
+}
+
+function commissionGroupFor(member: BureauMember) {
+  const standard = COMMISSION_ORDER.find(group => matchesSlot(member, group));
+  if (standard) return standard;
+  return firstMeaningfulLabel([member.bureauGroup, member.categoryLabel, member.bureauPoste, member.title], 'Commission');
+}
+
+function councilGroupFor(member: BureauMember) {
+  return firstMeaningfulLabel([member.bureauGroup, member.categoryLabel], 'Conseil des sages');
+}
+
 function categoryLabel(member: BureauMember) {
   if (member.bureauCategory === 'commission') return member.bureauGroup ?? member.categoryLabel ?? 'Commission';
   if (member.bureauCategory === 'council') return 'Conseil des sages';
@@ -184,17 +214,17 @@ export default function MemberBureauPage() {
   const council = members.filter(member => member.bureauCategory === 'council');
   const executiveSlotIds = new Set(
     EXECUTIVE_ORDER
-      .map(poste => executive.find(item => normalize(item.bureauPoste) === normalize(poste))?._id)
+      .map(poste => executive.find(item => matchesSlot(item, poste))?._id)
       .filter(isNonEmptyString),
   );
   const executiveExtras = executive.filter(member => !executiveSlotIds.has(member._id));
   const commissionGroups = uniqueByNormalized([
     ...COMMISSION_ORDER,
-    ...commissions.map(member => member.bureauGroup ?? member.categoryLabel).filter(isNonEmptyString),
+    ...commissions.map(commissionGroupFor),
   ]);
   const councilGroups = uniqueByNormalized([
     ...COUNCIL_ORDER,
-    ...council.map(member => member.bureauGroup ?? 'Conseil des sages').filter(isNonEmptyString),
+    ...council.map(councilGroupFor),
   ]);
 
   return (
@@ -245,7 +275,7 @@ export default function MemberBureauPage() {
         <>
           <Section title="Bureau exécutif" eyebrow="Direction">
             {EXECUTIVE_ORDER.map(poste => {
-              const member = executive.find(item => normalize(item.bureauPoste) === normalize(poste));
+              const member = executive.find(item => matchesSlot(item, poste));
               return member
                 ? <TeamCard key={poste} member={member} badge="Bureau exécutif" />
                 : <EmptyCard key={poste} title={poste} badge="Bureau exécutif" />;
@@ -261,15 +291,15 @@ export default function MemberBureauPage() {
             description="Chaque commission est pilotée par un responsable chargé de coordonner les actions et les membres du groupe."
           >
             {commissionGroups.map(group => {
-              const groupMembers = commissions.filter(item => normalize(item.bureauGroup) === normalize(group));
+              const groupMembers = commissions.filter(item => normalize(commissionGroupFor(item)) === normalize(group));
               if (groupMembers.length === 0) return <EmptyCard key={group} title={group} badge={group} />;
-              return groupMembers.map(member => <TeamCard key={member._id} member={member} badge={group} />);
+              return <TeamCard key={group} member={groupMembers[0]} badge={group} />;
             })}
           </Section>
 
           <Section title="Conseil des sages" eyebrow="Conseil" description="Un espace de conseil et de transmission pour accompagner les grandes orientations de SALAM.">
             {councilGroups.map(group => {
-              const groupMembers = council.filter(item => normalize(item.bureauGroup) === normalize(group));
+              const groupMembers = council.filter(item => normalize(councilGroupFor(item)) === normalize(group));
               if (groupMembers.length === 0) return <EmptyCard key={group} title="Membre sage" badge={group} />;
               return groupMembers.map(member => <TeamCard key={member._id} member={member} badge={group} />);
             })}
