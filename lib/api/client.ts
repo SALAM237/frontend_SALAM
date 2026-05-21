@@ -33,9 +33,15 @@ async function silentRefresh(): Promise<string | null> {
         }).catch(() => {});
 
         // Met à jour le store Zustand (sans toucher salam_space)
+        const meRes = await fetch(`${API}/api/v1/auth/me`, {
+          headers: { Authorization: `Bearer ${newToken}` },
+          credentials: 'include',
+        });
+        if (!meRes.ok) throw new Error('refresh_identity_failed');
+        const meJson = await meRes.json();
+
         const { useAuthStore } = await import('@/store/auth.store');
-        const store = useAuthStore.getState();
-        if (store.user) store.restoreAuth(store.user, newToken);
+        useAuthStore.getState().restoreAuth(meJson.data, newToken);
       }
 
       return newToken;

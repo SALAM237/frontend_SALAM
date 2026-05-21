@@ -21,7 +21,7 @@ const PENDING_MSG = 'Veuillez vérifier votre email avant de vous connecter';
 function LoginForm() {
   const router          = useRouter();
   const searchParams    = useSearchParams();
-  const { setAuth, user } = useAuthStore();
+  const { setAuth, clearAuth } = useAuthStore();
 
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -34,11 +34,9 @@ function LoginForm() {
 
   // Already authenticated — skip the form and honour the redirect param
   useEffect(() => {
-    if (!user) return;
-    const fallback   = getPostLoginRedirect(user);
-    const redirectTo = safeRedirect(searchParams.get('redirect'), fallback);
-    router.replace(redirectTo);
-  }, [user, router, searchParams]);
+    clearAuth();
+    fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
+  }, [clearAuth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

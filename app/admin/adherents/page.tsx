@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   UserPlus, CreditCard, Search, Eye, CheckCircle2, Clock, XCircle,
-  Download, Loader2, Trash2, Mail,
+  Download, Loader2, Trash2, Mail, ChevronDown,
 } from 'lucide-react';
 import { useAdminMembers, useHardDeleteMember, useResendInvitation, type MemberListItem } from '@/lib/api/members';
 import { useAuthStore } from '@/store/auth.store';
@@ -51,6 +51,7 @@ export default function AdminAdherentsPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<MemberStatus | 'all'>('all');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const user        = useAuthStore(s => s.user);
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
@@ -185,19 +186,30 @@ export default function AdminAdherentsPage() {
         {!isLoading && (
           <>
             {/* ── Desktop ───────────────────────────────────── */}
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-xs">
+            <div className="hidden lg:block">
+              <table className="w-full table-fixed text-[11px]">
+                <colgroup>
+                  <col className="w-[20%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[19%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[7%]" />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-neutral-100 bg-neutral-50/60">
-                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Membre</th>
-                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">N° ID</th>
-                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Email</th>
-                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Téléphone</th>
-                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Statut</th>
-                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Cotisation</th>
-                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Dernière conn.</th>
-                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Inscription</th>
-                    <th className="px-5 py-3.5" />
+                    <th className="px-3 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Membre</th>
+                    <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">N° ID</th>
+                    <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Email</th>
+                    <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Tél.</th>
+                    <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Statut</th>
+                    <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Cotis.</th>
+                    <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Conn.</th>
+                    <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Inscr.</th>
+                    <th className="px-3 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-50">
@@ -207,31 +219,31 @@ export default function AdminAdherentsPage() {
                     const c  = cotisationConfig[m.cotisationStatus] ?? cotisationConfig.unpaid;
                     const isConfirming = confirmDeleteId === m._id;
                     return (
-                      <tr key={m._id} className="group transition-colors hover:bg-neutral-50/40">
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[11px] font-black text-white">
+                      <tr key={m._id} className="group transition-colors hover:bg-neutral-50/55">
+                        <td className="px-3 py-3">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[10px] font-black text-white">
                               {formatInitials(m.firstName, m.lastName)}
                             </div>
-                            <p className="max-w-[9.5rem] truncate text-xs font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
+                            <p className="min-w-0 truncate text-[11px] font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                           </div>
                         </td>
-                        <td className="px-5 py-3.5"><span className="font-mono text-[11px] text-neutral-500">{m.memberId}</span></td>
-                        <td className="max-w-[11rem] truncate px-5 py-3.5 text-[11px] text-neutral-500">{m.email}</td>
-                        <td className="max-w-[8rem] truncate px-5 py-3.5 text-[11px] text-neutral-500">{m.phone ?? <span className="text-neutral-300">—</span>}</td>
-                        <td className="px-5 py-3.5">
-                          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black ${s.cls}`}>
-                            <SI size={10} /> {s.label}
+                        <td className="truncate px-2 py-3"><span className="font-mono text-[10px] text-neutral-500">{m.memberId}</span></td>
+                        <td className="truncate px-2 py-3 text-[10px] text-neutral-500">{m.email}</td>
+                        <td className="truncate px-2 py-3 text-[10px] text-neutral-500">{m.phone ?? <span className="text-neutral-300">—</span>}</td>
+                        <td className="px-2 py-3">
+                          <span className={`inline-flex max-w-full items-center gap-0.5 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[8px] font-black leading-none ${s.cls}`}>
+                            <SI size={8} /> <span className="truncate">{s.label}</span>
                           </span>
                         </td>
-                        <td className="px-5 py-3.5">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black ${c.cls}`}>
+                        <td className="px-2 py-3">
+                          <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8px] font-black leading-none ${c.cls}`}>
                             {c.label}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-5 py-3.5 text-[11px] text-neutral-400">{fmtDate(m.lastLoginAt)}</td>
-                        <td className="whitespace-nowrap px-5 py-3.5 text-[11px] text-neutral-400">{fmt(m.createdAt)}</td>
-                        <td className="px-5 py-3.5">
+                        <td className="truncate px-2 py-3 text-[10px] text-neutral-400">{fmtDate(m.lastLoginAt)}</td>
+                        <td className="truncate px-2 py-3 text-[10px] text-neutral-400">{fmt(m.createdAt)}</td>
+                        <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-1.5">
                             {/* Resend invitation — pending only */}
                             {m.memberStatus === 'pending' && (
@@ -283,57 +295,98 @@ export default function AdminAdherentsPage() {
             </div>
 
             {/* ── Mobile cards ──────────────────────────────── */}
-            <div className="divide-y divide-neutral-50 md:hidden">
+            <div className="divide-y divide-neutral-50 lg:hidden">
               {displayed.map((m) => {
                 const s = statusConfig[m.memberStatus] ?? statusConfig.pending;
+                const SI = s.icon;
+                const c = cotisationConfig[m.cotisationStatus] ?? cotisationConfig.unpaid;
                 const isConfirming = confirmDeleteId === m._id;
+                const isExpanded = expandedId === m._id;
                 return (
-                  <div key={m._id} className="flex items-center gap-3 px-4 py-4 transition-colors hover:bg-neutral-50">
-                    {/* Avatar + info — clickable */}
-                    <Link href={`/admin/adherents/${m._id}`} className="flex min-w-0 flex-1 items-center gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
+                  <div key={m._id} className="px-3 py-3 transition-colors hover:bg-neutral-50/60 sm:px-4">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(isExpanded ? null : m._id)}
+                      className="flex w-full items-center gap-3 rounded-2xl text-left transition active:scale-[0.995]"
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white shadow-sm shadow-emerald-900/10">
                         {formatInitials(m.firstName, m.lastName)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
-                        <p className="truncate text-xs text-neutral-400">{m.memberId} · {m.email}</p>
+                        <p className="truncate text-[13px] font-black leading-tight text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
+                        <p className="mt-0.5 truncate font-mono text-[10px] text-neutral-400">{m.memberId}</p>
+                        <p className="truncate text-[10px] text-neutral-400">{m.email}</p>
                       </div>
-                    </Link>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <span className={`inline-flex items-center gap-0.5 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[8px] font-black leading-none ${s.cls}`}>
+                          <SI size={8} /> {s.label}
+                        </span>
+                        <span className={`inline-flex whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8px] font-black leading-none ${c.cls}`}>
+                          {c.label}
+                        </span>
+                      </div>
+                      <ChevronDown size={15} className={`shrink-0 text-neutral-300 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-emerald-600' : ''}`} />
+                    </button>
 
-                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${s.cls}`}>{s.label}</span>
-
-                    {/* Actions */}
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      {m.memberStatus === 'pending' && (
-                        <button
-                          onClick={e => handleResend(e, m._id)}
-                          disabled={resendInvitation.isPending}
-                          title="Renvoyer l'invitation"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 text-blue-500 hover:bg-blue-50 disabled:opacity-40"
-                        >
-                          <Mail size={14} />
-                        </button>
-                      )}
-
-                      {isSuperAdmin && (
-                        isConfirming ? (
-                          <button
-                            onClick={e => handleDeleteClick(e, m._id)}
-                            disabled={hardDelete.isPending}
-                            className="flex h-8 items-center gap-1 rounded-lg border border-red-400 bg-red-500 px-2 text-[10px] font-black text-white"
-                          >
-                            {hardDelete.isPending ? <Loader2 size={12} className="animate-spin" /> : 'OK ?'}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={e => handleDeleteClick(e, m._id)}
-                            title="Supprimer définitivement"
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 text-red-400 hover:border-red-300 hover:bg-red-50"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )
-                      )}
+                    <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                      <div className="overflow-hidden">
+                        <div className="mt-3 rounded-2xl border border-neutral-100 bg-neutral-50/80 p-3">
+                          <div className="grid grid-cols-2 gap-2 text-[10px] text-neutral-500">
+                            <div>
+                              <p className="font-black uppercase tracking-[0.12em] text-neutral-300">Téléphone</p>
+                              <p className="mt-0.5 truncate font-semibold text-neutral-700">{m.phone ?? 'Non renseigné'}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase tracking-[0.12em] text-neutral-300">Connexion</p>
+                              <p className="mt-0.5 truncate font-semibold text-neutral-700">{fmtDate(m.lastLoginAt)}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase tracking-[0.12em] text-neutral-300">Inscription</p>
+                              <p className="mt-0.5 truncate font-semibold text-neutral-700">{fmt(m.createdAt)}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase tracking-[0.12em] text-neutral-300">Actions</p>
+                              <div className="mt-1 flex items-center gap-1.5">
+                                {m.memberStatus === 'pending' && (
+                                  <button
+                                    onClick={e => handleResend(e, m._id)}
+                                    disabled={resendInvitation.isPending}
+                                    title="Renvoyer l'invitation"
+                                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-200 bg-white text-blue-500 transition hover:border-blue-300 hover:bg-blue-50 disabled:opacity-40"
+                                  >
+                                    <Mail size={12} />
+                                  </button>
+                                )}
+                                <Link
+                                  href={`/admin/adherents/${m._id}`}
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-200 bg-white text-emerald-600 transition hover:border-emerald-500 hover:bg-emerald-50"
+                                >
+                                  <Eye size={12} />
+                                </Link>
+                                {isSuperAdmin && (
+                                  isConfirming ? (
+                                    <button
+                                      onClick={e => handleDeleteClick(e, m._id)}
+                                      disabled={hardDelete.isPending}
+                                      className="flex h-7 items-center gap-1 rounded-lg border border-red-400 bg-red-500 px-2 text-[9px] font-black text-white transition hover:bg-red-600 disabled:opacity-50"
+                                    >
+                                      {hardDelete.isPending ? <Loader2 size={11} className="animate-spin" /> : 'OK ?'}
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={e => handleDeleteClick(e, m._id)}
+                                      title="Supprimer définitivement"
+                                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-100 bg-white text-red-400 transition hover:border-red-300 hover:bg-red-50"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );

@@ -2,16 +2,18 @@
 
 export const dynamic = 'force-dynamic';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight, Loader2, CheckCircle, XCircle, KeyRound } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
+import { useAuthStore } from '@/store/auth.store';
 
 function CreatePasswordContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
   const token        = searchParams.get('token');
+  const clearAuth    = useAuthStore(s => s.clearAuth);
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm]   = useState('');
@@ -20,6 +22,11 @@ function CreatePasswordContent() {
   const [loading, setLoading]   = useState(false);
   const [success, setSuccess]   = useState(false);
   const [errors, setErrors]     = useState<{ password?: string; confirm?: string; global?: string }>({});
+
+  useEffect(() => {
+    clearAuth();
+    fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
+  }, [clearAuth]);
 
   const pwdStrength = (() => {
     if (!password) return 0;
@@ -106,10 +113,14 @@ function CreatePasswordContent() {
     setLoading(true);
 
     try {
+      clearAuth();
+      await fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
       await apiClient('/api/v1/auth/activate', {
         method: 'POST',
         body: JSON.stringify({ token, password }),
       });
+      clearAuth();
+      await fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
       setSuccess(true);
       setTimeout(() => router.push('/auth/login'), 3000);
     } catch (err: unknown) {

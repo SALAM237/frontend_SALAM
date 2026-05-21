@@ -151,6 +151,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Restauration de session après rechargement de page (Zustand est vide)
   useEffect(() => {
     if (user) {
+      if (!hasAdminRole(user)) {
+        clearAuth();
+        fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
+        router.replace('/');
+        setRestoring(false);
+        return;
+      }
       setRestoring(false);
       return;
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight, Loader2, ShieldAlert, MailWarning, RefreshCw, CheckCircle2 } from 'lucide-react';
@@ -13,7 +13,7 @@ const PENDING_MSG = 'Veuillez vérifier votre email avant de vous connecter';
 
 export default function BureauConnexionPage() {
   const router = useRouter();
-  const { setAuth } = useAuthStore();
+  const { setAuth, clearAuth } = useAuthStore();
 
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -23,6 +23,11 @@ export default function BureauConnexionPage() {
 
   const [needsVerify, setNeedsVerify]   = useState(false);
   const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'sent'>('idle');
+
+  useEffect(() => {
+    clearAuth();
+    fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
+  }, [clearAuth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
