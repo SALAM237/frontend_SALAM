@@ -14,7 +14,7 @@ import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { isSuperAdmin, hasAdminRole, hasAnyPermission } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
 import { formatFullName, formatInitials } from '@/lib/format-name';
-import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
+import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 
 type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; permissions?: string[] };
 
@@ -80,10 +80,10 @@ function formatBureauPosteForGender(poste?: string | null, gender?: string | nul
   return FEMININE_BUREAU_POSTES[normalizeBureauPoste(cleanPoste)] ?? cleanPoste;
 }
 
-function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauPoste, avatarUrl, initialsClass, onLogout, nav }: {
+function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauPoste, avatarUrl, initialsClass, gender, onLogout, nav }: {
   open: boolean; onClose: () => void;
   initials: string; displayName: string; adminRole: string; bureauPoste?: string | null;
-  avatarUrl: string; initialsClass: string;
+  avatarUrl: string; initialsClass: string; gender?: string | null;
   onLogout: () => void;
   nav: NavItem[];
 }) {
@@ -163,7 +163,7 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
           <div className="flex items-center gap-3">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt={displayName} className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-emerald-400/40" />
+              <img src={avatarUrl} alt={displayName} className={`h-9 w-9 shrink-0 rounded-full border-2 object-cover ${memberAvatarBorderClass(gender)}`} />
             ) : (
               <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${initialsClass}`}>
                 {initials}
@@ -301,7 +301,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
         initials={initials} displayName={displayName} adminRole={adminRole}
         bureauPoste={bureauPoste}
-        avatarUrl={avatarUrl} initialsClass={initialsClass}
+        avatarUrl={avatarUrl} initialsClass={initialsClass} gender={user?.gender}
         onLogout={handleLogout}
         nav={nav}
       />
@@ -366,11 +366,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt={displayName} className="h-8 w-8 rounded-full object-cover ring-1 ring-neutral-200" />
+              <Link href="/admin/parametres" title="Paramètres">
+                <img src={avatarUrl} alt={displayName} className={`h-8 w-8 rounded-full border-2 object-cover ring-1 ${memberAvatarBorderClass(user?.gender)} ${memberAvatarRingClass(user?.gender)}`} />
+              </Link>
             ) : (
-              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${initialsClass}`}>
+              <Link href="/admin/parametres" title="Paramètres" className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${initialsClass}`}>
                 {initials}
-              </div>
+              </Link>
             )}
           </div>
         </header>

@@ -4,10 +4,10 @@ import { useState, useMemo, useRef } from 'react';
 import {
   Plus, X, Send, Eye, ChevronDown, Search,
   CalendarDays, Banknote, FileText, CheckCircle2, Clock,
-  Link as LinkIcon, Loader2,
+  Link as LinkIcon, Loader2, Trash2,
 } from 'lucide-react';
 import {
-  useAdminInvoices, useCreateInvoice, useSendInvoice,
+  useAdminInvoices, useCreateInvoice, useSendInvoice, useDeleteInvoice,
   type InvoiceDoc,
 } from '@/lib/api/invoices';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
@@ -341,9 +341,11 @@ export default function FacturationAdminPage() {
   const [search,      setSearch]      = useState('');
   const [showCreate,  setShowCreate]  = useState(false);
   const [viewInvoice, setViewInvoice] = useState<InvoiceDoc | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useAdminInvoices();
   const sendInvoice = useSendInvoice();
+  const deleteInvoice = useDeleteInvoice();
 
   const invoices = data?.data ?? [];
 
@@ -417,6 +419,7 @@ export default function FacturationAdminPage() {
             const progress  = inv.recipients.length > 0
               ? Math.round((paidCount / inv.recipients.length) * 100)
               : 0;
+            const isDeleting = confirmDeleteId === inv._id;
             return (
               <div key={inv._id} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-neutral-50/60">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 border border-violet-100">
@@ -454,6 +457,23 @@ export default function FacturationAdminPage() {
                       className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:opacity-60">
                       {sendInvoice.isPending ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
                       Envoyer
+                    </button>
+                  )}
+                  {isDeleting ? (
+                    <button
+                      onClick={() => deleteInvoice.mutate(inv._id, { onSuccess: () => setConfirmDeleteId(null) })}
+                      disabled={deleteInvoice.isPending}
+                      className="flex h-8 items-center justify-center rounded-lg bg-red-500 px-2.5 text-[10px] font-black text-white transition hover:bg-red-600 disabled:opacity-50"
+                    >
+                      {deleteInvoice.isPending ? <Loader2 size={11} className="animate-spin" /> : 'Confirmer'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(inv._id)}
+                      title="Supprimer la facture"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-400 transition hover:bg-red-500 hover:text-white"
+                    >
+                      <Trash2 size={12} />
                     </button>
                   )}
                 </div>

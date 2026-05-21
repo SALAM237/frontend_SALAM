@@ -9,7 +9,7 @@ import {
 import { useAdminMembers, useHardDeleteMember, useResendInvitation, type MemberListItem } from '@/lib/api/members';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName, formatInitials } from '@/lib/format-name';
-import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
+import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 
 type MemberStatus = 'active' | 'pending' | 'suspended';
 
@@ -224,15 +224,17 @@ export default function AdminAdherentsPage() {
                       <tr key={m._id} className="group transition-colors hover:bg-neutral-50/55">
                         <td className="px-3 py-3">
                           <div className="flex min-w-0 items-center gap-2">
-                            {photoUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={photoUrl} alt={formatFullName(m.firstName, m.lastName)} className="h-7 w-7 shrink-0 rounded-full object-cover" />
-                            ) : (
-                              <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${memberInitialsClass(m.gender)}`}>
-                                {formatInitials(m.firstName, m.lastName)}
-                              </div>
-                            )}
-                            <p className="min-w-0 truncate text-[11px] font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
+                            <Link href={`/admin/adherents/${m._id}`} className="shrink-0" title="Voir la fiche membre">
+                              {photoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={photoUrl} alt={formatFullName(m.firstName, m.lastName)} className={`h-7 w-7 rounded-full border-2 object-cover ${memberAvatarBorderClass(m.gender)}`} />
+                              ) : (
+                                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-black text-white ${memberInitialsClass(m.gender)}`}>
+                                  {formatInitials(m.firstName, m.lastName)}
+                                </div>
+                              )}
+                            </Link>
+                            <Link href={`/admin/adherents/${m._id}`} className="min-w-0 truncate text-[11px] font-semibold text-neutral-900 transition hover:text-emerald-700">{formatFullName(m.firstName, m.lastName)}</Link>
                           </div>
                         </td>
                         <td className="truncate px-2 py-3"><span className="font-mono text-[10px] text-neutral-500">{m.memberId}</span></td>
@@ -327,7 +329,7 @@ export default function AdminAdherentsPage() {
                     >
                       {photoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={photoUrl} alt={formatFullName(m.firstName, m.lastName)} className="h-10 w-10 shrink-0 rounded-2xl object-cover shadow-sm" />
+                        <img src={photoUrl} alt={formatFullName(m.firstName, m.lastName)} className={`h-10 w-10 shrink-0 rounded-2xl border-2 object-cover shadow-sm ${memberAvatarBorderClass(m.gender)}`} />
                       ) : (
                         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-xs font-black text-white shadow-sm ${memberInitialsClass(m.gender)}`}>
                           {formatInitials(m.firstName, m.lastName)}

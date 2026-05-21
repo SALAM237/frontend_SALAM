@@ -104,7 +104,9 @@ export function useCreateTreasuryTransaction() {
       apiClient('/api/v1/admin/treasury/transactions', { method: 'POST', body: JSON.stringify(payload), token: token ?? '' }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-transactions'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-transactions'] });
       toast.success((res as any).message ?? 'Ecriture ajoutee');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -119,7 +121,9 @@ export function useCreateTreasuryAsset() {
       apiClient('/api/v1/admin/treasury/assets', { method: 'POST', body: JSON.stringify(payload), token: token ?? '' }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-assets'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-assets'] });
       toast.success((res as any).message ?? 'Patrimoine ajoute');
     },
     onError: (err: Error) => toast.error(err.message),

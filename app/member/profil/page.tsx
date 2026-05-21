@@ -20,7 +20,7 @@ import {
 import { useAuthStore } from '@/store/auth.store';
 import { useChangeMemberPassword, useSubmitActivitySectorProposal, useUpdateProfile } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
-import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
+import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { assetUrl } from '@/lib/assets';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -227,7 +227,7 @@ export default function ProfilPage() {
         <div className="relative shrink-0">
           {avatarPreview ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarPreview} alt="Avatar" className="h-16 w-16 rounded-full object-cover ring-2 ring-emerald-500/30" />
+            <img src={avatarPreview} alt="Avatar" className={`h-16 w-16 rounded-full border-2 object-cover ${memberAvatarBorderClass(user?.gender)}`} />
           ) : (
             <div className={`flex h-16 w-16 items-center justify-center rounded-full text-2xl font-black text-white ${memberInitialsClass(user?.gender)}`}>
               {initials}

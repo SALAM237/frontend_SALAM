@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   ChevronDown, Search, CheckCircle2, XCircle, ShieldOff,
   CalendarDays, History, X, Upload, AlertTriangle,
@@ -12,7 +13,7 @@ import {
 } from '@/lib/api/cotisations';
 import type { AuditLogDoc } from '@/lib/api/audit-logs';
 import { formatFullName, formatInitials } from '@/lib/format-name';
-import { memberInitialsClass } from '@/lib/avatar';
+import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 
 /* ─── Types locaux (UI only) ────────────────────────────── */
 interface MemberRow {
@@ -28,6 +29,8 @@ interface MemberRow {
   notes?: string;
   amount: number;
   gender?: 'homme' | 'femme';
+  avatar?: string | null;
+  bureauPhoto?: string | null;
 }
 
 const YEARS = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
@@ -78,6 +81,8 @@ function mapRows(data: AdminCotisationRow[], year: number): MemberRow[] {
     lastName:     r.user.lastName,
     email:        r.user.email,
     gender:       r.user.gender,
+    avatar:       r.user.avatar,
+    bureauPhoto:  r.user.bureauPhoto,
     status:       r.cotisation.status,
     amount:       r.cotisation.amount,
     paidAt:       r.cotisation.paidAt,
@@ -443,14 +448,22 @@ export default function CotisationsAdminPage() {
             )}
             {filtered.map(member => {
               const cfg = STATUS_CONFIG[member.status];
+              const photoUrl = memberPhotoUrl(member);
               return (
                 <div key={member.userId} className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-neutral-50/60">
                   <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${cfg.dot} shadow-sm`} />
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black text-white ${memberInitialsClass(member.gender)}`}>
-                    {formatInitials(member.firstName, member.lastName)}
-                  </div>
+                  <Link href={`/admin/adherents/${member.userId}`} className="shrink-0" title="Voir la fiche membre">
+                    {photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={photoUrl} alt={formatFullName(member.firstName, member.lastName)} className={`h-9 w-9 rounded-full border-2 object-cover ${memberAvatarBorderClass(member.gender)}`} />
+                    ) : (
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-black text-white ${memberInitialsClass(member.gender)}`}>
+                        {formatInitials(member.firstName, member.lastName)}
+                      </div>
+                    )}
+                  </Link>
                   <div className="flex-1 min-w-0">
-                    <p className="font-black text-sm text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
+                    <Link href={`/admin/adherents/${member.userId}`} className="font-black text-sm text-neutral-900 transition hover:text-emerald-700">{formatFullName(member.firstName, member.lastName)}</Link>
                     <p className="text-[11px] text-neutral-400 font-mono">{member.memberId}</p>
                   </div>
                   <div className="hidden w-28 text-right sm:block">

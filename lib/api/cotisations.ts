@@ -24,6 +24,8 @@ export interface AdminCotisationRow {
     lastName: string;
     email: string;
     gender?: 'homme' | 'femme';
+    avatar?: string | null;
+    bureauPhoto?: string | null;
   };
   cotisation: {
     _id?: string;
@@ -71,6 +73,8 @@ export function useUpdateCotisationStatus() {
     onSuccess: (res, vars) => {
       qc.invalidateQueries({ queryKey: ['admin-cotisations', vars.year] });
       qc.invalidateQueries({ queryKey: ['cotisation-logs'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
       toast.success((res as any).message ?? 'Statut mis à jour');
     },
     onError: (err: Error) => toast.error(err.message),

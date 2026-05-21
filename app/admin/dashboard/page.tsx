@@ -10,7 +10,7 @@ import { useAdminStats } from '@/lib/api/dashboard';
 import { usePendingValidations } from '@/lib/api/validations';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFirstName, formatFullName, formatInitials } from '@/lib/format-name';
-import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
+import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 
 const fadeUp = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
@@ -162,15 +162,17 @@ export default function AdminDashboardPage() {
                     <tr key={m._id} className="group transition-colors hover:bg-neutral-50/50">
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          {memberPhotoUrl(m) ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={memberPhotoUrl(m)} alt={formatFullName(m.firstName, m.lastName)} className="h-8 w-8 shrink-0 rounded-full object-cover" />
-                          ) : (
-                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black text-white ${memberInitialsClass((m as any).gender)}`}>
-                              {formatInitials(m.firstName, m.lastName)}
-                            </div>
-                          )}
-                          <p className="font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
+                          <Link href={`/admin/adherents/${m._id}`} className="shrink-0">
+                            {memberPhotoUrl(m) ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={memberPhotoUrl(m)} alt={formatFullName(m.firstName, m.lastName)} className={`h-8 w-8 rounded-full border-2 object-cover ${memberAvatarBorderClass((m as any).gender)}`} />
+                            ) : (
+                              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${memberInitialsClass((m as any).gender)}`}>
+                                {formatInitials(m.firstName, m.lastName)}
+                              </div>
+                            )}
+                          </Link>
+                          <Link href={`/admin/adherents/${m._id}`} className="font-semibold text-neutral-900 transition hover:text-emerald-700">{formatFullName(m.firstName, m.lastName)}</Link>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
@@ -207,7 +209,7 @@ export default function AdminDashboardPage() {
                 <div key={m._id} className="flex items-center gap-3 px-4 py-3.5">
                   {memberPhotoUrl(m) ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={memberPhotoUrl(m)} alt={formatFullName(m.firstName, m.lastName)} className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                    <img src={memberPhotoUrl(m)} alt={formatFullName(m.firstName, m.lastName)} className={`h-10 w-10 shrink-0 rounded-full border-2 object-cover ${memberAvatarBorderClass((m as any).gender)}`} />
                   ) : (
                     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${memberInitialsClass((m as any).gender)}`}>
                       {formatInitials(m.firstName, m.lastName)}

@@ -166,6 +166,16 @@ export default function BureauConnexionPage() {
           </Link>
         </div>
 
+        <div className="hidden justify-end px-8 pt-6 lg:flex">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-neutral-500 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+          >
+            <span aria-hidden="true">&larr;</span>
+            Retour au site
+          </Link>
+        </div>
+
         <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
           <div className="w-full max-w-md space-y-8">
 

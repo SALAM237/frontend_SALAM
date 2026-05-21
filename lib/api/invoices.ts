@@ -87,6 +87,23 @@ export function useSendInvoice() {
 
 /* ── Member ─────────────────────────────────────────────── */
 
+export function useDeleteInvoice() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient(`/api/v1/admin/invoices/${id}`, {
+        method: 'DELETE',
+        token: token ?? '',
+      }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['admin-invoices'] });
+      toast.success((res as any).message ?? 'Facture supprimÃ©e');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 export function useMemberInvoices() {
   const token = useAuthStore(s => s.accessToken);
   return useQuery({

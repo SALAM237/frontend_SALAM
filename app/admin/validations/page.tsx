@@ -1,7 +1,10 @@
 'use client';
 
-import { BriefcaseBusiness, Loader2, Newspaper, Images, Tags, Check, X } from 'lucide-react';
+import Link from 'next/link';
+import { BriefcaseBusiness, Loader2, Newspaper, Images, Tags, Check, X, UserRound } from 'lucide-react';
 import { usePendingValidations, useReviewPendingValidation, type PendingValidationItem } from '@/lib/api/validations';
+import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
+import { formatFullName, formatInitials } from '@/lib/format-name';
 
 const TYPE_META = {
   content: { label: 'Actualité', icon: Newspaper, cls: 'bg-blue-50 text-blue-700 border-blue-100' },
@@ -9,6 +12,35 @@ const TYPE_META = {
   sector: { label: 'Secteur networking', icon: Tags, cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
   opportunity: { label: 'Opportunite', icon: BriefcaseBusiness, cls: 'bg-amber-50 text-amber-700 border-amber-100' },
 } as const;
+
+function validationDetails(item: PendingValidationItem) {
+  const raw = item.item ?? {};
+  const data = (raw.data ?? {}) as Record<string, unknown>;
+  const details: string[] = [];
+
+  if (item.type === 'content') {
+    if (data.category) details.push(`Catégorie : ${String(data.category)}`);
+    if (data.excerpt) details.push(String(data.excerpt));
+  }
+
+  if (item.type === 'gallery') {
+    const images = Array.isArray(raw.images) ? raw.images.length : 0;
+    if (raw.visibility) details.push(`Visibilité : ${String(raw.visibility)}`);
+    details.push(`${images} image${images > 1 ? 's' : ''}`);
+  }
+
+  if (item.type === 'sector') {
+    details.push('Demande d’ajout dans les secteurs networking');
+  }
+
+  if (item.type === 'opportunity') {
+    if (raw.type) details.push(`Type : ${String(raw.type)}`);
+    if (raw.organization) details.push(`Organisation : ${String(raw.organization)}`);
+    if (raw.location) details.push(`Lieu : ${String(raw.location)}`);
+  }
+
+  return details.filter(Boolean).slice(0, 3);
+}
 
 export default function AdminValidationsPage() {
   const { data, isLoading } = usePendingValidations();
@@ -48,6 +80,10 @@ export default function AdminValidationsPage() {
             {items.map(item => {
               const meta = TYPE_META[item.type];
               const Icon = meta.icon;
+              const submitter = item.submitter;
+              const submitterName = submitter ? formatFullName(submitter.firstName ?? '', submitter.lastName ?? '') : '';
+              const submitterPhoto = memberPhotoUrl(submitter);
+              const details = validationDetails(item);
               return (
                 <div key={`${item.type}-${item.item?._id}`} className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center">
                   <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -62,6 +98,40 @@ export default function AdminValidationsPage() {
                       <p className="mt-1 text-xs text-neutral-400">
                         Soumis le {new Date(item.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </p>
+                      {details.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {details.map(detail => (
+                            <span key={detail} className="rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-neutral-500">
+                              {detail}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="mt-2 flex min-w-0 items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-2.5 py-2">
+                        {submitter ? (
+                          <>
+                            {submitterPhoto ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={submitterPhoto} alt={submitterName} className={`h-7 w-7 shrink-0 rounded-full border-2 object-cover ${memberAvatarBorderClass(submitter.gender)}`} />
+                            ) : (
+                              <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${memberInitialsClass(submitter.gender)}`}>
+                                {formatInitials(submitter.firstName ?? '', submitter.lastName ?? '', '?')}
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <Link href={`/admin/adherents/${submitter._id}`} className="truncate text-xs font-black text-neutral-800 transition hover:text-emerald-700">
+                                {submitterName || 'Membre'}
+                              </Link>
+                              {submitter.email && <p className="truncate text-[10px] text-neutral-400">{submitter.email}</p>}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <UserRound size={14} className="text-neutral-300" />
+                            <p className="text-xs font-semibold text-neutral-400">Demandeur non renseigné</p>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-2 sm:justify-end">

@@ -10,6 +10,15 @@ export interface PendingValidationItem {
   permission: string;
   title: string;
   createdAt: string;
+  submitter?: {
+    _id?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    avatar?: string | null;
+    bureauPhoto?: string | null;
+    gender?: string | null;
+  } | null;
   item: { _id?: string } & Record<string, unknown>;
 }
 

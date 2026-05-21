@@ -9,6 +9,10 @@ export function ConditionalHeader() {
 
   const hiddenRoutes = [
     '/admin',
+    '/auth',
+    '/bureau-executif/connexion',
+    '/demo/admin',
+    '/demo/member',
     '/member',
     '/api',
   ];

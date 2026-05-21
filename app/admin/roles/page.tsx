@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -23,6 +24,7 @@ import { useAdminMembers, useSuspendMember } from '@/lib/api/members';
 import { toast } from 'sonner';
 import { assetUrl } from '@/lib/assets';
 import { formatFullName, formatInitials } from '@/lib/format-name';
+import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 
 /* ─── Risk badge ──────────────────────────────────────────── */
 const RISK_STYLE: Record<string, string> = {
@@ -469,6 +471,7 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
   isSelf: boolean;
 }) {
   const initials    = formatInitials(admin.firstName, admin.lastName, '??');
+  const photoUrl    = memberPhotoUrl(admin);
   const isSA        = (admin.roles ?? []).some(r => r.slug === 'super_admin');
   const isSuspended = admin.memberStatus === 'suspended';
   const customPerms = admin.customPermissions ?? [];
@@ -476,13 +479,20 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
 
   return (
     <div className={`flex items-start gap-4 rounded-2xl border bg-white p-4 shadow-sm ${isSuspended ? 'border-red-100 opacity-60' : 'border-neutral-100'}`}>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-        {initials}
-      </div>
+      <Link href={`/admin/adherents/${admin._id}`} className="shrink-0" title="Voir la fiche membre">
+        {photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl} alt={formatFullName(admin.firstName, admin.lastName)} className={`h-10 w-10 rounded-full border-2 object-cover ${memberAvatarBorderClass(admin.gender)}`} />
+        ) : (
+          <div className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-black text-white ${memberInitialsClass(admin.gender)}`}>
+            {initials}
+          </div>
+        )}
+      </Link>
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <GenderIcon gender={admin.gender} size={14} />
-          <p className="font-black text-sm text-neutral-900">{formatFullName(admin.firstName, admin.lastName)}</p>
+          <Link href={`/admin/adherents/${admin._id}`} className="font-black text-sm text-neutral-900 transition hover:text-emerald-700">{formatFullName(admin.firstName, admin.lastName)}</Link>
           {isSA && <Crown size={12} className="text-amber-500" />}
           {isSelf && <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-black text-emerald-700">Vous</span>}
           {isSuspended && <span className="rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[9px] font-black text-red-600">Suspendu</span>}

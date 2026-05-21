@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { apiClient } from '@/lib/api/client';
 import { formatFirstName, formatFullName, formatInitials } from '@/lib/format-name';
-import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
+import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CreditCard, User, CalendarDays,
@@ -19,7 +19,6 @@ import {
 const NAV = [
   { label: 'Dashboard',     href: '/member/dashboard',   icon: LayoutDashboard },
   { label: 'Bureau',        href: '/member/bureau',      icon: Users            },
-  { label: 'Mes factures',  href: '/member/factures',    icon: FileText         },
   { label: 'Activités',     href: '/member/activites',   icon: CalendarDays     },
   { label: 'Galerie',       href: '/member/galerie',     icon: Images           },
   { label: 'Actualités',    href: '/member/actualites',  icon: Newspaper        },
@@ -33,14 +32,15 @@ const ACCOUNT_NAV = [
   { label: 'Mon profil',    href: '/member/profil',      icon: User       },
   { label: 'Ma carte',      href: '/member/carte',       icon: CreditCard },
   { label: 'Cotisations',   href: '/member/cotisations', icon: Banknote   },
+  { label: 'Mes factures',  href: '/member/factures',    icon: FileText   },
   { label: 'Mes documents', href: '/member/documents',   icon: FolderOpen },
 ];
 
 
-function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl, initialsClass, onLogout }: {
+function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl, initialsClass, gender, onLogout }: {
   open: boolean; onClose: () => void;
   firstName: string; lastName: string; initials: string;
-  avatarUrl: string; initialsClass: string;
+  avatarUrl: string; initialsClass: string; gender?: string | null;
   onLogout: () => void;
 }) {
   const pathname = usePathname();
@@ -173,7 +173,7 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl
           <div className="flex items-center gap-3">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt={formatFullName(firstName, lastName)} className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-emerald-400/40" />
+              <img src={avatarUrl} alt={formatFullName(firstName, lastName)} className={`h-9 w-9 shrink-0 rounded-full border-2 object-cover ${memberAvatarBorderClass(gender)}`} />
             ) : (
               <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${initialsClass}`}>
                 {initials}
@@ -272,7 +272,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
       <MemberSidebar
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
         firstName={firstName} lastName={lastName} initials={initials}
-        avatarUrl={avatarUrl} initialsClass={initialsClass}
+        avatarUrl={avatarUrl} initialsClass={initialsClass} gender={user?.gender}
         onLogout={handleLogout}
       />
 
@@ -331,11 +331,13 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
             </div>
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt={user ? formatFullName(user.firstName, user.lastName) : 'Profil'} className="h-8 w-8 rounded-full object-cover ring-1 ring-neutral-200" />
+              <Link href="/member/profil" title="Mon compte">
+                <img src={avatarUrl} alt={user ? formatFullName(user.firstName, user.lastName) : 'Profil'} className={`h-8 w-8 rounded-full border-2 object-cover ring-1 ${memberAvatarBorderClass(user?.gender)} ${memberAvatarRingClass(user?.gender)}`} />
+              </Link>
             ) : (
-              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${initialsClass}`}>
+              <Link href="/member/profil" title="Mon compte" className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${initialsClass}`}>
                 {initials}
-              </div>
+              </Link>
             )}
           </div>
         </header>
