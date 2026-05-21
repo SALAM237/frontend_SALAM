@@ -7,7 +7,7 @@ export interface ArticleDoc {
   _id: string;
   title: string;
   name?: string;
-  status: 'draft' | 'published';
+  status: 'draft' | 'pending' | 'published';
   data?: {
     excerpt?: string;
     content?: string;
@@ -41,6 +41,24 @@ export function usePublicArticle(id: string) {
     queryFn:  () => apiClient<ArticleDoc>(`/api/v1/public/content/${id}`),
     enabled:  !!id,
     staleTime: 60_000,
+  });
+}
+
+export function useSubmitMemberArticle() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { title: string; excerpt?: string; content: string; category?: string }) =>
+      apiClient<ArticleDoc>('/api/v1/member/content', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        token: token ?? '',
+      }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['admin-content'] });
+      toast.success((res as any).message ?? 'Actualite soumise');
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 }
 

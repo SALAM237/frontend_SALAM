@@ -78,9 +78,10 @@ function formatBureauPosteForGender(poste?: string | null, gender?: string | nul
   return FEMININE_BUREAU_POSTES[normalizeBureauPoste(cleanPoste)] ?? cleanPoste;
 }
 
-function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauPoste, onLogout, nav }: {
+function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauPoste, avatarUrl, initialsClass, onLogout, nav }: {
   open: boolean; onClose: () => void;
   initials: string; displayName: string; adminRole: string; bureauPoste?: string | null;
+  avatarUrl: string; initialsClass: string;
   onLogout: () => void;
   nav: NavItem[];
 }) {
@@ -158,9 +159,14 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
         {/* User footer */}
         <div className="border-t border-white/[0.06] p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-              {initials}
-            </div>
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt={displayName} className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-emerald-400/40" />
+            ) : (
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${initialsClass}`}>
+                {initials}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="truncate text-sm font-black text-white/80">{displayName}</p>
               <p className="truncate text-[10px] text-white/30">
@@ -276,6 +282,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
         initials={initials} displayName={displayName} adminRole={adminRole}
         bureauPoste={bureauPoste}
+        avatarUrl={avatarUrl} initialsClass={initialsClass}
         onLogout={handleLogout}
         nav={nav}
       />
@@ -339,7 +346,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               )}
             </div>
             {avatarUrl ? (
-              <Image src={avatarUrl} alt={displayName} width={32} height={32} className="h-8 w-8 rounded-full object-cover ring-1 ring-neutral-200" />
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt={displayName} className="h-8 w-8 rounded-full object-cover ring-1 ring-neutral-200" />
             ) : (
               <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${initialsClass}`}>
                 {initials}

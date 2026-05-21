@@ -147,6 +147,7 @@ export default function MembreCartePage() {
     id:        memberId,
     firstName: user?.firstName ?? '—',
     lastName:  user?.lastName  ?? '—',
+    gender:    user?.gender,
     role:      'Membre actif',
     year,
   };

@@ -6,6 +6,18 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   gender?: 'homme' | 'femme';
+  phone?: string | null;
+  promotionYear?: number | null;
+  city?: string | null;
+  country?: string | null;
+  residenceCity?: string | null;
+  antenne?: string | null;
+  motivation?: string | null;
+  bio?: string | null;
+  activitySector?: string | null;
+  skills?: string[];
+  expertiseDomains?: string[];
+  birthDate?: string | null;
   memberStatus: 'pending' | 'active' | 'suspended' | 'rejected';
   roles: { name: string; slug: string; permissions: string[] }[];
   avatar?: string;

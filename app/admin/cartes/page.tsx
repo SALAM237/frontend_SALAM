@@ -13,6 +13,7 @@ function toCardData(m: MemberListItem): MemberCardData {
     id:        m.memberId,
     firstName: m.firstName,
     lastName:  m.lastName,
+    gender:    m.gender,
     role:      'Membre actif',
     year:      new Date().getFullYear(),
     photo:     assetUrl(m.avatar) || m.avatar,

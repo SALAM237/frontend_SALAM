@@ -13,11 +13,29 @@ export interface MemberListItem {
   phone?: string;
   memberStatus: MemberStatus;
   avatar?: string;
+  bureauPhoto?: string;
   createdAt: string;
   lastLoginAt?: string;
   memberId: string;
   cotisationStatus: 'paid' | 'unpaid' | 'exempt';
   gender?: 'homme' | 'femme';
+  promotionYear?: number;
+}
+
+export interface UpdateProfilePayload {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  city?: string;
+  country?: string;
+  residenceCity?: string;
+  antenne?: string;
+  motivation?: string;
+  bio?: string;
+  activitySector?: string;
+  skills?: string[];
+  expertiseDomains?: string[];
+  birthDate?: string;
   promotionYear?: number;
 }
 
@@ -221,7 +239,7 @@ export function useUpdateProfile() {
   const token = useAuthStore(s => s.accessToken);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { firstName?: string; lastName?: string; phone?: string }) =>
+    mutationFn: (payload: UpdateProfilePayload) =>
       apiClient('/api/v1/member/profile', {
         method: 'PUT',
         body: JSON.stringify(payload),

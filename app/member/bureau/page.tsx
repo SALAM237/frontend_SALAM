@@ -278,7 +278,7 @@ export default function MemberBureauPage() {
             <span className="mb-3 inline-flex rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300">
               Gouvernance SALAM
             </span>
-            <h1 className="max-w-3xl text-[clamp(2rem,6vw,4.5rem)] font-black leading-[0.9] tracking-[-0.06em]">
+            <h1 className="max-w-full whitespace-nowrap text-[clamp(1.35rem,3.6vw,3.1rem)] font-black leading-[1] tracking-[-0.05em]">
               Bureau, commissions et conseil
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/55">

@@ -53,6 +53,7 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
     id:        member.memberId,
     firstName: member.firstName,
     lastName:  member.lastName,
+    gender:    member.gender,
     role:      'Membre actif',
     year,
   };

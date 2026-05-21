@@ -35,7 +35,7 @@ export function MemberCard({ member, printable = false }: { member: MemberCardDa
     <div
       className={`relative overflow-hidden rounded-2xl w-full ${printable ? 'shadow-none' : 'shadow-2xl shadow-emerald-950/40'}`}
       style={{
-        maxWidth: 400,
+        maxWidth: 'clamp(18.55rem, 92vw, 25rem)',
         aspectRatio: '8/5',
         minHeight: 200,
         background: 'linear-gradient(135deg, #07140d 0%, #0b1f15 55%, #10261a 100%)',
@@ -73,7 +73,7 @@ export function MemberCard({ member, printable = false }: { member: MemberCardDa
 
         {/* Bottom row */}
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40">Titulaire</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/40 sm:text-[10px]">Titulaire</p>
           {member.gender && (
             <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-white/35 sm:text-[9px]">
               {member.gender === 'femme' ? 'Madame' : 'Monsieur'}

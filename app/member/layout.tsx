@@ -30,9 +30,10 @@ const NAV = [
 ];
 
 
-function MemberSidebar({ open, onClose, firstName, lastName, initials, onLogout }: {
+function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl, initialsClass, onLogout }: {
   open: boolean; onClose: () => void;
   firstName: string; lastName: string; initials: string;
+  avatarUrl: string; initialsClass: string;
   onLogout: () => void;
 }) {
   const pathname = usePathname();
@@ -115,9 +116,14 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, onLogout 
         {/* User footer */}
         <div className="border-t border-white/[0.06] p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-              {initials}
-            </div>
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt={formatFullName(firstName, lastName)} className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-emerald-400/40" />
+            ) : (
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${initialsClass}`}>
+                {initials}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="truncate text-sm font-black text-white/80">
                 {firstName || lastName ? formatFullName(firstName, lastName) : '—'}
@@ -211,6 +217,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
       <MemberSidebar
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
         firstName={firstName} lastName={lastName} initials={initials}
+        avatarUrl={avatarUrl} initialsClass={initialsClass}
         onLogout={handleLogout}
       />
 
@@ -268,7 +275,8 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
               )}
             </div>
             {avatarUrl ? (
-              <Image src={avatarUrl} alt={user ? formatFullName(user.firstName, user.lastName) : 'Profil'} width={32} height={32} className="h-8 w-8 rounded-full object-cover ring-1 ring-neutral-200" />
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt={user ? formatFullName(user.firstName, user.lastName) : 'Profil'} className="h-8 w-8 rounded-full object-cover ring-1 ring-neutral-200" />
             ) : (
               <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${initialsClass}`}>
                 {initials}

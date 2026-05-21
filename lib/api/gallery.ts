@@ -3,12 +3,13 @@ import { toast } from 'sonner';
 import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
 
-export interface AlbumImage { url: string; alt?: string; isPublished: boolean }
+export interface AlbumImage { url: string; alt?: string; isPublished: boolean; visibility?: 'public' | 'members'; order?: number }
 
 export interface AlbumDoc {
   _id: string;
   title: string;
   visibility: 'public' | 'members';
+  status?: 'draft' | 'pending' | 'published';
   tags: string[];
   images: AlbumImage[];
   createdAt: string;
@@ -32,6 +33,34 @@ export function useMemberAlbums() {
     enabled:  !!token,
     staleTime: 0,
     refetchInterval: 30_000,
+  });
+}
+
+export function useSubmitMemberAlbum() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ title, visibility, tags, files }: { title: string; visibility: 'public' | 'members'; tags?: string[]; files: FileList | File[] }) => {
+      const form = new FormData();
+      form.append('title', title);
+      form.append('visibility', visibility);
+      if (tags?.length) form.append('tags', tags.join(','));
+      Array.from(files).forEach(file => form.append('images', file));
+      return fetch(
+        `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '')}/api/v1/member/gallery`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` }, credentials: 'include', body: form },
+      ).then(async r => {
+        const text = await r.text();
+        const j = text ? JSON.parse(text) : {};
+        if (!r.ok) throw new Error(j?.message ?? 'Erreur soumission album');
+        return j;
+      });
+    },
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['admin-gallery'] });
+      toast.success((res as any).message ?? 'Album soumis');
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 }
 

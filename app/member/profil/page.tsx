@@ -1,44 +1,166 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { User, Mail, Phone, MapPin, Save, CheckCircle2, Lock, Shield, Camera, Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Briefcase,
+  Calendar,
+  Camera,
+  CheckCircle2,
+  Loader2,
+  Lock,
+  Mail,
+  MapPin,
+  Phone,
+  Save,
+  Shield,
+  Tag,
+  User,
+  X,
+} from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { useUpdateProfile } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
+import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { assetUrl } from '@/lib/assets';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
+const ACTIVITY_SECTORS = [
+  'Administration publique',
+  'Agriculture et agroalimentaire',
+  'Architecture et urbanisme',
+  'Arts, culture et creation',
+  'Assurance',
+  'Banque et finance',
+  'BTP et construction',
+  'Commerce et distribution',
+  'Communication et marketing',
+  'Conseil et strategie',
+  'Droit et juridique',
+  'Education et formation',
+  'Energie',
+  'Environnement',
+  'Entrepreneuriat',
+  'Hotellerie et tourisme',
+  'Industrie',
+  'Informatique et IT',
+  'Logistique et transport',
+  'Recherche',
+  'Sante',
+  'Social et humanitaire',
+  'Sport',
+  'Telecommunications',
+  'Autre',
+];
+
+type ProfileForm = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  gender: string;
+  promotionYear: string;
+  city: string;
+  country: string;
+  residenceCity: string;
+  antenne: string;
+  birthDate: string;
+  activitySector: string;
+  skills: string[];
+  expertiseDomains: string[];
+  bio: string;
+  motivation: string;
+};
+
+const emptyForm: ProfileForm = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  gender: '',
+  promotionYear: '',
+  city: '',
+  country: '',
+  residenceCity: '',
+  antenne: '',
+  birthDate: '',
+  activitySector: '',
+  skills: [],
+  expertiseDomains: [],
+  bio: '',
+  motivation: '',
+};
+
+function dateInputValue(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+}
+
 export default function ProfilPage() {
-  const user      = useAuthStore(s => s.user);
+  const user = useAuthStore(s => s.user);
   const patchUser = useAuthStore(s => s.patchUser);
-  const fileRef                         = useRef<HTMLInputElement>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(assetUrl(user?.avatar) || null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-
-  const [form, setForm] = useState({
-    firstName: user?.firstName ?? '',
-    lastName:  user?.lastName  ?? '',
-    email:     user?.email     ?? '',
-    phone:     '',
-    city:      '',
-    country:   '',
-    bio:       '',
-  });
+  const [form, setForm] = useState<ProfileForm>(emptyForm);
   const [saved, setSaved] = useState(false);
-
   const updateProfile = useUpdateProfile();
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setForm(prev => ({ ...prev, [k]: e.target.value }));
+  useEffect(() => {
+    if (!user) return;
+    setForm({
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
+      email: user.email ?? '',
+      phone: user.phone ?? '',
+      gender: user.gender ?? '',
+      promotionYear: user.promotionYear ? String(user.promotionYear) : '',
+      city: user.city ?? '',
+      country: user.country ?? '',
+      residenceCity: user.residenceCity ?? user.city ?? '',
+      antenne: user.antenne ?? '',
+      birthDate: dateInputValue(user.birthDate),
+      activitySector: user.activitySector ?? '',
+      skills: user.skills ?? [],
+      expertiseDomains: user.expertiseDomains ?? [],
+      bio: user.bio ?? '',
+      motivation: user.motivation ?? '',
+    });
+    setAvatarPreview(memberPhotoUrl(user) || null);
+  }, [user]);
 
-  const handleSave = async (e: React.FormEvent) => {
+  const set = (key: keyof ProfileForm) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => setForm(prev => ({ ...prev, [key]: e.target.value }));
+
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     updateProfile.mutate(
-      { firstName: form.firstName, lastName: form.lastName, phone: form.phone || undefined },
       {
-        onSuccess: () => {
-          patchUser({ firstName: form.firstName, lastName: form.lastName });
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phone: form.phone || undefined,
+        city: form.city || undefined,
+        country: form.country || undefined,
+        residenceCity: form.residenceCity || undefined,
+        antenne: form.antenne || undefined,
+        birthDate: form.birthDate || undefined,
+        promotionYear: form.promotionYear ? Number(form.promotionYear) : undefined,
+        activitySector: form.activitySector || undefined,
+        skills: form.skills,
+        expertiseDomains: form.expertiseDomains,
+        bio: form.bio || undefined,
+        motivation: form.motivation || undefined,
+      },
+      {
+        onSuccess: (res: any) => {
+          patchUser(res?.data ?? {
+            firstName: form.firstName,
+            lastName: form.lastName,
+            phone: form.phone,
+          });
           setSaved(true);
           setTimeout(() => setSaved(false), 2500);
         },
@@ -50,56 +172,51 @@ export default function ProfilPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    /* Local preview */
     const objectUrl = URL.createObjectURL(file);
     setAvatarPreview(objectUrl);
-
-    /* Upload */
     setUploadingAvatar(true);
+
     try {
       const token = useAuthStore.getState().accessToken;
-      const form  = new FormData();
-      form.append('avatar', file);
+      const payload = new FormData();
+      payload.append('avatar', file);
       const res = await fetch(`${API}/api/v1/member/profile/avatar`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token ?? ''}` },
         credentials: 'include',
-        body: form,
+        body: payload,
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message ?? 'Erreur upload');
       if (json.data?.avatar) {
         setAvatarPreview(assetUrl(json.data.avatar) || json.data.avatar);
-        patchUser({ avatar: json.data.avatar });
+        patchUser(json.data);
       }
     } catch (err) {
       console.error('[avatar upload]', err);
+      setAvatarPreview(user ? memberPhotoUrl(user) || null : null);
     } finally {
       setUploadingAvatar(false);
+      URL.revokeObjectURL(objectUrl);
     }
   };
 
   const initials = formatInitials(form.firstName, form.lastName, '?');
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="mx-auto max-w-5xl space-y-5">
       <div>
-        <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Mon profil</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">Gérez vos informations personnelles</p>
+        <h1 className="text-[clamp(1.55rem,3vw,2rem)] font-black tracking-[-0.03em] text-neutral-900">Mon profil</h1>
+        <p className="mt-0.5 text-sm text-neutral-500">Gerez vos informations personnelles et professionnelles</p>
       </div>
 
-      {/* Avatar */}
       <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
         <div className="relative shrink-0">
           {avatarPreview ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarPreview}
-              alt="Avatar"
-              className="h-16 w-16 rounded-full object-cover ring-2 ring-emerald-500/30"
-            />
+            <img src={avatarPreview} alt="Avatar" className="h-16 w-16 rounded-full object-cover ring-2 ring-emerald-500/30" />
           ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-2xl font-black text-white">
+            <div className={`flex h-16 w-16 items-center justify-center rounded-full text-2xl font-black text-white ${memberInitialsClass(user?.gender)}`}>
               {initials}
             </div>
           )}
@@ -111,8 +228,13 @@ export default function ProfilPage() {
         </div>
 
         <div className="min-w-0 flex-1">
+          {form.gender && (
+            <p className="mb-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-neutral-400">
+              {form.gender === 'femme' ? 'Madame' : 'Monsieur'}
+            </p>
+          )}
           <p className="font-black text-neutral-900">{formatFullName(form.firstName, form.lastName)}</p>
-          <p className="text-sm text-neutral-500">Membre actif</p>
+          <p className="text-sm text-neutral-500">{form.activitySector || 'Membre SALAM'}</p>
           {user?._id && (
             <p className="mt-1 font-mono text-xs text-emerald-600">
               SALAM-{new Date().getFullYear()}-{user._id.slice(-4).toUpperCase()}
@@ -120,43 +242,49 @@ export default function ProfilPage() {
           )}
         </div>
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/jpeg,image/jpg,image/png,image/webp"
-          className="hidden"
-          onChange={handleAvatarChange}
-        />
+        <input ref={fileRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp" className="hidden" onChange={handleAvatarChange} />
         <button
+          type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploadingAvatar}
-          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-emerald-300 hover:text-emerald-700 transition-all disabled:opacity-50 sm:w-auto sm:ml-auto"
+          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 transition-all hover:border-emerald-300 hover:text-emerald-700 disabled:opacity-50 sm:ml-auto sm:w-auto"
         >
-          <Camera size={13} /> {uploadingAvatar ? 'Envoi…' : 'Changer la photo'}
+          <Camera size={13} /> {uploadingAvatar ? 'Envoi...' : 'Changer la photo'}
         </button>
       </div>
 
       <form onSubmit={handleSave} className="space-y-4">
-        <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
-          <p className="mb-4 text-sm font-black text-neutral-900">Informations personnelles</p>
+        <Section title="Informations personnelles">
           <div className="grid gap-4 sm:grid-cols-2">
-            <F icon={User}  label="Prénom"    value={form.firstName} onChange={set('firstName')} required />
-            <F icon={User}  label="Nom"       value={form.lastName}  onChange={set('lastName')}  required />
-            <F icon={Mail}  label="Email"     value={form.email}     onChange={set('email')}     type="email" readOnly />
-            <F icon={Phone} label="Téléphone" value={form.phone}     onChange={set('phone')}     placeholder="+33 6 00 00 00 00" />
-            <F icon={MapPin} label="Ville"    value={form.city}      onChange={set('city')}      placeholder="Paris" />
-            <F icon={MapPin} label="Pays"     value={form.country}   onChange={set('country')}   placeholder="Cameroun" />
+            <F icon={User} label="Prenom" value={form.firstName} onChange={set('firstName')} required />
+            <F icon={User} label="Nom" value={form.lastName} onChange={set('lastName')} required />
+            <F icon={Mail} label="Email" value={form.email} onChange={set('email')} type="email" readOnly />
+            <F icon={Phone} label="Telephone" value={form.phone} onChange={set('phone')} placeholder="+237 6 00 00 00 00" />
+            <Select label="Civilite" value={form.gender} onChange={set('gender')} readOnly options={[['', 'Non renseignee'], ['homme', 'Monsieur'], ['femme', 'Madame']]} />
+            <F icon={Calendar} label="Date de naissance" value={form.birthDate} onChange={set('birthDate')} type="date" />
+            <F icon={MapPin} label="Ville de residence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." />
+            <F icon={MapPin} label="Pays" value={form.country} onChange={set('country')} placeholder="Cameroun, Maroc..." />
+            <F icon={User} label="Promotionnaire" value={form.promotionYear} onChange={set('promotionYear')} type="number" placeholder="2026" />
+            <F icon={MapPin} label="Antenne" value={form.antenne} onChange={set('antenne')} placeholder="Casablanca, Yaounde..." />
           </div>
-          <div className="mt-4">
-            <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Biographie</label>
-            <textarea value={form.bio} onChange={set('bio')} rows={3}
-              placeholder="Parlez de vous en quelques mots…"
-              className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10" />
-          </div>
-        </div>
+        </Section>
 
-        <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
-          <p className="mb-4 text-sm font-black text-neutral-900">Sécurité</p>
+        <Section title="Parcours et expertises">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select label="Secteur d'activite" value={form.activitySector} onChange={set('activitySector')} options={[['', 'Selectionner'], ...ACTIVITY_SECTORS.map(s => [s, s] as [string, string])]} />
+            <F icon={MapPin} label="Ville d'origine" value={form.city} onChange={set('city')} placeholder="Ville d'origine ou de reference" />
+          </div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <TagInput icon={Tag} label="Competences" value={form.skills} onChange={skills => setForm(prev => ({ ...prev, skills }))} placeholder="Ex: React, gestion de projet..." />
+            <TagInput icon={Briefcase} label="Domaines d'expertise" value={form.expertiseDomains} onChange={expertiseDomains => setForm(prev => ({ ...prev, expertiseDomains }))} placeholder="Ex: finance, communication..." />
+          </div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <TextArea label="Biographie" value={form.bio} onChange={set('bio')} placeholder="Parlez de vous en quelques mots..." />
+            <TextArea label="Motivation" value={form.motivation} onChange={set('motivation')} placeholder="Ce que vous souhaitez apporter a SALAM..." />
+          </div>
+        </Section>
+
+        <Section title="Securite">
           <div className="flex flex-wrap gap-3">
             <button type="button" className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300">
               <Lock size={13} /> Changer le mot de passe
@@ -165,45 +293,152 @@ export default function ProfilPage() {
               <Shield size={13} /> Authentification 2FA
             </button>
           </div>
-        </div>
+        </Section>
 
-        <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
-          <p className="mb-2 text-sm font-black text-neutral-900">Données personnelles</p>
-          <p className="mb-4 text-xs text-neutral-500">Conformément au RGPD, vous pouvez exporter ou supprimer vos données à tout moment.</p>
-          <div className="flex flex-wrap gap-3">
-            <button type="button" className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300">
-              Exporter mes données
-            </button>
-            <button type="button" className="inline-flex h-9 items-center gap-2 rounded-full border border-red-200 px-4 text-xs font-semibold text-red-600 hover:bg-red-50">
-              Supprimer mon compte
-            </button>
-          </div>
-        </div>
-
-        <button type="submit" disabled={updateProfile.isPending}
-          className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-black transition-all disabled:opacity-60 ${saved ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20'}`}>
-          {saved ? <><CheckCircle2 size={15} /> Enregistré !</> : <><Save size={15} /> Enregistrer les modifications</>}
+        <button
+          type="submit"
+          disabled={updateProfile.isPending}
+          className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-black transition-all disabled:opacity-60 ${saved ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20'}`}
+        >
+          {saved ? <><CheckCircle2 size={15} /> Enregistre !</> : <><Save size={15} /> Enregistrer les modifications</>}
         </button>
       </form>
     </div>
   );
 }
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm sm:p-6">
+      <p className="mb-4 text-sm font-black text-neutral-900">{title}</p>
+      {children}
+    </div>
+  );
+}
+
 function F({ icon: Icon, label, value, onChange, type = 'text', readOnly, placeholder, required }: {
-  icon: React.ElementType; label: string; value: string;
+  icon: React.ElementType;
+  label: string;
+  value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  type?: string; readOnly?: boolean; placeholder?: string; required?: boolean;
+  type?: string;
+  readOnly?: boolean;
+  placeholder?: string;
+  required?: boolean;
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+      <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">
         {label}{required && <span className="ml-0.5 text-red-500">*</span>}
       </label>
       <div className="relative">
         <Icon size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-        <input type={type} value={value} onChange={onChange} readOnly={readOnly} placeholder={placeholder}
+        <input
+          type={type}
+          value={value}
+          onChange={onChange}
+          readOnly={readOnly}
+          placeholder={placeholder}
           className={`h-10 w-full rounded-xl border border-neutral-200 pl-9 pr-4 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 ${readOnly ? 'bg-neutral-50 text-neutral-500' : 'bg-white'}`}
         />
+      </div>
+    </div>
+  );
+}
+
+function Select({ label, value, onChange, options, readOnly }: {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: [string, string][];
+  readOnly?: boolean;
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label}</label>
+      <select
+        value={value}
+        onChange={onChange}
+        disabled={readOnly}
+        className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 disabled:bg-neutral-50 disabled:text-neutral-500"
+      >
+        {options.map(([optionValue, optionLabel]) => (
+          <option key={optionValue || optionLabel} value={optionValue}>{optionLabel}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function TextArea({ label, value, onChange, placeholder }: {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label}</label>
+      <textarea
+        value={value}
+        onChange={onChange}
+        rows={4}
+        placeholder={placeholder}
+        className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+      />
+    </div>
+  );
+}
+
+function TagInput({ icon: Icon, label, value, onChange, placeholder }: {
+  icon: React.ElementType;
+  label: string;
+  value: string[];
+  onChange: (next: string[]) => void;
+  placeholder?: string;
+}) {
+  const [draft, setDraft] = useState('');
+
+  const addTags = () => {
+    const tags = draft
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(Boolean);
+    if (tags.length === 0) return;
+    onChange([...new Set([...value, ...tags])].slice(0, 30));
+    setDraft('');
+  };
+
+  return (
+    <div>
+      <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label}</label>
+      <div className="rounded-xl border border-neutral-200 px-3 py-2 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-500/10">
+        <div className="flex flex-wrap gap-1.5">
+          {value.map(tag => (
+            <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-100">
+              {tag}
+              <button type="button" onClick={() => onChange(value.filter(item => item !== tag))} className="text-emerald-400 hover:text-emerald-700">
+                <X size={10} />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <Icon size={13} className="text-neutral-400" />
+          <input
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={addTags}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                addTags();
+              }
+            }}
+            placeholder={placeholder}
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-neutral-400"
+          />
+        </div>
       </div>
     </div>
   );

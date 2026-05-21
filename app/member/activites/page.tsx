@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { CalendarDays, Search, MapPin, Users, Loader2 } from 'lucide-react';
+import { CalendarDays, Search, MapPin, Users, Loader2, Eye, X } from 'lucide-react';
 import { useMemberActivities, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
 
 const CAT_COLORS: Record<string, string> = {
@@ -20,6 +20,7 @@ const CAT_COLORS: Record<string, string> = {
 export default function MemberActivitesPage() {
   const [search, setSearch] = useState('');
   const [cat, setCat]       = useState('all');
+  const [selected, setSelected] = useState<any | null>(null);
 
   const { data, isLoading } = useMemberActivities();
   const activities = data?.data?.activities ?? [];
@@ -91,7 +92,7 @@ export default function MemberActivitesPage() {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 mt-0.5">
                     <CalendarDays size={16} className="text-emerald-600" />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-black text-sm text-neutral-900">{a.title}</p>
                       <span className={`shrink-0 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${catCls}`}>{catLabel}</span>
@@ -108,12 +109,55 @@ export default function MemberActivitesPage() {
                       {a.capacity  && <span className="flex items-center gap-1"><Users size={10} />{a.capacity} places</span>}
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelected(a)}
+                    aria-label={`Voir ${a.title}`}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition-all hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
+                  >
+                    <Eye size={15} />
+                  </button>
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 backdrop-blur-sm sm:items-center">
+          <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+            <div className="flex items-start justify-between gap-4 border-b border-neutral-100 p-5">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">
+                  {ACTIVITY_CATEGORIES.find(c => c.value === selected.category)?.label ?? selected.category}
+                </p>
+                <h2 className="mt-1 text-lg font-black tracking-[-0.02em] text-neutral-900">{selected.title}</h2>
+              </div>
+              <button onClick={() => setSelected(null)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
+                <X size={15} />
+              </button>
+            </div>
+            <div className="space-y-4 p-5">
+              {selected.description && <p className="whitespace-pre-line text-sm leading-7 text-neutral-700">{selected.description}</p>}
+              <div className="grid gap-2 text-xs text-neutral-500 sm:grid-cols-2">
+                {selected.startDate && <Info icon={CalendarDays} text={new Date(selected.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })} />}
+                {selected.location && <Info icon={MapPin} text={selected.location} />}
+                {selected.capacity && <Info icon={Users} text={`${selected.capacity} places`} />}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Info({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl bg-neutral-50 px-3 py-2">
+      <Icon size={13} className="text-emerald-600" />
+      <span className="min-w-0 truncate">{text}</span>
     </div>
   );
 }
