@@ -10,6 +10,8 @@ import { getPostLoginRedirect } from '@/lib/auth/roles';
 import { formatInitials, formatShortName } from '@/lib/format-name';
 
 const NAV = [
+  { label: 'Missions',   href: '/missions' },
+  { label: 'Bureau',     href: '/bureau-executif' },
   { label: 'À propos',   href: '/a-propos' },
   { label: 'Activités',  href: '/activites' },
   { label: 'Galerie',    href: '/galerie' },

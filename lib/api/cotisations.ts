@@ -23,6 +23,7 @@ export interface AdminCotisationRow {
     firstName: string;
     lastName: string;
     email: string;
+    gender?: 'homme' | 'femme';
   };
   cotisation: {
     _id?: string;
@@ -31,6 +32,7 @@ export interface AdminCotisationRow {
     amount: number;
     paidAt?: string;
     reference?: string;
+    notes?: string;
   };
 }
 
@@ -59,6 +61,7 @@ export function useUpdateCotisationStatus() {
       status: CotisationStatus;
       paidAt?: string;
       reference?: string;
+      notes?: string;
     }) =>
       apiClient(`/api/v1/admin/cotisations/${vars.userId}`, {
         method: 'PUT',

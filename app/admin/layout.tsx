@@ -14,6 +14,7 @@ import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { isSuperAdmin, hasAdminRole } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
 import { formatFullName, formatInitials } from '@/lib/format-name';
+import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 
 type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean };
 
@@ -266,6 +267,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const displayName = user ? formatFullName(user.firstName, user.lastName) : 'Administrateur';
   const adminRole   = user?.roles.find(r => ['admin', 'super_admin'].includes(r.slug))?.name ?? 'Admin';
   const bureauPoste = formatBureauPosteForGender(user?.bureauPoste, user?.gender) || null;
+  const avatarUrl = memberPhotoUrl(user);
+  const initialsClass = memberInitialsClass(user?.gender);
 
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">
@@ -335,9 +338,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </>
               )}
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
-              {initials}
-            </div>
+            {avatarUrl ? (
+              <Image src={avatarUrl} alt={displayName} width={32} height={32} className="h-8 w-8 rounded-full object-cover ring-1 ring-neutral-200" />
+            ) : (
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${initialsClass}`}>
+                {initials}
+              </div>
+            )}
           </div>
         </header>
 

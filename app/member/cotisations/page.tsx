@@ -18,6 +18,10 @@ function fmt(dateStr?: string | null) {
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
+function formatCfa(amount?: number) {
+  return `${Number(amount ?? 0).toLocaleString('fr-FR')} F.CFA`;
+}
+
 /* ─── Skeleton ───────────────────────────────────────────── */
 function Skeleton() {
   return (
@@ -90,6 +94,7 @@ function ReceiptModal({ cot, user, onClose }: {
               { label: 'Produit',          value: `Frais d'adhésion — ${cot.year}` },
               { label: 'Date de paiement', value: fmt(cot.paidAt) },
               ...(cot.reference ? [{ label: 'Référence', value: cot.reference, mono: true }] : []),
+              ...(cot.notes ? [{ label: 'Commentaire', value: cot.notes }] : []),
             ].map((row, i) => (
               <div key={i} className="flex items-center justify-between border-b border-neutral-50 last:border-0 px-4 py-3">
                 <span className="text-xs font-semibold text-neutral-500">{row.label}</span>
@@ -100,7 +105,7 @@ function ReceiptModal({ cot, user, onClose }: {
 
           <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-100 px-5 py-4">
             <span className="text-sm font-semibold text-neutral-600">Montant total</span>
-            <span className="text-2xl font-black text-emerald-700">{cot.amount} €</span>
+            <span className="text-2xl font-black text-emerald-700">{formatCfa(cot.amount)}</span>
           </div>
 
           <p className="mt-4 text-center text-[10px] leading-relaxed text-neutral-400">
@@ -192,7 +197,7 @@ export default function MemberCotisationsPage() {
               </div>
               <div className="shrink-0 text-right hidden sm:block">
                 <p className="text-lg font-black text-neutral-900">
-                  {cot.status === 'exempt' ? '—' : `${cot.amount} €`}
+                  {cot.status === 'exempt' ? '—' : formatCfa(cot.amount)}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">

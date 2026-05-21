@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { apiClient } from '@/lib/api/client';
 import { formatFirstName, formatFullName, formatInitials } from '@/lib/format-name';
+import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, CreditCard, User, CalendarDays,
@@ -202,6 +203,8 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
   const firstName  = formatFirstName(user?.firstName ?? '');
   const lastName   = user?.lastName ?? '';
   const initials   = firstName && lastName ? formatInitials(firstName, lastName) : '…';
+  const avatarUrl = memberPhotoUrl(user);
+  const initialsClass = memberInitialsClass(user?.gender);
 
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">
@@ -264,9 +267,13 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
                 </>
               )}
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
-              {initials}
-            </div>
+            {avatarUrl ? (
+              <Image src={avatarUrl} alt={user ? formatFullName(user.firstName, user.lastName) : 'Profil'} width={32} height={32} className="h-8 w-8 rounded-full object-cover ring-1 ring-neutral-200" />
+            ) : (
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${initialsClass}`}>
+                {initials}
+              </div>
+            )}
           </div>
         </header>
 

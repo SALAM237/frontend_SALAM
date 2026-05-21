@@ -9,6 +9,7 @@ export interface AuthUser {
   memberStatus: 'pending' | 'active' | 'suspended' | 'rejected';
   roles: { name: string; slug: string; permissions: string[] }[];
   avatar?: string;
+  bureauPhoto?: string | null;
   bureauPoste?: string | null;
   customPermissions?: string[];
   deniedPermissions?: string[];

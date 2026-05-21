@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import {
   ChevronDown, Search, CheckCircle2, XCircle, ShieldOff,
-  CalendarDays, History, X, Upload, AlertTriangle, Bell,
+  CalendarDays, History, X, Upload, AlertTriangle,
   Eye, Settings2, Send, Loader2,
 } from 'lucide-react';
 import {
@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/cotisations';
 import type { AuditLogDoc } from '@/lib/api/audit-logs';
 import { formatFullName, formatInitials } from '@/lib/format-name';
+import { memberInitialsClass } from '@/lib/avatar';
 
 /* ─── Types locaux (UI only) ────────────────────────────── */
 interface MemberRow {
@@ -24,6 +25,9 @@ interface MemberRow {
   status: CotisationStatus;
   paidAt?: string;
   reference?: string;
+  notes?: string;
+  amount: number;
+  gender?: 'homme' | 'femme';
 }
 
 const YEARS = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
@@ -73,10 +77,17 @@ function mapRows(data: AdminCotisationRow[], year: number): MemberRow[] {
     firstName:    r.user.firstName,
     lastName:     r.user.lastName,
     email:        r.user.email,
+    gender:       r.user.gender,
     status:       r.cotisation.status,
+    amount:       r.cotisation.amount,
     paidAt:       r.cotisation.paidAt,
     reference:    r.cotisation.reference,
+    notes:        r.cotisation.notes,
   }));
+}
+
+function formatCfa(amount?: number) {
+  return `${Number(amount ?? 0).toLocaleString('fr-FR')} F.CFA`;
 }
 
 
@@ -146,7 +157,7 @@ function SettingsPanel({ year, deadline, setDeadline }: {
             <div className="space-y-1.5">
               <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Programmer les relances</label>
               <div className="relative">
-                <Bell size={13} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                <Send size={13} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                 <select value={reminder} onChange={e => setReminder(e.target.value)}
                   className="w-full appearance-none rounded-xl border border-neutral-200 bg-white py-2.5 pl-9 pr-9 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15">
                   {REMINDER_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -198,9 +209,10 @@ function ReceiptModal({ member, year, onClose }: { member: MemberRow; year: numb
             { label: 'Adhérent',         value: formatFullName(member.firstName, member.lastName) },
             { label: 'N° membre',        value: member.memberId },
             { label: 'Année',            value: String(year) },
-            { label: 'Montant',          value: '30,00 €' },
+            { label: 'Montant',          value: formatCfa(member.amount) },
             { label: 'Date de paiement', value: fmt(member.paidAt) },
             ...(member.reference ? [{ label: 'Référence', value: member.reference }] : []),
+            ...(member.notes ? [{ label: 'Commentaire', value: member.notes }] : []),
           ].map(row => (
             <div key={row.label} className="flex items-center justify-between">
               <span className="text-xs font-semibold text-neutral-400">{row.label}</span>
@@ -223,19 +235,20 @@ function ReceiptModal({ member, year, onClose }: { member: MemberRow; year: numb
 /* ─── Payment modal ───────────────────────────────────────── */
 function PaymentModal({ member, onConfirm, onClose, loading }: {
   member: MemberRow;
-  onConfirm: (data: { paidAt: string; reference: string; filename: string }) => void;
+  onConfirm: (data: { paidAt: string; reference: string; notes: string; filename: string }) => void;
   onClose: () => void;
   loading?: boolean;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [paidAt,    setPaidAt]    = useState(today);
   const [reference, setReference] = useState('');
+  const [notes,     setNotes]     = useState('');
   const [filename,  setFilename]  = useState('');
   const [error,     setError]     = useState('');
 
   const submit = () => {
     if (!paidAt) { setError('La date de paiement est requise.'); return; }
-    onConfirm({ paidAt, reference, filename });
+    onConfirm({ paidAt, reference, notes, filename });
   };
 
   return (
@@ -269,6 +282,16 @@ function PaymentModal({ member, onConfirm, onClose, loading }: {
             <input type="text" value={reference} onChange={e => setReference(e.target.value)}
               placeholder="Ex: VIR-BNP-0215, PAYPAL-XXXXX…"
               className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none placeholder:text-neutral-300 transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">
+              Commentaire <span className="text-neutral-300 font-normal normal-case">(optionnel)</span>
+            </label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)}
+              placeholder="Virement adressé au trésorier"
+              rows={3}
+              className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none placeholder:text-neutral-300 transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
             />
           </div>
           <div className="space-y-1.5">
@@ -340,10 +363,10 @@ export default function CotisationsAdminPage() {
     updateStatus.mutate({ userId: member.userId, year, status: newStatus });
   };
 
-  const confirmPayment = (data: { paidAt: string; reference: string }) => {
+  const confirmPayment = (data: { paidAt: string; reference: string; notes: string }) => {
     if (!modal) return;
     updateStatus.mutate(
-      { userId: modal.userId, year, status: 'paid', paidAt: data.paidAt, reference: data.reference },
+      { userId: modal.userId, year, status: 'paid', paidAt: data.paidAt, reference: data.reference, notes: data.notes },
       { onSuccess: () => setModal(null) },
     );
   };
@@ -423,7 +446,7 @@ export default function CotisationsAdminPage() {
               return (
                 <div key={member.userId} className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-neutral-50/60">
                   <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${cfg.dot} shadow-sm`} />
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black text-white ${memberInitialsClass(member.gender)}`}>
                     {formatInitials(member.firstName, member.lastName)}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -444,7 +467,7 @@ export default function CotisationsAdminPage() {
                             ? 'border-orange-200 bg-orange-50 text-orange-500'
                             : 'border-neutral-200 bg-white text-neutral-400 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600'
                         }`}>
-                        {reminderSentId === member.userId ? <Loader2 size={13} className="animate-spin" /> : <Bell size={13} />}
+                        {reminderSentId === member.userId ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
                       </button>
                     )}
                     {member.status === 'paid' && (
