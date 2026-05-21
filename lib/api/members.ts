@@ -53,8 +53,11 @@ export interface CreateMemberPayload {
 export interface UpdateMemberPayload {
   firstName?: string;
   lastName?: string;
+  email?: string;
   phone?: string;
   memberStatus?: MemberStatus;
+  gender?: 'homme' | 'femme';
+  promotionYear?: number;
 }
 
 /* ── Admin ──────────────────────────────────────────────── */

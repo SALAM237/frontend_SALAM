@@ -9,6 +9,10 @@ export interface ApiResponse<T = unknown> {
 // Serialise les tentatives de refresh concurrentes (plusieurs hooks en 401 en même temps)
 let _refreshing: Promise<string | null> | null = null;
 
+function canAttemptRefresh(path: string): boolean {
+  return !path.includes('/auth/');
+}
+
 async function silentRefresh(): Promise<string | null> {
   if (_refreshing) return _refreshing;
 
@@ -85,7 +89,7 @@ export async function apiClient<T = unknown>(
   });
 
   // 401 → refresh silencieux + rejeu (une seule fois, jamais sur /auth/refresh lui-même)
-  if (res.status === 401 && !_retry && !path.includes('/auth/refresh')) {
+  if (res.status === 401 && !_retry && canAttemptRefresh(path)) {
     const newToken = await silentRefresh();
     if (newToken) {
       return apiClient<T>(path, { ...init, token: newToken, _retry: true });

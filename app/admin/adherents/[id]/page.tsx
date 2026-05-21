@@ -74,9 +74,12 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
             {isActive ? <CheckCircle2 size={12} /> : <Clock size={12} />}
             {isActive ? 'Actif' : 'En attente'}
           </span>
-          <button className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-sm font-semibold text-neutral-600 hover:border-neutral-300">
+          <Link
+            href={`/admin/adherents/nouveau?edit=${id}`}
+            className="inline-flex h-9 items-center gap-2 rounded-full bg-neutral-100 px-4 text-sm font-semibold text-neutral-700 transition hover:bg-yellow-300 hover:text-neutral-950"
+          >
             <Edit size={13} /> Modifier
-          </button>
+          </Link>
 
           {/* Supprimer — super_admin uniquement */}
           {isSuperAdmin && (

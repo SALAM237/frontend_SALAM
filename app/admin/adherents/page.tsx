@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   UserPlus, CreditCard, Search, Eye, CheckCircle2, Clock, XCircle,
-  Download, Loader2, Trash2, Mail, ChevronDown,
+  Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
 } from 'lucide-react';
 import { useAdminMembers, useHardDeleteMember, useResendInvitation, type MemberListItem } from '@/lib/api/members';
 import { useAuthStore } from '@/store/auth.store';
@@ -189,15 +189,15 @@ export default function AdminAdherentsPage() {
             <div className="hidden lg:block">
               <table className="w-full table-fixed text-[11px]">
                 <colgroup>
-                  <col className="w-[20%]" />
-                  <col className="w-[9%]" />
                   <col className="w-[19%]" />
-                  <col className="w-[11%]" />
                   <col className="w-[9%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[8%]" />
-                  <col className="w-[8%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[10%]" />
                   <col className="w-[7%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[13%]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-neutral-100 bg-neutral-50/60">
@@ -251,7 +251,7 @@ export default function AdminAdherentsPage() {
                                 onClick={e => handleResend(e, m._id)}
                                 disabled={resendInvitation.isPending}
                                 title="Renvoyer l'invitation"
-                                className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-200 text-blue-500 transition-all hover:border-blue-500 hover:bg-blue-500 hover:text-white disabled:opacity-40"
+                                className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-500 transition-all hover:bg-blue-500 hover:text-white disabled:opacity-40"
                               >
                                 {resendInvitation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
                               </button>
@@ -260,9 +260,17 @@ export default function AdminAdherentsPage() {
                             {/* View detail */}
                             <Link
                               href={`/admin/adherents/${m._id}`}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition-all hover:border-emerald-600 hover:bg-emerald-600 hover:text-white"
+                              className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-50 text-neutral-500 transition-all hover:bg-emerald-600 hover:text-white"
                             >
                               <Eye size={13} />
+                            </Link>
+
+                            <Link
+                              href={`/admin/adherents/nouveau?edit=${m._id}`}
+                              title="Modifier"
+                              className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-50 text-neutral-500 transition-all hover:bg-yellow-400 hover:text-neutral-950"
+                            >
+                              <PencilLine size={13} />
                             </Link>
 
                             {/* Hard delete — super_admin only */}
@@ -271,7 +279,7 @@ export default function AdminAdherentsPage() {
                                 <button
                                   onClick={e => handleDeleteClick(e, m._id)}
                                   disabled={hardDelete.isPending}
-                                  className="flex h-7 items-center gap-1 rounded-lg border border-red-500 bg-red-500 px-2 text-[10px] font-black text-white hover:bg-red-600 disabled:opacity-50"
+                                  className="flex h-7 items-center gap-1 rounded-lg bg-red-500 px-2 text-[10px] font-black text-white hover:bg-red-600 disabled:opacity-50"
                                 >
                                   {hardDelete.isPending ? <Loader2 size={11} className="animate-spin" /> : 'Confirmer'}
                                 </button>
@@ -279,7 +287,7 @@ export default function AdminAdherentsPage() {
                                 <button
                                   onClick={e => handleDeleteClick(e, m._id)}
                                   title="Supprimer définitivement"
-                                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-200 text-red-400 transition-all hover:border-red-500 hover:bg-red-500 hover:text-white"
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 text-red-400 transition-all hover:bg-red-500 hover:text-white"
                                 >
                                   <Trash2 size={12} />
                                 </button>
@@ -352,23 +360,30 @@ export default function AdminAdherentsPage() {
                                     onClick={e => handleResend(e, m._id)}
                                     disabled={resendInvitation.isPending}
                                     title="Renvoyer l'invitation"
-                                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-200 bg-white text-blue-500 transition hover:border-blue-300 hover:bg-blue-50 disabled:opacity-40"
+                                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-500 transition hover:bg-blue-500 hover:text-white disabled:opacity-40"
                                   >
                                     <Mail size={12} />
                                   </button>
                                 )}
                                 <Link
                                   href={`/admin/adherents/${m._id}`}
-                                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-200 bg-white text-emerald-600 transition hover:border-emerald-500 hover:bg-emerald-50"
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition hover:bg-emerald-600 hover:text-white"
                                 >
                                   <Eye size={12} />
+                                </Link>
+                                <Link
+                                  href={`/admin/adherents/nouveau?edit=${m._id}`}
+                                  title="Modifier"
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-yellow-50 text-yellow-700 transition hover:bg-yellow-400 hover:text-neutral-950"
+                                >
+                                  <PencilLine size={12} />
                                 </Link>
                                 {isSuperAdmin && (
                                   isConfirming ? (
                                     <button
                                       onClick={e => handleDeleteClick(e, m._id)}
                                       disabled={hardDelete.isPending}
-                                      className="flex h-7 items-center gap-1 rounded-lg border border-red-400 bg-red-500 px-2 text-[9px] font-black text-white transition hover:bg-red-600 disabled:opacity-50"
+                                      className="flex h-7 items-center gap-1 rounded-lg bg-red-500 px-2 text-[9px] font-black text-white transition hover:bg-red-600 disabled:opacity-50"
                                     >
                                       {hardDelete.isPending ? <Loader2 size={11} className="animate-spin" /> : 'OK ?'}
                                     </button>
@@ -376,7 +391,7 @@ export default function AdminAdherentsPage() {
                                     <button
                                       onClick={e => handleDeleteClick(e, m._id)}
                                       title="Supprimer définitivement"
-                                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-100 bg-white text-red-400 transition hover:border-red-300 hover:bg-red-50"
+                                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 text-red-400 transition hover:bg-red-500 hover:text-white"
                                     >
                                       <Trash2 size={12} />
                                     </button>

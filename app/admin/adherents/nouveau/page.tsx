@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   UserPlus, CheckCircle2, CreditCard, ArrowLeft,
@@ -10,7 +11,7 @@ import {
 } from 'lucide-react';
 import Papa from 'papaparse';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
-import { useCreateMember, useImportMembersCSV, type CsvImportMember, type ImportResult } from '@/lib/api/members';
+import { useAdminMember, useCreateMember, useImportMembersCSV, useUpdateMember, type CsvImportMember, type ImportResult } from '@/lib/api/members';
 import { formatFirstName, formatFullName, formatLastName } from '@/lib/format-name';
 
 /* ─── Types ─────────────────────────────────────────────── */
@@ -122,6 +123,10 @@ function SelectField({ label, value, onChange, options }: {
 
 /* ─── Main page ─────────────────────────────────────────── */
 export default function NouveauAdherentPage() {
+  const router = useRouter();
+  const [editId, setEditId] = useState('');
+  const isEditMode = !!editId;
+
   /* ── Mode ────────────────────────────────────── */
   const [mode, setMode] = useState<Mode>('single');
 
@@ -134,6 +139,29 @@ export default function NouveauAdherentPage() {
     promotionYear: '',
   });
   const createMember = useCreateMember();
+  const updateMember = useUpdateMember(editId);
+  const { data: editData, isLoading: isEditLoading } = useAdminMember(editId);
+  const editingMember = editData?.data;
+
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('edit') ?? '';
+    if (!id) return;
+    setEditId(id);
+    setMode('single');
+  }, []);
+
+  useEffect(() => {
+    if (!editingMember) return;
+    setForm(prev => ({
+      ...prev,
+      gender: editingMember.gender ?? '',
+      firstName: editingMember.firstName ?? '',
+      lastName: editingMember.lastName ?? '',
+      email: editingMember.email ?? '',
+      phone: editingMember.phone ?? '',
+      promotionYear: editingMember.promotionYear ? String(editingMember.promotionYear) : '',
+    }));
+  }, [editingMember]);
 
   /* ── CSV states ──────────────────────────────── */
   const [csvHeaders,    setCsvHeaders]    = useState<string[]>([]);
@@ -150,7 +178,7 @@ export default function NouveauAdherentPage() {
       setForm(prev => ({ ...prev, [k]: e.target.value }));
 
   const cardData: MemberCardData = {
-    id: generatedId,
+    id: editingMember?.memberId ?? generatedId,
     firstName: form.firstName || 'Prénom',
     lastName:  form.lastName  || 'Nom',
     gender:    (form.gender as 'homme' | 'femme') || undefined,
@@ -165,6 +193,19 @@ export default function NouveauAdherentPage() {
 
   const handleValidate = async () => {
     try {
+      if (isEditMode) {
+        await updateMember.mutateAsync({
+          firstName:     form.firstName,
+          lastName:      form.lastName,
+          email:         form.email,
+          phone:         form.phone || undefined,
+          gender:        (form.gender as 'homme' | 'femme') || undefined,
+          promotionYear: form.promotionYear ? Number(form.promotionYear) : undefined,
+        });
+        router.push(`/admin/adherents/${editId}`);
+        return;
+      }
+
       await createMember.mutateAsync({
         firstName:     form.firstName,
         lastName:      form.lastName,
@@ -176,7 +217,7 @@ export default function NouveauAdherentPage() {
       });
       setStep('done');
     } catch {
-      // useCreateMember's onError affiche le toast d'erreur
+      // Les hooks API affichent deja le toast d'erreur.
     }
   };
 
@@ -249,6 +290,12 @@ export default function NouveauAdherentPage() {
     setCsvError(null); setImportResult(null);
   };
 
+  if (isEditMode && isEditLoading) return (
+    <div className="flex min-h-[300px] items-center justify-center">
+      <Loader2 size={24} className="animate-spin text-emerald-600" />
+    </div>
+  );
+
   /* ── Écran done (saisie manuelle) ────────────── */
   if (mode === 'single' && step === 'done') return (
     <div className="mx-auto max-w-lg py-12 text-center">
@@ -281,7 +328,9 @@ export default function NouveauAdherentPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Aperçu de la fiche</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">Vérifiez les informations avant de créer le membre.</p>
+        <p className="mt-0.5 text-sm text-neutral-500">
+          {isEditMode ? 'Vérifiez les informations avant d’enregistrer les modifications.' : 'Vérifiez les informations avant de créer le membre.'}
+        </p>
       </div>
       <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
         <div className="grid gap-3 text-sm sm:grid-cols-2">
@@ -312,11 +361,11 @@ export default function NouveauAdherentPage() {
         <button onClick={() => setStep('form')} className="inline-flex h-10 items-center gap-2 rounded-full border border-neutral-200 px-5 text-sm font-semibold text-neutral-700 hover:border-neutral-300">
           <ArrowLeft size={14} /> Modifier
         </button>
-        <button onClick={handleValidate} disabled={createMember.isPending}
+        <button onClick={handleValidate} disabled={createMember.isPending || updateMember.isPending}
           className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-60">
-          {createMember.isPending
+          {createMember.isPending || updateMember.isPending
             ? <><Loader2 size={14} className="animate-spin" /> Enregistrement…</>
-            : <><CheckCircle2 size={14} /> Valider et créer la fiche</>
+            : <><CheckCircle2 size={14} /> {isEditMode ? 'Enregistrer les modifications' : 'Valider et créer la fiche'}</>
           }
         </button>
       </div>
@@ -392,12 +441,13 @@ export default function NouveauAdherentPage() {
           <ArrowLeft size={15} />
         </Link>
         <div>
-          <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Nouveau membre</h1>
-          <p className="text-sm text-neutral-500">Saisie manuelle ou import de données historiques</p>
+          <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">{isEditMode ? 'Modifier le membre' : 'Nouveau membre'}</h1>
+          <p className="text-sm text-neutral-500">{isEditMode ? 'Mise à jour de la fiche adhérent' : 'Saisie manuelle ou import de données historiques'}</p>
         </div>
       </div>
 
       {/* Mode toggle */}
+      {!isEditMode && (
       <div className="flex gap-1 rounded-2xl border border-neutral-100 bg-white p-1 shadow-sm">
         <button onClick={() => setMode('single')}
           className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-black transition ${mode === 'single' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-50'}`}>
@@ -408,6 +458,7 @@ export default function NouveauAdherentPage() {
           <FileSpreadsheet size={14} /> Importer CSV
         </button>
       </div>
+      )}
 
       {/* ─── Mode saisie manuelle ──────────────── */}
       {mode === 'single' && (
@@ -476,7 +527,7 @@ export default function NouveauAdherentPage() {
 
           <button type="submit"
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20">
-            <UserPlus size={15} /> Prévisualiser et créer
+            <UserPlus size={15} /> {isEditMode ? 'Prévisualiser les modifications' : 'Prévisualiser et créer'}
           </button>
         </form>
       )}
