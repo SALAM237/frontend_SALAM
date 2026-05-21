@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { FileText, Eye, X, CheckCircle2, Clock, XCircle, Euro, Loader2 } from 'lucide-react';
+import { Banknote, FileText, Eye, X, CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react';
 import { useMemberInvoices, type MemberInvoiceDoc } from '@/lib/api/invoices';
 
 /* ─── Helpers ─────────────────────────────────────────── */
@@ -21,6 +21,10 @@ function fmt(d?: string | null) {
 
 function isPending(status: RecipientStatus) {
   return status === 'pending' || status === 'sent';
+}
+
+function fmtCfa(amount: number) {
+  return `${Number(amount || 0).toLocaleString('fr-FR')} F.CFA`;
 }
 
 /* ─── Skeleton ────────────────────────────────────────── */
@@ -82,7 +86,7 @@ function InvoiceModal({ invoice, onClose }: { invoice: MemberInvoiceDoc; onClose
             <p className="text-xs text-neutral-500 leading-relaxed">{invoice.description}</p>
           )}
           {[
-            { label: 'Montant',          value: `${invoice.amount.toFixed(2)} €` },
+            { label: 'Montant',          value: fmtCfa(invoice.amount) },
             { label: 'Date d\'émission', value: fmt(invoice.issuedAt) },
             { label: 'Échéance',         value: fmt(invoice.dueDate) },
             ...(invoice.myRecipient?.paidAt
@@ -100,7 +104,7 @@ function InvoiceModal({ invoice, onClose }: { invoice: MemberInvoiceDoc; onClose
           {pending && invoice.paymentLink && (
             <a href={invoice.paymentLink} target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]">
-              <Euro size={14} /> Payer maintenant
+              <Banknote size={14} /> Payer maintenant
             </a>
           )}
           <button onClick={onClose}
@@ -138,7 +142,7 @@ function InvoiceRow({ invoice, onView }: { invoice: MemberInvoiceDoc; onView: ()
         </p>
       </div>
       <div className="shrink-0 text-right hidden sm:block">
-        <p className="text-sm font-black text-neutral-900">{invoice.amount.toFixed(2)} €</p>
+        <p className="text-sm font-black text-neutral-900">{fmtCfa(invoice.amount)}</p>
       </div>
       <button onClick={onView}
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600"
@@ -180,9 +184,9 @@ export default function MemberFacturesPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Total facturé', value: isLoading ? '…' : `${total.toFixed(2)} €`,        color: 'text-neutral-900', bg: 'bg-neutral-50  border-neutral-100' },
-          { label: 'Payé',          value: isLoading ? '…' : `${paidTotal.toFixed(2)} €`,    color: 'text-emerald-700', bg: 'bg-emerald-50  border-emerald-100' },
-          { label: 'En attente',    value: isLoading ? '…' : `${pendingTotal.toFixed(2)} €`, color: 'text-amber-700',   bg: 'bg-amber-50    border-amber-100'   },
+          { label: 'Total facturé', value: isLoading ? '…' : fmtCfa(total),        color: 'text-neutral-900', bg: 'bg-neutral-50  border-neutral-100' },
+          { label: 'Payé',          value: isLoading ? '…' : fmtCfa(paidTotal),    color: 'text-emerald-700', bg: 'bg-emerald-50  border-emerald-100' },
+          { label: 'En attente',    value: isLoading ? '…' : fmtCfa(pendingTotal), color: 'text-amber-700',   bg: 'bg-amber-50    border-amber-100'   },
         ].map(s => (
           <div key={s.label} className={`rounded-2xl border p-4 ${s.bg}`}>
             <p className={`text-xl font-black leading-none ${s.color}`}>{s.value}</p>

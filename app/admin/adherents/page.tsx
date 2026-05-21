@@ -9,6 +9,7 @@ import {
 import { useAdminMembers, useHardDeleteMember, useResendInvitation, type MemberListItem } from '@/lib/api/members';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName, formatInitials } from '@/lib/format-name';
+import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 
 type MemberStatus = 'active' | 'pending' | 'suspended';
 
@@ -218,13 +219,19 @@ export default function AdminAdherentsPage() {
                     const SI = s.icon;
                     const c  = cotisationConfig[m.cotisationStatus] ?? cotisationConfig.unpaid;
                     const isConfirming = confirmDeleteId === m._id;
+                    const photoUrl = memberPhotoUrl(m);
                     return (
                       <tr key={m._id} className="group transition-colors hover:bg-neutral-50/55">
                         <td className="px-3 py-3">
                           <div className="flex min-w-0 items-center gap-2">
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[10px] font-black text-white">
-                              {formatInitials(m.firstName, m.lastName)}
-                            </div>
+                            {photoUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={photoUrl} alt={formatFullName(m.firstName, m.lastName)} className="h-7 w-7 shrink-0 rounded-full object-cover" />
+                            ) : (
+                              <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${memberInitialsClass(m.gender)}`}>
+                                {formatInitials(m.firstName, m.lastName)}
+                              </div>
+                            )}
                             <p className="min-w-0 truncate text-[11px] font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                           </div>
                         </td>
@@ -310,6 +317,7 @@ export default function AdminAdherentsPage() {
                 const c = cotisationConfig[m.cotisationStatus] ?? cotisationConfig.unpaid;
                 const isConfirming = confirmDeleteId === m._id;
                 const isExpanded = expandedId === m._id;
+                const photoUrl = memberPhotoUrl(m);
                 return (
                   <div key={m._id} className="px-3 py-3 transition-colors hover:bg-neutral-50/60 sm:px-4">
                     <button
@@ -317,9 +325,14 @@ export default function AdminAdherentsPage() {
                       onClick={() => setExpandedId(isExpanded ? null : m._id)}
                       className="flex w-full items-center gap-3 rounded-2xl text-left transition active:scale-[0.995]"
                     >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white shadow-sm shadow-emerald-900/10">
-                        {formatInitials(m.firstName, m.lastName)}
-                      </div>
+                      {photoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={photoUrl} alt={formatFullName(m.firstName, m.lastName)} className="h-10 w-10 shrink-0 rounded-2xl object-cover shadow-sm" />
+                      ) : (
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-xs font-black text-white shadow-sm ${memberInitialsClass(m.gender)}`}>
+                          {formatInitials(m.firstName, m.lastName)}
+                        </div>
+                      )}
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[13px] font-black leading-tight text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                         <p className="mt-0.5 truncate font-mono text-[10px] text-neutral-400">{m.memberId}</p>

@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   Users, UserPlus, CreditCard, CalendarDays, TrendingUp, Activity,
-  ArrowRight, MoreHorizontal, CheckCircle2, Clock, XCircle,
+  ArrowRight, MoreHorizontal, CheckCircle2, Clock, XCircle, ShieldCheck,
 } from 'lucide-react';
 import { useAdminStats } from '@/lib/api/dashboard';
+import { usePendingValidations } from '@/lib/api/validations';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFirstName, formatFullName, formatInitials } from '@/lib/format-name';
+import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 
 const fadeUp = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
@@ -33,8 +35,10 @@ function fmt(d: string) {
 
 export default function AdminDashboardPage() {
   const { data: statsRes, isLoading } = useAdminStats();
+  const { data: pendingRes } = usePendingValidations();
   const { user } = useAuthStore();
   const stats = statsRes?.data;
+  const pendingTotal = pendingRes?.data?.total ?? 0;
 
   const statCards = [
     {
@@ -80,9 +84,18 @@ export default function AdminDashboardPage() {
             Bienvenue{user ? `, ${formatFirstName(user.firstName)}` : ''}<span className="hidden sm:inline"> · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
           </p>
         </div>
-        <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20">
-          <UserPlus size={14} /> <span className="hidden sm:inline">Nouveau membre</span>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {pendingTotal > 0 && (
+            <Link href="/admin/validations" className="inline-flex h-9 items-center gap-2 rounded-full bg-amber-500 px-4 text-sm font-black text-white transition-all hover:bg-amber-600 hover:shadow-lg hover:shadow-amber-500/20">
+              <ShieldCheck size={14} />
+              <span className="hidden sm:inline">Validation en attente</span>
+              <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px]">{pendingTotal}</span>
+            </Link>
+          )}
+          <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20">
+            <UserPlus size={14} /> <span className="hidden sm:inline">Nouveau membre</span>
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}
@@ -149,9 +162,14 @@ export default function AdminDashboardPage() {
                     <tr key={m._id} className="group transition-colors hover:bg-neutral-50/50">
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
-                            {formatInitials(m.firstName, m.lastName)}
-                          </div>
+                          {memberPhotoUrl(m) ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={memberPhotoUrl(m)} alt={formatFullName(m.firstName, m.lastName)} className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                          ) : (
+                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black text-white ${memberInitialsClass((m as any).gender)}`}>
+                              {formatInitials(m.firstName, m.lastName)}
+                            </div>
+                          )}
                           <p className="font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                         </div>
                       </td>
@@ -187,9 +205,14 @@ export default function AdminDashboardPage() {
               const s = statusStyle[m.memberStatus] ?? statusStyle.pending;
               return (
                 <div key={m._id} className="flex items-center gap-3 px-4 py-3.5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-sm font-black text-white">
-                    {formatInitials(m.firstName, m.lastName)}
-                  </div>
+                  {memberPhotoUrl(m) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={memberPhotoUrl(m)} alt={formatFullName(m.firstName, m.lastName)} className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                  ) : (
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${memberInitialsClass((m as any).gender)}`}>
+                      {formatInitials(m.firstName, m.lastName)}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                     <p className="text-xs text-neutral-400">{m.memberId}</p>

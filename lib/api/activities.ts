@@ -65,6 +65,16 @@ export function useMemberActivities(category?: string) {
   });
 }
 
+export function useMemberActivity(slug: string) {
+  const token = useAuthStore(s => s.accessToken);
+  return useQuery({
+    queryKey: ['member-activity', slug],
+    queryFn: () => apiClient<ActivityDoc>(`/api/v1/member/activities/${slug}`, { token: token ?? '' }),
+    enabled: !!token && !!slug,
+    staleTime: 60_000,
+  });
+}
+
 /* ── Admin ─────────────────────────────────────────────────── */
 export function useActivities(params?: { status?: string; category?: string }) {
   const token = useAuthStore(s => s.accessToken);

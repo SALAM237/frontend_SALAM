@@ -7,26 +7,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, CalendarDays,
   Images, Newspaper, Settings, LogOut, Menu, X, ChevronRight, Bell,
-  Banknote, FileText, History, MessageSquare, Shield, Loader2, Globe,
+  Banknote, FileText, History, MessageSquare, Shield, Loader2, Globe, ShieldCheck,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
-import { isSuperAdmin, hasAdminRole } from '@/lib/auth/roles';
+import { isSuperAdmin, hasAdminRole, hasAnyPermission } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 
-type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean };
+type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; permissions?: string[] };
 
 const BASE_NAV: NavItem[] = [
   { label: 'Tableau de bord',   href: '/admin/dashboard',         icon: LayoutDashboard },
   { label: 'Adhérents',         href: '/admin/adherents',         icon: Users },
   { label: "Frais d'adhésion",  href: '/admin/cotisations',       icon: Banknote },
   { label: 'Facturation',       href: '/admin/facturation',       icon: FileText },
+  { label: 'Tresorerie',        href: '/admin/tresorerie',        icon: Banknote, permissions: ['treasury.read', 'treasury.create', 'treasury.update', 'treasury.delete'] },
   { label: 'Activités',         href: '/admin/activites',         icon: CalendarDays },
   { label: 'Galerie',           href: '/admin/galerie',           icon: Images },
   { label: 'Actualités',        href: '/admin/actualites',        icon: Newspaper },
   { label: 'Messages',          href: '/admin/messages',          icon: MessageSquare },
+  { label: 'Validations',       href: '/admin/validations',       icon: ShieldCheck, permissions: ['content.publish', 'gallery.publish', 'networking.publish', 'opportunities.publish'] },
   { label: 'Historique',        href: '/admin/historique',        icon: History },
   { label: 'Rôles & Accès',     href: '/admin/roles',             icon: Shield, superAdminOnly: true },
   { label: 'Bureau',            href: '/admin/bureau',            icon: Users },
@@ -209,17 +211,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const restore = async () => {
       try {
+        let token: string;
+        let restoredUser: AuthUser;
+        try {
+
         // Récupérer un nouvel access token via le refresh token httpOnly
         const refreshRes = await apiClient<{ accessToken: string }>(
           '/api/v1/auth/refresh', { method: 'POST' },
         );
-        const token = refreshRes.data.accessToken;
+        token = refreshRes.data.accessToken;
 
         // Charger les données utilisateur
         const meRes = await apiClient<AuthUser>('/api/v1/auth/me', { token });
+        restoredUser = meRes.data;
 
         // Vérifier le rôle admin (double-check côté client)
-        if (!hasAdminRole(meRes.data)) {
+        } catch {
+          const sessionRes = await fetch('/api/auth/session', { cache: 'no-store' });
+          if (!sessionRes.ok) throw new Error('local_session_expired');
+          const session = await sessionRes.json();
+          token = session.accessToken;
+          restoredUser = session.user;
+        }
+
+        if (!hasAdminRole(restoredUser)) {
           clearAuth();
           await fetch('/api/auth/session', { method: 'DELETE' });
           router.replace('/');
@@ -233,7 +248,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           body: JSON.stringify({ accessToken: token }),
         });
 
-        restoreAuth(meRes.data, token);
+        restoreAuth(restoredUser, token);
       } catch {
         // Session expirée ou invalide → retour au login admin
         clearAuth();
@@ -266,7 +281,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const SA  = isSuperAdmin(user);
-  const nav = BASE_NAV.filter(n => !n.superAdminOnly || SA);
+  const nav = BASE_NAV.filter(n => {
+    if (n.superAdminOnly && !SA) return false;
+    if (n.permissions && !hasAnyPermission(user, n.permissions)) return false;
+    return true;
+  });
 
   const currentPage = nav.find(n => n.href === pathname || (n.href !== '/admin/dashboard' && pathname.startsWith(n.href)));
   const initials    = user ? formatInitials(user.firstName, user.lastName, 'A') : 'A';

@@ -7,13 +7,13 @@ import { PageHero } from '@/components/public/PageHero';
 
 // export const revalidate = 3600; // désactivé : 'use client' — non supporté, cause une erreur Vercel build
 
-const MONTANTS = [10, 20, 50, 100, 200];
+const MONTANTS = [5000, 10000, 25000, 50000, 100000];
 
 const IMPACTS = [
-  { montant: '10€', impact: "Participation aux frais d'une activité solidaire." },
-  { montant: '20€', impact: "Soutien à l'organisation d'un atelier d'orientation." },
-  { montant: '50€', impact: "Aide à l'accompagnement d'un étudiant nouvellement arrivé." },
-  { montant: '100€', impact: "Contribution à l'organisation d'un événement communautaire." },
+  { montant: '5 000 F.CFA', impact: "Participation aux frais d'une activité solidaire." },
+  { montant: '10 000 F.CFA', impact: "Soutien à l'organisation d'un atelier d'orientation." },
+  { montant: '25 000 F.CFA', impact: "Aide à l'accompagnement d'un étudiant nouvellement arrivé." },
+  { montant: '50 000 F.CFA', impact: "Contribution à l'organisation d'un événement communautaire." },
 ];
 
 export default function DonPage() {
@@ -88,7 +88,7 @@ export default function DonPage() {
                               : 'border-neutral-200 bg-white text-neutral-700 hover:border-emerald-400'
                           }`}
                         >
-                          {m}€
+                          {m.toLocaleString('fr-FR')} F.CFA
                         </button>
                       ))}
                     </div>
@@ -103,7 +103,7 @@ export default function DonPage() {
                           placeholder="Montant personnalisé"
                           className={`${inputCls} pr-8`}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">€</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">F.CFA</span>
                       </div>
                     </div>
                   </div>
@@ -121,7 +121,7 @@ export default function DonPage() {
 
                   {finalMontant > 0 && (
                     <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4">
-                      <p className="text-sm font-black text-emerald-800">Total : {finalMontant}€</p>
+                      <p className="text-sm font-black text-emerald-800">Total : {Number(finalMontant).toLocaleString('fr-FR')} F.CFA</p>
                       <p className="text-xs text-emerald-600 mt-0.5">Reçu fiscal disponible après confirmation.</p>
                     </div>
                   )}
@@ -131,7 +131,7 @@ export default function DonPage() {
                     disabled={loading || !finalMontant}
                     className="flex h-12 items-center justify-center gap-2 rounded-full bg-emerald-600 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <><Heart size={14} /> Faire un don de {finalMontant || '...'}€</>}
+                    {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <><Heart size={14} /> Faire un don de {finalMontant ? Number(finalMontant).toLocaleString('fr-FR') : '...'} F.CFA</>}
                   </button>
 
                   <p className="flex items-center justify-center gap-1.5 text-[11px] text-neutral-400">

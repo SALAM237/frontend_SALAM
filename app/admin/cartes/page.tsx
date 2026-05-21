@@ -6,7 +6,7 @@ import { ArrowLeft, CreditCard, Search, Loader2, Users } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
-import { assetUrl } from '@/lib/assets';
+import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 
 function toCardData(m: MemberListItem): MemberCardData {
   return {
@@ -16,7 +16,7 @@ function toCardData(m: MemberListItem): MemberCardData {
     gender:    m.gender,
     role:      'Membre actif',
     year:      new Date().getFullYear(),
-    photo:     assetUrl(m.avatar) || m.avatar,
+    photo:     memberPhotoUrl(m),
   };
 }
 
@@ -128,6 +128,7 @@ export default function CartesPage() {
                 {filtered.map(m => {
                   const isSelected = selected?._id === m._id;
                   const isActive   = m.memberStatus === 'active';
+                  const photoUrl = memberPhotoUrl(m);
                   return (
                     <li key={m._id}>
                       <button
@@ -135,11 +136,11 @@ export default function CartesPage() {
                         className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${isSelected ? 'bg-emerald-50/60' : 'hover:bg-neutral-50/60'}`}
                       >
                         {/* Avatar */}
-                        {m.avatar ? (
+                        {photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={assetUrl(m.avatar) || m.avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                          <img src={photoUrl} alt={formatFullName(m.firstName, m.lastName)} className="h-9 w-9 shrink-0 rounded-full object-cover" />
                         ) : (
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[11px] font-black text-white">
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white ${memberInitialsClass(m.gender)}`}>
                             {formatInitials(m.firstName, m.lastName)}
                           </div>
                         )}

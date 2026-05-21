@@ -13,20 +13,27 @@ import {
   LayoutDashboard, CreditCard, User, CalendarDays,
   MessageSquare, LogOut, Menu, X, ChevronRight, Bell,
   Banknote, FileText, FolderOpen, Images, Newspaper, Loader2, Globe, Users,
+  ChevronDown, Handshake, BriefcaseBusiness, WalletCards,
 } from 'lucide-react';
 
 const NAV = [
-  { label: 'Mon espace',    href: '/member/dashboard',   icon: LayoutDashboard },
-  { label: 'Ma carte',      href: '/member/carte',       icon: CreditCard       },
-  { label: 'Mon profil',    href: '/member/profil',      icon: User             },
+  { label: 'Dashboard',     href: '/member/dashboard',   icon: LayoutDashboard },
   { label: 'Bureau',        href: '/member/bureau',      icon: Users            },
-  { label: 'Cotisations',   href: '/member/cotisations', icon: Banknote         },
   { label: 'Mes factures',  href: '/member/factures',    icon: FileText         },
-  { label: 'Mes documents', href: '/member/documents',   icon: FolderOpen       },
   { label: 'Activités',     href: '/member/activites',   icon: CalendarDays     },
   { label: 'Galerie',       href: '/member/galerie',     icon: Images           },
   { label: 'Actualités',    href: '/member/actualites',  icon: Newspaper        },
+  { label: 'Networking',    href: '/member/networking',  icon: Handshake        },
+  { label: 'Opportunites',  href: '/member/opportunites', icon: BriefcaseBusiness },
+  { label: 'Tresorerie',    href: '/member/tresorerie',  icon: WalletCards      },
   { label: 'Messages',      href: '/member/messages',    icon: MessageSquare    },
+];
+
+const ACCOUNT_NAV = [
+  { label: 'Mon profil',    href: '/member/profil',      icon: User       },
+  { label: 'Ma carte',      href: '/member/carte',       icon: CreditCard },
+  { label: 'Cotisations',   href: '/member/cotisations', icon: Banknote   },
+  { label: 'Mes documents', href: '/member/documents',   icon: FolderOpen },
 ];
 
 
@@ -37,6 +44,11 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl
   onLogout: () => void;
 }) {
   const pathname = usePathname();
+  const [accountOpen, setAccountOpen] = useState(() => ACCOUNT_NAV.some(item => pathname.startsWith(item.href)));
+
+  useEffect(() => {
+    if (ACCOUNT_NAV.some(item => pathname.startsWith(item.href))) setAccountOpen(true);
+  }, [pathname]);
 
   return (
     <>
@@ -110,6 +122,49 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl
                 </li>
               );
             })}
+            <li>
+              <button
+                type="button"
+                onClick={() => setAccountOpen(v => !v)}
+                className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150 ${
+                  ACCOUNT_NAV.some(item => pathname.startsWith(item.href))
+                    ? 'bg-emerald-500/15 text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.2)]'
+                    : 'text-white/50 hover:bg-white/[0.05] hover:text-white/80'
+                }`}
+              >
+                <User size={16} className={ACCOUNT_NAV.some(item => pathname.startsWith(item.href)) ? 'text-emerald-400' : 'text-white/30 group-hover:text-white/60'} />
+                <span className="flex-1 text-left">Mon compte</span>
+                <ChevronDown size={13} className={`transition-transform ${accountOpen ? 'rotate-180' : ''}`} />
+              </button>
+              <AnimatePresence initial={false}>
+                {accountOpen && (
+                  <motion.ul
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="ml-3 overflow-hidden border-l border-white/10 pl-2"
+                  >
+                    {ACCOUNT_NAV.map(({ label, href, icon: Icon }) => {
+                      const active = pathname === href;
+                      return (
+                        <li key={href} className="mt-0.5">
+                          <Link
+                            href={href}
+                            onClick={onClose}
+                            className={`group flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+                              active ? 'bg-emerald-500/10 text-emerald-300' : 'text-white/40 hover:bg-white/[0.04] hover:text-white/75'
+                            }`}
+                          >
+                            <Icon size={14} className={active ? 'text-emerald-300' : 'text-white/25 group-hover:text-white/55'} />
+                            <span className="flex-1">{label}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
+            </li>
           </ul>
         </nav>
 
@@ -205,7 +260,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
     );
   }
 
-  const currentPage = NAV.find(n => n.href === pathname);
+  const currentPage = [...NAV, ...ACCOUNT_NAV].find(n => n.href === pathname);
   const firstName  = formatFirstName(user?.firstName ?? '');
   const lastName   = user?.lastName ?? '';
   const initials   = firstName && lastName ? formatInitials(firstName, lastName) : '…';

@@ -15,6 +15,8 @@ export interface AuthUser {
   motivation?: string | null;
   bio?: string | null;
   activitySector?: string | null;
+  activitySectorProposal?: string | null;
+  recoveryContact?: string | null;
   skills?: string[];
   expertiseDomains?: string[];
   birthDate?: string | null;

@@ -18,7 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
-import { useUpdateProfile } from '@/lib/api/members';
+import { useChangeMemberPassword, useSubmitActivitySectorProposal, useUpdateProfile } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { assetUrl } from '@/lib/assets';
@@ -66,6 +66,8 @@ type ProfileForm = {
   antenne: string;
   birthDate: string;
   activitySector: string;
+  activitySectorProposal: string;
+  recoveryContact: string;
   skills: string[];
   expertiseDomains: string[];
   bio: string;
@@ -85,6 +87,8 @@ const emptyForm: ProfileForm = {
   antenne: '',
   birthDate: '',
   activitySector: '',
+  activitySectorProposal: '',
+  recoveryContact: '',
   skills: [],
   expertiseDomains: [],
   bio: '',
@@ -106,7 +110,9 @@ export default function ProfilPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [form, setForm] = useState<ProfileForm>(emptyForm);
   const [saved, setSaved] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const updateProfile = useUpdateProfile();
+  const sectorProposal = useSubmitActivitySectorProposal();
 
   useEffect(() => {
     if (!user) return;
@@ -123,6 +129,8 @@ export default function ProfilPage() {
       antenne: user.antenne ?? '',
       birthDate: dateInputValue(user.birthDate),
       activitySector: user.activitySector ?? '',
+      activitySectorProposal: user.activitySectorProposal ?? '',
+      recoveryContact: user.recoveryContact ?? '',
       skills: user.skills ?? [],
       expertiseDomains: user.expertiseDomains ?? [],
       bio: user.bio ?? '',
@@ -149,6 +157,8 @@ export default function ProfilPage() {
         birthDate: form.birthDate || undefined,
         promotionYear: form.promotionYear ? Number(form.promotionYear) : undefined,
         activitySector: form.activitySector || undefined,
+        activitySectorProposal: form.activitySector === 'Autre' ? form.activitySectorProposal || undefined : undefined,
+        recoveryContact: form.recoveryContact || undefined,
         skills: form.skills,
         expertiseDomains: form.expertiseDomains,
         bio: form.bio || undefined,
@@ -162,6 +172,9 @@ export default function ProfilPage() {
             phone: form.phone,
           });
           setSaved(true);
+          if (form.activitySector === 'Autre' && form.activitySectorProposal.trim()) {
+            sectorProposal.mutate({ label: form.activitySectorProposal.trim() });
+          }
           setTimeout(() => setSaved(false), 2500);
         },
       },
@@ -256,11 +269,13 @@ export default function ProfilPage() {
       <form onSubmit={handleSave} className="space-y-4">
         <Section title="Informations personnelles">
           <div className="grid gap-4 sm:grid-cols-2">
+            <Select label="Civilite" value={form.gender} onChange={set('gender')} readOnly options={[['', 'Non renseignee'], ['homme', 'Monsieur'], ['femme', 'Madame']]} />
+            <div className="hidden sm:block" />
             <F icon={User} label="Prenom" value={form.firstName} onChange={set('firstName')} required />
             <F icon={User} label="Nom" value={form.lastName} onChange={set('lastName')} required />
             <F icon={Mail} label="Email" value={form.email} onChange={set('email')} type="email" readOnly />
             <F icon={Phone} label="Telephone" value={form.phone} onChange={set('phone')} placeholder="+237 6 00 00 00 00" />
-            <Select label="Civilite" value={form.gender} onChange={set('gender')} readOnly options={[['', 'Non renseignee'], ['homme', 'Monsieur'], ['femme', 'Madame']]} />
+            <F icon={Phone} label="Contact de recuperation" value={form.recoveryContact} onChange={set('recoveryContact')} placeholder="Email ou numero secondaire" />
             <F icon={Calendar} label="Date de naissance" value={form.birthDate} onChange={set('birthDate')} type="date" />
             <F icon={MapPin} label="Ville de residence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." />
             <F icon={MapPin} label="Pays" value={form.country} onChange={set('country')} placeholder="Cameroun, Maroc..." />
@@ -274,9 +289,17 @@ export default function ProfilPage() {
             <Select label="Secteur d'activite" value={form.activitySector} onChange={set('activitySector')} options={[['', 'Selectionner'], ...ACTIVITY_SECTORS.map(s => [s, s] as [string, string])]} />
             <F icon={MapPin} label="Ville d'origine" value={form.city} onChange={set('city')} placeholder="Ville d'origine ou de reference" />
           </div>
+          {form.activitySector === 'Autre' && (
+            <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
+              <F icon={Briefcase} label="Nouveau secteur propose" value={form.activitySectorProposal} onChange={set('activitySectorProposal')} placeholder="Ex: Intelligence artificielle, economie sociale..." />
+              <p className="mt-2 text-xs font-semibold leading-5 text-amber-700">
+                Ce secteur sera soumis a validation admin avant d'etre ajoute a la liste officielle.
+              </p>
+            </div>
+          )}
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <TagInput icon={Tag} label="Competences" value={form.skills} onChange={skills => setForm(prev => ({ ...prev, skills }))} placeholder="Ex: React, gestion de projet..." />
-            <TagInput icon={Briefcase} label="Domaines d'expertise" value={form.expertiseDomains} onChange={expertiseDomains => setForm(prev => ({ ...prev, expertiseDomains }))} placeholder="Ex: finance, communication..." />
+            <TagInput icon={Tag} label="Competences" help="Saisissez des mots-cles separes par une virgule." value={form.skills} onChange={skills => setForm(prev => ({ ...prev, skills }))} placeholder="Ex: React, gestion de projet..." />
+            <TagInput icon={Briefcase} label="Domaines d'expertise" help="Saisissez des mots-cles separes par une virgule." value={form.expertiseDomains} onChange={expertiseDomains => setForm(prev => ({ ...prev, expertiseDomains }))} placeholder="Ex: finance, communication..." />
           </div>
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <TextArea label="Biographie" value={form.bio} onChange={set('bio')} placeholder="Parlez de vous en quelques mots..." />
@@ -286,11 +309,16 @@ export default function ProfilPage() {
 
         <Section title="Securite">
           <div className="flex flex-wrap gap-3">
-            <button type="button" className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300">
+            <button type="button" onClick={() => setPasswordOpen(true)} className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300">
               <Lock size={13} /> Changer le mot de passe
             </button>
             <button type="button" className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300">
               <Shield size={13} /> Authentification 2FA
+            </button>
+          </div>
+          <div className="mt-4 border-t border-neutral-100 pt-4">
+            <button type="button" className="inline-flex h-9 items-center gap-2 rounded-full border border-red-200 px-4 text-xs font-semibold text-red-600 hover:bg-red-50">
+              Supprimer mon compte
             </button>
           </div>
         </Section>
@@ -303,6 +331,7 @@ export default function ProfilPage() {
           {saved ? <><CheckCircle2 size={15} /> Enregistre !</> : <><Save size={15} /> Enregistrer les modifications</>}
         </button>
       </form>
+      {passwordOpen && <PasswordModal onClose={() => setPasswordOpen(false)} />}
     </div>
   );
 }
@@ -390,9 +419,10 @@ function TextArea({ label, value, onChange, placeholder }: {
   );
 }
 
-function TagInput({ icon: Icon, label, value, onChange, placeholder }: {
+function TagInput({ icon: Icon, label, help, value, onChange, placeholder }: {
   icon: React.ElementType;
   label: string;
+  help?: string;
   value: string[];
   onChange: (next: string[]) => void;
   placeholder?: string;
@@ -412,6 +442,7 @@ function TagInput({ icon: Icon, label, value, onChange, placeholder }: {
   return (
     <div>
       <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label}</label>
+      {help && <p className="mb-2 text-[11px] font-semibold text-neutral-400">{help}</p>}
       <div className="rounded-xl border border-neutral-200 px-3 py-2 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-500/10">
         <div className="flex flex-wrap gap-1.5">
           {value.map(tag => (
@@ -440,6 +471,77 @@ function TagInput({ icon: Icon, label, value, onChange, placeholder }: {
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function PasswordModal({ onClose }: { onClose: () => void }) {
+  const changePassword = useChangeMemberPassword();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const valid = currentPassword && newPassword.length >= 8 && newPassword === confirmPassword;
+
+  const submit = () => {
+    if (!valid || changePassword.isPending) return;
+    changePassword.mutate(
+      { currentPassword, newPassword },
+      { onSuccess: onClose },
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 backdrop-blur-sm sm:items-center">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+        <div className="flex items-center justify-between border-b border-neutral-100 p-5">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Securite</p>
+            <h2 className="text-lg font-black text-neutral-900">Changer le mot de passe</h2>
+          </div>
+          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
+            <X size={15} />
+          </button>
+        </div>
+        <div className="space-y-3 p-5">
+          <PasswordField label="Mot de passe actuel" value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />
+          <PasswordField label="Nouveau mot de passe" value={newPassword} onChange={setNewPassword} autoComplete="new-password" />
+          <PasswordField label="Confirmer le nouveau mot de passe" value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" />
+          {newPassword && newPassword.length < 8 && <p className="text-xs font-semibold text-red-500">Minimum 8 caracteres.</p>}
+          {confirmPassword && newPassword !== confirmPassword && <p className="text-xs font-semibold text-red-500">Les mots de passe ne correspondent pas.</p>}
+        </div>
+        <div className="flex gap-3 border-t border-neutral-100 p-5">
+          <button type="button" onClick={onClose} className="h-10 flex-1 rounded-xl border border-neutral-200 text-sm font-bold text-neutral-600 hover:border-neutral-300">Annuler</button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!valid || changePassword.isPending}
+            className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-black text-white transition-all hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {changePassword.isPending && <Loader2 size={14} className="animate-spin" />}
+            Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PasswordField({ label, value, onChange, autoComplete }: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  autoComplete: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label}</label>
+      <input
+        type="password"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        autoComplete={autoComplete}
+        className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+      />
     </div>
   );
 }

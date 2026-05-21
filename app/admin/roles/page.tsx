@@ -251,6 +251,7 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
 
   const [selectedPerms, setSelectedPerms] = useState<Set<string>>(new Set(role.permissions));
   const [permSearch,    setPermSearch]     = useState('');
+  const [riskFilter,    setRiskFilter]      = useState<string>('all');
   const [editName,      setEditName]       = useState(role.name);
   const [editDesc,      setEditDesc]       = useState(role.description ?? '');
 
@@ -292,13 +293,17 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
     deleteRole.mutate(role._id, { onSuccess: () => onClose() });
   };
 
-  const filteredModules = Object.entries(grouped).filter(([mod, perms]) => {
-    if (!permSearch) return true;
-    return perms.some(p =>
-      p.key.toLowerCase().includes(permSearch.toLowerCase()) ||
-      p.label.toLowerCase().includes(permSearch.toLowerCase())
-    );
-  });
+  const filteredModules = Object.entries(grouped)
+    .map(([mod, perms]) => {
+      const query = permSearch.trim().toLowerCase();
+      const filtered = perms.filter(p => {
+        const matchSearch = !query || p.key.toLowerCase().includes(query) || p.label.toLowerCase().includes(query);
+        const matchRisk = riskFilter === 'all' || p.riskLevel === riskFilter;
+        return matchSearch && matchRisk;
+      });
+      return [mod, filtered] as [string, PermissionDoc[]];
+    })
+    .filter(([, perms]) => perms.length > 0);
 
   const isSA = role.slug === 'super_admin';
 
@@ -352,12 +357,31 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
 
       {/* Permission search */}
       {!isSA && (
-        <div className="border-b border-neutral-100 px-4 py-2.5 shrink-0">
+        <div className="space-y-2.5 border-b border-neutral-100 px-4 py-2.5 shrink-0">
           <div className="relative">
             <Search size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
             <input value={permSearch} onChange={e => setPermSearch(e.target.value)}
               placeholder="Filtrer les permissions…"
               className="h-8 w-full rounded-lg border border-neutral-200 bg-white pl-8 pr-3 text-xs focus:border-emerald-400 focus:outline-none" />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setRiskFilter('all')}
+              className={`rounded-full border px-2.5 py-1 text-[9px] font-black transition ${riskFilter === 'all' ? 'border-neutral-400 bg-neutral-100 text-neutral-700' : 'border-neutral-200 text-neutral-400 hover:border-neutral-300'}`}
+            >
+              Tous
+            </button>
+            {Object.entries(RISK_LABEL).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setRiskFilter(riskFilter === key ? 'all' : key)}
+                className={`rounded-full border px-2.5 py-1 text-[9px] font-black transition ${riskFilter === key ? RISK_STYLE[key] : 'border-neutral-200 text-neutral-400 hover:border-neutral-300'}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -369,6 +393,11 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
             <Crown size={32} className="mb-3 text-amber-400" />
             <p className="text-sm font-black text-neutral-700">Super Administrateur</p>
             <p className="mt-1 text-xs text-neutral-400 max-w-48">Ce rôle possède toutes les permissions par défaut (wildcard *)</p>
+          </div>
+        ) : filteredModules.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 px-5 py-10 text-center">
+            <Search size={24} className="mb-2 text-neutral-200" />
+            <p className="text-sm font-semibold text-neutral-400">Aucune permission trouvÃ©e</p>
           </div>
         ) : filteredModules.map(([mod, perms]) => {
           const keys   = perms.map(p => p.key);

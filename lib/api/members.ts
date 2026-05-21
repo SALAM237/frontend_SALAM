@@ -33,10 +33,40 @@ export interface UpdateProfilePayload {
   motivation?: string;
   bio?: string;
   activitySector?: string;
+  activitySectorProposal?: string;
+  recoveryContact?: string;
   skills?: string[];
   expertiseDomains?: string[];
   birthDate?: string;
   promotionYear?: number;
+}
+
+export function useChangeMemberPassword() {
+  const token = useAuthStore(s => s.accessToken);
+  return useMutation({
+    mutationFn: (payload: { currentPassword: string; newPassword: string }) =>
+      apiClient('/api/v1/member/profile/password', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+        token: token ?? '',
+      }),
+    onSuccess: res => toast.success((res as any).message ?? 'Mot de passe mis à jour'),
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useSubmitActivitySectorProposal() {
+  const token = useAuthStore(s => s.accessToken);
+  return useMutation({
+    mutationFn: (payload: { label: string }) =>
+      apiClient('/api/v1/member/activity-sector-proposals', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        token: token ?? '',
+      }),
+    onSuccess: res => toast.success((res as any).message ?? 'Secteur proposé'),
+    onError: (err: Error) => toast.error(err.message),
+  });
 }
 
 export interface MemberDetail extends MemberListItem {

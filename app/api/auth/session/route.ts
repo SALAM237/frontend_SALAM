@@ -58,6 +58,27 @@ export async function POST(req: NextRequest) {
   return res;
 }
 
+export async function GET(req: NextRequest) {
+  const accessToken = req.cookies.get('salam_access')?.value;
+  if (!accessToken) {
+    return NextResponse.json({ error: 'Session manquante' }, { status: 401 });
+  }
+
+  try {
+    const meRes = await fetch(`${BACKEND}/api/v1/auth/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: 'no-store',
+    });
+    if (!meRes.ok) {
+      return NextResponse.json({ error: 'Session invalide' }, { status: 401 });
+    }
+    const json = await meRes.json();
+    return NextResponse.json({ ok: true, accessToken, user: json?.data });
+  } catch {
+    return NextResponse.json({ error: 'Erreur lors de la restauration' }, { status: 500 });
+  }
+}
+
 /**
  * DELETE /api/auth/session
  * Efface tous les cookies de session (appelé au logout).

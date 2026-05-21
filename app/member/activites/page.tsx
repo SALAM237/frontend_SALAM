@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { CalendarDays, Search, MapPin, Users, Loader2, Eye, X } from 'lucide-react';
 import { useMemberActivities, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
 
@@ -109,14 +110,13 @@ export default function MemberActivitesPage() {
                       {a.capacity  && <span className="flex items-center gap-1"><Users size={10} />{a.capacity} places</span>}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelected(a)}
+                  <Link
+                    href={`/member/activites/${a.slug}`}
                     aria-label={`Voir ${a.title}`}
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition-all hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
                   >
                     <Eye size={15} />
-                  </button>
+                  </Link>
                 </div>
               );
             })}

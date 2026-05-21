@@ -20,6 +20,9 @@ export interface AdminStats {
     lastName: string;
     email: string;
     memberStatus: string;
+    gender?: 'homme' | 'femme';
+    avatar?: string | null;
+    bureauPhoto?: string | null;
     createdAt: string;
     memberId: string;
   }[];

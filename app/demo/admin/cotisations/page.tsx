@@ -121,7 +121,7 @@ function ReceiptModal({ member, year, onClose }: { member: MemberRow; year: numb
             ['Adherent', formatFullName(member.firstName, member.lastName)],
             ['No membre', member.memberId],
             ['Annee', String(year)],
-            ['Montant', '30,00 EUR'],
+            ['Montant', '5 000 F.CFA'],
             ['Date de paiement', fmt(member.paidAt)],
             ['Reference', member.reference ?? 'DEMO-REF'],
           ].map(([label, value]) => (

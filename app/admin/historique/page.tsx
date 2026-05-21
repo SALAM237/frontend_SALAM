@@ -65,7 +65,7 @@ function logDetailsStr(log: AuditLogDoc): string {
   if (d.reference)      parts.push(`Réf. ${d.reference}`);
   if (d.invoiceNumber)  parts.push(String(d.invoiceNumber));
   if (d.title)          parts.push(String(d.title));
-  if (d.amount)         parts.push(`${d.amount} €`);
+  if (d.amount)         parts.push(`${Number(d.amount).toLocaleString('fr-FR')} F.CFA`);
   if (d.sent !== undefined) parts.push(`${d.sent} envoyé(s)`);
   if (d.recipientCount) parts.push(`${d.recipientCount} destinataires`);
   if (d.fromLabel && d.toLabel) parts.push(`${d.fromLabel} → ${d.toLabel}`);

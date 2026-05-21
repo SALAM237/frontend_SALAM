@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef } from 'react';
 import {
   Plus, X, Send, Eye, ChevronDown, Search,
-  CalendarDays, Euro, FileText, CheckCircle2, Clock,
+  CalendarDays, Banknote, FileText, CheckCircle2, Clock,
   Link as LinkIcon, Loader2,
 } from 'lucide-react';
 import {
@@ -24,6 +24,10 @@ const STATUS_CONFIG: Record<InvoiceStatus, { badge: string; label: string; icon:
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function fmtCfa(amount: number) {
+  return `${Number(amount || 0).toLocaleString('fr-FR')} F.CFA`;
 }
 
 /* ─── Skeleton ────────────────────────────────────────── */
@@ -63,7 +67,7 @@ function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose
             <p className="text-xs text-neutral-500 leading-relaxed">{invoice.description}</p>
           )}
           {[
-            { label: 'Montant',          value: `${invoice.amount.toFixed(2)} €` },
+            { label: 'Montant',          value: fmtCfa(invoice.amount) },
             { label: 'Date d\'émission', value: fmt(invoice.issuedAt) },
             { label: 'Échéance',         value: fmt(invoice.dueDate) },
             { label: 'Destinataires',    value: `${invoice.recipients.length} membres` },
@@ -206,12 +210,12 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Montant (€) <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Montant (F.CFA) <span className="text-red-500">*</span></label>
               <div className="relative">
-                <Euro size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-                <input type="number" min="0" step="0.01" value={amount}
+                <Banknote size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                <input type="number" min="0" step="1" value={amount}
                   onChange={e => { setAmount(e.target.value); setErrors(p => ({...p, amount: ''})); }}
-                  placeholder="0.00" className={`${inputCls(errors.amount)} pl-9`} />
+                  placeholder="5000" className={`${inputCls(errors.amount)} pl-9`} />
               </div>
               {errors.amount && <p className="text-[11px] text-red-500">{errors.amount}</p>}
             </div>
@@ -436,7 +440,7 @@ export default function FacturationAdminPage() {
                   )}
                 </div>
                 <div className="hidden text-right sm:block shrink-0">
-                  <p className="text-xs font-black text-neutral-700">{inv.amount.toFixed(2)} €</p>
+                  <p className="text-xs font-black text-neutral-700">{fmtCfa(inv.amount)}</p>
                   <p className="text-[10px] text-neutral-400">Échéance {fmt(inv.dueDate)}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

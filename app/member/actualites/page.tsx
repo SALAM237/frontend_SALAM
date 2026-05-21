@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { Newspaper, Search, Loader2, Tag, Eye, X, Plus } from 'lucide-react';
 import { usePublicArticles, ARTICLE_CATEGORIES, useSubmitMemberArticle } from '@/lib/api/content';
 
@@ -99,14 +100,13 @@ export default function MemberActualitesPage() {
                     {new Date(n.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelected(n)}
+                <Link
+                  href={`/member/actualites/${n._id}`}
                   aria-label={`Voir ${n.title}`}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition-all hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
                 >
                   <Eye size={15} />
-                </button>
+                </Link>
               </div>
             ))}
           </div>
