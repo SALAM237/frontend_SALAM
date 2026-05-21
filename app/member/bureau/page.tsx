@@ -58,6 +58,22 @@ function normalize(value?: string | null) {
     .trim();
 }
 
+const SLOT_ALIASES: Record<string, string> = {
+  presidente: 'president',
+  'vice presidente': 'vice president',
+  'secretaire generale': 'secretaire general',
+  'secretaire adjointe': 'secretaire adjoint',
+  tresoriere: 'tresorier',
+  'tresoriere adjointe': 'tresorier adjoint',
+  conseillere: 'conseiller',
+  'sage conseillere': 'sage conseiller',
+};
+
+function slotKey(value?: string | null) {
+  const key = normalize(value);
+  return SLOT_ALIASES[key] ?? key;
+}
+
 function cleanGenericBureauTitle(value?: string | null) {
   return (value ?? '')
     .replace(/\s*\(e\)/gi, '')
@@ -68,7 +84,7 @@ function cleanGenericBureauTitle(value?: string | null) {
 function uniqueByNormalized(values: string[]) {
   const seen = new Set<string>();
   return values.filter(value => {
-    const key = normalize(value);
+    const key = slotKey(value);
     if (!key || seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -82,13 +98,13 @@ function isNonEmptyString(value: string | null | undefined): value is string {
 function firstMeaningfulLabel(values: Array<string | null | undefined>, fallback: string) {
   const ignored = new Set(['commissions', 'commission', 'responsable', 'bureau executif']);
   return values.find(value => {
-    const key = normalize(value);
+    const key = slotKey(value);
     return key && !ignored.has(key);
   }) ?? fallback;
 }
 
 function matchesSlot(member: BureauMember, slot: string) {
-  const slotKey = normalize(slot);
+  const expectedSlot = slotKey(slot);
   const candidates = [
     member.bureauPoste,
     member.title,
@@ -96,7 +112,7 @@ function matchesSlot(member: BureauMember, slot: string) {
     member.categoryLabel,
   ].filter(isNonEmptyString);
 
-  return candidates.some(candidate => normalize(candidate) === slotKey);
+  return candidates.some(candidate => slotKey(candidate) === expectedSlot);
 }
 
 function commissionGroupFor(member: BureauMember) {
@@ -291,7 +307,7 @@ export default function MemberBureauPage() {
             description="Chaque commission est pilotée par un responsable chargé de coordonner les actions et les membres du groupe."
           >
             {commissionGroups.map(group => {
-              const groupMembers = commissions.filter(item => normalize(commissionGroupFor(item)) === normalize(group));
+              const groupMembers = commissions.filter(item => slotKey(commissionGroupFor(item)) === slotKey(group));
               if (groupMembers.length === 0) return <EmptyCard key={group} title={group} badge={group} />;
               return <TeamCard key={group} member={groupMembers[0]} badge={group} />;
             })}
@@ -299,7 +315,7 @@ export default function MemberBureauPage() {
 
           <Section title="Conseil des sages" eyebrow="Conseil" description="Un espace de conseil et de transmission pour accompagner les grandes orientations de SALAM.">
             {councilGroups.map(group => {
-              const groupMembers = council.filter(item => normalize(councilGroupFor(item)) === normalize(group));
+              const groupMembers = council.filter(item => slotKey(councilGroupFor(item)) === slotKey(group));
               if (groupMembers.length === 0) return <EmptyCard key={group} title="Membre sage" badge={group} />;
               return groupMembers.map(member => <TeamCard key={member._id} member={member} badge={group} />);
             })}
