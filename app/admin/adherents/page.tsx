@@ -58,6 +58,7 @@ export default function AdminAdherentsPage() {
   const [filter, setFilter] = useState<MemberStatus | 'all'>('all');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<{ src: string; name: string } | null>(null);
 
   const user        = useAuthStore(s => s.user);
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
@@ -124,6 +125,7 @@ export default function AdminAdherentsPage() {
   };
 
   return (
+    <>
     <div className="mx-auto max-w-6xl space-y-5">
 
       {/* Header */}
@@ -231,7 +233,12 @@ export default function AdminAdherentsPage() {
                       <tr key={m._id} className="group transition-colors hover:bg-neutral-50/55">
                         <td className="px-3 py-3">
                           <div className="flex min-w-0 items-center gap-2">
-                            <Link href={`/admin/adherents/${m._id}`} className="shrink-0" title="Voir la fiche membre">
+                            <button
+                              type="button"
+                              onClick={() => photoUrl && setPhotoPreview({ src: photoUrl, name: formatFullName(m.firstName, m.lastName) })}
+                              className="shrink-0"
+                              title={photoUrl ? 'Voir la photo' : 'Photo non disponible'}
+                            >
                               {photoUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={photoUrl} alt={formatFullName(m.firstName, m.lastName)} className={`h-7 w-7 rounded-full border-2 object-cover ${memberAvatarBorderClass(m.gender)}`} />
@@ -240,7 +247,7 @@ export default function AdminAdherentsPage() {
                                   {formatInitials(m.firstName, m.lastName)}
                                 </div>
                               )}
-                            </Link>
+                            </button>
                             <Link href={`/admin/adherents/${m._id}`} className="min-w-0 truncate text-[11px] font-semibold text-neutral-900 transition hover:text-emerald-700">{formatFullName(m.firstName, m.lastName)}</Link>
                           </div>
                         </td>
@@ -447,5 +454,18 @@ export default function AdminAdherentsPage() {
         )}
       </div>
     </div>
+      {photoPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm" onClick={() => setPhotoPreview(null)}>
+          <div className="relative max-w-lg overflow-hidden rounded-3xl bg-white p-3 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setPhotoPreview(null)} className="absolute right-4 top-4 z-10 rounded-full bg-black/45 p-2 text-white hover:bg-black/70">
+              <XCircle size={18} />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photoPreview.src} alt={photoPreview.name} className="max-h-[75vh] w-full rounded-2xl object-contain" />
+            <p className="px-2 py-3 text-center text-sm font-black text-neutral-800">{photoPreview.name}</p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

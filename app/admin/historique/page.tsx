@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { Search, ChevronDown, Filter, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -15,59 +15,59 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 const ACTION_LABELS: Record<string, string> = {
-  'cotisation.status.paid':    'Cotisation → Payé',
-  'cotisation.status.unpaid':  'Cotisation → Non payé',
-  'cotisation.status.exempt':  'Cotisation → Exempté',
-  'cotisation.reminder.send':  'Relances envoyées',
-  'invoice.create':            'Facture créée',
-  'invoice.send':              'Facture envoyée',
+  'cotisation.status.paid':    'Cotisation â†’ PayÃ©',
+  'cotisation.status.unpaid':  'Cotisation â†’ Non payÃ©',
+  'cotisation.status.exempt':  'Cotisation â†’ ExemptÃ©',
+  'cotisation.reminder.send':  'Relances envoyÃ©es',
+  'invoice.create':            'Facture crÃ©Ã©e',
+  'invoice.send':              'Facture envoyÃ©e',
   'member.create':             'Nouveau membre',
-  'member.status.active':      'Adhérent validé',
-  'member.status.suspended':   'Adhérent suspendu',
-  'settings.update':           'Paramètres modifiés',
+  'member.status.active':      'AdhÃ©rent validÃ©',
+  'member.status.suspended':   'AdhÃ©rent suspendu',
+  'settings.update':           'ParamÃ¨tres modifiÃ©s',
   'auth.login':                'Connexion',
-  'auth.logout':               'Déconnexion',
+  'auth.logout':               'DÃ©connexion',
   'auth.register':             'Inscription',
 };
 
 const EXTRA_ACTION_LABELS: Record<string, string> = {
-  role_created: 'Rôle créé',
-  role_updated: 'Rôle modifié',
-  role_deleted: 'Rôle supprimé',
-  permission_created: 'Permission créée',
-  roles_assigned: 'Rôles assignés',
-  poste_assigned: 'Poste bureau assigné',
-  bureau_photo_updated: 'Photo bureau modifiée',
-  custom_perms_updated: 'Permissions personnalisées',
+  role_created: 'RÃ´le crÃ©Ã©',
+  role_updated: 'RÃ´le modifiÃ©',
+  role_deleted: 'RÃ´le supprimÃ©',
+  permission_created: 'Permission crÃ©Ã©e',
+  roles_assigned: 'RÃ´les assignÃ©s',
+  poste_assigned: 'Poste bureau assignÃ©',
+  bureau_photo_updated: 'Photo bureau modifiÃ©e',
+  custom_perms_updated: 'Permissions personnalisÃ©es',
   admin_promoted: 'Admin promu',
-  admin_revoked: 'Admin révoqué',
+  admin_revoked: 'Admin rÃ©voquÃ©',
   login_success: 'Connexion',
-  login_failed: 'Connexion échouée',
-  logout: 'Déconnexion',
+  login_failed: 'Connexion Ã©chouÃ©e',
+  logout: 'DÃ©connexion',
   register: 'Inscription',
-  verify_email: 'Email vérifié',
-  password_reset_request: 'Demande réinitialisation',
-  password_reset: 'Mot de passe réinitialisé',
-  'treasury.transaction.created': 'Écriture trésorerie créée',
-  'treasury.transaction.updated': 'Écriture trésorerie modifiée',
-  'treasury.transaction.deleted': 'Écriture trésorerie supprimée',
-  'treasury.asset.created': 'Patrimoine ajouté',
-  'treasury.asset.updated': 'Patrimoine modifié',
-  'treasury.asset.deleted': 'Patrimoine supprimé',
-  'treasury.document.uploaded': 'Document trésorerie importé',
-  'treasury.membership_fee.proposed': 'Frais d’adhésion proposés',
-  'treasury.membership_fee.approved': 'Frais d’adhésion validés',
-  'treasury.membership_fee.rejected': 'Frais d’adhésion refusés',
+  verify_email: 'Email vÃ©rifiÃ©',
+  password_reset_request: 'Demande rÃ©initialisation',
+  password_reset: 'Mot de passe rÃ©initialisÃ©',
+  'treasury.transaction.created': 'Ã‰criture trÃ©sorerie crÃ©Ã©e',
+  'treasury.transaction.updated': 'Ã‰criture trÃ©sorerie modifiÃ©e',
+  'treasury.transaction.deleted': 'Ã‰criture trÃ©sorerie supprimÃ©e',
+  'treasury.asset.created': 'Patrimoine ajoutÃ©',
+  'treasury.asset.updated': 'Patrimoine modifiÃ©',
+  'treasury.asset.deleted': 'Patrimoine supprimÃ©',
+  'treasury.document.uploaded': 'Document trÃ©sorerie importÃ©',
+  'treasury.membership_fee.proposed': 'Frais dâ€™adhÃ©sion proposÃ©s',
+  'treasury.membership_fee.approved': 'Frais dâ€™adhÃ©sion validÃ©s',
+  'treasury.membership_fee.rejected': 'Frais dâ€™adhÃ©sion refusÃ©s',
 };
 
 const CATEGORIES = [
   { value: 'all',        label: 'Toutes' },
   { value: 'cotisation', label: 'Cotisations' },
   { value: 'invoice',    label: 'Facturation' },
-  { value: 'member',     label: 'Adhérents' },
+  { value: 'member',     label: 'AdhÃ©rents' },
   { value: 'reminder',   label: 'Relances' },
-  { value: 'treasury',   label: 'Trésorerie' },
-  { value: 'settings',   label: 'Paramètres' },
+  { value: 'treasury',   label: 'TrÃ©sorerie' },
+  { value: 'settings',   label: 'ParamÃ¨tres' },
   { value: 'auth',       label: 'Authentification' },
 ];
 
@@ -94,15 +94,15 @@ function logDetailsStr(log: AuditLogDoc): string {
   const d = log.details ?? log.meta ?? {};
   const parts: string[] = [];
   if (d.memberName)     parts.push(String(d.memberName));
-  if (d.year)           parts.push(`Année ${d.year}`);
-  if (d.reference)      parts.push(`Réf. ${d.reference}`);
+  if (d.year)           parts.push(`AnnÃ©e ${d.year}`);
+  if (d.reference)      parts.push(`RÃ©f. ${d.reference}`);
   if (d.invoiceNumber)  parts.push(String(d.invoiceNumber));
   if (d.title)          parts.push(String(d.title));
   if (d.amount)         parts.push(`${Number(d.amount).toLocaleString('fr-FR')} F.CFA`);
-  if (d.sent !== undefined) parts.push(`${d.sent} envoyé(s)`);
+  if (d.sent !== undefined) parts.push(`${d.sent} envoyÃ©(s)`);
   if (d.recipientCount) parts.push(`${d.recipientCount} destinataires`);
-  if (d.fromLabel && d.toLabel) parts.push(`${d.fromLabel} → ${d.toLabel}`);
-  return parts.join(' — ') || '—';
+  if (d.fromLabel && d.toLabel) parts.push(`${d.fromLabel} â†’ ${d.toLabel}`);
+  return parts.join(' â€” ') || 'â€”';
 }
 
 function Skeleton() {
@@ -152,7 +152,7 @@ export default function HistoriquePage() {
 
       <div>
         <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Historique des actions</h1>
-        <p className="mt-1 text-sm text-neutral-500">Toutes les actions effectuées par les administrateurs.</p>
+        <p className="mt-1 text-sm text-neutral-500">Toutes les actions effectuÃ©es par les administrateurs.</p>
       </div>
 
       {/* Filters */}
@@ -160,7 +160,7 @@ export default function HistoriquePage() {
         <div className="relative flex-1 min-w-48">
           <Search size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher…"
+            placeholder="Rechercherâ€¦"
             className="h-10 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
           />
         </div>
@@ -173,7 +173,7 @@ export default function HistoriquePage() {
           <ChevronDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400" />
         </div>
         <span className="text-xs font-semibold text-neutral-400">
-          {isLoading ? '…' : `${total} total`}
+          {isLoading ? 'â€¦' : `${total} total`}
         </span>
       </div>
 
@@ -185,12 +185,12 @@ export default function HistoriquePage() {
 
           {isError && (
             <div className="px-5 py-10 text-center text-sm text-red-500">
-              Erreur de chargement. Vérifiez la connexion au serveur.
+              Erreur de chargement. VÃ©rifiez la connexion au serveur.
             </div>
           )}
 
           {!isLoading && !isError && filtered.length === 0 && (
-            <p className="px-5 py-10 text-center text-sm text-neutral-400">Aucune entrée pour ce filtre.</p>
+            <p className="px-5 py-10 text-center text-sm text-neutral-400">Aucune entrÃ©e pour ce filtre.</p>
           )}
 
           {!isLoading && !isError && filtered.map(log => {
@@ -204,9 +204,9 @@ export default function HistoriquePage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-black text-neutral-900">{log.adminName ?? 'Système'}</span>
+                    <span className="text-xs font-semibold text-neutral-500">{log.adminName ?? 'SystÃ¨me'}</span>
                     <span className="text-[10px] font-semibold text-neutral-400">{log.adminRole ?? 'Audit'}</span>
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-black ${colorCls}`}>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-black ${colorCls}`}>
                       {actionLabel(log.action)}
                     </span>
                   </div>

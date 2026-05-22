@@ -51,6 +51,16 @@ export default function MentionsLegalesPage() {
               <p><strong>Site :</strong>{' '}<a href="https://vercel.com" target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:underline">vercel.com</a></p>
             </Section>
 
+            <Section title="4. Conception et maintenance">
+              <p>
+                La conception, le developpement et la maintenance technique du site sont assures par{' '}
+                <a href="https://www.belvedere-digital.com/" target="_blank" rel="noopener noreferrer" className="font-bold text-emerald-700 hover:underline">
+                  BELVEDERE DIGITAL
+                </a>
+                , partenaire digital specialise dans la creation de plateformes web professionnelles, securisees et maintenables.
+              </p>
+            </Section>
+
             <Section title="4. Propriété intellectuelle">
               <p>
                 L'ensemble du contenu de ce site (textes, images, logos, graphiques) est la propriété exclusive de l'association SALAM Cameroun, sauf mention contraire. Toute reproduction, représentation, modification ou exploitation de tout ou partie du contenu sans autorisation expresse est interdite.

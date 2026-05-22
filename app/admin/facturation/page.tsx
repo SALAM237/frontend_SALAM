@@ -5,11 +5,12 @@ import {
   Plus, X, Send, Eye, ChevronDown, Search,
   CalendarDays, Banknote, FileText, CheckCircle2, Clock,
   Link as LinkIcon, Loader2, Trash2, Save, Download, Upload, Building2,
-  CheckSquare, Square, UserPlus, Settings, ReceiptText,
+  CheckSquare, Square, UserPlus, Settings, ReceiptText, Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useAdminInvoices, useCreateInvoice, useSendInvoice, useDeleteInvoice,
+  useUpdateInvoice,
   useInvoiceClients, useSaveInvoiceClient, useDeleteInvoiceClient, useClientDocuments,
   useResendClientDocument,
   type InvoiceClientDoc, type InvoiceDoc,
@@ -338,7 +339,7 @@ function openInvoicePdfBatch(documents: InvoicePdfDocument[]) {
   win.focus();
 }
 
-function openSavedInvoicePdf(invoice: InvoiceDoc) {
+function openSavedInvoicePdfLegacy(invoice: InvoiceDoc) {
   const association = loadAssociationInfo();
   openInvoicePdfBatch([{
     association,
@@ -358,6 +359,44 @@ function openSavedInvoicePdf(invoice: InvoiceDoc) {
 }
 
 /* ─── Skeleton ────────────────────────────────────────── */
+function openSavedInvoicePdf(invoice: InvoiceDoc) {
+  const association = loadAssociationInfo();
+  const lines = [{ id: 1, designation: invoice.description || invoice.title, qty: 1, ht: invoice.amount, vat: 0 }];
+  const docs = invoice.recipients.length > 0
+    ? invoice.recipients.map((recipient, index) => {
+      const member = typeof recipient.userId === 'object' ? recipient.userId : null;
+      const client = typeof recipient.clientId === 'object' ? recipient.clientId : null;
+      const name = client?.name || [member?.firstName, member?.lastName].filter(Boolean).join(' ') || `Destinataire ${index + 1}`;
+      return {
+        association,
+        invoiceTitle: invoice.title,
+        invoiceNumber: recipient.invoiceNumber || `${invoice.invoiceNumber}-${seq(index + 1)}`,
+        recipient: {
+          name,
+          email: client?.email || member?.email || '',
+          phone: client?.phone || member?.phone || '',
+          address: client?.address || [member?.residenceCity || member?.city, member?.country].filter(Boolean).join(', '),
+          memberId: member?._id ? `SALAM-${String(member._id).slice(-6).toUpperCase()}` : client?.registration,
+        },
+        lines,
+        notes: 'Document genere depuis la facture enregistree.',
+        legal: 'Association SALAM - document genere electroniquement.',
+        dueDate: invoice.dueDate,
+      };
+    })
+    : [{
+      association,
+      invoiceTitle: invoice.title,
+      invoiceNumber: invoice.invoiceNumber,
+      recipient: { name: 'Destinataire non renseigne', email: '', phone: '', address: '' },
+      lines,
+      notes: 'Document genere depuis la facture enregistree.',
+      legal: 'Association SALAM - document genere electroniquement.',
+      dueDate: invoice.dueDate,
+    }];
+  openInvoicePdfBatch(docs);
+}
+
 function Skeleton() {
   return (
     <div className="divide-y divide-neutral-50">
@@ -529,7 +568,8 @@ function ClientsModal({ onClose }: { onClose: () => void }) {
             <div className="flex gap-2 border-t border-neutral-100 px-6 py-4">
               <button onClick={() => {
                 const clientRecipient = viewDoc.recipients.find(r => r.clientId);
-                if (clientRecipient?.clientId) resendDoc.mutate({ clientId: clientRecipient.clientId, invoiceId: viewDoc._id });
+                const clientId = typeof clientRecipient?.clientId === 'object' ? clientRecipient.clientId._id : clientRecipient?.clientId;
+                if (clientId) resendDoc.mutate({ clientId, invoiceId: viewDoc._id });
               }} className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-black text-white">Renvoyer</button>
               <button onClick={() => setViewDoc(null)} className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-xs font-black text-neutral-600">Fermer</button>
               <button onClick={() => deleteInvoice.mutate(viewDoc._id, { onSuccess: () => setViewDoc(null) })} className="flex-1 rounded-xl bg-red-50 py-2.5 text-xs font-black text-red-600">Supprimer</button>
@@ -1004,6 +1044,77 @@ function normalizeName(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
+function EditInvoiceModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose: () => void }) {
+  const updateInvoice = useUpdateInvoice();
+  const [title, setTitle] = useState(invoice.title);
+  const [description, setDescription] = useState(invoice.description ?? '');
+  const [amount, setAmount] = useState(String(invoice.amount ?? 0));
+  const [dueDate, setDueDate] = useState(invoice.dueDate ? invoice.dueDate.slice(0, 10) : '');
+  const [paymentLink, setPaymentLink] = useState(invoice.paymentLink ?? '');
+
+  const submit = () => {
+    if (!title.trim()) return toast.error('Titre requis');
+    if (!Number(amount)) return toast.error('Montant invalide');
+    if (!dueDate) return toast.error('Date d echeance requise');
+    updateInvoice.mutate({
+      id: invoice._id,
+      body: {
+        title: title.trim(),
+        description: description.trim(),
+        amount: Number(amount),
+        dueDate,
+        paymentLink: paymentLink.trim(),
+        type: invoice.type as 'cotisation' | 'event' | 'other',
+      },
+    }, { onSuccess: () => onClose() });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+          <div>
+            <p className="text-sm font-black text-neutral-900">Modifier le brouillon</p>
+            <p className="text-[11px] font-mono text-neutral-400">{invoice.invoiceNumber}</p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-50"><X size={16} /></button>
+        </div>
+        <div className="space-y-3 px-5 py-4">
+          <label className="block">
+            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Titre</span>
+            <input value={title} onChange={e => setTitle(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+          </label>
+          <label className="block">
+            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Description</span>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} className="mt-1 w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400" />
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Montant</span>
+              <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Echeance</span>
+              <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+            </label>
+          </div>
+          <label className="block">
+            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Lien de paiement</span>
+            <input value={paymentLink} onChange={e => setPaymentLink(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+          </label>
+        </div>
+        <div className="flex justify-end gap-2 border-t border-neutral-100 px-5 py-4">
+          <button onClick={onClose} className="rounded-xl border border-neutral-200 px-4 py-2 text-sm font-black text-neutral-600">Annuler</button>
+          <button onClick={submit} disabled={updateInvoice.isPending} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white disabled:opacity-60">
+            {updateInvoice.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const today = new Date().toISOString().slice(0, 10);
   const [title,         setTitle]         = useState('');
@@ -1237,6 +1348,7 @@ export default function FacturationAdminPage() {
   const [showCreate,  setShowCreate]  = useState(false);
   const [showClients, setShowClients] = useState(false);
   const [viewInvoice, setViewInvoice] = useState<InvoiceDoc | null>(null);
+  const [editInvoice, setEditInvoice] = useState<InvoiceDoc | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useAdminInvoices();
@@ -1354,12 +1466,18 @@ export default function FacturationAdminPage() {
                     <Eye size={13} />
                   </button>
                   {inv.status === 'draft' && (
-                    <button onClick={() => sendInvoice.mutate(inv._id)}
-                      disabled={sendInvoice.isPending}
-                      className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:opacity-60">
-                      {sendInvoice.isPending ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
-                      Envoyer
-                    </button>
+                    <>
+                      <button onClick={() => setEditInvoice(inv)} title="Modifier le brouillon"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100">
+                        <Pencil size={13} />
+                      </button>
+                      <button onClick={() => sendInvoice.mutate(inv._id)}
+                        disabled={sendInvoice.isPending}
+                        className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:opacity-60">
+                        {sendInvoice.isPending ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                        Envoyer
+                      </button>
+                    </>
                   )}
                   {isDeleting ? (
                     <button
@@ -1387,6 +1505,7 @@ export default function FacturationAdminPage() {
 
       {showCreate && <CreateInvoiceModal onClose={() => setShowCreate(false)} />}
       {showClients && <ClientsModal onClose={() => setShowClients(false)} />}
+      {editInvoice && <EditInvoiceModal invoice={editInvoice} onClose={() => setEditInvoice(null)} />}
       {viewInvoice && <InvoiceDetailModal invoice={viewInvoice} onClose={() => setViewInvoice(null)} />}
     </div>
   );

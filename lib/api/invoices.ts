@@ -5,8 +5,20 @@ import { useAuthStore } from '@/store/auth.store';
 
 export interface RecipientDoc {
   recipientType?: 'member' | 'client';
-  userId?: string;
-  clientId?: string;
+  userId?: string | {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    city?: string;
+    country?: string;
+    residenceCity?: string;
+    avatar?: string;
+    bureauPhoto?: string;
+    gender?: string;
+  };
+  clientId?: string | InvoiceClientDoc;
   invoiceNumber: string;
   status: 'pending' | 'sent' | 'paid' | 'cancelled';
   sentAt?: string;
@@ -80,6 +92,33 @@ export function useCreateInvoice() {
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       toast.success((res as any).message ?? 'Facture créée');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useUpdateInvoice() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: {
+      title?: string;
+      type?: 'cotisation' | 'event' | 'other';
+      description?: string;
+      amount?: number;
+      dueDate?: string;
+      paymentLink?: string;
+    } }) =>
+      apiClient<InvoiceDoc>(`/api/v1/admin/invoices/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+        token: token ?? '',
+      }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['admin-invoices'] });
+      qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
+      toast.success((res as any).message ?? 'Facture mise a jour');
     },
     onError: (err: Error) => toast.error(err.message),
   });

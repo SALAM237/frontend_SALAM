@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { Mail, MapPin, Globe, Share2, Video, X, ExternalLink } from 'lucide-react';
 import { SalamLogo } from '@/components/brand/SalamLogo';
 
@@ -6,19 +6,19 @@ const NAV_COLS = [
   {
     title: 'Association',
     links: [
-      ['À propos',    '/a-propos'],
+      ['Ã€ propos',    '/a-propos'],
       ['Nos valeurs', '/a-propos#valeurs'],
-      ["L'équipe",    '/bureau-executif'],
+      ["L'Ã©quipe",    '/bureau-executif'],
       ['Contact',     '/contact'],
     ],
   },
   {
-    title: 'Communauté',
+    title: 'CommunautÃ©',
     links: [
-      ['Activités',  '/activites'],
+      ['ActivitÃ©s',  '/activites'],
       ['Galerie',    '/galerie'],
-      ['Actualités', '/actualites'],
-      ['Adhésion',   '/adhesion'],
+      ['ActualitÃ©s', '/actualites'],
+      ['AdhÃ©sion',   '/adhesion'],
     ],
   },
   {
@@ -26,8 +26,8 @@ const NAV_COLS = [
     links: [
       ['Mon espace',  '/member/dashboard'],
       ['Connexion',   '/auth/login'],
-      ['Adhésion',    '/adhesion'],
-      ['Mode démo',   '/demo'],
+      ['AdhÃ©sion',    '/adhesion'],
+      ['Mode dÃ©mo',   '/demo'],
     ],
   },
 ];
@@ -44,18 +44,18 @@ export function Footer() {
     <footer className="bg-salam-ink text-white">
       <div className="container-salam">
 
-        {/* ── Main grid ── */}
-        <div className="grid gap-10 py-[clamp(3.5rem,7vw,6rem)] sm:grid-cols-2 lg:grid-cols-5">
+        {/* â”€â”€ Main grid â”€â”€ */}
+        <div className="grid grid-cols-2 gap-8 py-[clamp(3.5rem,7vw,6rem)] lg:grid-cols-5 lg:gap-10">
 
           {/* Brand column */}
-          <div className="sm:col-span-2 lg:col-span-2">
+          <div className="col-span-2 lg:col-span-2">
             {/* Logo */}
             <div className="mb-6">
               <SalamLogo size="sm" variant="white" href="/" />
             </div>
 
             <p className="max-w-[280px] text-sm leading-relaxed text-white/55">
-              Réseau d'entraide et de solidarité unissant les communautés camerounaises et marocaines en France. Sport, culture, éducation et accompagnement.
+              Réseau d'entraide et de solidarité unissant les Les camerounais Lauréats du Maroc. Networking, Emploi, Mentorat, Sport, culture, éducation et accompagnement.
             </p>
 
             {/* Socials */}
@@ -95,7 +95,7 @@ export function Footer() {
           ))}
         </div>
 
-        {/* ── Contact strip ── */}
+        {/* â”€â”€ Contact strip â”€â”€ */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/8 py-5 text-[13px] text-white/35">
           <span className="flex items-center gap-2">
             <Mail size={13} className="shrink-0" />
@@ -103,7 +103,7 @@ export function Footer() {
           </span>
           <span className="flex items-center gap-2">
             <MapPin size={13} className="shrink-0" />
-            Paris, Île-de-France
+            Paris, ÃŽle-de-France
           </span>
           <a
             href="https://www.salam-cameroun.com"
@@ -113,17 +113,17 @@ export function Footer() {
           </a>
         </div>
 
-        {/* ── Bottom bar ── */}
+        {/* â”€â”€ Bottom bar â”€â”€ */}
         <div className="flex flex-col gap-3 border-t border-white/6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[12px] text-white/28">
-            © {new Date().getFullYear()} Association SALAM Cameroun. Tous droits réservés.
+            Â© {new Date().getFullYear()} Association SALAM Cameroun. Tous droits rÃ©servÃ©s.
           </p>
-          <nav className="flex gap-5 text-[12px]" aria-label="Liens légaux">
+          <nav className="flex gap-5 text-[12px]" aria-label="Liens lÃ©gaux">
             <Link href="/mentions-legales" className="text-white/28 hover:text-white/60 transition-colors">
-              Mentions légales
+              Mentions lÃ©gales
             </Link>
             <Link href="/confidentialite" className="text-white/28 hover:text-white/60 transition-colors">
-              Confidentialité
+              ConfidentialitÃ©
             </Link>
             <Link href="/conditions" className="text-white/28 hover:text-white/60 transition-colors">
               CGU
@@ -132,7 +132,7 @@ export function Footer() {
         </div>
       </div>
 
-      {/* ── Cameroon flag stripe + iPhone home bar safe area ── */}
+      {/* â”€â”€ Cameroon flag stripe + iPhone home bar safe area â”€â”€ */}
       <div className="flag-stripe-cm w-full" style={{ height: 'max(5px, env(safe-area-inset-bottom))' }} />
     </footer>
   );

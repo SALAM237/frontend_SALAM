@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Calendar, MapPin, Users, ArrowRight } from 'lucide-react';
-import { demoActivities } from '@/data/demo/demo-activities';
+import { usePublicActivities } from '@/lib/api/activities';
 
 /* ── Category config ── */
 const CAT: Record<string, { label: string; text: string; bg: string; border: string }> = {
@@ -22,7 +22,20 @@ const card = {
 };
 
 export function ActivityPreview() {
-  const items = demoActivities.filter(a => a.status === 'published').slice(0, 3);
+  const { data } = usePublicActivities();
+  const today = Date.now();
+  const activities = data?.data?.activities ?? [];
+  const items = [...activities]
+    .sort((a, b) => {
+      const da = new Date(a.startDate ?? a.createdAt).getTime();
+      const db = new Date(b.startDate ?? b.createdAt).getTime();
+      const aFuture = da >= today;
+      const bFuture = db >= today;
+      if (aFuture && bFuture) return da - db;
+      if (!aFuture && !bFuture) return db - da;
+      return aFuture ? -1 : 1;
+    })
+    .slice(0, 8);
 
   return (
     <section>
@@ -60,19 +73,19 @@ export function ActivityPreview() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-60px' }}
-          className="grid gap-[clamp(1rem,2vw,1.5rem)] md:grid-cols-3"
+          className="flex snap-x gap-[clamp(1rem,2vw,1.5rem)] overflow-x-auto scroll-smooth pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {items.map((activity, i) => {
             const cat = CAT[activity.category] ?? CAT.culture;
-            const formattedDate = new Date(activity.date).toLocaleDateString('fr-FR', {
+            const formattedDate = new Date(activity.startDate ?? activity.createdAt).toLocaleDateString('fr-FR', {
               day: 'numeric', month: 'long', year: 'numeric',
             });
 
             return (
               <motion.article
-                key={activity.id}
+                key={activity._id}
                 variants={card}
-                className="card-salam group flex flex-col overflow-hidden"
+                className="card-salam group flex min-w-[82%] snap-start flex-col overflow-hidden sm:min-w-[48%] lg:min-w-[31%]"
               >
                 {/* Color top bar */}
                 <div className={`h-1.5 w-full shrink-0 ${TOPS[i % TOPS.length]}`} />
@@ -93,7 +106,7 @@ export function ActivityPreview() {
 
                   {/* Description */}
                   <p className="mt-3 flex-1 text-[13.5px] leading-relaxed text-neutral-500">
-                    {activity.description}
+                      {activity.description ?? 'Activite SALAM publiee par le bureau.'}
                   </p>
 
                   {/* Meta */}
@@ -104,17 +117,17 @@ export function ActivityPreview() {
                     </li>
                     <li className="flex items-center gap-2">
                       <MapPin size={12} className="shrink-0 text-salam-red" />
-                      {activity.location}
+                      {activity.location ?? 'Lieu a confirmer'}
                     </li>
                     <li className="flex items-center gap-2">
                       <Users size={12} className="shrink-0 text-amber-500" />
-                      {activity.participants} participants
+                      {activity.capacity ? `${activity.capacity} places` : 'Ouvert aux membres'}
                     </li>
                   </ul>
 
                   {/* CTA */}
                   <Link
-                    href={`/activites/${activity.id}`}
+                    href={`/activites/${activity.slug}`}
                     className="group/link mt-5 inline-flex items-center gap-1.5 text-[13px] font-bold text-salam-green"
                   >
                     Voir l'activité
@@ -124,6 +137,11 @@ export function ActivityPreview() {
               </motion.article>
             );
           })}
+          {items.length === 0 && (
+            <div className="rounded-3xl border border-dashed border-neutral-200 bg-white p-8 text-sm font-semibold text-neutral-400">
+              Aucune activite publiee pour le moment.
+            </div>
+          )}
         </motion.div>
 
         {/* Mobile "See all" */}

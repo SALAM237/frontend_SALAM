@@ -54,6 +54,14 @@ export const OPPORTUNITY_TYPES: { value: OpportunityType; label: string }[] = [
   { value: 'autre', label: 'Autre' },
 ];
 
+export function usePublicOpportunities() {
+  return useQuery({
+    queryKey: ['public-opportunities'],
+    queryFn: () => apiClient<{ items: OpportunityDoc[]; total: number }>('/api/v1/public/opportunities'),
+    staleTime: 60_000,
+  });
+}
+
 export function useMemberOpportunities(status?: 'published' | 'mine') {
   const token = useAuthStore(s => s.accessToken);
   const qs = status === 'mine' ? '?status=mine' : '';

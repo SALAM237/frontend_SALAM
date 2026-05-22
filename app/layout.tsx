@@ -1,8 +1,8 @@
 import type { Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { Footer } from '@/components/layout/Footer';
 import { ConditionalHeader } from '@/components/layout/ConditionalHeader';
+import { ConditionalFooter } from '@/components/layout/ConditionalFooter';
 import { Providers }         from '@/components/shared/Providers';
 import SalamChatbot          from '@/components/chat/SalamChatbot';
 import { defaultMetadata, schemaOrg, organizationSchema, websiteSchema, faqSchema } from '@/lib/seo';
@@ -54,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <ConditionalHeader />
           {children}
-          <Footer />
+          <ConditionalFooter />
           <SalamChatbot />
         </Providers>
       </body>

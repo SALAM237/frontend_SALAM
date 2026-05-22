@@ -534,9 +534,9 @@ function StickyMissionStack({
               className="font-black text-white"
               style={{
                 fontSize: compact
-                  ? "clamp(1.8rem,8vw,4.6rem)"
+                  ? "clamp(1.35rem,6.2vw,4.2rem)"
                   : "clamp(2.15rem,5.2vw,5.5rem)",
-                lineHeight: 0.92,
+                lineHeight: compact ? 1.02 : 0.92,
                 letterSpacing: "-0.045em",
                 marginBottom: compact
                   ? "clamp(0.75rem,1.8vw,1.15rem)"
@@ -553,7 +553,7 @@ function StickyMissionStack({
                 <>
                   <span>Insertion</span>
                   <br />
-                  <span style={{ color: acc }} className="max-lg:text-[1.3rem]">socio-professionnelle</span>
+                  <span style={{ color: acc }} className="max-lg:text-[1.05rem]">socio-professionnelle</span>
                 </>
               ) : (
                 <>
@@ -575,7 +575,7 @@ function StickyMissionStack({
               />
             </div>
 
-            <p className="max-w-[50ch] text-[clamp(0.82rem,2.3vw,1.05rem)] leading-[1.72] text-white/60 lg:max-w-[42ch] lg:leading-[1.9]">
+            <p className="max-w-[50ch] text-[clamp(0.74rem,2vw,1.02rem)] leading-[1.45] text-white/60 lg:max-w-[42ch] lg:leading-[1.8]">
               {mission.resume}
             </p>
 
