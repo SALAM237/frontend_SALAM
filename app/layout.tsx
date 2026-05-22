@@ -29,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" className={inter.variable}>
       <head>
+        <meta charSet="UTF-8" />
         {/* ── NGO Schema — GEO / MEO / IA engines ── */}
         <script
           type="application/ld+json"

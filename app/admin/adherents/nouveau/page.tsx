@@ -245,6 +245,7 @@ export default function NouveauAdherentPage() {
     Papa.parse<CsvRawRow>(file, {
       header:          true,
       skipEmptyLines:  true,
+      encoding:        'UTF-8',
       transformHeader: h => h.trim(),
       complete: result => {
         const headers = result.meta.fields ?? [];

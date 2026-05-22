@@ -44,7 +44,7 @@ export function Footer() {
     <footer className="bg-salam-ink text-white">
       <div className="container-salam">
 
-        {/* â”€â”€ Main grid â”€â”€ */}
+        {/* ── Main grid ── */}
         <div className="grid grid-cols-2 gap-8 py-[clamp(3.5rem,7vw,6rem)] lg:grid-cols-5 lg:gap-10">
 
           {/* Brand column */}
@@ -95,7 +95,7 @@ export function Footer() {
           ))}
         </div>
 
-        {/* â”€â”€ Contact strip â”€â”€ */}
+        {/* ── Contact strip ── */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/8 py-5 text-[13px] text-white/35">
           <span className="flex items-center gap-2">
             <Mail size={13} className="shrink-0" />
@@ -113,7 +113,7 @@ export function Footer() {
           </a>
         </div>
 
-        {/* â”€â”€ Bottom bar â”€â”€ */}
+        {/* ── Bottom bar ── */}
         <div className="flex flex-col gap-3 border-t border-white/6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[12px] text-white/28">
             © {new Date().getFullYear()} Association SALAM Cameroun. Tous droits réservés.
@@ -132,7 +132,7 @@ export function Footer() {
         </div>
       </div>
 
-      {/* â”€â”€ Cameroon flag stripe + iPhone home bar safe area â”€â”€ */}
+      {/* ── Cameroon flag stripe + iPhone home bar safe area ── */}
       <div className="flag-stripe-cm w-full" style={{ height: 'max(5px, env(safe-area-inset-bottom))' }} />
     </footer>
   );

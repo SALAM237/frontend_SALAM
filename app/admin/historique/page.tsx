@@ -12,6 +12,8 @@ const ACTION_COLORS: Record<string, string> = {
   settings:    'bg-neutral-50 text-neutral-600 border-neutral-200',
   reminder:    'bg-orange-50 text-orange-700 border-orange-200',
   treasury:    'bg-emerald-50 text-emerald-800 border-emerald-200',
+  content:     'bg-sky-50 text-sky-700 border-sky-200',
+  activity:    'bg-teal-50 text-teal-700 border-teal-200',
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -58,6 +60,12 @@ const EXTRA_ACTION_LABELS: Record<string, string> = {
   'treasury.membership_fee.proposed': 'Frais d’adhésion proposés',
   'treasury.membership_fee.approved': 'Frais d’adhésion validés',
   'treasury.membership_fee.rejected': 'Frais d’adhésion refusés',
+  'content.article.created': 'Actualité créée',
+  'content.article.updated': 'Actualité modifiée',
+  'content.article.deleted': 'Actualité supprimée',
+  'activity.created': 'Activité créée',
+  'activity.updated': 'Activité modifiée',
+  'activity.deleted': 'Activité supprimée',
 };
 
 const CATEGORIES = [
@@ -67,6 +75,8 @@ const CATEGORIES = [
   { value: 'member',     label: 'Adhérents' },
   { value: 'reminder',   label: 'Relances' },
   { value: 'treasury',   label: 'Trésorerie' },
+  { value: 'content',    label: 'Actualités' },
+  { value: 'activity',   label: 'Activités' },
   { value: 'settings',   label: 'Paramètres' },
   { value: 'auth',       label: 'Authentification' },
 ];
@@ -98,6 +108,8 @@ function logDetailsStr(log: AuditLogDoc): string {
   if (d.reference)      parts.push(`Réf. ${d.reference}`);
   if (d.invoiceNumber)  parts.push(String(d.invoiceNumber));
   if (d.title)          parts.push(String(d.title));
+  if (d.status)         parts.push(`Statut ${d.status}`);
+  if (d.visibility)     parts.push(d.visibility === 'public' ? 'Public' : d.visibility === 'members' ? 'Membres' : String(d.visibility));
   if (d.amount)         parts.push(`${Number(d.amount).toLocaleString('fr-FR')} F.CFA`);
   if (d.sent !== undefined) parts.push(`${d.sent} envoyé(s)`);
   if (d.recipientCount) parts.push(`${d.recipientCount} destinataires`);
@@ -197,21 +209,28 @@ export default function HistoriquePage() {
             const cat      = actionCategory(log.action);
             const colorCls = ACTION_COLORS[cat] ?? ACTION_COLORS.settings;
             const { date, time } = fmtLog(log);
+            const actorInitials = (log.adminName ?? 'Sys').split(' ').map((w: string) => w[0] ?? '').join('').slice(0, 2) || 'SY';
+            const categoryLabel = CATEGORIES.find(c => c.value === cat)?.label ?? 'Audit';
             return (
               <div key={log._id} className="flex items-start gap-4 px-5 py-4 hover:bg-neutral-50/60 transition-colors">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white">
-                  {(log.adminName ?? 'Sys').split(' ').map((w: string) => w[0] ?? '').join('').slice(0, 2) || 'SY'}
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-xs font-black text-white shadow-sm">
+                  {actorInitials}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-neutral-500">{log.adminName ?? 'Système'}</span>
-                    <span className="text-[10px] font-semibold text-neutral-400">{log.adminRole ?? 'Audit'}</span>
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-black ${colorCls}`}>
+                    <h3 className="text-base font-black leading-tight tracking-[-0.02em] text-neutral-900">
                       {actionLabel(log.action)}
+                    </h3>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-black ${colorCls}`}>
+                      {categoryLabel}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs text-neutral-500 leading-relaxed">{logDetailsStr(log)}</p>
-                  <p className="mt-0.5 text-[10px] text-neutral-300 font-mono">IP: {log.ip}</p>
+                  <p className="mt-1 text-xs text-neutral-500 leading-relaxed">{logDetailsStr(log)}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-semibold text-neutral-400">
+                    <span>Par {log.adminName ?? 'Système'}</span>
+                    <span>{log.adminRole ?? 'Audit'}</span>
+                    {log.ip && <span className="font-mono">IP: {log.ip}</span>}
+                  </div>
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="text-[11px] font-semibold text-neutral-500">{date}</p>

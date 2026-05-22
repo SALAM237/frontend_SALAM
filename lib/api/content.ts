@@ -8,11 +8,13 @@ export interface ArticleDoc {
   title: string;
   name?: string;
   status: 'draft' | 'pending' | 'published';
+  visibility?: 'public' | 'members';
   data?: {
     excerpt?: string;
     content?: string;
     category?: string;
     imageUrl?: string;
+    visibility?: 'public' | 'members';
   };
   createdAt: string;
 }
@@ -49,7 +51,7 @@ export function useSubmitMemberArticle() {
   const token = useAuthStore(s => s.accessToken);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { title: string; excerpt?: string; content: string; category?: string }) =>
+    mutationFn: (payload: { title: string; excerpt?: string; content: string; category?: string; imageUrl?: string; visibility?: 'public' | 'members' }) =>
       apiClient<ArticleDoc>('/api/v1/member/content', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -77,7 +79,7 @@ export function useCreateArticle() {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { title: string; excerpt?: string; content?: string; category?: string; imageUrl?: string; status?: string; data?: { excerpt?: string; content?: string; category?: string; imageUrl?: string } }) =>
+    mutationFn: (payload: { title: string; excerpt?: string; content?: string; category?: string; imageUrl?: string; status?: string; visibility?: 'public' | 'members'; data?: { excerpt?: string; content?: string; category?: string; imageUrl?: string; visibility?: 'public' | 'members' } }) =>
       apiClient<ArticleDoc>('/api/v1/admin/content', {
         method: 'POST', body: JSON.stringify(payload), token: token ?? '',
       }),
@@ -93,7 +95,7 @@ export function useUpdateArticle(id: string) {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { title?: string; status?: string; data?: { excerpt?: string; content?: string; category?: string; imageUrl?: string } }) =>
+    mutationFn: (payload: { title?: string; status?: string; visibility?: 'public' | 'members'; data?: { excerpt?: string; content?: string; category?: string; imageUrl?: string; visibility?: 'public' | 'members' } }) =>
       apiClient<ArticleDoc>(`/api/v1/admin/content/${id}`, {
         method: 'PUT', body: JSON.stringify(payload), token: token ?? '',
       }),

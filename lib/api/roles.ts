@@ -233,7 +233,7 @@ export function usePublicBureau() {
     queryFn: async (): Promise<{ data: BureauMember[] }> => {
       try {
         const res = await fetch(`${API}/api/v1/public/bureau`, {
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
         });
         if (!res.ok) return { data: [] };
         const json = await res.json();

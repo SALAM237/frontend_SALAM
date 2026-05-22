@@ -63,7 +63,7 @@ function LoginForm() {
       // Poser les cookies httpOnly sécurisés (salam_access + salam_role)
       await fetch('/api/auth/session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
         body: JSON.stringify({ accessToken: res.data.accessToken }),
       });
 

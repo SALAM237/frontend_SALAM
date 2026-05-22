@@ -21,7 +21,7 @@ export async function refreshAuthSession(): Promise<string | null> {
       const res = await fetch(`${API}/api/v1/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
       });
       if (!res.ok) throw new Error('refresh_expired');
 
@@ -32,7 +32,7 @@ export async function refreshAuthSession(): Promise<string | null> {
         // Renouvelle le cookie httpOnly salam_access
         await fetch('/api/auth/session', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify({ accessToken: newToken }),
         }).catch(() => {});
 
@@ -77,7 +77,7 @@ export async function apiClient<T = unknown>(
   const { token, _retry, ...rest } = init ?? {};
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json; charset=utf-8',
     ...(rest.headers as Record<string, string> ?? {}),
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;

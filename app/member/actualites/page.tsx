@@ -2,8 +2,11 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Newspaper, Search, Loader2, Tag, Eye, X, Plus } from 'lucide-react';
+import { Newspaper, Search, Loader2, Tag, Eye, X, Plus, PlusCircle, Trash2, ImagePlus } from 'lucide-react';
 import { usePublicArticles, ARTICLE_CATEGORIES, useSubmitMemberArticle } from '@/lib/api/content';
+import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
+
+type ExtraBlock = { id: string; label: string; title: string; description: string };
 
 export default function MemberActualitesPage() {
   const [search, setSearch] = useState('');
@@ -155,54 +158,174 @@ export default function MemberActualitesPage() {
 
 function SubmitArticleModal({ onClose }: { onClose: () => void }) {
   const submit = useSubmitMemberArticle();
-  const [form, setForm] = useState({ title: '', excerpt: '', content: '', category: 'general' });
+  const [form, setForm] = useState({
+    title: '',
+    excerpt: '',
+    content: '',
+    category: 'general',
+    imageUrl: '',
+    visibility: 'public' as 'public' | 'members',
+  });
+  const [activeDesign, setActiveDesign] = useState<string | null>(null);
+  const [styles, setStyles] = useState<Record<string, DesignStyle>>({});
+  const [extraBlocks, setExtraBlocks] = useState<ExtraBlock[]>([]);
   const canSubmit = form.title.trim() && form.content.trim();
 
   const send = () => {
     if (!canSubmit || submit.isPending) return;
-    submit.mutate(form, { onSuccess: onClose });
+    const extraContent = extraBlocks
+      .filter(block => block.title.trim() || block.description.trim())
+      .map(block => [block.label, block.title, block.description].filter(Boolean).join('\n'))
+      .join('\n\n');
+    submit.mutate({
+      ...form,
+      content: [form.content, extraContent].filter(Boolean).join('\n\n'),
+    }, { onSuccess: onClose });
+  };
+
+  const handleImageFile = (file?: File | null) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setForm(prev => ({ ...prev, imageUrl: String(reader.result ?? '') }));
+    reader.readAsDataURL(file);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
         <div className="flex items-center justify-between border-b border-neutral-100 p-5">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Soumission membre</p>
-            <h2 className="text-lg font-black text-neutral-900">Proposer une actualite</h2>
+            <h2 className="text-lg font-black text-neutral-900">Proposer une actualité</h2>
           </div>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
             <X size={15} />
           </button>
         </div>
-        <div className="space-y-3 p-5">
-          <input
-            value={form.title}
-            onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
-            placeholder="Titre"
-            className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
-          />
-          <select
-            value={form.category}
-            onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
-            className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
-          >
-            {ARTICLE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
-          <textarea
-            value={form.excerpt}
-            onChange={e => setForm(prev => ({ ...prev, excerpt: e.target.value }))}
-            rows={2}
-            placeholder="Resume court"
-            className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
-          />
-          <textarea
-            value={form.content}
-            onChange={e => setForm(prev => ({ ...prev, content: e.target.value }))}
-            rows={6}
-            placeholder="Contenu de l'actualite"
-            className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
-          />
+        <div className="flex-1 space-y-4 overflow-y-auto p-5" onClick={() => setActiveDesign(null)}>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Titre <span className="text-red-500">*</span></label>
+            <DesignEditorField id="member-title" label="Titre" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+              {style => (
+                <input
+                  value={form.title}
+                  onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Titre"
+                  className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+                  style={style}
+                />
+              )}
+            </DesignEditorField>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-[112px_1fr]">
+            <div className="flex h-24 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
+              {form.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={form.imageUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <ImagePlus size={24} className="text-neutral-300" />
+              )}
+            </div>
+            <div className="space-y-2">
+              <input value={form.imageUrl} onChange={e => setForm(prev => ({ ...prev, imageUrl: e.target.value }))} placeholder="URL de l'image ou import ci-dessous" className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+              <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-neutral-200 px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
+                <ImagePlus size={13} /> Importer une image
+                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageFile(e.target.files?.[0])} />
+              </label>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Catégorie</label>
+            <select
+              value={form.category}
+              onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
+              className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+            >
+              {ARTICLE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Résumé</label>
+            <DesignEditorField id="member-excerpt" label="Résumé" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+              {style => (
+                <textarea
+                  value={form.excerpt}
+                  onChange={e => setForm(prev => ({ ...prev, excerpt: e.target.value }))}
+                  rows={2}
+                  placeholder="Résumé court"
+                  className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+                  style={style}
+                />
+              )}
+            </DesignEditorField>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Contenu <span className="text-red-500">*</span></label>
+            <DesignEditorField id="member-content" label="Contenu" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+              {style => (
+                <textarea
+                  value={form.content}
+                  onChange={e => setForm(prev => ({ ...prev, content: e.target.value }))}
+                  rows={6}
+                  placeholder="Contenu de l'actualité"
+                  className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+                  style={style}
+                />
+              )}
+            </DesignEditorField>
+          </div>
+          <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 p-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">Blocs libres</p>
+                <p className="text-[11px] text-neutral-500">Ajoutez un bloc avec libellé, titre et description.</p>
+              </div>
+              <button type="button" onClick={() => setExtraBlocks(prev => [...prev, { id: `member-extra-${Date.now()}`, label: `Bloc ${prev.length + 1}`, title: '', description: '' }])}
+                className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-black text-white">
+                <PlusCircle size={13} /> Ajouter
+              </button>
+            </div>
+            <div className="space-y-3">
+              {extraBlocks.map(block => (
+                <DesignEditorField key={block.id} id={block.id} label={block.label} styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+                  {style => (
+                    <div className="rounded-2xl border border-emerald-100 bg-white p-3 shadow-sm">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <input
+                          value={block.label}
+                          onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, label: e.target.value } : b))}
+                          placeholder="Libellé du bloc"
+                          className="h-8 flex-1 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-xs font-black uppercase tracking-[0.1em] text-neutral-500 outline-none focus:border-emerald-400"
+                        />
+                        <button type="button" onClick={() => setExtraBlocks(prev => prev.filter(b => b.id !== block.id))} className="flex h-8 w-8 items-center justify-center rounded-xl border border-red-100 text-red-400 hover:border-red-300 hover:text-red-600">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">{block.label || 'Titre du bloc'}</label>
+                        <input value={block.title} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, title: e.target.value } : b))} placeholder="Titre" className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" style={style} />
+                      </div>
+                      <div className="mt-3 space-y-1.5">
+                        <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Description</label>
+                        <textarea value={block.description} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, description: e.target.value } : b))} rows={4} placeholder="Description détaillée" className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400" style={style} />
+                      </div>
+                    </div>
+                  )}
+                </DesignEditorField>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Visibilité demandée</label>
+            <div className="flex gap-3">
+              {([{ v: 'public', l: 'Public' }, { v: 'members', l: 'Membres' }] as const).map(({ v, l }) => (
+                <button key={v} type="button" onClick={() => setForm(prev => ({ ...prev, visibility: v }))}
+                  className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-black transition ${form.visibility === v ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
           <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
             Votre proposition sera en attente. Un administrateur devra la valider avant publication.
           </p>

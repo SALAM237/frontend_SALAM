@@ -4,18 +4,18 @@ import { useState, useMemo } from 'react';
 import { Banknote, FileText, Eye, X, CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react';
 import { useMemberInvoices, type MemberInvoiceDoc } from '@/lib/api/invoices';
 
-/* â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Helpers ─────────────────────────────────────────── */
 type RecipientStatus = 'pending' | 'sent' | 'paid' | 'cancelled';
 
 const STATUS_CONFIG: Record<RecipientStatus, { badge: string; label: string; icon: React.ReactNode }> = {
   pending:   { badge: 'bg-amber-50 text-amber-700 border-amber-200',       label: 'En attente',  icon: <Clock size={10} />       },
   sent:      { badge: 'bg-amber-50 text-amber-700 border-amber-200',       label: 'En attente',  icon: <Clock size={10} />       },
-  paid:      { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'PayÃ©e',       icon: <CheckCircle2 size={10} /> },
-  cancelled: { badge: 'bg-neutral-50 text-neutral-500 border-neutral-200', label: 'AnnulÃ©e',     icon: <XCircle size={10} />     },
+  paid:      { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Payée',       icon: <CheckCircle2 size={10} /> },
+  cancelled: { badge: 'bg-neutral-50 text-neutral-500 border-neutral-200', label: 'Annulée',     icon: <XCircle size={10} />     },
 };
 
 function fmt(d?: string | null) {
-  if (!d) return 'â€”';
+  if (!d) return '—';
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
@@ -27,7 +27,7 @@ function fmtCfa(amount: number) {
   return `${Number(amount || 0).toLocaleString('fr-FR')} F.CFA`;
 }
 
-/* â”€â”€â”€ Skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Skeleton ────────────────────────────────────────── */
 function Skeleton() {
   return (
     <div className="divide-y divide-neutral-50">
@@ -45,7 +45,7 @@ function Skeleton() {
   );
 }
 
-/* â”€â”€â”€ Invoice detail modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Invoice detail modal ──────────────────────────────── */
 function InvoiceModal({ invoice, onClose }: { invoice: MemberInvoiceDoc; onClose: () => void }) {
   const recipientStatus = invoice.myRecipient?.status ?? 'pending';
   const cfg = STATUS_CONFIG[recipientStatus as RecipientStatus];
@@ -127,7 +127,7 @@ function InvoiceModal({ invoice, onClose }: { invoice: MemberInvoiceDoc; onClose
   );
 }
 
-/* ─── Invoice row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Invoice row ─────────────────────────────────────── */
 function InvoiceRow({ invoice, onView }: { invoice: MemberInvoiceDoc; onView: () => void }) {
   const recipientStatus = (invoice.myRecipient?.status ?? 'pending') as RecipientStatus;
   const cfg = STATUS_CONFIG[recipientStatus];
@@ -148,7 +148,7 @@ function InvoiceRow({ invoice, onView }: { invoice: MemberInvoiceDoc; onView: ()
           {invoice.myRecipient?.invoiceNumber ?? invoice.invoiceNumber}
         </p>
         <p className="text-[11px] text-neutral-400 mt-0.5">
-          {!pending ? `PayÃ©e le ${fmt(invoice.myRecipient?.paidAt)}` : `Ã‰chÃ©ance : ${fmt(invoice.dueDate)}`}
+          {!pending ? `Payée le ${fmt(invoice.myRecipient?.paidAt)}` : `Échéance : ${fmt(invoice.dueDate)}`}
         </p>
       </div>
       <div className="shrink-0 text-right hidden sm:block">
@@ -163,7 +163,7 @@ function InvoiceRow({ invoice, onView }: { invoice: MemberInvoiceDoc; onView: ()
   );
 }
 
-/* â”€â”€â”€ Page principale â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Page principale ─────────────────────────────────── */
 
 export default function MemberFacturesPage() {
   const [selected, setSelected] = useState<MemberInvoiceDoc | null>(null);
@@ -188,15 +188,15 @@ export default function MemberFacturesPage() {
 
       <div>
         <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Mes factures</h1>
-        <p className="mt-1 text-sm text-neutral-500">Factures Ã©mises par l&apos;association pour les Ã©vÃ©nements.</p>
+        <p className="mt-1 text-sm text-neutral-500">Factures émises par l&apos;association pour les événements.</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Total facturÃ©', value: isLoading ? 'â€¦' : fmtCfa(total),        color: 'text-neutral-900', bg: 'bg-neutral-50  border-neutral-100' },
-          { label: 'PayÃ©',          value: isLoading ? 'â€¦' : fmtCfa(paidTotal),    color: 'text-emerald-700', bg: 'bg-emerald-50  border-emerald-100' },
-          { label: 'En attente',    value: isLoading ? 'â€¦' : fmtCfa(pendingTotal), color: 'text-amber-700',   bg: 'bg-amber-50    border-amber-100'   },
+          { label: 'Total facturé', value: isLoading ? '…' : fmtCfa(total),        color: 'text-neutral-900', bg: 'bg-neutral-50  border-neutral-100' },
+          { label: 'Payé',          value: isLoading ? '…' : fmtCfa(paidTotal),    color: 'text-emerald-700', bg: 'bg-emerald-50  border-emerald-100' },
+          { label: 'En attente',    value: isLoading ? '…' : fmtCfa(pendingTotal), color: 'text-amber-700',   bg: 'bg-amber-50    border-amber-100'   },
         ].map(s => (
           <div key={s.label} className={`rounded-2xl border p-4 ${s.bg}`}>
             <p className={`text-xl font-black leading-none ${s.color}`}>{s.value}</p>
@@ -213,7 +213,7 @@ export default function MemberFacturesPage() {
 
       {isError && (
         <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-center text-sm text-red-600">
-          Erreur de chargement. VÃ©rifiez votre connexion.
+          Erreur de chargement. Vérifiez votre connexion.
         </div>
       )}
 
@@ -227,7 +227,7 @@ export default function MemberFacturesPage() {
       {!isLoading && !isError && pending.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-xs font-black uppercase tracking-[0.16em] text-amber-600">
-            En attente de paiement â€” {pending.length}
+            En attente de paiement — {pending.length}
           </h2>
           <div className="overflow-hidden rounded-2xl border border-amber-100 bg-white shadow-sm">
             <div className="divide-y divide-neutral-50">
@@ -242,7 +242,7 @@ export default function MemberFacturesPage() {
       {!isLoading && !isError && paid.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-xs font-black uppercase tracking-[0.16em] text-neutral-500">
-            PayÃ©es â€” {paid.length}
+            Payées — {paid.length}
           </h2>
           <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
             <div className="divide-y divide-neutral-50">

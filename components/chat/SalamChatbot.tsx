@@ -237,7 +237,7 @@ export default function SalamChatbot() {
       const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '');
       const res = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
         body: JSON.stringify({
           messages: nextMessages
             .filter(m => m !== WELCOME)

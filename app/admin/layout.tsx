@@ -23,13 +23,13 @@ type NavItem = { label: string; href: string; icon: React.ElementType; superAdmi
 
 const BASE_NAV: NavItem[] = [
   { label: 'Tableau de bord',   href: '/admin/dashboard',         icon: LayoutDashboard },
-  { label: 'AdhÃ©rents',         href: '/admin/adherents',         icon: Users },
-  { label: "Frais d'adhÃ©sion",  href: '/admin/cotisations',       icon: Banknote },
+  { label: 'Adhérents',         href: '/admin/adherents',         icon: Users },
+  { label: "Frais d'adhésion",  href: '/admin/cotisations',       icon: Banknote },
   { label: 'Facturation',       href: '/admin/facturation',       icon: FileText },
   { label: 'Tresorerie',        href: '/admin/tresorerie',        icon: Banknote, permissions: ['treasury.read', 'treasury.create', 'treasury.update', 'treasury.delete'] },
-  { label: 'ActivitÃ©s',         href: '/admin/activites',         icon: CalendarDays },
+  { label: 'Activités',         href: '/admin/activites',         icon: CalendarDays },
   { label: 'Galerie',           href: '/admin/galerie',           icon: Images },
-  { label: 'ActualitÃ©s',        href: '/admin/actualites',        icon: Newspaper },
+  { label: 'Actualités',        href: '/admin/actualites',        icon: Newspaper },
   { label: 'Networking',        href: '/admin/networking',        icon: Handshake, permissions: ['networking.publish'] },
   { label: 'Opportunites',      href: '/admin/opportunites',      icon: BriefcaseBusiness, permissions: ['opportunities.publish', 'opportunities.create', 'opportunities.update', 'opportunities.delete'] },
   { label: 'Messages',          href: '/admin/messages',          icon: MessageSquare },
@@ -37,7 +37,7 @@ const BASE_NAV: NavItem[] = [
   { label: 'IDP/ISP',           href: '/admin/idp-isp',           icon: Target },
   { label: 'Validations',       href: '/admin/validations',       icon: ShieldCheck, permissions: ['content.publish', 'gallery.publish', 'networking.publish', 'opportunities.publish'] },
   { label: 'Historique',        href: '/admin/historique',        icon: History },
-  { label: 'RÃ´les & AccÃ¨s',     href: '/admin/roles',             icon: Shield, superAdminOnly: true },
+  { label: 'Rôles & Accès',     href: '/admin/roles',             icon: Shield, superAdminOnly: true },
   { label: 'Bureau',            href: '/admin/bureau',            icon: Users },
   { label: 'Compte',            href: '/admin/parametres',        icon: Settings },
 ];
@@ -60,26 +60,26 @@ function normalizeBureauPoste(value?: string | null) {
 }
 
 const FEMININE_BUREAU_POSTES: Record<string, string> = {
-  president: 'PrÃ©sidente',
-  'president e': 'PrÃ©sidente',
-  'vice president': 'Vice-PrÃ©sidente',
-  'vice president e': 'Vice-PrÃ©sidente',
-  'secretaire general': 'SecrÃ©taire GÃ©nÃ©rale',
-  'secretaire general e': 'SecrÃ©taire GÃ©nÃ©rale',
-  'secretaire adjoint': 'SecrÃ©taire Adjointe',
-  'secretaire adjoint e': 'SecrÃ©taire Adjointe',
-  tresorier: 'TrÃ©soriÃ¨re',
-  'tresorier e': 'TrÃ©soriÃ¨re',
-  'tresorier adjoint': 'TrÃ©soriÃ¨re Adjointe',
-  'tresorier e adjoint e': 'TrÃ©soriÃ¨re Adjointe',
+  president: 'Présidente',
+  'president e': 'Présidente',
+  'vice president': 'Vice-Présidente',
+  'vice president e': 'Vice-Présidente',
+  'secretaire general': 'Secrétaire Générale',
+  'secretaire general e': 'Secrétaire Générale',
+  'secretaire adjoint': 'Secrétaire Adjointe',
+  'secretaire adjoint e': 'Secrétaire Adjointe',
+  tresorier: 'Trésorière',
+  'tresorier e': 'Trésorière',
+  'tresorier adjoint': 'Trésorière Adjointe',
+  'tresorier e adjoint e': 'Trésorière Adjointe',
   censeur: 'Censeure',
   responsable: 'Responsable',
   'commissaire aux comptes': 'Commissaire aux comptes',
   'membre sage': 'Membre sage',
-  conseiller: 'ConseillÃ¨re',
-  'conseiller e': 'ConseillÃ¨re',
-  'sage conseiller': 'Sage conseillÃ¨re',
-  'sage conseiller e': 'Sage conseillÃ¨re',
+  conseiller: 'Conseillère',
+  'conseiller e': 'Conseillère',
+  'sage conseiller': 'Sage conseillère',
+  'sage conseiller e': 'Sage conseillère',
 };
 
 function formatBureauPosteForGender(poste?: string | null, gender?: string | null) {
@@ -183,7 +183,7 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
                 {bureauPoste ?? adminRole}
               </p>
             </div>
-            <button onClick={onLogout} className="text-white/25 transition-colors hover:text-red-400" title="DÃ©connexion">
+            <button onClick={onLogout} className="text-white/25 transition-colors hover:text-red-400" title="Déconnexion">
               <LogOut size={15} />
             </button>
           </div>
@@ -203,7 +203,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
-  // Restauration de session aprÃ¨s rechargement de page (Zustand est vide)
+  // Restauration de session après rechargement de page (Zustand est vide)
   useEffect(() => {
     if (user) {
       if (!hasAdminRole(user)) {
@@ -223,17 +223,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         let restoredUser: AuthUser;
         try {
 
-        // RÃ©cupÃ©rer un nouvel access token via le refresh token httpOnly
+        // Récupérer un nouvel access token via le refresh token httpOnly
         const refreshRes = await apiClient<{ accessToken: string }>(
           '/api/v1/auth/refresh', { method: 'POST' },
         );
         token = refreshRes.data.accessToken;
 
-        // Charger les donnÃ©es utilisateur
+        // Charger les données utilisateur
         const meRes = await apiClient<AuthUser>('/api/v1/auth/me', { token });
         restoredUser = meRes.data;
 
-        // VÃ©rifier le rÃ´le admin (double-check cÃ´tÃ© client)
+        // Vérifier le rôle admin (double-check côté client)
         } catch {
           const sessionRes = await fetch('/api/auth/session', { cache: 'no-store' });
           if (!sessionRes.ok) throw new Error('local_session_expired');
@@ -252,7 +252,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         // Renouveler les cookies httpOnly avec le nouveau token
         await fetch('/api/auth/session', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify({ accessToken: token }),
         });
 
@@ -267,7 +267,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           if (!hasAdminRole(retryMe.data)) throw new Error('not_admin');
           await fetch('/api/auth/session', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json; charset=utf-8' },
             body: JSON.stringify({ accessToken: retry.data.accessToken }),
           });
           restoreAuth(retryMe.data, retry.data.accessToken);
@@ -287,13 +287,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => {
     try { await apiClient('/api/v1/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
-    // Effacer les cookies httpOnly cÃ´tÃ© serveur
+    // Effacer les cookies httpOnly côté serveur
     await fetch('/api/auth/session', { method: 'DELETE' });
     clearAuth();
     router.push('/bureau-executif/connexion');
   };
 
-  // Ã‰cran de chargement pendant la restauration de session
+  // Écran de chargement pendant la restauration de session
   if (restoring) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f4f6f5]">
@@ -381,7 +381,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <div className="flex flex-col items-center py-10 text-center">
                       <Bell size={28} className="mb-3 text-neutral-200" />
                       <p className="text-sm font-semibold text-neutral-400">Aucune notification</p>
-                      <p className="mt-1 text-xs text-neutral-300">Vous Ãªtes Ã  jour !</p>
+                      <p className="mt-1 text-xs text-neutral-300">Vous êtes à jour !</p>
                     </div>
                   </div>
                 </>
@@ -389,11 +389,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <Link href="/admin/parametres" title="ParamÃ¨tres">
+              <Link href="/admin/parametres" title="Paramètres">
                 <img src={avatarUrl} alt={displayName} className={`h-8 w-8 rounded-full border-2 object-cover ring-1 ${memberAvatarBorderClass(user?.gender)} ${memberAvatarRingClass(user?.gender)}`} />
               </Link>
             ) : (
-              <Link href="/admin/parametres" title="ParamÃ¨tres" className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${initialsClass}`}>
+              <Link href="/admin/parametres" title="Paramètres" className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${initialsClass}`}>
                 {initials}
               </Link>
             )}

@@ -105,7 +105,7 @@ export function HeroSection() {
         const meRes = await apiClient<AuthUser>('/api/v1/auth/me', { token });
         await fetch('/api/auth/session', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify({ accessToken: token }),
         });
         restoreAuth(meRes.data, token);

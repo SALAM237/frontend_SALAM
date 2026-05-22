@@ -1,58 +1,36 @@
 'use client';
+
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight, ImageIcon, Play } from 'lucide-react';
+import { usePublicAlbums } from '@/lib/api/gallery';
 
-/* Gallery items with gradient colors that represent the association */
-const ITEMS = [
-  {
-    id: 1,
-    title: 'Rencontre annuelle 2025',
-    category: 'Culture',
-    gradient: 'linear-gradient(135deg,#0B8F3A,#064d20)',
-    span: 'md:col-span-2 md:row-span-2',
-    size: 'large',
-  },
-  {
-    id: 2,
-    title: 'Tournoi de fraternité',
-    category: 'Sport',
-    gradient: 'linear-gradient(135deg,#C8102E,#7f0a1d)',
-    span: '',
-    size: 'small',
-  },
-  {
-    id: 3,
-    title: 'Soirée gastronomique',
-    category: 'Culture',
-    gradient: 'linear-gradient(135deg,#F7C600,#d4a200)',
-    span: '',
-    size: 'small',
-  },
-  {
-    id: 4,
-    title: 'Atelier orientation',
-    category: 'Éducation',
-    gradient: 'linear-gradient(135deg,#6D28D9,#4c1d95)',
-    span: '',
-    size: 'small',
-  },
-  {
-    id: 5,
-    title: 'Action bénévole',
-    category: 'Bénévolat',
-    gradient: 'linear-gradient(135deg,#2563EB,#1e3a8a)',
-    span: '',
-    size: 'small',
-  },
+const fallbackGradients = [
+  'linear-gradient(135deg,#0B8F3A,#064d20)',
+  'linear-gradient(135deg,#C8102E,#7f0a1d)',
+  'linear-gradient(135deg,#F7C600,#d4a200)',
+  'linear-gradient(135deg,#6D28D9,#4c1d95)',
+  'linear-gradient(135deg,#2563EB,#1e3a8a)',
 ];
 
 export function GalleryPreview() {
+  const { data, isLoading } = usePublicAlbums();
+  const albums = data?.data ?? [];
+  const photos = albums
+    .flatMap(album => (album.images ?? [])
+      .filter(image => image.isPublished !== false && (image.visibility ?? album.visibility) === 'public')
+      .map(image => ({
+        id: `${album._id}-${image.url}`,
+        title: image.alt || album.title,
+        category: album.tags?.[0] || 'Galerie',
+        url: image.url,
+        albumTitle: album.title,
+      })))
+    .slice(0, 5);
+
   return (
     <section>
       <div className="container-salam section-salam">
-
-        {/* ── Header ── */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -68,101 +46,89 @@ export function GalleryPreview() {
               Nos moments<br />en images
             </h2>
             <p className="text-salam mt-3 max-w-md text-neutral-600">
-              Revivez les meilleurs moments de l'association SALAM.
+              Revivez les meilleurs moments publics de l'association SALAM.
             </p>
           </div>
-          <Link
-            href="/galerie"
-            className="group inline-flex items-center gap-2 whitespace-nowrap text-sm font-bold text-salam-green"
-          >
+          <Link href="/galerie" className="group inline-flex items-center gap-2 whitespace-nowrap text-sm font-bold text-salam-green">
             Toute la galerie
             <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
           </Link>
         </motion.div>
 
-        {/* ── Mosaic grid ── */}
-        <div
-          className="grid grid-cols-2 gap-[clamp(0.5rem,1.2vw,1rem)] md:grid-cols-3"
-          style={{ gridTemplateRows: 'repeat(2, minmax(clamp(100px,16vw,180px), 1fr))' }}
-        >
-          {ITEMS.map(({ id, title, category, gradient, span, size }, idx) => (
-            <motion.div
-              key={id}
-              initial={{ opacity: 0, scale: 0.94 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: idx * 0.07, ease: [0.16, 1, 0.3, 1] }}
-              viewport={{ once: true }}
-              className={`group relative overflow-hidden cursor-pointer ${span}`}
-              style={{
-                borderRadius: 'clamp(0.75rem,1.5vw,1.25rem)',
-                background: gradient,
-                minHeight: size === 'large' ? 'clamp(200px,28vw,320px)' : 'clamp(100px,14vw,180px)',
-              }}
-            >
-              {/* Pattern overlay */}
-              <div
-                className="pointer-events-none absolute inset-0 opacity-[0.08]"
-                style={{
-                  backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-                  backgroundSize: size === 'large' ? '24px 24px' : '18px 18px',
-                }}
-              />
+        {isLoading && (
+          <div className="grid grid-cols-2 gap-[clamp(0.5rem,1.2vw,1rem)] md:grid-cols-3">
+            {[1, 2, 3, 4, 5].map(item => (
+              <div key={item} className="min-h-[clamp(100px,14vw,180px)] rounded-2xl bg-neutral-100" />
+            ))}
+          </div>
+        )}
 
-              {/* Center icon */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <ImageIcon
-                  size={size === 'large' ? 52 : 32}
-                  className="text-white/20 transition-transform duration-500 group-hover:scale-110"
-                />
-              </div>
+        {!isLoading && photos.length === 0 && (
+          <div className="rounded-3xl border border-dashed border-emerald-200 bg-white p-8 text-center shadow-sm">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+              <ImageIcon size={22} />
+            </div>
+            <h3 className="text-lg font-black text-neutral-900">Aucune photo publique pour le moment</h3>
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-neutral-500">
+              Les albums publics publiés dans la galerie apparaîtront ici automatiquement.
+            </p>
+          </div>
+        )}
 
-              {/* Play icon for large item */}
-              {size === 'large' && (
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                  <div className="flex size-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-                    <Play size={20} className="translate-x-0.5 text-white" />
-                  </div>
-                </div>
-              )}
-
-              {/* Hover overlay */}
-              <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/25" />
-
-              {/* Text (appears on hover) */}
-              <div className="absolute bottom-0 left-0 right-0 translate-y-2 p-[clamp(0.75rem,1.5vw,1.25rem)] opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">{category}</p>
-                <p
-                  className="mt-0.5 font-bold leading-tight text-white"
-                  style={{ fontSize: size === 'large' ? 'clamp(0.9rem,1.6vw,1.1rem)' : 'clamp(0.75rem,1.2vw,0.85rem)' }}
+        {!isLoading && photos.length > 0 && (
+          <div
+            className="grid grid-cols-2 gap-[clamp(0.5rem,1.2vw,1rem)] md:grid-cols-3"
+            style={{ gridTemplateRows: 'repeat(2, minmax(clamp(100px,16vw,180px), 1fr))' }}
+          >
+            {photos.map((photo, idx) => {
+              const large = idx === 0;
+              return (
+                <motion.div
+                  key={photo.id}
+                  initial={{ opacity: 0, scale: 0.94 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: idx * 0.07, ease: [0.16, 1, 0.3, 1] }}
+                  viewport={{ once: true }}
+                  className={`group relative cursor-pointer overflow-hidden ${large ? 'md:col-span-2 md:row-span-2' : ''}`}
+                  style={{
+                    borderRadius: 'clamp(0.75rem,1.5vw,1.25rem)',
+                    background: fallbackGradients[idx % fallbackGradients.length],
+                    minHeight: large ? 'clamp(200px,28vw,320px)' : 'clamp(100px,14vw,180px)',
+                  }}
                 >
-                  {title}
-                </p>
-              </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photo.url} alt={photo.title} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-black/10 transition-colors duration-300 group-hover:bg-black/30" />
+                  {large && (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                      <div className="flex size-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+                        <Play size={20} className="translate-x-0.5 text-white" />
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 p-[clamp(0.75rem,1.5vw,1.25rem)]">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/75">{photo.category}</p>
+                    <p className="mt-0.5 line-clamp-2 font-bold leading-tight text-white" style={{ fontSize: large ? 'clamp(0.9rem,1.6vw,1.1rem)' : 'clamp(0.75rem,1.2vw,0.85rem)' }}>
+                      {photo.albumTitle}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
 
-              {/* Always visible small badge on small cards */}
-              {size === 'small' && (
-                <div className="absolute left-[clamp(0.5rem,1vw,0.75rem)] top-[clamp(0.5rem,1vw,0.75rem)]">
-                  <span className="rounded-full bg-black/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/80 backdrop-blur-sm">
-                    {category}
-                  </span>
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
-
-        {/* ── Photos count ── */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          viewport={{ once: true }}
-          className="mt-5 text-center text-[13px] text-neutral-400"
-        >
-          Plus de{' '}
-          <span className="font-bold text-salam-green">320 photos</span>{' '}
-          disponibles dans la galerie
-        </motion.p>
+        {photos.length > 0 && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            viewport={{ once: true }}
+            className="mt-5 text-center text-[13px] text-neutral-400"
+          >
+            <span className="font-bold text-salam-green">{photos.length}</span> photo{photos.length > 1 ? 's' : ''} publique{photos.length > 1 ? 's' : ''} mise{photos.length > 1 ? 's' : ''} en avant
+          </motion.p>
+        )}
       </div>
     </section>
   );

@@ -23,7 +23,7 @@ type DesignStyle = {
   radius: number;
 };
 
-type ExtraBlock = { id: string; label: string; value: string };
+type ExtraBlock = { id: string; label: string; title: string; description: string };
 
 const defaultDesign: DesignStyle = {
   x: 0,
@@ -124,7 +124,7 @@ function DesignField({ id, label, styles, setStyles, active, setActive, children
       onPointerLeave={() => setDrag(null)}
     >
       <div className="absolute -top-8 left-2 z-40 hidden items-center gap-1 rounded-xl border border-neutral-200 bg-white/95 px-1.5 py-1 shadow-lg group-hover:flex">
-        <button type="button" onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setDrag({ x: style.x, y: style.y, sx: e.clientX, sy: e.clientY }); }} className="flex h-6 w-6 cursor-grab items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100" title="DÃ©placer"><GripVertical size={13} /></button>
+        <button type="button" onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setDrag({ x: style.x, y: style.y, sx: e.clientX, sy: e.clientY }); }} className="flex h-6 w-6 cursor-grab items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100" title="Déplacer"><GripVertical size={13} /></button>
         <button type="button" onClick={e => { e.stopPropagation(); setActive(active === id ? null : id); }} className="flex h-6 w-6 items-center justify-center rounded-lg text-emerald-700 hover:bg-emerald-50" title="Design"><Palette size={13} /></button>
         <span className="px-1 text-[9px] font-black uppercase tracking-[0.08em] text-neutral-400">{label}</span>
       </div>
@@ -134,7 +134,7 @@ function DesignField({ id, label, styles, setStyles, active, setActive, children
   );
 }
 
-/* â”€â”€â”€ Article Form (shared create/edit) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Article Form (shared create/edit) ──────────────────── */
 function ArticleForm({
   initial, onSubmit, onClose, isPending, title,
 }: {
@@ -150,6 +150,7 @@ function ArticleForm({
     content:  initial?.data?.content  ?? '',
     category: initial?.data?.category ?? 'general',
     imageUrl: initial?.data?.imageUrl ?? '',
+    visibility: (initial?.visibility ?? initial?.data?.visibility ?? 'public') as 'public' | 'members',
     status:   initial?.status         ?? 'draft',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -174,17 +175,19 @@ function ArticleForm({
     if (!f.title.trim()) { setErrors({ title: 'Titre requis' }); return; }
     setErrors({});
     const extraContent = extraBlocks
-      .filter(block => block.value.trim())
-      .map(block => `${block.label}\n${block.value.trim()}`)
+      .filter(block => block.title.trim() || block.description.trim())
+      .map(block => [block.label, block.title, block.description].filter(Boolean).join('\n'))
       .join('\n\n');
     onSubmit({
       title: f.title,
+      visibility: f.visibility,
       status: f.status,
       data: {
         excerpt: f.excerpt || undefined,
         content: [f.content, extraContent].filter(Boolean).join('\n\n') || undefined,
         category: f.category,
         imageUrl: f.imageUrl || undefined,
+        visibility: f.visibility,
       },
     });
   };
@@ -205,13 +208,13 @@ function ArticleForm({
             {errors.title && <p className="text-[11px] text-red-500">{errors.title}</p>}
           </div>
           <div className="space-y-1.5">
-            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">CatÃ©gorie</label>
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Catégorie</label>
             <select value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))} className={inp()}>
               {ARTICLE_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </div>
           <div className="space-y-1.5">
-            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">RÃ©sumÃ©</label>
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Résumé</label>
             <div className="mb-4 grid gap-3 sm:grid-cols-[112px_1fr]">
               <div className="flex h-24 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
                 {f.imageUrl ? (
@@ -251,7 +254,7 @@ function ArticleForm({
                 <p className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">Blocs libres</p>
                 <p className="text-[11px] text-neutral-500">Ajoutez des titres, paragraphes ou messages à déplacer et styliser.</p>
               </div>
-              <button type="button" onClick={() => setExtraBlocks(prev => [...prev, { id: `extra-${Date.now()}`, label: `Bloc ${prev.length + 1}`, value: '' }])}
+              <button type="button" onClick={() => setExtraBlocks(prev => [...prev, { id: `extra-${Date.now()}`, label: `Bloc ${prev.length + 1}`, title: '', description: '' }])}
                 className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-black text-white">
                 <PlusCircle size={13} /> Ajouter
               </button>
@@ -260,12 +263,26 @@ function ArticleForm({
               {extraBlocks.map(block => (
                 <DesignField key={block.id} id={block.id} label={block.label} styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
                   {style => (
-                    <div className="grid gap-2 sm:grid-cols-[120px_1fr_32px]">
-                      <input value={block.label} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, label: e.target.value } : b))} className={inp()} style={style} />
-                      <textarea value={block.value} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, value: e.target.value } : b))} rows={2} className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none" style={style} />
-                      <button type="button" onClick={() => setExtraBlocks(prev => prev.filter(b => b.id !== block.id))} className="flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 text-red-400 hover:border-red-300 hover:text-red-600">
-                        <Trash2 size={13} />
-                      </button>
+                    <div className="rounded-2xl border border-emerald-100 bg-white p-3 shadow-sm">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <input
+                          value={block.label}
+                          onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, label: e.target.value } : b))}
+                          placeholder="Libellé du bloc"
+                          className="h-8 flex-1 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-xs font-black uppercase tracking-[0.1em] text-neutral-500 outline-none focus:border-emerald-400"
+                        />
+                        <button type="button" onClick={() => setExtraBlocks(prev => prev.filter(b => b.id !== block.id))} className="flex h-8 w-8 items-center justify-center rounded-xl border border-red-100 text-red-400 hover:border-red-300 hover:text-red-600">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">{block.label || 'Titre du bloc'}</label>
+                        <input value={block.title} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, title: e.target.value } : b))} placeholder="Titre" className={inp()} style={style} />
+                      </div>
+                      <div className="mt-3 space-y-1.5">
+                        <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Description</label>
+                        <textarea value={block.description} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, description: e.target.value } : b))} rows={4} placeholder="Description détaillée" className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />
+                      </div>
                     </div>
                   )}
                 </DesignField>
@@ -283,13 +300,24 @@ function ArticleForm({
               ))}
             </div>
           </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Visibilité</label>
+            <div className="flex gap-3">
+              {([{ v: 'public', l: 'Public' }, { v: 'members', l: 'Membres' }] as const).map(({ v, l }) => (
+                <button key={v} type="button" onClick={() => setF(p => ({ ...p, visibility: v }))}
+                  className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-black transition ${f.visibility === v ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
         <div className="flex gap-3 border-t border-neutral-100 px-6 py-4 shrink-0">
           <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600 hover:border-neutral-300 transition">Annuler</button>
           <button onClick={handleSubmit} disabled={isPending}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-60 transition">
             {isPending ? <Loader2 size={14} className="animate-spin" /> : <Newspaper size={14} />}
-            {initial ? 'Mettre Ã  jour' : 'CrÃ©er l\'article'}
+            {initial ? 'Mettre à jour' : 'Créer l\'article'}
           </button>
         </div>
       </div>
@@ -310,7 +338,7 @@ function EditArticleModal({ article, onClose }: { article: ArticleDoc; onClose: 
   );
 }
 
-/* â”€â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Page ────────────────────────────────────────────────── */
 export default function AdminActualitesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<ArticleDoc | null>(null);
@@ -332,8 +360,8 @@ export default function AdminActualitesPage() {
     <div className="w-full space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">ActualitÃ©s</h1>
-          <p className="mt-0.5 text-sm text-neutral-500">{isLoading ? 'â€¦' : `${articles.length} article${articles.length > 1 ? 's' : ''}`}</p>
+          <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">Actualités</h1>
+          <p className="mt-0.5 text-sm text-neutral-500">{isLoading ? '…' : `${articles.length} article${articles.length > 1 ? 's' : ''}`}</p>
         </div>
         <button onClick={() => setShowCreate(true)}
           className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white hover:bg-emerald-700 transition-colors shadow-sm">
@@ -343,11 +371,11 @@ export default function AdminActualitesPage() {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl border border-neutral-100 bg-white p-4 text-center shadow-sm">
-          <p className="text-3xl font-black leading-none text-emerald-700">{isLoading ? 'â€¦' : published}</p>
-          <p className="mt-1 text-xs font-semibold text-neutral-500">PubliÃ©s</p>
+          <p className="text-3xl font-black leading-none text-emerald-700">{isLoading ? '…' : published}</p>
+          <p className="mt-1 text-xs font-semibold text-neutral-500">Publiés</p>
         </div>
         <div className="rounded-2xl border border-neutral-100 bg-white p-4 text-center shadow-sm">
-          <p className="text-3xl font-black leading-none text-yellow-700">{isLoading ? 'â€¦' : drafts}</p>
+          <p className="text-3xl font-black leading-none text-yellow-700">{isLoading ? '…' : drafts}</p>
           <p className="mt-1 text-xs font-semibold text-neutral-500">Brouillons</p>
         </div>
       </div>
@@ -356,7 +384,7 @@ export default function AdminActualitesPage() {
         {isLoading && (
           <div className="flex flex-col items-center py-14 text-center">
             <Loader2 size={24} className="animate-spin text-neutral-300 mb-3" />
-            <p className="text-sm text-neutral-400">Chargementâ€¦</p>
+            <p className="text-sm text-neutral-400">Chargement…</p>
           </div>
         )}
         {!isLoading && articles.length === 0 && (
@@ -368,7 +396,7 @@ export default function AdminActualitesPage() {
         {!isLoading && articles.length > 0 && (
           <div className="divide-y divide-neutral-50">
             {articles.map((a: ArticleDoc) => {
-              const catLabel = ARTICLE_CATEGORIES.find(c => c.value === a.data?.category)?.label ?? 'GÃ©nÃ©ral';
+              const catLabel = ARTICLE_CATEGORIES.find(c => c.value === a.data?.category)?.label ?? 'Général';
               return (
                 <div key={a._id} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-neutral-50/60">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-blue-50 border border-blue-100">
@@ -383,7 +411,7 @@ export default function AdminActualitesPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-black text-sm text-neutral-900 truncate">{a.title}</p>
                       <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${a.status === 'published' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-yellow-200 bg-yellow-50 text-yellow-700'}`}>
-                        {a.status === 'published' ? 'PubliÃ©' : 'Brouillon'}
+                        {a.status === 'published' ? 'Publié' : 'Brouillon'}
                       </span>
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-400">

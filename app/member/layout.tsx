@@ -197,7 +197,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
         // Renouveler les cookies httpOnly avec le nouveau token
         await fetch('/api/auth/session', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify({ accessToken: token }),
         });
 
