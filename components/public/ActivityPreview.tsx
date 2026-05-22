@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Calendar, MapPin, Users, ArrowRight } from 'lucide-react';
 import { usePublicActivities } from '@/lib/api/activities';
+import { RichText } from '@/components/ui/RichText';
 
 /* ── Category config ── */
 const CAT: Record<string, { label: string; text: string; bg: string; border: string }> = {
@@ -90,7 +91,7 @@ export function ActivityPreview() {
                 {/* Color top bar */}
                 <div className={`h-1.5 w-full shrink-0 ${TOPS[i % TOPS.length]}`} />
 
-                <div className="flex flex-1 flex-col p-[clamp(1.25rem,2.5vw,2rem)]">
+                <div className="flex flex-1 flex-col p-[clamp(1rem,2vw,1.5rem)]">
                   {/* Category badge */}
                   <span className={`badge-pill mb-4 self-start border ${cat.border} ${cat.bg} ${cat.text}`}>
                     {cat.label}
@@ -105,8 +106,8 @@ export function ActivityPreview() {
                   </h3>
 
                   {/* Description */}
-                  <p className="mt-3 flex-1 text-[13.5px] leading-relaxed text-neutral-500">
-                      {activity.description ?? 'Activite SALAM publiee par le bureau.'}
+                  <p className="mt-3 line-clamp-3 flex-1 text-[13px] leading-relaxed text-neutral-500">
+                    <RichText value={activity.description ?? 'Activite SALAM publiee par le bureau.'} />
                   </p>
 
                   {/* Meta */}

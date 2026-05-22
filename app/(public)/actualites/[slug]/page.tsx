@@ -4,6 +4,7 @@ import { use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Newspaper, ChevronRight, Calendar, Tag, Loader2 } from 'lucide-react';
 import { usePublicArticle, ARTICLE_CATEGORIES } from '@/lib/api/content';
+import { RichText } from '@/components/ui/RichText';
 
 const CAT_COLORS: Record<string, string> = {
   general:     'bg-neutral-100 text-neutral-600',
@@ -92,7 +93,7 @@ export default function ActualiteDetailPage({ params }: { params: Promise<{ slug
                   </span>
                 </div>
                 <h1 className="text-[clamp(1.6rem,4vw,2.4rem)] font-black leading-[1.1] tracking-[-0.03em] text-neutral-900">
-                  {article.title}
+                  <RichText value={article.title} />
                 </h1>
                 <div className="flex items-center gap-2 text-xs text-neutral-400">
                   <Calendar size={12} />
@@ -105,7 +106,7 @@ export default function ActualiteDetailPage({ params }: { params: Promise<{ slug
               {/* Excerpt */}
               {article.data?.excerpt && (
                 <p className="text-base font-semibold leading-relaxed text-neutral-600 border-l-4 border-emerald-400 pl-4">
-                  {article.data.excerpt}
+                  <RichText value={article.data.excerpt} />
                 </p>
               )}
 
@@ -113,7 +114,7 @@ export default function ActualiteDetailPage({ params }: { params: Promise<{ slug
               {article.data?.content && (
                 <div className="rounded-[1.5rem] border border-neutral-100 bg-white p-6">
                   <div className="prose prose-sm max-w-none text-neutral-700 leading-relaxed whitespace-pre-wrap">
-                    {article.data.content}
+                    <RichText value={article.data.content} />
                   </div>
                 </div>
               )}

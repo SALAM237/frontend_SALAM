@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, Newspaper, Tag } from 'lucide-react';
 import { ARTICLE_CATEGORIES, usePublicArticles } from '@/lib/api/content';
+import { RichText } from '@/components/ui/RichText';
 
 function articleImage(article: any) {
   return article?.data?.imageUrl || article?.imageUrl || '';
@@ -55,8 +56,8 @@ export function NewsPreview() {
                       <Tag size={10} />
                       {ARTICLE_CATEGORIES.find(c => c.value === category)?.label ?? category ?? 'General'}
                     </span>
-                    <h3 className="line-clamp-2 font-black leading-tight text-neutral-950 transition group-hover:text-emerald-700">{article.title}</h3>
-                    {article.data?.excerpt && <p className="line-clamp-2 text-sm leading-relaxed text-neutral-500">{article.data.excerpt}</p>}
+                    <h3 className="line-clamp-2 font-black leading-tight text-neutral-950 transition group-hover:text-emerald-700"><RichText value={article.title} /></h3>
+                    {article.data?.excerpt && <p className="line-clamp-2 text-sm leading-relaxed text-neutral-500"><RichText value={article.data.excerpt} /></p>}
                     <div className="inline-flex items-center gap-1 text-xs font-black text-emerald-700">
                       Lire l'article <ArrowRight size={12} />
                     </div>

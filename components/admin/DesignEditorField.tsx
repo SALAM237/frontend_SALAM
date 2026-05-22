@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Bold, GripVertical, Italic, Palette, X } from 'lucide-react';
+import { applyInlineTextStyle, captureTextSelection, type StoredTextSelection } from '@/lib/rich-text';
 
 export type DesignStyle = {
   x: number;
@@ -29,12 +30,16 @@ const defaultDesign: DesignStyle = {
   radius: 12,
 };
 
-function DesignPalette({ label, style, onChange, onClose }: {
+function DesignPalette({ label, style, onChange, onInlineStyle, onClose }: {
   label: string;
   style: DesignStyle;
   onChange: (patch: Partial<DesignStyle>) => void;
+  onInlineStyle: (patch: Partial<DesignStyle>) => boolean;
   onClose: () => void;
 }) {
+  const apply = (patch: Partial<DesignStyle>) => {
+    if (!onInlineStyle(patch)) onChange(patch);
+  };
   return (
     <div className="absolute right-0 top-10 z-40 w-[260px] rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xl" onClick={e => e.stopPropagation()}>
       <div className="mb-3 flex items-center justify-between">
@@ -51,7 +56,7 @@ function DesignPalette({ label, style, onChange, onClose }: {
       <div className="space-y-3">
         <label className="block">
           <span className="text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">Police</span>
-          <select value={style.fontFamily} onChange={e => onChange({ fontFamily: e.target.value })} className="mt-1 h-9 w-full rounded-lg border border-neutral-200 px-2 text-xs outline-none">
+          <select value={style.fontFamily} onChange={e => apply({ fontFamily: e.target.value })} className="mt-1 h-9 w-full rounded-lg border border-neutral-200 px-2 text-xs outline-none">
             <option value="Inter, system-ui, sans-serif">Inter</option>
             <option value="Georgia, serif">Georgia</option>
             <option value="'Times New Roman', serif">Times</option>
@@ -60,12 +65,12 @@ function DesignPalette({ label, style, onChange, onClose }: {
         </label>
         <label className="block">
           <span className="text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">Taille : {style.fontSize}px</span>
-          <input type="range" min="11" max="32" value={style.fontSize} onChange={e => onChange({ fontSize: Number(e.target.value) })} className="mt-2 w-full accent-emerald-700" />
+          <input type="range" min="11" max="32" value={style.fontSize} onChange={e => apply({ fontSize: Number(e.target.value) })} className="mt-2 w-full accent-emerald-700" />
         </label>
         <div className="grid grid-cols-3 gap-2">
-          <button type="button" onClick={() => onChange({ bold: !style.bold })} className={`h-9 rounded-lg border ${style.bold ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}><Bold size={14} className="mx-auto" /></button>
-          <button type="button" onClick={() => onChange({ italic: !style.italic })} className={`h-9 rounded-lg border ${style.italic ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}><Italic size={14} className="mx-auto" /></button>
-          <div className="h-9 rounded-lg border border-neutral-200 p-1"><input aria-label="Couleur du texte" type="color" value={style.color} onChange={e => onChange({ color: e.target.value })} className="h-full w-full" /></div>
+          <button type="button" onClick={() => apply({ bold: !style.bold })} className={`h-9 rounded-lg border ${style.bold ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}><Bold size={14} className="mx-auto" /></button>
+          <button type="button" onClick={() => apply({ italic: !style.italic })} className={`h-9 rounded-lg border ${style.italic ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}><Italic size={14} className="mx-auto" /></button>
+          <div className="h-9 rounded-lg border border-neutral-200 p-1"><input aria-label="Couleur du texte" type="color" value={style.color} onChange={e => apply({ color: e.target.value })} className="h-full w-full" /></div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <label className="block"><span className="text-[10px] font-black uppercase text-neutral-400">Fond</span><input type="color" value={style.bg} onChange={e => onChange({ bg: e.target.value })} className="mt-1 h-8 w-full rounded-lg" /></label>
@@ -91,7 +96,19 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
 }) {
   const style = styles[id] ?? defaultDesign;
   const [drag, setDrag] = useState<{ x: number; y: number; sx: number; sy: number } | null>(null);
+  const selectionRef = useRef<StoredTextSelection | null>(null);
   const update = (patch: Partial<DesignStyle>) => setStyles(prev => ({ ...prev, [id]: { ...(prev[id] ?? defaultDesign), ...patch } }));
+  const rememberSelection = (target: EventTarget | null) => {
+    const selection = captureTextSelection(target);
+    if (selection) selectionRef.current = selection;
+  };
+  const inlineStyle = (patch: Partial<DesignStyle>) => applyInlineTextStyle(selectionRef.current, {
+    bold: patch.bold,
+    italic: patch.italic,
+    color: patch.color,
+    fontSize: patch.fontSize,
+    fontFamily: patch.fontFamily,
+  });
   const fieldStyle: React.CSSProperties = {
     fontSize: style.fontSize,
     fontFamily: style.fontFamily,
@@ -114,6 +131,9 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
       }}
       onPointerUp={() => setDrag(null)}
       onPointerLeave={() => setDrag(null)}
+      onMouseUpCapture={e => rememberSelection(e.target)}
+      onKeyUpCapture={e => rememberSelection(e.target)}
+      onSelectCapture={e => rememberSelection(e.target)}
     >
       <div className="absolute -top-8 left-2 z-40 hidden items-center gap-1 rounded-xl border border-neutral-200 bg-white/95 px-1.5 py-1 shadow-lg group-hover:flex">
         <button type="button" onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setDrag({ x: style.x, y: style.y, sx: e.clientX, sy: e.clientY }); }} className="flex h-6 w-6 cursor-grab items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100" title="Déplacer"><GripVertical size={13} /></button>
@@ -121,7 +141,7 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
         <span className="px-1 text-[9px] font-black uppercase tracking-[0.08em] text-neutral-400">{label}</span>
       </div>
       {children(fieldStyle)}
-      {active === id && <DesignPalette label={label} style={style} onChange={update} onClose={() => setActive(null)} />}
+      {active === id && <DesignPalette label={label} style={style} onChange={update} onInlineStyle={inlineStyle} onClose={() => setActive(null)} />}
     </div>
   );
 }

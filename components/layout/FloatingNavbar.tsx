@@ -27,8 +27,11 @@ export function FloatingNavbar() {
   const [navScrolled, setNavScrolled] = useState(false);
   const pathname = usePathname();
   const { user, restoreAuth } = useAuthStore();
+  const hiddenRoutes = ['/admin', '/member', '/demo/admin', '/demo/member', '/api', '/auth'];
+  const isHiddenRoute = hiddenRoutes.some(route => pathname === route || pathname.startsWith(`${route}/`));
 
   useEffect(() => {
+    if (isHiddenRoute) return;
     if (user) return;
     const tryRestore = async () => {
       try {
@@ -50,13 +53,15 @@ export function FloatingNavbar() {
     };
     tryRestore();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isHiddenRoute]);
 
   useEffect(() => {
+    if (isHiddenRoute) return;
     setMenuOpen(false);
-  }, [pathname]);
+  }, [pathname, isHiddenRoute]);
 
   useEffect(() => {
+    if (isHiddenRoute) return;
     let lastY = window.scrollY;
 
     const handleScroll = () => {
@@ -85,7 +90,9 @@ export function FloatingNavbar() {
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isHiddenRoute]);
+
+  if (isHiddenRoute) return null;
 
   return (
     <div
@@ -244,4 +251,3 @@ export function FloatingNavbar() {
     </div>
   );
 }
-

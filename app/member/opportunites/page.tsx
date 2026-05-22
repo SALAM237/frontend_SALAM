@@ -5,6 +5,8 @@ import { BriefcaseBusiness, CalendarDays, CheckCircle2, Clock, Eye, Mail, MapPin
 import { OPPORTUNITY_TYPES, useMemberOpportunities, useReplyOpportunity, useSubmitOpportunity, type OpportunityDoc, type OpportunityPayload, type OpportunityType } from '@/lib/api/opportunities';
 import { formatFullName } from '@/lib/format-name';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
+import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
+import { RichText } from '@/components/ui/RichText';
 
 const statusCls: Record<string, string> = {
   published: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -40,6 +42,8 @@ const emptyForm: OpportunityPayload = {
 
 export default function OpportunitesPage() {
   const [showForm, setShowForm] = useState(false);
+  const [activeDesign, setActiveDesign] = useState<string | null>(null);
+  const [styles, setStyles] = useState<Record<string, DesignStyle>>({});
   const [tab, setTab] = useState<'published' | 'mine'>('published');
   const [form, setForm] = useState<OpportunityPayload>(emptyForm);
   const [skillsText, setSkillsText] = useState('');
@@ -116,7 +120,12 @@ export default function OpportunitesPage() {
             <button onClick={() => setShowForm(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-50"><X size={16} /></button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Titre" value={form.title} onChange={set('title')} required />
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Titre *</span>
+              <DesignEditorField id="opportunity-title" label="Titre" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+                {style => <input value={form.title} onChange={e => set('title')(e.target.value)} className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10" style={style} />}
+              </DesignEditorField>
+            </div>
             <label className="space-y-1.5">
               <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Type</span>
               <select value={form.type} onChange={e => set('type')(e.target.value as OpportunityType)} className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10">
@@ -137,7 +146,9 @@ export default function OpportunitesPage() {
             </label>
             <label className="space-y-1.5 sm:col-span-2">
               <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Description</span>
-              <textarea value={form.description} onChange={e => set('description')(e.target.value)} rows={5} className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10" />
+              <DesignEditorField id="opportunity-description" label="Description" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+                {style => <textarea value={form.description} onChange={e => set('description')(e.target.value)} rows={5} className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10" style={style} />}
+              </DesignEditorField>
             </label>
           </div>
           <div className="mt-4 flex justify-end">
@@ -165,8 +176,8 @@ export default function OpportunitesPage() {
                   <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${statusCls[item.status] ?? statusCls.draft}`}>{statusLabel[item.status] ?? item.status}</span>
                   {item.remote && <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700">Distanciel</span>}
                 </div>
-                <h2 className="mt-2 text-lg font-black leading-tight text-neutral-900">{item.title}</h2>
-                <p className="mt-1 text-sm leading-6 text-neutral-600">{item.description}</p>
+                <h2 className="mt-2 text-lg font-black leading-tight text-neutral-900"><RichText value={item.title} /></h2>
+                <p className="mt-1 text-sm leading-6 text-neutral-600"><RichText value={item.description} /></p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <button onClick={() => setViewOpportunity(item)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" title="Visualiser">

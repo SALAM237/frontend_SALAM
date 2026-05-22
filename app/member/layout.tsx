@@ -253,7 +253,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
 
       <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
         {/* Top bar */}
-        <header className="sticky z-20 flex h-14 items-center gap-4 border-b border-neutral-200/80 bg-white/95 px-5 backdrop-blur-sm" style={{ top: 'env(safe-area-inset-top, 0px)' }}>
+        <header className="sticky z-20 flex h-14 items-center gap-2 border-b border-neutral-200/80 bg-white/95 px-3 backdrop-blur-sm sm:gap-4 sm:px-5" style={{ top: 'env(safe-area-inset-top, 0px)' }}>
           <button
             onClick={() => setSidebarOpen(true)}
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700 lg:hidden"
@@ -261,22 +261,22 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
             <Menu size={16} />
           </button>
 
-          <div className="flex items-center gap-1.5 text-sm">
-            <span className="font-semibold text-neutral-400">Espace membre</span>
+          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden whitespace-nowrap text-[clamp(0.68rem,2.3vw,0.875rem)] sm:gap-1.5">
+            <span className="shrink-0 font-semibold text-neutral-400">Espace membre</span>
             {currentPage && (
               <>
-                <ChevronRight size={13} className="text-neutral-300" />
-                <span className="font-black text-neutral-800">{currentPage.label}</span>
+                <ChevronRight size={12} className="shrink-0 text-neutral-300" />
+                <span className="min-w-0 truncate font-black text-neutral-800">{currentPage.label}</span>
               </>
             )}
           </div>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
             <Link
               href="/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700"
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-2 py-1.5 text-[clamp(0.68rem,2vw,0.75rem)] font-semibold text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700 sm:px-3"
             >
               <Globe size={13} />
               <span className="hidden sm:inline">Voir le site</span>
@@ -333,4 +333,3 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
     </div>
   );
 }
-

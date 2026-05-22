@@ -6,6 +6,7 @@ import { BriefcaseBusiness, CalendarDays, Clock, ExternalLink, Eye, Loader2, Mai
 import { OPPORTUNITY_TYPES, useAdminOpportunities, type OpportunityDoc, type OpportunityStatus } from '@/lib/api/opportunities';
 import { formatFullName } from '@/lib/format-name';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
+import { RichText } from '@/components/ui/RichText';
 
 const statusTabs: { value: OpportunityStatus | 'all'; label: string }[] = [
   { value: 'pending', label: 'En attente' },
@@ -64,8 +65,8 @@ export default function AdminOpportunitesPage() {
                       {item.status}
                     </span>
                   </div>
-                  <h2 className="mt-2 truncate text-sm font-black text-neutral-900">{item.title}</h2>
-                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-neutral-500">{item.description}</p>
+                  <h2 className="mt-2 truncate text-sm font-black text-neutral-900"><RichText value={item.title} /></h2>
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-neutral-500"><RichText value={item.description} /></p>
                   <div className="mt-2 flex flex-wrap gap-3 text-[11px] font-semibold text-neutral-400">
                     {item.location && <span className="inline-flex items-center gap-1"><MapPin size={12} /> {item.location}</span>}
                     <span className="inline-flex items-center gap-1"><Clock size={12} /> {new Date(item.createdAt).toLocaleDateString('fr-FR')}</span>
@@ -99,11 +100,11 @@ function OpportunityDetailModal({ item, onClose }: { item: OpportunityDoc; onClo
         <div className="relative border-b border-neutral-100 bg-gradient-to-br from-emerald-800 to-emerald-950 px-6 py-5 text-white">
           <button onClick={onClose} className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white/70 hover:bg-white/20 hover:text-white"><X size={16} /></button>
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">{typeLabels[item.type] ?? item.type}</p>
-          <h2 className="mt-2 pr-10 text-xl font-black leading-tight">{item.title}</h2>
+          <h2 className="mt-2 pr-10 text-xl font-black leading-tight"><RichText value={item.title} /></h2>
           <p className="mt-1 text-xs font-semibold text-white/55">{item.status}</p>
         </div>
         <div className="max-h-[70vh] space-y-5 overflow-y-auto px-6 py-5">
-          <p className="whitespace-pre-line text-sm leading-7 text-neutral-600">{item.description}</p>
+          <p className="whitespace-pre-line text-sm leading-7 text-neutral-600"><RichText value={item.description} /></p>
           <div className="grid gap-2 text-xs font-semibold text-neutral-500 sm:grid-cols-2">
             {item.organization && <Meta icon={BriefcaseBusiness}>{item.organization}</Meta>}
             {item.location && <Meta icon={MapPin}>{item.location}</Meta>}

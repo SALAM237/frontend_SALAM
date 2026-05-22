@@ -4,12 +4,16 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, BriefcaseBusiness, CalendarClock, MapPin } from 'lucide-react';
 import { OPPORTUNITY_TYPES, usePublicOpportunities } from '@/lib/api/opportunities';
+import { useAuthStore } from '@/store/auth.store';
+import { RichText } from '@/components/ui/RichText';
 
 const typeLabel = Object.fromEntries(OPPORTUNITY_TYPES.map(t => [t.value, t.label]));
 
 export function OpportunityPreview() {
   const { data, isLoading } = usePublicOpportunities();
+  const accessToken = useAuthStore(s => s.accessToken);
   const items = data?.data?.items ?? [];
+  const responseHref = accessToken ? '/member/opportunites' : '/auth/login';
 
   return (
     <section className="bg-neutral-50/70">
@@ -56,7 +60,7 @@ export function OpportunityPreview() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: index * 0.04 }}
               viewport={{ once: true }}
-              className="group min-w-[84%] snap-start rounded-3xl border border-white bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl sm:min-w-[48%] lg:min-w-[31%]"
+              className="group flex min-w-[84%] snap-start flex-col rounded-3xl border border-white bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl sm:min-w-[48%] lg:min-w-[31%]"
             >
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
@@ -69,11 +73,23 @@ export function OpportunityPreview() {
               <h3 className="line-clamp-2 text-[clamp(1rem,2vw,1.2rem)] font-black leading-tight text-neutral-950 group-hover:text-emerald-700">
                 {item.title}
               </h3>
-              <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-neutral-500">{item.description}</p>
+              <p className="mt-3 line-clamp-3 flex-1 text-sm leading-relaxed text-neutral-500">
+                <RichText value={item.description} />
+              </p>
               <div className="mt-5 space-y-2 text-xs font-semibold text-neutral-500">
                 {item.organization && <p>{item.organization}</p>}
                 <p className="flex items-center gap-2"><MapPin size={13} className="text-red-500" />{item.remote ? 'Remote possible' : item.location || 'Lieu a confirmer'}</p>
                 {item.deadline && <p className="flex items-center gap-2"><CalendarClock size={13} className="text-amber-500" />Avant le {new Date(item.deadline).toLocaleDateString('fr-FR')}</p>}
+              </div>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Link href="/member/opportunites" className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-3.5 py-2 text-[12px] font-black text-emerald-700 transition hover:bg-emerald-50">
+                  Voir opportunite
+                  <ArrowRight size={12} />
+                </Link>
+                <Link href={responseHref} className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-2 text-[12px] font-black text-white transition hover:bg-emerald-700">
+                  Repondre a l'offre
+                  <ArrowRight size={12} />
+                </Link>
               </div>
             </motion.article>
           ))}

@@ -24,7 +24,7 @@ const MISSIONS = [
     num: "02",
     badge: "Mission 2",
     lines: ["Insertion socio-", "professionnelle"],
-    accent: "#C8102E",
+    accent: "#F87171",
     resume:
       "Accompagner les étudiants camerounais formés au Maroc dans leur retour au Cameroun et faciliter leur intégration socioprofessionnelle.",
     actions: [

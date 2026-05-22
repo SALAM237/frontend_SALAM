@@ -4,6 +4,7 @@ import { use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Calendar, MapPin, Users, Tag, Clock, ChevronRight, Loader2 } from 'lucide-react';
 import { usePublicActivity, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
+import { RichText } from '@/components/ui/RichText';
 
 const CAT_COLORS: Record<string, string> = {
   sport: 'bg-blue-100 text-blue-700', culture: 'bg-purple-100 text-purple-700',
@@ -93,7 +94,7 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ slug:
                   )}
                 </div>
                 <h1 className="text-[clamp(1.6rem,4vw,2.4rem)] font-black leading-[1.1] tracking-[-0.03em] text-neutral-900">
-                  {activity.title}
+                  <RichText value={activity.title} />
                 </h1>
               </div>
 
@@ -152,7 +153,7 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ slug:
               {activity.description && (
                 <div className="rounded-[1.5rem] border border-neutral-100 bg-white p-6">
                   <h2 className="mb-3 text-sm font-black uppercase tracking-widest text-neutral-400">Description</h2>
-                  <p className="text-sm leading-relaxed text-neutral-700 whitespace-pre-wrap">{activity.description}</p>
+                  <p className="text-sm leading-relaxed text-neutral-700 whitespace-pre-wrap"><RichText value={activity.description} /></p>
                 </div>
               )}
 

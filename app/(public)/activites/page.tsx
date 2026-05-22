@@ -5,6 +5,7 @@ import { Calendar, MapPin, Users, ArrowRight, Search, Loader2, Clock } from 'luc
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 import { usePublicActivities, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
+import { RichText } from '@/components/ui/RichText';
 
 const CATS = [
   { id: 'all', label: 'Toutes' },
@@ -92,8 +93,8 @@ export default function ActivitesPage() {
                     <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[11px] font-bold ${CAT_COLORS[a.category] ?? 'bg-neutral-100 text-neutral-600'}`}>
                       {ACTIVITY_CATEGORIES.find(c => c.value === a.category)?.label ?? a.category}
                     </span>
-                    <h3 className="font-black text-neutral-900 group-hover:text-emerald-700 transition-colors">{a.title}</h3>
-                    {a.description && <p className="text-xs text-neutral-500 line-clamp-2">{a.description}</p>}
+                    <h3 className="font-black text-neutral-900 group-hover:text-emerald-700 transition-colors"><RichText value={a.title} /></h3>
+                    {a.description && <p className="text-xs text-neutral-500 line-clamp-2"><RichText value={a.description} /></p>}
                     <div className="flex flex-wrap gap-3 text-xs text-neutral-400">
                       {a.startDate && <span className="flex items-center gap-1"><Calendar size={12} />{new Date(a.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
                       {a.location  && <span className="flex items-center gap-1"><MapPin size={12} />{a.location}</span>}

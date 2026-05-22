@@ -18,6 +18,7 @@ import {
 } from '@/lib/api/invoices';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { formatFullName } from '@/lib/format-name';
+import { applyInlineTextStyle, captureTextSelection, type StoredTextSelection } from '@/lib/rich-text';
 
 /* ─── Helpers ─────────────────────────────────────────── */
 type InvoiceStatus = 'draft' | 'sent' | 'closed';
@@ -122,12 +123,16 @@ function saveAssociationInfo(info: AssociationInvoiceInfo) {
   window.localStorage.setItem(ASSOCIATION_STORAGE_KEY, JSON.stringify(info));
 }
 
-function InvoiceBlockPalette({ label, design, onChange, onClose }: {
+function InvoiceBlockPalette({ label, design, onChange, onInlineStyle, onClose }: {
   label: string;
   design: BlockDesign;
   onChange: (patch: Partial<BlockDesign>) => void;
+  onInlineStyle: (patch: Partial<BlockDesign>) => boolean;
   onClose: () => void;
 }) {
+  const apply = (patch: Partial<BlockDesign>) => {
+    if (!onInlineStyle(patch)) onChange(patch);
+  };
   return (
     <div className="absolute right-3 top-3 z-50 w-[260px] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl" onClick={e => e.stopPropagation()}>
       <div className="mb-4 flex items-center justify-between">
@@ -138,9 +143,9 @@ function InvoiceBlockPalette({ label, design, onChange, onClose }: {
         <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
       </div>
       <div className="space-y-3">
-        <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Police</span><select value={design.fontFamily} onChange={e => onChange({ fontFamily: e.target.value })} className="mt-1 h-9 w-full rounded-lg border border-slate-200 px-2 text-xs outline-none"><option value="Inter, system-ui, sans-serif">Inter</option><option value="Georgia, serif">Georgia</option><option value="'Times New Roman', serif">Times</option><option value="'Courier New', monospace">Mono</option></select></label>
-        <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Taille : {design.fontSize}px</span><input type="range" min="10" max="26" value={design.fontSize} onChange={e => onChange({ fontSize: Number(e.target.value) })} className="mt-2 w-full accent-emerald-700" /></label>
-        <div className="grid grid-cols-3 gap-2"><button type="button" onClick={() => onChange({ bold: !design.bold })} className={`h-9 rounded-lg border ${design.bold ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500'}`}><Bold className="mx-auto h-4 w-4" /></button><button type="button" onClick={() => onChange({ italic: !design.italic })} className={`h-9 rounded-lg border ${design.italic ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500'}`}><Italic className="mx-auto h-4 w-4" /></button><div className="h-9 rounded-lg border border-slate-200 p-1"><input aria-label="Couleur du texte" type="color" value={design.color} onChange={e => onChange({ color: e.target.value })} className="h-full w-full" /></div></div>
+        <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Police</span><select value={design.fontFamily} onChange={e => apply({ fontFamily: e.target.value })} className="mt-1 h-9 w-full rounded-lg border border-slate-200 px-2 text-xs outline-none"><option value="Inter, system-ui, sans-serif">Inter</option><option value="Georgia, serif">Georgia</option><option value="'Times New Roman', serif">Times</option><option value="'Courier New', monospace">Mono</option></select></label>
+        <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Taille : {design.fontSize}px</span><input type="range" min="10" max="26" value={design.fontSize} onChange={e => apply({ fontSize: Number(e.target.value) })} className="mt-2 w-full accent-emerald-700" /></label>
+        <div className="grid grid-cols-3 gap-2"><button type="button" onClick={() => apply({ bold: !design.bold })} className={`h-9 rounded-lg border ${design.bold ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500'}`}><Bold className="mx-auto h-4 w-4" /></button><button type="button" onClick={() => apply({ italic: !design.italic })} className={`h-9 rounded-lg border ${design.italic ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500'}`}><Italic className="mx-auto h-4 w-4" /></button><div className="h-9 rounded-lg border border-slate-200 p-1"><input aria-label="Couleur du texte" type="color" value={design.color} onChange={e => apply({ color: e.target.value })} className="h-full w-full" /></div></div>
         <div className="grid grid-cols-2 gap-2"><label className="block"><span className="text-[10px] font-black uppercase text-slate-400">Fond</span><input type="color" value={design.bg} onChange={e => onChange({ bg: e.target.value })} className="mt-1 h-8 w-full rounded-lg" /></label><label className="block"><span className="text-[10px] font-black uppercase text-slate-400">Bordure</span><input type="color" value={design.border} onChange={e => onChange({ border: e.target.value })} className="mt-1 h-8 w-full rounded-lg" /></label></div>
         <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Arrondi : {design.radius}px</span><input type="range" min="0" max="36" value={design.radius} onChange={e => onChange({ radius: Number(e.target.value) })} className="mt-2 w-full accent-emerald-700" /></label>
       </div>
@@ -161,9 +166,21 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
   className?: string;
 }) {
   const [drag, setDrag] = useState<{ startX: number; startY: number; x: number; y: number } | null>(null);
+  const selectionRef = useRef<StoredTextSelection | null>(null);
   const pos = offsets[id];
   const design = designs[id] ?? defaultBlockDesign;
   const updateDesign = (patch: Partial<BlockDesign>) => setDesigns(prev => ({ ...prev, [id]: { ...(prev[id] ?? defaultBlockDesign), ...patch } }));
+  const rememberSelection = (target: EventTarget | null) => {
+    const selection = captureTextSelection(target);
+    if (selection) selectionRef.current = selection;
+  };
+  const inlineStyle = (patch: Partial<BlockDesign>) => applyInlineTextStyle(selectionRef.current, {
+    bold: patch.bold,
+    italic: patch.italic,
+    color: patch.color,
+    fontSize: patch.fontSize,
+    fontFamily: patch.fontFamily,
+  });
 
   return (
     <div
@@ -186,6 +203,9 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
       }}
       onPointerUp={() => setDrag(null)}
       onPointerLeave={() => setDrag(null)}
+      onMouseUpCapture={event => rememberSelection(event.target)}
+      onKeyUpCapture={event => rememberSelection(event.target)}
+      onSelectCapture={event => rememberSelection(event.target)}
     >
       <div className="absolute -top-9 left-3 z-40 hidden items-center gap-1 rounded-2xl border border-emerald-200 bg-white/95 px-2 py-1 shadow-lg backdrop-blur group-hover:flex">
         <button type="button" onPointerDown={event => { event.preventDefault(); event.stopPropagation(); setDrag({ startX: event.clientX, startY: event.clientY, x: pos.x, y: pos.y }); }} className="flex h-7 w-7 cursor-grab items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100" title="Glisser-déposer ce bloc"><GripVertical className="h-4 w-4" /></button>
@@ -194,7 +214,7 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
         <span className="px-1 text-[9px] font-black uppercase tracking-[0.08em] text-emerald-700">{label}</span>
       </div>
       {children}
-      {activeDesign === id && <InvoiceBlockPalette label={label} design={design} onChange={updateDesign} onClose={() => setActiveDesign(null)} />}
+      {activeDesign === id && <InvoiceBlockPalette label={label} design={design} onChange={updateDesign} onInlineStyle={inlineStyle} onClose={() => setActiveDesign(null)} />}
     </div>
   );
 }
@@ -585,6 +605,78 @@ function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose
         </div>
         <div className="border-t border-neutral-100 px-6 py-4">
           <button onClick={onClose} className="w-full rounded-xl bg-neutral-900 py-2.5 text-sm font-black text-white transition hover:bg-neutral-800">Fermer</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RecipientInvoiceModal({ row, onClose }: { row: InvoiceRecipientRow; onClose: () => void }) {
+  const resendInvoiceRecipient = useResendInvoiceRecipient();
+  const recipientCfg = RECIPIENT_STATUS_CONFIG[row.recipient.status] ?? RECIPIENT_STATUS_CONFIG.pending;
+  const invoiceCfg = STATUS_CONFIG[row.invoice.status];
+  const canResend = Boolean(row.email);
+  const sendLabel = row.status === 'sent' || row.status === 'paid' ? 'Renvoyer la facture' : 'Envoyer la facture';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+        <div className="relative px-6 py-5" style={{ background: 'linear-gradient(135deg, #065f46 0%, #064e3b 60%, #022c22 100%)' }}>
+          <div className="absolute left-0 top-0 h-[3px] w-full" style={{ background: 'linear-gradient(90deg, #0B8F3A 33%, #C8102E 33%, #C8102E 66%, #F7C600 66%)' }} />
+          <button onClick={onClose} className="absolute right-4 top-4 text-white/40 transition hover:text-white/80"><X size={16} /></button>
+          <p className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-400/70">Facture individuelle</p>
+          <p className="mt-1 text-lg font-black text-white">{row.invoice.title}</p>
+          <p className="mt-0.5 font-mono text-[11px] text-white/50">{row.invoiceNumber}</p>
+        </div>
+
+        <div className="space-y-4 px-6 py-5">
+          <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${invoiceCfg.badge}`}>
+                {invoiceCfg.icon} {invoiceCfg.label}
+              </span>
+              <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${recipientCfg.badge}`}>
+                {recipientCfg.label}
+              </span>
+              <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-black ${row.isClient ? 'bg-amber-100 text-amber-700' : 'bg-violet-100 text-violet-700'}`}>
+                {row.isClient ? 'Client' : 'Membre'}
+              </span>
+            </div>
+            <p className="mt-3 text-sm font-black text-neutral-900">{row.name}</p>
+            <p className="mt-1 truncate text-xs text-neutral-500">{row.email || row.phone || row.memberId || 'Coordonnees non renseignees'}</p>
+            {row.address && <p className="mt-1 text-xs text-neutral-400">{row.address}</p>}
+          </div>
+
+          <div className="grid gap-2 text-sm sm:grid-cols-2">
+            <div className="rounded-xl border border-neutral-100 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Montant</p>
+              <p className="mt-1 font-black text-neutral-900">{fmtCfa(row.invoice.amount)}</p>
+            </div>
+            <div className="rounded-xl border border-neutral-100 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Echeance</p>
+              <p className="mt-1 font-black text-neutral-900">{fmt(row.invoice.dueDate)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-2 border-t border-neutral-100 px-6 py-4 sm:grid-cols-3">
+          <button
+            onClick={() => openSavedInvoiceRecipientPdf(row.invoice, row.recipient)}
+            className="flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 py-2.5 text-xs font-black text-violet-700 transition hover:bg-violet-100"
+          >
+            <Eye size={14} /> Apercu PDF A4
+          </button>
+          <button
+            onClick={() => resendInvoiceRecipient.mutate({ id: row.invoice._id, invoiceNumber: row.invoiceNumber })}
+            disabled={resendInvoiceRecipient.isPending || !canResend}
+            className="flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {resendInvoiceRecipient.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+            {sendLabel}
+          </button>
+          <button onClick={onClose} className="rounded-xl bg-neutral-900 py-2.5 text-xs font-black text-white transition hover:bg-neutral-800">
+            Fermer
+          </button>
         </div>
       </div>
     </div>
@@ -1484,6 +1576,7 @@ export default function FacturationAdminPage() {
   const [showCreate,  setShowCreate]  = useState(false);
   const [showClients, setShowClients] = useState(false);
   const [viewInvoice, setViewInvoice] = useState<InvoiceDoc | null>(null);
+  const [viewRecipientInvoice, setViewRecipientInvoice] = useState<InvoiceRecipientRow | null>(null);
   const [editInvoice, setEditInvoice] = useState<InvoiceDoc | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
@@ -1597,7 +1690,7 @@ export default function FacturationAdminPage() {
                   <p className="text-[10px] text-neutral-400">Échéance {fmt(inv.dueDate)}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={() => openSavedInvoiceRecipientPdf(inv, row.recipient)} title="Voir la facture"
+                  <button onClick={() => setViewRecipientInvoice(row)} title="Voir la facture"
                     className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600">
                     <Eye size={13} />
                   </button>
@@ -1643,6 +1736,7 @@ export default function FacturationAdminPage() {
       {showClients && <ClientsModal onClose={() => setShowClients(false)} />}
       {editInvoice && <EditInvoiceModal invoice={editInvoice} onClose={() => setEditInvoice(null)} />}
       {viewInvoice && <InvoiceDetailModal invoice={viewInvoice} onClose={() => setViewInvoice(null)} />}
+      {viewRecipientInvoice && <RecipientInvoiceModal row={viewRecipientInvoice} onClose={() => setViewRecipientInvoice(null)} />}
     </div>
   );
 }
