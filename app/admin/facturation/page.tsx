@@ -7,6 +7,7 @@ import {
   Link as LinkIcon, Loader2, Trash2, Save, Download, Upload, Building2,
   CheckSquare, Square, UserPlus, Settings, ReceiptText,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   useAdminInvoices, useCreateInvoice, useSendInvoice, useDeleteInvoice,
   useInvoiceClients, useSaveInvoiceClient, useDeleteInvoiceClient, useClientDocuments,
@@ -34,6 +35,7 @@ function fmtCfa(amount: number) {
 }
 
 type InvoiceLine = { id: number; designation: string; qty: number | string; ht: number | string; vat: number | string };
+type LayoutBlockId = 'assoc' | 'client' | 'items' | 'notes' | 'totals' | 'legal';
 type AssociationInvoiceInfo = {
   name: string;
   title: string;
@@ -73,6 +75,50 @@ function loadAssociationInfo(): AssociationInvoiceInfo {
 function saveAssociationInfo(info: AssociationInvoiceInfo) {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(ASSOCIATION_STORAGE_KEY, JSON.stringify(info));
+}
+
+function DraggableBox({ id, label, offsets, setOffsets, children, className = '' }: {
+  id: LayoutBlockId;
+  label: string;
+  offsets: Record<LayoutBlockId, { x: number; y: number }>;
+  setOffsets: React.Dispatch<React.SetStateAction<Record<LayoutBlockId, { x: number; y: number }>>>;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const [drag, setDrag] = useState<{ startX: number; startY: number; x: number; y: number } | null>(null);
+  const pos = offsets[id];
+
+  return (
+    <div
+      className={`group relative ${className}`}
+      style={{ transform: `translate(${pos.x}px, ${pos.y}px)`, zIndex: drag ? 20 : undefined }}
+      onPointerMove={event => {
+        if (!drag) return;
+        setOffsets(prev => ({
+          ...prev,
+          [id]: {
+            x: drag.x + event.clientX - drag.startX,
+            y: drag.y + event.clientY - drag.startY,
+          },
+        }));
+      }}
+      onPointerUp={() => setDrag(null)}
+      onPointerLeave={() => setDrag(null)}
+    >
+      <button
+        type="button"
+        onPointerDown={event => {
+          event.preventDefault();
+          setDrag({ startX: event.clientX, startY: event.clientY, x: pos.x, y: pos.y });
+        }}
+        className="absolute -top-3 left-3 z-30 hidden rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] text-emerald-700 shadow-sm group-hover:block"
+        title="Glisser-déposer ce bloc"
+      >
+        Déplacer · {label}
+      </button>
+      {children}
+    </div>
+  );
 }
 
 function calcInvoiceTotals(lines: InvoiceLine[]) {
@@ -211,10 +257,33 @@ function openInvoicePdfPreview(params: {
 </body>
 </html>`;
 
-  const win = window.open('', '_blank', 'noopener,noreferrer,width=900,height=1200');
-  if (!win) return;
+  const win = window.open('', '_blank', 'width=900,height=1200');
+  if (!win) {
+    toast.error('Ouverture du PDF bloquée par le navigateur. Autorisez les popups pour télécharger/imprimer.');
+    return;
+  }
   win.document.write(html);
   win.document.close();
+  win.focus();
+}
+
+function openSavedInvoicePdf(invoice: InvoiceDoc) {
+  const association = loadAssociationInfo();
+  openInvoicePdfPreview({
+    association,
+    invoiceTitle: invoice.title,
+    invoiceNumber: invoice.invoiceNumber,
+    recipient: {
+      name: `${invoice.recipients.length} destinataire(s)`,
+      email: 'Document généré depuis la facturation SALAM',
+      phone: '',
+      address: '',
+    },
+    lines: [{ id: 1, designation: invoice.description || invoice.title, qty: 1, ht: invoice.amount, vat: 0 }],
+    notes: 'Document généré depuis la facture enregistrée.',
+    legal: 'Association SALAM — document généré électroniquement.',
+    dueDate: invoice.dueDate,
+  });
 }
 
 /* ─── Skeleton ────────────────────────────────────────── */
@@ -430,6 +499,14 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const [lines, setLines] = useState<InvoiceLine[]>([
     { id: 1, designation: 'Frais d’adhésion annuelle', qty: 1, ht: 5000, vat: 0 },
   ]);
+  const [blockOffsets, setBlockOffsets] = useState<Record<LayoutBlockId, { x: number; y: number }>>({
+    assoc: { x: 0, y: 0 },
+    client: { x: 0, y: 0 },
+    items: { x: 0, y: 0 },
+    notes: { x: 0, y: 0 },
+    totals: { x: 0, y: 0 },
+    legal: { x: 0, y: 0 },
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const createInvoice = useCreateInvoice();
   const { data: membersData } = useAdminMembers({ limit: 200, status: 'active' });
@@ -562,7 +639,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
               <Save size={14} /> Mémoriser
             </button>
             <button type="button" onClick={handlePdf} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-700 transition hover:border-emerald-200 hover:text-emerald-700">
-              <Download size={14} /> PDF
+              <Download size={14} /> Télécharger PDF
             </button>
             <button type="button" onClick={handleCreate} disabled={createInvoice.isPending} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-60">
               {createInvoice.isPending ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} Créer
@@ -590,6 +667,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
 
                 <div className="space-y-6 px-12 py-8">
                   <div className="grid grid-cols-2 gap-5">
+                    <DraggableBox id="assoc" label="Émetteur" offsets={blockOffsets} setOffsets={setBlockOffsets}>
                     <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
                       <div className="mb-4 flex items-center gap-3">
                         <button type="button" onClick={() => logoInputRef.current?.click()} className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-emerald-700 text-xs font-black text-white">
@@ -612,7 +690,9 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                         <input value={association.phone} onChange={event => updateAssociation({ phone: event.target.value })} className={inputCls()} />
                       </div>
                     </section>
+                    </DraggableBox>
 
+                    <DraggableBox id="client" label="Client" offsets={blockOffsets} setOffsets={setBlockOffsets}>
                     <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-400">Facturé à</p>
                       {previewMember ? (
@@ -645,8 +725,10 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                         </label>
                       </div>
                     </section>
+                    </DraggableBox>
                   </div>
 
+                  <DraggableBox id="items" label="Lignes" offsets={blockOffsets} setOffsets={setBlockOffsets}>
                   <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
                     <div className="mb-3 flex items-center justify-between">
                       <h4 className="font-black text-neutral-900">Désignations</h4>
@@ -669,12 +751,16 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                       );
                     })}
                   </section>
+                  </DraggableBox>
 
                   <div className="grid grid-cols-[1fr_310px] gap-5">
+                    <DraggableBox id="notes" label="Observations" offsets={blockOffsets} setOffsets={setBlockOffsets}>
                     <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
                       <h4 className="mb-2 font-black text-neutral-900">Observations</h4>
                       <textarea value={notes} onChange={event => setNotes(event.target.value)} rows={4} className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-emerald-300" />
                     </section>
+                    </DraggableBox>
+                    <DraggableBox id="totals" label="Totaux" offsets={blockOffsets} setOffsets={setBlockOffsets}>
                     <section className="rounded-[18px] border border-neutral-200 bg-neutral-50 p-5">
                       <h4 className="mb-3 font-black text-neutral-900">Totaux</h4>
                       <div className="space-y-2 text-sm">
@@ -683,12 +769,15 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                         <div className="mt-3 flex justify-between rounded-xl bg-emerald-700 px-4 py-3 text-white"><span className="font-bold">Total TTC</span><b>{fmtCfa(totals.ttc)}</b></div>
                       </div>
                     </section>
+                    </DraggableBox>
                   </div>
 
+                  <DraggableBox id="legal" label="Mentions" offsets={blockOffsets} setOffsets={setBlockOffsets}>
                   <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
                     <h4 className="mb-2 font-black text-neutral-900">Mentions légales</h4>
                     <textarea value={legal} onChange={event => setLegal(event.target.value)} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-xs outline-emerald-300" />
                   </section>
+                  </DraggableBox>
                 </div>
               </div>
             </div>
@@ -1158,7 +1247,7 @@ export default function FacturationAdminPage() {
                   <p className="text-[10px] text-neutral-400">Échéance {fmt(inv.dueDate)}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={() => setViewInvoice(inv)} title="Voir la facture"
+                  <button onClick={() => openSavedInvoicePdf(inv)} title="Voir la facture"
                     className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600">
                     <Eye size={13} />
                   </button>

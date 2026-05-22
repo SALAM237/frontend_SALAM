@@ -117,6 +117,7 @@ export default function AdminAIAssistantPage() {
   const router = useRouter();
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const shouldScrollRef = useRef(false);
   const ai = useAdminAiAssistant();
   const sendReminders = useSendReminders();
   const currentYear = new Date().getFullYear();
@@ -134,7 +135,9 @@ export default function AdminAIAssistantPage() {
   ]);
 
   useEffect(() => {
+    if (!shouldScrollRef.current) return;
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    shouldScrollRef.current = false;
   }, [messages]);
 
   const messagePayload = useMemo(
@@ -176,7 +179,7 @@ export default function AdminAIAssistantPage() {
     toast.info('Action non encore automatisée');
   };
 
-  const sendMessage = async (prompt?: string) => {
+  const sendMessage = async (prompt?: string, autoScroll = true) => {
     const text = (prompt ?? input).trim();
     if (!text || ai.isPending) return;
 
@@ -194,6 +197,7 @@ export default function AdminAIAssistantPage() {
 
     setInput('');
     setShowSuggestions(false);
+    shouldScrollRef.current = autoScroll;
 
     const userMsg: Message = {
       id: `user-${Date.now()}`,
@@ -267,7 +271,7 @@ export default function AdminAIAssistantPage() {
             {insights.map((ins, index) => (
               <button
                 key={index}
-                onClick={() => sendMessage(ins.prompt)}
+                  onClick={() => sendMessage(ins.prompt, false)}
                 className="group w-full rounded-2xl border border-neutral-100 bg-white p-3 text-left shadow-sm transition hover:border-emerald-200 hover:shadow-md"
               >
                 <div className="flex items-start gap-2">
@@ -292,7 +296,7 @@ export default function AdminAIAssistantPage() {
             {suggestions.map(s => (
               <button
                 key={s.label}
-                onClick={() => sendMessage(s.prompt)}
+                onClick={() => sendMessage(s.prompt, false)}
                 className="group flex w-full items-center gap-2.5 rounded-xl border border-transparent p-2.5 text-left transition hover:border-neutral-200 hover:bg-white"
               >
                 <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${s.color}`}>
@@ -423,7 +427,7 @@ export default function AdminAIAssistantPage() {
               {suggestions.slice(0, 3).map(s => (
                 <button
                   key={s.label}
-                  onClick={() => sendMessage(s.prompt)}
+                  onClick={() => sendMessage(s.prompt, false)}
                   className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700"
                 >
                   <s.icon size={13} /> {s.label}

@@ -6,9 +6,10 @@ import {
   ChevronDown, Search, CheckCircle2, XCircle, ShieldOff,
   CalendarDays, History, X, Upload, AlertTriangle,
   Eye, Settings2, Send, Loader2, Edit3, Download,
+  Trash2,
 } from 'lucide-react';
 import {
-  useAdminCotisations, useUpdateCotisationStatus, useSendReminders, useCotisationLogs,
+  useAdminCotisations, useUpdateCotisationStatus, useDeleteCotisation, useSendReminders, useCotisationLogs,
   type CotisationStatus, type AdminCotisationRow,
 } from '@/lib/api/cotisations';
 import type { AuditLogDoc } from '@/lib/api/audit-logs';
@@ -450,6 +451,8 @@ export default function CotisationsAdminPage() {
   const { data: rawData, isLoading, isError } = useAdminCotisations(year);
   const { data: logsData, isLoading: logsLoading } = useCotisationLogs();
   const updateStatus = useUpdateCotisationStatus();
+  const deleteCotisation = useDeleteCotisation();
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const members = useMemo(() => {
     return rawData?.data ? mapRows(rawData.data, year) : [];
@@ -492,6 +495,15 @@ export default function CotisationsAdminPage() {
       { year, userIds: [member.userId] },
       { onSettled: () => setTimeout(() => setReminderSentId(null), 2500) },
     );
+  };
+
+  const handleDeleteCotisation = (member: MemberRow) => {
+    if (deleteTarget !== member.userId) {
+      setDeleteTarget(member.userId);
+      setTimeout(() => setDeleteTarget(current => current === member.userId ? null : current), 3000);
+      return;
+    }
+    deleteCotisation.mutate({ userId: member.userId, year }, { onSettled: () => setDeleteTarget(null) });
   };
 
   return (
@@ -604,6 +616,18 @@ export default function CotisationsAdminPage() {
                         <Edit3 size={13} />
                       </button>
                     )}
+                    <button
+                      onClick={() => handleDeleteCotisation(member)}
+                      disabled={deleteCotisation.isPending}
+                      title="Supprimer le frais d'adhésion généré"
+                      className={`flex h-8 items-center justify-center rounded-lg transition ${
+                        deleteTarget === member.userId
+                          ? 'w-auto bg-red-500 px-2 text-[10px] font-black text-white'
+                          : 'w-8 border border-red-100 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white'
+                      } disabled:opacity-50`}
+                    >
+                      {deleteCotisation.isPending && deleteTarget === member.userId ? <Loader2 size={13} className="animate-spin" /> : deleteTarget === member.userId ? 'Confirmer' : <Trash2 size={13} />}
+                    </button>
                   </div>
                   <div className="relative shrink-0">
                     <select value={member.status}

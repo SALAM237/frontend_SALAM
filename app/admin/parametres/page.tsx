@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Save, CheckCircle2, Shield, Bell, Globe, Lock, Palette } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
@@ -9,6 +9,8 @@ import { isSuperAdmin } from '@/lib/auth/roles';
 
 export default function ParametresPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab') ?? 'profil';
   const user   = useAuthStore(s => s.user);
   const SA     = isSuperAdmin(user);
   const [saved, setSaved] = useState(false);
@@ -60,25 +62,25 @@ export default function ParametresPage() {
       <form onSubmit={handleSave} className="space-y-4">
 
         {/* Association */}
-        <Section icon={Globe} title="Informations de l'association">
+        {activeTab === 'profil' && <Section icon={Globe} title="Informations de l'association">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Nom de l'association" value={assocName} onChange={e => setAssocName(e.target.value)} />
             <Field label="Email de contact"     value={email}     onChange={e => setEmail(e.target.value)}     type="email" />
           </div>
           <Field label="URL du site" value="https://www.association-salam.org" onChange={() => {}} disabled />
-        </Section>
+        </Section>}
 
         {/* Notifications */}
-        <Section icon={Bell} title="Notifications admin">
+        {activeTab === 'preferences' && <Section icon={Bell} title="Notifications admin">
           <div className="space-y-3">
             <Toggle label="Nouvel adhérent inscrit"   checked={notifNewMember} onChange={() => setNotifNewMember(v => !v)} />
             <Toggle label="Nouveau message reçu"      checked={notifNewMsg}    onChange={() => setNotifNewMsg(v => !v)}    />
             <Toggle label="Nouvelle activité créée"   checked={notifActivite}  onChange={() => setNotifActivite(v => !v)} />
           </div>
-        </Section>
+        </Section>}
 
         {/* Sécurité */}
-        <Section icon={Shield} title="Sécurité">
+        {activeTab === 'securite' && <Section icon={Shield} title="Sécurité">
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={handleChangePassword} className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
               <Lock size={13} /> Changer le mot de passe admin
@@ -87,10 +89,10 @@ export default function ParametresPage() {
               <Shield size={13} /> Voir les accès admin
             </button>
           </div>
-        </Section>
+        </Section>}
 
         {/* Maintenance */}
-        <Section icon={Palette} title="Mode maintenance">
+        {activeTab === 'preferences' && <Section icon={Palette} title="Mode maintenance">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-neutral-800">Mode maintenance</p>
@@ -109,7 +111,7 @@ export default function ParametresPage() {
               <p className="text-xs font-black text-red-700">⚠ Mode maintenance activé — le site public est inaccessible</p>
             </div>
           )}
-        </Section>
+        </Section>}
 
         <button
           type="submit"

@@ -12,6 +12,7 @@ export interface ArticleDoc {
     excerpt?: string;
     content?: string;
     category?: string;
+    imageUrl?: string;
   };
   createdAt: string;
 }
@@ -76,7 +77,7 @@ export function useCreateArticle() {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { title: string; excerpt?: string; content?: string; category?: string; status?: string }) =>
+    mutationFn: (payload: { title: string; excerpt?: string; content?: string; category?: string; imageUrl?: string; status?: string; data?: { excerpt?: string; content?: string; category?: string; imageUrl?: string } }) =>
       apiClient<ArticleDoc>('/api/v1/admin/content', {
         method: 'POST', body: JSON.stringify(payload), token: token ?? '',
       }),
@@ -92,7 +93,7 @@ export function useUpdateArticle(id: string) {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { title?: string; status?: string; data?: { excerpt?: string; content?: string; category?: string } }) =>
+    mutationFn: (payload: { title?: string; status?: string; data?: { excerpt?: string; content?: string; category?: string; imageUrl?: string } }) =>
       apiClient<ArticleDoc>(`/api/v1/admin/content/${id}`, {
         method: 'PUT', body: JSON.stringify(payload), token: token ?? '',
       }),

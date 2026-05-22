@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Newspaper, Plus, X, Loader2, Trash2, Edit3 } from 'lucide-react';
+import { ImagePlus, Newspaper, Plus, X, Loader2, Trash2, Edit3 } from 'lucide-react';
 import {
   useArticles, useCreateArticle, useUpdateArticle, useDeleteArticle,
   ARTICLE_CATEGORIES, type ArticleDoc,
@@ -22,12 +22,20 @@ function ArticleForm({
     excerpt:  initial?.data?.excerpt  ?? '',
     content:  initial?.data?.content  ?? '',
     category: initial?.data?.category ?? 'general',
+    imageUrl: initial?.data?.imageUrl ?? '',
     status:   initial?.status         ?? 'draft',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const upd = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setF(p => ({ ...p, [k]: e.target.value }));
+
+  const handleImageFile = (file?: File | null) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setF(p => ({ ...p, imageUrl: String(reader.result ?? '') }));
+    reader.readAsDataURL(file);
+  };
 
   const inp = (err?: string) =>
     `w-full rounded-xl border bg-white px-4 py-2.5 text-sm outline-none transition focus:ring-2 placeholder:text-neutral-300 ${err ? 'border-red-300 focus:ring-red-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`;
@@ -38,7 +46,7 @@ function ArticleForm({
     onSubmit({
       title: f.title,
       status: f.status,
-      data: { excerpt: f.excerpt || undefined, content: f.content || undefined, category: f.category },
+      data: { excerpt: f.excerpt || undefined, content: f.content || undefined, category: f.category, imageUrl: f.imageUrl || undefined },
     });
   };
 
@@ -63,6 +71,23 @@ function ArticleForm({
           </div>
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Résumé</label>
+            <div className="mb-4 grid gap-3 sm:grid-cols-[112px_1fr]">
+              <div className="flex h-24 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
+                {f.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={f.imageUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <ImagePlus size={24} className="text-neutral-300" />
+                )}
+              </div>
+              <div className="space-y-2">
+                <input value={f.imageUrl} onChange={upd('imageUrl')} placeholder="URL de l'image ou import ci-dessous" className={inp()} />
+                <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-neutral-200 px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
+                  <ImagePlus size={13} /> Importer une image
+                  <input type="file" accept="image/*" className="hidden" onChange={e => handleImageFile(e.target.files?.[0])} />
+                </label>
+              </div>
+            </div>
             <textarea value={f.excerpt} onChange={upd('excerpt')} rows={2} placeholder="Courte description…"
               className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" />
           </div>
@@ -170,8 +195,13 @@ export default function AdminActualitesPage() {
               const catLabel = ARTICLE_CATEGORIES.find(c => c.value === a.data?.category)?.label ?? 'Général';
               return (
                 <div key={a._id} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-neutral-50/60">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 border border-blue-100">
-                    <Newspaper size={16} className="text-blue-600" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-blue-50 border border-blue-100">
+                    {a.data?.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={a.data.imageUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <Newspaper size={16} className="text-blue-600" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">

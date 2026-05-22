@@ -31,6 +31,21 @@ const NAV = [
   { label: 'Messages',      href: '/member/messages',    icon: MessageSquare    },
 ];
 
+function missingProfileFields(user: AuthUser | null) {
+  if (!user) return [];
+  const required: Array<keyof AuthUser> = [
+    'firstName', 'lastName', 'email', 'phone', 'gender', 'promotionYear',
+    'birthDate', 'city', 'country', 'residenceCity', 'antenne',
+    'activitySector', 'recoveryContact', 'bio', 'motivation',
+    'skills', 'expertiseDomains',
+  ];
+  return required.filter(field => {
+    const value = user[field] as unknown;
+    if (Array.isArray(value)) return value.length === 0;
+    return value === undefined || value === null || String(value).trim() === '';
+  });
+}
+
 
 function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl, initialsClass, gender, onLogout }: {
   open: boolean; onClose: () => void;
@@ -213,6 +228,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
   const initials   = firstName && lastName ? formatInitials(firstName, lastName) : '…';
   const avatarUrl = memberPhotoUrl(user);
   const initialsClass = memberInitialsClass(user?.gender);
+  const profileMissing = missingProfileFields(user);
 
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">
@@ -291,6 +307,14 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
         </header>
 
         <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-5 sm:px-5 md:px-6 lg:px-8">
+          {profileMissing.length > 0 && (
+            <Link
+              href="/member/profil"
+              className="mb-4 block rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-black text-red-700 shadow-sm transition hover:border-red-300 hover:bg-red-100"
+            >
+              Profil incomplet : merci de compléter toutes vos informations pour finaliser votre fiche membre.
+            </Link>
+          )}
           {isMemberAccountPath(pathname) && <MemberAccountTabs />}
           {children}
         </main>

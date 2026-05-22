@@ -66,7 +66,12 @@ export default function ActualitesPage() {
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((n: any) => (
                 <Link key={n._id} href={`/actualites/${n._id}`} className="group flex flex-col gap-3 rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md">
-                  <div className="aspect-[16/9] rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50" />
+                  <div className="aspect-[16/9] overflow-hidden rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50">
+                    {n.data?.imageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={n.data.imageUrl} alt="" className="h-full w-full object-cover" />
+                    )}
+                  </div>
                   <span className="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
                     <Tag size={10} />{ARTICLE_CATEGORIES.find(c => c.value === n.data?.category)?.label ?? n.data?.category ?? 'Général'}
                   </span>

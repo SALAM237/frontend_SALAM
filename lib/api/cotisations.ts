@@ -81,6 +81,26 @@ export function useUpdateCotisationStatus() {
   });
 }
 
+export function useDeleteCotisation() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, year }: { userId: string; year: number }) =>
+      apiClient(`/api/v1/admin/cotisations/${userId}?year=${year}`, {
+        method: 'DELETE',
+        token: token ?? '',
+      }),
+    onSuccess: (res, vars) => {
+      qc.invalidateQueries({ queryKey: ['admin-cotisations', vars.year] });
+      qc.invalidateQueries({ queryKey: ['cotisation-logs'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
+      toast.success((res as any).message ?? 'Frais supprimé');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 export function useSendReminders() {
   const token = useAuthStore(s => s.accessToken);
   return useMutation({

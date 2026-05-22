@@ -18,6 +18,8 @@ export interface MemberListItem {
   lastLoginAt?: string;
   memberId: string;
   cotisationStatus: 'paid' | 'unpaid' | 'exempt';
+  profileComplete?: boolean;
+  missingProfileFields?: string[];
   gender?: 'homme' | 'femme';
   promotionYear?: number;
 }

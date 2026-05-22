@@ -67,7 +67,12 @@ export default function ActualiteDetailPage({ params }: { params: Promise<{ slug
           {!isLoading && article && (
             <article className="space-y-6">
               {/* Cover */}
-              <div className="aspect-[21/9] overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-emerald-400 to-teal-600" />
+              <div className="aspect-[21/9] overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-emerald-400 to-teal-600">
+                {article.data?.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={article.data.imageUrl} alt="" className="h-full w-full object-cover" />
+                )}
+              </div>
 
               {/* Header */}
               <div className="space-y-3">

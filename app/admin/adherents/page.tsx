@@ -26,6 +26,11 @@ const cotisationConfig: Record<string, { label: string; cls: string }> = {
   exempt: { label: 'Exempté', cls: 'bg-neutral-50 text-neutral-400' },
 };
 
+const profileConfig = {
+  complete: { label: 'Complet', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+  incomplete: { label: 'Incomplet', cls: 'bg-red-50 text-red-700 border-red-100' },
+};
+
 const FILTER_OPTIONS: { label: string; value: MemberStatus | 'all' }[] = [
   { label: 'Tous',       value: 'all'       },
   { label: 'Actifs',     value: 'active'    },
@@ -190,15 +195,16 @@ export default function AdminAdherentsPage() {
             <div className="hidden lg:block">
               <table className="w-full table-fixed text-[11px]">
                 <colgroup>
-                  <col className="w-[19%]" />
+                  <col className="w-[17%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[16%]" />
                   <col className="w-[9%]" />
-                  <col className="w-[18%]" />
-                  <col className="w-[10%]" />
                   <col className="w-[7%]" />
                   <col className="w-[7%]" />
                   <col className="w-[8%]" />
+                  <col className="w-[8%]" />
                   <col className="w-[9%]" />
-                  <col className="w-[13%]" />
+                  <col className="w-[11%]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-neutral-100 bg-neutral-50/60">
@@ -208,6 +214,7 @@ export default function AdminAdherentsPage() {
                     <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Tél.</th>
                     <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Statut</th>
                     <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Cotis.</th>
+                    <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Profil</th>
                     <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Conn.</th>
                     <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Inscr.</th>
                     <th className="px-3 py-3" />
@@ -248,6 +255,11 @@ export default function AdminAdherentsPage() {
                         <td className="px-2 py-3">
                           <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8px] font-black leading-none ${c.cls}`}>
                             {c.label}
+                          </span>
+                        </td>
+                        <td className="px-2 py-3">
+                          <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[8px] font-black leading-none ${m.profileComplete ? profileConfig.complete.cls : profileConfig.incomplete.cls}`}>
+                            {m.profileComplete ? profileConfig.complete.label : profileConfig.incomplete.label}
                           </span>
                         </td>
                         <td className="truncate px-2 py-3 text-[10px] text-neutral-400">{fmtDate(m.lastLoginAt)}</td>
@@ -346,6 +358,9 @@ export default function AdminAdherentsPage() {
                         </span>
                         <span className={`inline-flex whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8px] font-black leading-none ${c.cls}`}>
                           {c.label}
+                        </span>
+                        <span className={`inline-flex whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[8px] font-black leading-none ${m.profileComplete ? profileConfig.complete.cls : profileConfig.incomplete.cls}`}>
+                          {m.profileComplete ? 'Profil complet' : 'Profil incomplet'}
                         </span>
                       </div>
                       <ChevronDown size={15} className={`shrink-0 text-neutral-300 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-emerald-600' : ''}`} />
