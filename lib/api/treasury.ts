@@ -136,6 +136,40 @@ export function useCreateTreasuryAsset() {
   });
 }
 
+export function useDeleteTreasuryTransaction() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient(`/api/v1/admin/treasury/transactions/${id}`, { method: 'DELETE', token: token ?? '' }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-transactions'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-transactions'] });
+      toast.success((res as any).message ?? 'Ecriture supprimee');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useDeleteTreasuryAsset() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient(`/api/v1/admin/treasury/assets/${id}`, { method: 'DELETE', token: token ?? '' }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-assets'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-assets'] });
+      toast.success((res as any).message ?? 'Patrimoine supprime');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 export function useMembershipFeeProposals(admin = false) {
   const token = useAuthStore(s => s.accessToken);
   return useQuery({

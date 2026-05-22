@@ -14,6 +14,7 @@ function CreatePasswordContent() {
   const router       = useRouter();
   const token        = searchParams.get('token');
   const clearAuth    = useAuthStore(s => s.clearAuth);
+  const setAuth      = useAuthStore(s => s.setAuth);
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm]   = useState('');
@@ -85,7 +86,7 @@ function CreatePasswordContent() {
           </p>
         </div>
         <button
-          onClick={() => router.push('/auth/login')}
+          onClick={() => router.push('/member/profil?complete=1')}
           className="group flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-black text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98]"
         >
           Se connecter <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
@@ -115,14 +116,18 @@ function CreatePasswordContent() {
     try {
       clearAuth();
       await fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
-      await apiClient('/api/v1/auth/activate', {
+      const activated = await apiClient<{ accessToken: string; user: any; nextUrl?: string }>('/api/v1/auth/activate', {
         method: 'POST',
         body: JSON.stringify({ token, password }),
       });
-      clearAuth();
-      await fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: activated.data.accessToken }),
+      }).catch(() => {});
+      setAuth(activated.data.user, activated.data.accessToken);
       setSuccess(true);
-      setTimeout(() => router.push('/auth/login'), 3000);
+      setTimeout(() => router.push(activated.data.nextUrl ?? '/member/profil?complete=1'), 1200);
     } catch (err: unknown) {
       setErrors({ global: err instanceof Error ? err.message : 'Lien d\'invitation invalide ou expiré.' });
     } finally {

@@ -21,6 +21,7 @@ import {
   type TreasuryTransaction,
   type TreasuryAsset,
 } from '@/lib/api/treasury';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 type TabValue = 'overview' | 'income' | 'expense' | 'don' | 'assets';
 
@@ -126,15 +127,7 @@ export default function TresoreriePage() {
         </section>
       )}
 
-      <div className="overflow-x-auto rounded-2xl border border-neutral-100 bg-white p-1 shadow-sm">
-        <div className="flex min-w-max gap-1">
-          {tabs.map(item => (
-            <button key={item.value} onClick={() => setTab(item.value)} className={`h-10 rounded-xl px-4 text-xs font-black transition ${tab === item.value ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-50'}`}>
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <AnimatedTabBar items={tabs} value={tab} onChange={setTab} />
 
       {tab === 'overview' && (
         <div className="space-y-5">
@@ -286,6 +279,7 @@ function Kpi({ icon: Icon, label, value, sub, tone }: { icon: React.ElementType;
     amber: 'bg-amber-50 text-amber-700',
     violet: 'bg-violet-50 text-violet-700',
   }[tone];
+  const [amount, currency] = value.split(' F.CFA');
 
   return (
     <div className="min-h-[118px] rounded-xl border border-neutral-200/70 bg-white p-4 shadow-sm">
@@ -293,7 +287,10 @@ function Kpi({ icon: Icon, label, value, sub, tone }: { icon: React.ElementType;
         <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500">{label}</span>
         <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${cls}`}><Icon size={14} /></span>
       </div>
-      <p className="mt-3 text-2xl font-black tracking-[-0.04em] text-neutral-900">{value}</p>
+      <p className="mt-3 tracking-[-0.04em]">
+        <span className="text-2xl font-black text-neutral-900">{amount}</span>
+        {currency !== undefined && <span className="ml-1 text-[11px] font-medium tracking-normal text-neutral-500">F.CFA</span>}
+      </p>
       {sub && <p className="mt-1 text-[10px] font-semibold text-neutral-400">{sub}</p>}
     </div>
   );

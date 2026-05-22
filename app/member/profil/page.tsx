@@ -277,7 +277,7 @@ export default function ProfilPage() {
             <F icon={Phone} label="Telephone" value={form.phone} onChange={set('phone')} placeholder="+237 6 00 00 00 00" />
             <F icon={Phone} label="Contact de recuperation" value={form.recoveryContact} onChange={set('recoveryContact')} placeholder="Email ou numero secondaire" />
             <F icon={Calendar} label="Date de naissance" value={form.birthDate} onChange={set('birthDate')} type="date" />
-            <F icon={MapPin} label="Ville de residence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." />
+            <F icon={MapPin} label="Ville de résidence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." />
             <F icon={MapPin} label="Pays" value={form.country} onChange={set('country')} placeholder="Cameroun, Maroc..." />
             <F icon={User} label="Promotionnaire" value={form.promotionYear} onChange={set('promotionYear')} type="number" placeholder="2026" />
             <F icon={MapPin} label="Antenne" value={form.antenne} onChange={set('antenne')} placeholder="Casablanca, Yaounde..." />

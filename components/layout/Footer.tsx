@@ -6,19 +6,19 @@ const NAV_COLS = [
   {
     title: 'Association',
     links: [
-      ['Ã€ propos',    '/a-propos'],
+      ['À propos',    '/a-propos'],
       ['Nos valeurs', '/a-propos#valeurs'],
-      ["L'Ã©quipe",    '/bureau-executif'],
+      ["L'équipe",    '/bureau-executif'],
       ['Contact',     '/contact'],
     ],
   },
   {
-    title: 'CommunautÃ©',
+    title: 'Communauté',
     links: [
-      ['ActivitÃ©s',  '/activites'],
+      ['Activités',  '/activites'],
       ['Galerie',    '/galerie'],
-      ['ActualitÃ©s', '/actualites'],
-      ['AdhÃ©sion',   '/adhesion'],
+      ['Actualités', '/actualites'],
+      ['Adhésion',   '/adhesion'],
     ],
   },
   {
@@ -26,8 +26,8 @@ const NAV_COLS = [
     links: [
       ['Mon espace',  '/member/dashboard'],
       ['Connexion',   '/auth/login'],
-      ['AdhÃ©sion',    '/adhesion'],
-      ['Mode dÃ©mo',   '/demo'],
+      ['Adhésion',    '/adhesion'],
+      ['Mode démo',   '/demo'],
     ],
   },
 ];
@@ -103,7 +103,7 @@ export function Footer() {
           </span>
           <span className="flex items-center gap-2">
             <MapPin size={13} className="shrink-0" />
-            Paris, ÃŽle-de-France
+            Paris, Île-de-France
           </span>
           <a
             href="https://www.salam-cameroun.com"
@@ -116,14 +116,14 @@ export function Footer() {
         {/* â”€â”€ Bottom bar â”€â”€ */}
         <div className="flex flex-col gap-3 border-t border-white/6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[12px] text-white/28">
-            Â© {new Date().getFullYear()} Association SALAM Cameroun. Tous droits rÃ©servÃ©s.
+            © {new Date().getFullYear()} Association SALAM Cameroun. Tous droits réservés.
           </p>
-          <nav className="flex gap-5 text-[12px]" aria-label="Liens lÃ©gaux">
+          <nav className="flex gap-5 text-[12px]" aria-label="Liens légaux">
             <Link href="/mentions-legales" className="text-white/28 hover:text-white/60 transition-colors">
-              Mentions lÃ©gales
+              Mentions légales
             </Link>
             <Link href="/confidentialite" className="text-white/28 hover:text-white/60 transition-colors">
-              ConfidentialitÃ©
+              Confidentialité
             </Link>
             <Link href="/conditions" className="text-white/28 hover:text-white/60 transition-colors">
               CGU

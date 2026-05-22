@@ -163,7 +163,7 @@ export function useDeleteInvoice() {
       qc.invalidateQueries({ queryKey: ['member-treasury-transactions'] });
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
-      toast.success((res as any).message ?? 'Facture supprimÃ©e');
+      toast.success((res as any).message ?? 'Facture supprimée');
     },
     onError: (err: Error) => toast.error(err.message),
   });

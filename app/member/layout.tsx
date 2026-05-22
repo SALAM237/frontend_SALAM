@@ -176,12 +176,23 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
 
     const restore = async () => {
       try {
-        const refreshRes = await apiClient<{ accessToken: string }>(
-          '/api/v1/auth/refresh', { method: 'POST' },
-        );
-        const token = refreshRes.data.accessToken;
+        let token: string;
+        let restoredUser: AuthUser;
+        try {
+          const refreshRes = await apiClient<{ accessToken: string }>(
+            '/api/v1/auth/refresh', { method: 'POST' },
+          );
+          token = refreshRes.data.accessToken;
 
-        const meRes = await apiClient<AuthUser>('/api/v1/auth/me', { token });
+          const meRes = await apiClient<AuthUser>('/api/v1/auth/me', { token });
+          restoredUser = meRes.data;
+        } catch {
+          const sessionRes = await fetch('/api/auth/session', { cache: 'no-store' });
+          if (!sessionRes.ok) throw new Error('local_session_expired');
+          const session = await sessionRes.json();
+          token = session.accessToken;
+          restoredUser = session.user;
+        }
 
         // Renouveler les cookies httpOnly avec le nouveau token
         await fetch('/api/auth/session', {
@@ -190,7 +201,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
           body: JSON.stringify({ accessToken: token }),
         });
 
-        restoreAuth(meRes.data, token);
+        restoreAuth(restoredUser, token);
       } catch {
         // Session expirée → retour au login
         clearAuth();

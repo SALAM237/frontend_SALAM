@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import {
   FileText, Download, Eye, Receipt, File, Award, FolderOpen, Search,
 } from 'lucide-react';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 type DocType = 'recu' | 'facture' | 'attestation' | 'divers';
 
@@ -54,21 +55,7 @@ export default function MemberDocumentsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2">
-        {TABS.map(t => (
-          <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`rounded-xl border px-4 py-2 text-xs font-black transition ${
-              tab === t.value
-                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:text-neutral-700'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <AnimatedTabBar items={TABS} value={tab} onChange={setTab} />
 
       {/* Search */}
       <div className="relative">

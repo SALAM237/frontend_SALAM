@@ -8,13 +8,15 @@ import {
 import {
   AlertTriangle, ArrowDownRight, ArrowUpRight, Banknote, Boxes, CheckCircle2,
   Clock, Download, FileUp, Package, Plus, RefreshCw, Settings2, WalletCards,
-  WifiOff, X, XCircle,
+  Trash2, WifiOff, X, XCircle,
 } from 'lucide-react';
 import {
   formatFcfa,
   useCreateMembershipFeeProposal,
   useCreateTreasuryAsset,
   useCreateTreasuryTransaction,
+  useDeleteTreasuryAsset,
+  useDeleteTreasuryTransaction,
   useMembershipFeeProposals,
   useTreasuryAssets,
   useTreasuryOverview,
@@ -25,6 +27,7 @@ import {
   type TreasurySource,
   type TreasuryTransaction,
 } from '@/lib/api/treasury';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 type TabValue = 'overview' | 'income' | 'expense' | 'don' | 'assets';
 type FormMode = 'income' | 'expense' | 'don' | 'asset' | null;
@@ -81,7 +84,6 @@ export default function AdminTresoreriePage() {
   const [feeAmount, setFeeAmount] = useState('');
   const [feeReason, setFeeReason] = useState('');
   const importRef = useRef<HTMLInputElement>(null);
-  const tabsRef = useRef<HTMLDivElement>(null);
 
   const overview = useTreasuryOverview(true);
   const income = useTreasuryTransactions('income', true);
@@ -92,6 +94,8 @@ export default function AdminTresoreriePage() {
   const feeProposals = useMembershipFeeProposals(true);
   const createTx = useCreateTreasuryTransaction();
   const createAsset = useCreateTreasuryAsset();
+  const deleteTx = useDeleteTreasuryTransaction();
+  const deleteAsset = useDeleteTreasuryAsset();
   const createFeeProposal = useCreateMembershipFeeProposal();
   const uploadDoc = useUploadTreasuryDocument();
 
@@ -113,10 +117,6 @@ export default function AdminTresoreriePage() {
 
   const selectTab = (value: TabValue) => {
     setTab(value);
-    requestAnimationFrame(() => {
-      const el = tabsRef.current?.querySelector<HTMLElement>(`[data-tab="${value}"]`);
-      el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-    });
   };
 
   const openForm = (mode: FormMode) => {
@@ -166,6 +166,14 @@ export default function AdminTresoreriePage() {
 
   const handleImport = (file?: File) => {
     if (file) uploadDoc.mutate(file);
+  };
+
+  const handleDeleteTx = (id: string) => {
+    if (window.confirm('Supprimer cette operation de tresorerie ?')) deleteTx.mutate(id);
+  };
+
+  const handleDeleteAsset = (id: string) => {
+    if (window.confirm('Supprimer cet element de patrimoine ?')) deleteAsset.mutate(id);
   };
 
   const exportCsv = () => {
@@ -241,15 +249,7 @@ export default function AdminTresoreriePage() {
         </div>
       </div>
 
-      <div ref={tabsRef} className="overflow-x-auto rounded-2xl border border-neutral-100 bg-white p-1 shadow-sm scroll-smooth">
-        <div className="flex min-w-max gap-1">
-          {tabs.map(item => (
-            <button key={item.value} data-tab={item.value} onClick={() => selectTab(item.value)} className={`h-10 rounded-xl px-4 text-xs font-black transition ${tab === item.value ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-50'}`}>
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <AnimatedTabBar items={tabs} value={tab} onChange={selectTab} />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
         <Kpi label="Solde disponible" value={formatFcfa(data?.kpis.balance ?? 0)} icon={WalletCards} tone={balanceTone} />
@@ -424,10 +424,10 @@ export default function AdminTresoreriePage() {
         </div>
       )}
 
-      {tab === 'income' && <TransactionList title="Encaissements" items={incomeItems} loading={income.isLoading} />}
-      {tab === 'expense' && <TransactionList title="Decaissements" items={expenseItems} loading={expense.isLoading} />}
-      {tab === 'don' && <TransactionList title="Dons recus" items={donationItems} loading={donations.isLoading} />}
-      {tab === 'assets' && <AssetList title="Patrimoine" items={assetItems} loading={assets.isLoading} />}
+      {tab === 'income' && <TransactionList title="Encaissements" items={incomeItems} loading={income.isLoading} onDelete={handleDeleteTx} deletingId={deleteTx.variables} />}
+      {tab === 'expense' && <TransactionList title="Decaissements" items={expenseItems} loading={expense.isLoading} onDelete={handleDeleteTx} deletingId={deleteTx.variables} />}
+      {tab === 'don' && <TransactionList title="Dons recus" items={donationItems} loading={donations.isLoading} onDelete={handleDeleteTx} deletingId={deleteTx.variables} />}
+      {tab === 'assets' && <AssetList title="Patrimoine" items={assetItems} loading={assets.isLoading} onDelete={handleDeleteAsset} deletingId={deleteAsset.variables} />}
     </div>
   );
 }
@@ -453,6 +453,7 @@ function Kpi({ icon: Icon, label, value, sub, tone }: { icon: React.ElementType;
     amber: 'bg-amber-50 text-amber-700',
     violet: 'bg-violet-50 text-violet-700',
   }[tone];
+  const [amount, currency] = value.split(' F.CFA');
 
   return (
     <div className="min-h-[118px] rounded-xl border border-neutral-200/70 bg-white p-4 shadow-sm">
@@ -460,7 +461,10 @@ function Kpi({ icon: Icon, label, value, sub, tone }: { icon: React.ElementType;
         <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500">{label}</span>
         <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${cls}`}><Icon size={14} /></span>
       </div>
-      <p className="mt-3 text-2xl font-black tracking-[-0.04em] text-neutral-900">{value}</p>
+      <p className="mt-3 tracking-[-0.04em]">
+        <span className="text-2xl font-black text-neutral-900">{amount}</span>
+        {currency !== undefined && <span className="ml-1 text-[11px] font-medium tracking-normal text-neutral-500">F.CFA</span>}
+      </p>
       {sub && <p className="mt-1 text-[10px] font-semibold text-neutral-400">{sub}</p>}
     </div>
   );
@@ -501,7 +505,7 @@ function Select({ label, value, onChange, options, disabled = false }: { label: 
   );
 }
 
-function TransactionList({ title, items, kind, loading }: { title: string; items: TreasuryTransaction[]; kind?: TreasuryKind; loading?: boolean }) {
+function TransactionList({ title, items, kind, loading, onDelete, deletingId }: { title: string; items: TreasuryTransaction[]; kind?: TreasuryKind; loading?: boolean; onDelete?: (id: string) => void; deletingId?: string }) {
   const filtered = kind ? items.filter(i => i.kind === kind) : items;
   return (
     <Card>
@@ -519,6 +523,17 @@ function TransactionList({ title, items, kind, loading }: { title: string; items
               <p className="truncate text-xs text-neutral-400">{sourceLabels[item.source] ?? item.category ?? 'Operation'} - {new Date(item.occurredAt).toLocaleDateString('fr-FR')}</p>
             </div>
             <p className={`shrink-0 text-sm font-black ${item.kind === 'expense' ? 'text-red-600' : 'text-emerald-700'}`}>{formatFcfa(item.amount)}</p>
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(item._id)}
+                disabled={deletingId === item._id}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-500 transition hover:bg-red-500 hover:text-white disabled:opacity-50"
+                title="Supprimer"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -526,7 +541,7 @@ function TransactionList({ title, items, kind, loading }: { title: string; items
   );
 }
 
-function AssetList({ title, items, loading }: { title: string; items: TreasuryAsset[]; loading?: boolean }) {
+function AssetList({ title, items, loading, onDelete, deletingId }: { title: string; items: TreasuryAsset[]; loading?: boolean; onDelete?: (id: string) => void; deletingId?: string }) {
   return (
     <Card>
       <CardTitle title={title} subtitle={`${items.length} element(s)`} />
@@ -542,6 +557,17 @@ function AssetList({ title, items, loading }: { title: string; items: TreasuryAs
                 <p className="text-xs text-neutral-400">{item.category || 'Materiel'} - {conditionLabels[item.condition] ?? item.condition}</p>
                 <p className="mt-1 text-xs font-semibold text-neutral-500">{formatFcfa(item.estimatedValue ?? 0)}</p>
               </div>
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(item._id)}
+                  disabled={deletingId === item._id}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-white text-red-500 transition hover:bg-red-500 hover:text-white disabled:opacity-50"
+                  title="Supprimer"
+                >
+                  <Trash2 size={13} />
+                </button>
+              )}
             </div>
           </div>
         ))}

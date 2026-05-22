@@ -6,6 +6,7 @@ import { UserPlus, CheckCircle2, CreditCard, ArrowLeft, FileSpreadsheet, UserChe
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { DemoPortalShell } from '../../../_components/DemoShell';
 import { formatFirstName, formatFullName, formatLastName } from '@/lib/format-name';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 type Mode = 'single' | 'csv';
 type Step = 'form' | 'preview' | 'done';
@@ -87,7 +88,14 @@ export default function DemoAdminNewMemberPage() {
     <DemoPortalShell type="admin" title="Nouveau membre">
       <div className="mx-auto max-w-2xl space-y-5">
         <div className="flex items-center gap-3"><Link href="/demo/admin/adherents" className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:border-neutral-300"><ArrowLeft size={15} /></Link><div><h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Nouveau membre</h1><p className="text-sm text-neutral-500">Saisie manuelle ou import de donnees historiques</p></div></div>
-        <div className="flex gap-1 rounded-2xl border border-neutral-100 bg-white p-1 shadow-sm"><button onClick={() => setMode('single')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-black transition ${mode === 'single' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-50'}`}><UserPlus size={14} /> Saisie manuelle</button><button onClick={() => setMode('csv')} className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-black transition ${mode === 'csv' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-50'}`}><FileSpreadsheet size={14} /> Importer CSV</button></div>
+        <AnimatedTabBar
+          value={mode}
+          onChange={setMode}
+          items={[
+            { value: 'single', label: 'Saisie manuelle', icon: UserPlus },
+            { value: 'csv', label: 'Importer CSV', icon: FileSpreadsheet },
+          ]}
+        />
         {mode === 'single' ? (
           <form onSubmit={e => { e.preventDefault(); setStep('preview'); }} className="space-y-4">
             <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm"><p className="mb-4 flex items-center gap-2 text-sm font-black text-neutral-900"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-black text-white">1</span>Identite</p><div className="mb-4"><p className="mb-1.5 text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Civilite <span className="text-red-500">*</span></p><div className="flex gap-3">{([{ value: 'homme', label: 'Monsieur' }, { value: 'femme', label: 'Madame' }] as const).map(opt => <button key={opt.value} type="button" onClick={() => set('gender')(opt.value)} className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-black transition ${form.gender === opt.value ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700'}`}><UserCheck size={14} className={form.gender === opt.value ? 'text-emerald-600' : 'text-neutral-400'} />{opt.label}</button>)}</div></div><div className="grid gap-4 sm:grid-cols-2"><Field label="Prenom *" value={form.firstName} onChange={set('firstName')} placeholder="Jean" required /><Field label="Nom *" value={form.lastName} onChange={set('lastName')} placeholder="Kamga" required /><Field label="Email *" value={form.email} onChange={set('email')} placeholder="jean@email.com" type="email" required /><Field label="Telephone" value={form.phone} onChange={set('phone')} placeholder="+33 6 00 00 00 00" /><Field label="Promotionnaire *" value={form.promotionYear} onChange={set('promotionYear')} placeholder="2026" type="number" required /><Field label="Ville" value={form.city} onChange={set('city')} placeholder="Paris" /><Field label="Pays" value={form.country} onChange={set('country')} placeholder="Cameroun" /></div></div>

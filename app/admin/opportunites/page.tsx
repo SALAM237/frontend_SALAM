@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BriefcaseBusiness, Clock, ExternalLink, Loader2, MapPin } from 'lucide-react';
-import { OPPORTUNITY_TYPES, useAdminOpportunities, type OpportunityStatus } from '@/lib/api/opportunities';
+import { BriefcaseBusiness, CalendarDays, Clock, ExternalLink, Eye, Loader2, Mail, MapPin, Phone, Tag, X } from 'lucide-react';
+import { OPPORTUNITY_TYPES, useAdminOpportunities, type OpportunityDoc, type OpportunityStatus } from '@/lib/api/opportunities';
 import { formatFullName } from '@/lib/format-name';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 const statusTabs: { value: OpportunityStatus | 'all'; label: string }[] = [
   { value: 'pending', label: 'En attente' },
@@ -17,6 +18,7 @@ const typeLabels = Object.fromEntries(OPPORTUNITY_TYPES.map(type => [type.value,
 
 export default function AdminOpportunitesPage() {
   const [status, setStatus] = useState<OpportunityStatus | 'all'>('pending');
+  const [viewOpportunity, setViewOpportunity] = useState<OpportunityDoc | null>(null);
   const opportunities = useAdminOpportunities(status);
   const items = opportunities.data?.data?.items ?? [];
 
@@ -32,15 +34,7 @@ export default function AdminOpportunitesPage() {
         </Link>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-neutral-100 bg-white p-1 shadow-sm">
-        <div className="flex min-w-max gap-1">
-          {statusTabs.map(tab => (
-            <button key={tab.value} onClick={() => setStatus(tab.value)} className={`h-10 rounded-xl px-4 text-xs font-black transition ${status === tab.value ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-50'}`}>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <AnimatedTabBar items={statusTabs} value={status} onChange={setStatus} />
 
       <section className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
         {opportunities.isLoading && (
@@ -78,16 +72,62 @@ export default function AdminOpportunitesPage() {
                     {item.submittedBy && <span>Par {formatFullName(item.submittedBy.firstName ?? '', item.submittedBy.lastName ?? '') || item.submittedBy.email}</span>}
                   </div>
                 </div>
-                {item.status === 'pending' && (
-                  <Link href="/admin/validations" className="inline-flex h-9 items-center justify-center rounded-xl border border-neutral-200 px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700">
-                    Examiner
-                  </Link>
-                )}
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setViewOpportunity(item)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" title="Visualiser">
+                    <Eye size={14} />
+                  </button>
+                  {item.status === 'pending' && (
+                    <Link href="/admin/validations" className="inline-flex h-9 items-center justify-center rounded-xl border border-neutral-200 px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700">
+                      Examiner
+                    </Link>
+                  )}
+                </div>
               </article>
             ))}
           </div>
         )}
       </section>
+      {viewOpportunity && <OpportunityDetailModal item={viewOpportunity} onClose={() => setViewOpportunity(null)} />}
     </div>
   );
+}
+
+function OpportunityDetailModal({ item, onClose }: { item: OpportunityDoc; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-black/50 p-3 backdrop-blur-sm sm:items-center sm:justify-center">
+      <div className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div className="relative border-b border-neutral-100 bg-gradient-to-br from-emerald-800 to-emerald-950 px-6 py-5 text-white">
+          <button onClick={onClose} className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white/70 hover:bg-white/20 hover:text-white"><X size={16} /></button>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">{typeLabels[item.type] ?? item.type}</p>
+          <h2 className="mt-2 pr-10 text-xl font-black leading-tight">{item.title}</h2>
+          <p className="mt-1 text-xs font-semibold text-white/55">{item.status}</p>
+        </div>
+        <div className="max-h-[70vh] space-y-5 overflow-y-auto px-6 py-5">
+          <p className="whitespace-pre-line text-sm leading-7 text-neutral-600">{item.description}</p>
+          <div className="grid gap-2 text-xs font-semibold text-neutral-500 sm:grid-cols-2">
+            {item.organization && <Meta icon={BriefcaseBusiness}>{item.organization}</Meta>}
+            {item.location && <Meta icon={MapPin}>{item.location}</Meta>}
+            {item.deadline && <Meta icon={CalendarDays}>Avant {new Date(item.deadline).toLocaleDateString('fr-FR')}</Meta>}
+            {item.contactEmail && <Meta icon={Mail}>{item.contactEmail}</Meta>}
+            {item.contactPhone && <Meta icon={Phone}>{item.contactPhone}</Meta>}
+            {item.contactUrl && <Meta icon={ExternalLink}>{item.contactUrl}</Meta>}
+          </div>
+          {!!item.skills?.length && (
+            <div className="flex flex-wrap gap-1.5">
+              {item.skills.map(skill => <span key={skill} className="inline-flex items-center gap-1 rounded-full bg-neutral-50 px-2 py-1 text-[10px] font-bold text-neutral-500"><Tag size={10} />{skill}</span>)}
+            </div>
+          )}
+          {item.submittedBy && (
+            <p className="rounded-2xl bg-neutral-50 px-4 py-3 text-xs font-semibold text-neutral-500">
+              Soumis par {formatFullName(item.submittedBy.firstName ?? '', item.submittedBy.lastName ?? '') || item.submittedBy.email}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Meta({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
+  return <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-50 px-2.5 py-1"><Icon size={12} />{children}</span>;
 }

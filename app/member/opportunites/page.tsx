@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { BriefcaseBusiness, CalendarDays, CheckCircle2, Clock, Mail, MapPin, Phone, Plus, Send, Tag, X } from 'lucide-react';
+import { BriefcaseBusiness, CalendarDays, CheckCircle2, Clock, Eye, Mail, MapPin, Phone, Plus, Send, Tag, X } from 'lucide-react';
 import { OPPORTUNITY_TYPES, useMemberOpportunities, useReplyOpportunity, useSubmitOpportunity, type OpportunityDoc, type OpportunityPayload, type OpportunityType } from '@/lib/api/opportunities';
 import { formatFullName } from '@/lib/format-name';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 const statusCls: Record<string, string> = {
   published: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -43,6 +44,7 @@ export default function OpportunitesPage() {
   const [form, setForm] = useState<OpportunityPayload>(emptyForm);
   const [skillsText, setSkillsText] = useState('');
   const [replyFor, setReplyFor] = useState<OpportunityDoc | null>(null);
+  const [viewOpportunity, setViewOpportunity] = useState<OpportunityDoc | null>(null);
   const [replyMessage, setReplyMessage] = useState('');
 
   const published = useMemberOpportunities('published');
@@ -94,16 +96,15 @@ export default function OpportunitesPage() {
         </button>
       </div>
 
-      <div className="flex w-full rounded-2xl border border-neutral-100 bg-white p-1 shadow-sm sm:w-fit">
-        {[
-          ['published', 'Publiees'],
-          ['mine', 'Mes soumissions'],
-        ].map(([value, label]) => (
-          <button key={value} onClick={() => setTab(value as any)} className={`h-9 flex-1 rounded-xl px-4 text-xs font-black transition sm:flex-none ${tab === value ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-50'}`}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <AnimatedTabBar
+        className="w-full sm:w-fit"
+        value={tab}
+        onChange={setTab}
+        items={[
+          { value: 'published', label: 'Publiees' },
+          { value: 'mine', label: 'Mes soumissions' },
+        ]}
+      />
 
       {showForm && (
         <div className="rounded-3xl border border-emerald-100 bg-white p-4 shadow-sm sm:p-5">
@@ -167,11 +168,16 @@ export default function OpportunitesPage() {
                 <h2 className="mt-2 text-lg font-black leading-tight text-neutral-900">{item.title}</h2>
                 <p className="mt-1 text-sm leading-6 text-neutral-600">{item.description}</p>
               </div>
-              {tab === 'published' && (
-                <button onClick={() => setReplyFor(item)} className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-200 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-50">
-                  <Send size={13} /> Repondre
+              <div className="flex shrink-0 items-center gap-2">
+                <button onClick={() => setViewOpportunity(item)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" title="Visualiser">
+                  <Eye size={14} />
                 </button>
-              )}
+                {tab === 'published' && (
+                  <button onClick={() => setReplyFor(item)} className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-emerald-200 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-50">
+                    <Send size={13} /> Repondre
+                  </button>
+                )}
+              </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-semibold text-neutral-500">
               {item.organization && <Meta icon={BriefcaseBusiness}>{item.organization}</Meta>}
@@ -208,6 +214,58 @@ export default function OpportunitesPage() {
           </div>
         </div>
       )}
+      {viewOpportunity && (
+        <OpportunityDetailModal
+          item={viewOpportunity}
+          typeLabel={typeLabel}
+          onClose={() => setViewOpportunity(null)}
+          onReply={tab === 'published' ? () => {
+            setReplyFor(viewOpportunity);
+            setViewOpportunity(null);
+          } : undefined}
+        />
+      )}
+    </div>
+  );
+}
+
+function OpportunityDetailModal({ item, typeLabel, onClose, onReply }: {
+  item: OpportunityDoc;
+  typeLabel: Map<OpportunityType, string>;
+  onClose: () => void;
+  onReply?: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-black/50 p-3 backdrop-blur-sm sm:items-center sm:justify-center">
+      <div className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div className="relative border-b border-neutral-100 bg-gradient-to-br from-emerald-800 to-emerald-950 px-6 py-5 text-white">
+          <button onClick={onClose} className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white/70 hover:bg-white/20 hover:text-white"><X size={16} /></button>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">{typeLabel.get(item.type)}</p>
+          <h2 className="mt-2 pr-10 text-xl font-black leading-tight">{item.title}</h2>
+          <p className="mt-1 text-xs font-semibold text-white/55">{statusLabel[item.status] ?? item.status}</p>
+        </div>
+        <div className="max-h-[70vh] space-y-5 overflow-y-auto px-6 py-5">
+          <p className="whitespace-pre-line text-sm leading-7 text-neutral-600">{item.description}</p>
+          <div className="grid gap-2 text-xs font-semibold text-neutral-500 sm:grid-cols-2">
+            {item.organization && <Meta icon={BriefcaseBusiness}>{item.organization}</Meta>}
+            {item.location && <Meta icon={MapPin}>{item.location}</Meta>}
+            {item.deadline && <Meta icon={CalendarDays}>Avant {new Date(item.deadline).toLocaleDateString('fr-FR')}</Meta>}
+            {item.contactEmail && <Meta icon={Mail}>{item.contactEmail}</Meta>}
+            {item.contactPhone && <Meta icon={Phone}>{item.contactPhone}</Meta>}
+            {item.submittedBy && <Meta icon={CheckCircle2}>{formatFullName(item.submittedBy.firstName, item.submittedBy.lastName)}</Meta>}
+          </div>
+          {!!item.skills?.length && (
+            <div className="flex flex-wrap gap-1.5">
+              {item.skills.map(skill => <span key={skill} className="inline-flex items-center gap-1 rounded-full bg-neutral-50 px-2 py-1 text-[10px] font-bold text-neutral-500"><Tag size={10} />{skill}</span>)}
+            </div>
+          )}
+          {onReply && (
+            <button onClick={onReply} className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white hover:bg-emerald-700">
+              <Send size={14} /> Repondre
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

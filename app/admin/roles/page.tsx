@@ -23,6 +23,7 @@ import { useAdminUsers, usePromoteAdmin, useRevokeAdmin, type AdminUser } from '
 import { useAdminMembers, useSuspendMember } from '@/lib/api/members';
 import { toast } from 'sonner';
 import { assetUrl } from '@/lib/assets';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 
@@ -401,7 +402,7 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
         ) : filteredModules.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 px-5 py-10 text-center">
             <Search size={24} className="mb-2 text-neutral-200" />
-            <p className="text-sm font-semibold text-neutral-400">Aucune permission trouvÃ©e</p>
+            <p className="text-sm font-semibold text-neutral-400">Aucune permission trouvée</p>
           </div>
         ) : filteredModules.map(([mod, perms]) => {
           const keys   = perms.map(p => p.key);
@@ -1335,16 +1336,11 @@ export default function RolesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-2xl border border-neutral-100 bg-white p-1 shadow-sm">
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-black transition ${tab === t.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-50'}`}>
-            <t.icon size={14} />
-            <span className="hidden sm:inline">{t.label}</span>
-            <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${tab === t.id ? 'bg-white/20' : 'bg-neutral-100'}`}>{t.count}</span>
-          </button>
-        ))}
-      </div>
+      <AnimatedTabBar
+        value={tab}
+        onChange={setTab}
+        items={TABS.map(t => ({ value: t.id, label: t.label, icon: t.icon, count: t.count }))}
+      />
 
       {/* ── ROLES TAB ── */}
       {tab === 'roles' && (

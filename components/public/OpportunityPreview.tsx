@@ -8,10 +8,8 @@ import { OPPORTUNITY_TYPES, usePublicOpportunities } from '@/lib/api/opportuniti
 const typeLabel = Object.fromEntries(OPPORTUNITY_TYPES.map(t => [t.value, t.label]));
 
 export function OpportunityPreview() {
-  const { data } = usePublicOpportunities();
+  const { data, isLoading } = usePublicOpportunities();
   const items = data?.data?.items ?? [];
-
-  if (items.length === 0) return null;
 
   return (
     <section className="bg-neutral-50/70">
@@ -33,6 +31,24 @@ export function OpportunityPreview() {
         </div>
 
         <div className="flex snap-x gap-4 overflow-x-auto scroll-smooth pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {!isLoading && items.length === 0 && (
+            <article className="min-w-full rounded-3xl border border-dashed border-emerald-200 bg-white p-6 text-center shadow-sm">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                <BriefcaseBusiness size={20} />
+              </div>
+              <h3 className="text-lg font-black text-neutral-900">Aucune opportunite publique pour le moment</h3>
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-neutral-500">
+                Les opportunites publiees par le bureau ou validees depuis l'espace membre apparaitront ici automatiquement.
+              </p>
+            </article>
+          )}
+          {isLoading && [1, 2, 3].map(item => (
+            <article key={item} className="min-w-[84%] snap-start rounded-3xl border border-white bg-white p-5 shadow-sm sm:min-w-[48%] lg:min-w-[31%]">
+              <div className="mb-4 h-11 w-11 rounded-2xl bg-neutral-100" />
+              <div className="h-5 w-2/3 rounded bg-neutral-100" />
+              <div className="mt-3 h-16 rounded bg-neutral-50" />
+            </article>
+          ))}
           {items.map((item, index) => (
             <motion.article
               key={item._id}

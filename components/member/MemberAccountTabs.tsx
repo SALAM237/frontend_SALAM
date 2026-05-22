@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Banknote, CreditCard, FileText, FolderOpen, User } from 'lucide-react';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 const accountTabs = [
   { label: 'Mon profil', href: '/member/profil', icon: User },
@@ -18,26 +18,13 @@ export function isMemberAccountPath(pathname: string) {
 
 export default function MemberAccountTabs() {
   const pathname = usePathname();
+  const active = accountTabs.find(tab => pathname.startsWith(tab.href))?.href ?? accountTabs[0].href;
 
   return (
-    <div className="mb-5 overflow-x-auto rounded-2xl border border-neutral-100 bg-white p-1 shadow-sm scroll-smooth">
-      <div className="flex min-w-max gap-1">
-        {accountTabs.map(({ label, href, icon: Icon }) => {
-          const active = pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-xs font-black transition ${
-                active ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-50'
-              }`}
-            >
-              <Icon size={14} />
-              {label}
-            </Link>
-          );
-        })}
-      </div>
-    </div>
+    <AnimatedTabBar
+      className="mb-5"
+      value={active}
+      items={accountTabs.map(tab => ({ value: tab.href, label: tab.label, href: tab.href, icon: tab.icon }))}
+    />
   );
 }

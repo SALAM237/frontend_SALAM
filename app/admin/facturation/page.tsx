@@ -296,7 +296,7 @@ function splitInvoiceLines(lines: InvoiceLine[]) {
 }
 
 function openInvoicePdfBatch(documents: InvoicePdfDocument[]) {
-  const pages = documents.flatMap((doc, docIndex) => {
+  const pages = documents.flatMap(doc => {
     const chunks = splitInvoiceLines(doc.lines);
     const totals = calcInvoiceTotals(doc.lines);
     return chunks.map((chunk, pageIndex) => {
@@ -306,6 +306,7 @@ function openInvoicePdfBatch(documents: InvoicePdfDocument[]) {
         return `<tr><td>${esc(line.designation)}</td><td class="right">${esc(line.qty)}</td><td class="right">${fmtCfa(Number(line.ht || 0))}</td><td class="right">${esc(line.vat)}%</td><td class="right strong">${fmtCfa(ttc)}</td></tr>`;
       }).join('');
       return `
+        <div class="page-wrap">
         <article class="page">
           <div class="flag"></div>
           <header class="header">
@@ -320,14 +321,16 @@ function openInvoicePdfBatch(documents: InvoicePdfDocument[]) {
           </section>
           <table><thead><tr><th>Désignation</th><th class="right">Qté</th><th class="right">HT</th><th class="right">TVA</th><th class="right">TTC</th></tr></thead><tbody>${rows}</tbody></table>
           ${isLast ? `<section class="totals"><div class="row"><span>Total HT</span><strong>${fmtCfa(totals.ht)}</strong></div><div class="row"><span>TVA</span><strong>${fmtCfa(totals.vat)}</strong></div><div class="row total"><span>Total TTC</span><span>${fmtCfa(totals.ttc)}</span></div></section><section class="notes"><div class="card"><h2>Observations</h2><p class="muted">${esc(doc.notes)}</p></div><div class="card"><h2>Mentions légales</h2><p class="muted">${esc(doc.legal)}</p></div></section>` : '<p class="continued">Suite de la facture sur la page suivante.</p>'}
-          <footer class="footer"><span>${esc(doc.association.title)} · ${esc(doc.association.email)}</span><strong>Page ${pageIndex + 1}/${chunks.length}${documents.length > 1 ? ` · Document ${docIndex + 1}/${documents.length}` : ''}</strong></footer>
-        </article>`;
+          <footer class="footer"><span>${esc(doc.association.title)} · ${esc(doc.association.email)}</span><strong>Page ${pageIndex + 1}/${chunks.length}</strong></footer>
+        </article>
+        </div>`;
     });
   }).join('');
 
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Factures SALAM</title><style>
     @page{size:A4 portrait;margin:0}*{box-sizing:border-box}body{margin:0;background:#e5e7eb;font-family:Arial,sans-serif;color:#0f172a;font-size:clamp(10px,1.45vw,13px)}.toolbar{position:sticky;top:0;z-index:10;display:flex;justify-content:center;padding:12px;background:rgba(15,23,42,.88)}.toolbar button{border:0;border-radius:999px;background:#059669;color:white;padding:10px 16px;font-weight:800}.page{width:min(100vw,794px);min-height:min(1123px,calc(100vw * 1.414));margin:0 auto 18px;background:white;padding:clamp(22px,4.8vw,42px);position:relative;overflow:hidden;box-shadow:0 18px 55px rgba(15,23,42,.18)}.flag{position:absolute;left:0;right:0;top:0;height:clamp(4px,.8vw,7px);background:linear-gradient(90deg,#0B8F3A 0 33%,#C8102E 33% 66%,#F7C600 66%)}.header{margin:calc(clamp(22px,4.8vw,42px) * -1) calc(clamp(22px,4.8vw,42px) * -1) clamp(18px,3vw,28px);padding:clamp(32px,5vw,42px) clamp(22px,4.8vw,42px) clamp(18px,3vw,26px);background:linear-gradient(135deg,#087348,#075f41 62%,#043d2d);color:white}.eyebrow{color:#fde68a;font-size:clamp(8px,1.6vw,11px);font-weight:800;letter-spacing:.2em;text-transform:uppercase}h1{margin:clamp(8px,2vw,12px) 0 5px;font-size:clamp(22px,5vw,31px);line-height:1}.white-muted{color:rgba(255,255,255,.74)}.muted{color:#64748b;overflow-wrap:anywhere}.grid,.notes{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,2.4vw,18px)}.card{border:1px solid #e5e7eb;border-radius:clamp(12px,2.5vw,18px);padding:clamp(13px,2.6vw,20px);background:white}.compact{min-height:clamp(128px,23vw,170px)}.card h2{margin:0 0 10px;font-size:clamp(9px,1.7vw,12px);letter-spacing:.14em;text-transform:uppercase;color:#64748b}table{width:100%;border-collapse:collapse;margin-top:clamp(16px,3vw,22px);font-size:clamp(9px,1.6vw,12px);table-layout:fixed}th{background:#0f172a;color:white;text-align:left;padding:clamp(8px,1.7vw,11px) clamp(6px,1.5vw,10px);font-size:clamp(7px,1.4vw,10px);letter-spacing:.1em;text-transform:uppercase}td{border-bottom:1px solid #eef2f7;padding:clamp(8px,1.7vw,11px) clamp(6px,1.5vw,10px);vertical-align:top;overflow-wrap:anywhere}th:first-child,td:first-child{width:44%}.right{text-align:right}.strong{font-weight:800}.totals{width:min(100%,310px);margin-left:auto;margin-top:clamp(16px,3vw,22px);border:1px solid #e5e7eb;border-radius:18px;padding:clamp(14px,2.6vw,18px);background:#f8fafc}.row{display:flex;justify-content:space-between;gap:18px;margin:8px 0}.total{background:#087348;color:white;border-radius:14px;padding:clamp(11px,2.2vw,14px);margin-top:12px;font-weight:900}.notes{margin-top:clamp(18px,3vw,24px)}.continued{margin-top:20px;color:#64748b;font-weight:700;text-align:right}.footer{position:absolute;left:clamp(22px,4.8vw,42px);right:clamp(22px,4.8vw,42px);bottom:clamp(14px,3vw,26px);display:flex;justify-content:space-between;gap:14px;border-top:1px solid #e5e7eb;padding-top:12px;color:#64748b;font-size:clamp(8px,1.5vw,11px)}@media(max-width:640px){.grid,.notes{grid-template-columns:1fr}.footer{flex-direction:column}}@media print{body{background:white;font-size:12px}.toolbar{display:none}.page{width:794px;min-height:1123px;margin:0;padding:38px;box-shadow:none;page-break-after:always}.header{margin:-38px -38px 26px;padding:40px 38px 24px}.flag{height:7px}.grid,.notes{grid-template-columns:1fr 1fr}.footer{left:38px;right:38px;bottom:24px}}
-  </style></head><body><div class="toolbar"><button onclick="window.print()">Imprimer / enregistrer en PDF</button></div>${pages}<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),300));</script></body></html>`;
+    .page-wrap{width:794px;height:1123px;margin:0 auto 18px}.page{width:794px!important;min-height:1123px!important;margin:0!important;padding:38px!important;transform-origin:top left}.header{margin:-38px -38px 26px!important;padding:36px 38px 22px!important}.flag{height:7px!important}.grid,.notes{grid-template-columns:1fr 1fr!important;gap:18px!important}.footer{left:38px!important;right:38px!important;bottom:24px!important;flex-direction:row!important;font-size:11px!important}@media screen and (max-width:860px){.page-wrap{width:calc(100vw - 24px);height:calc(1123px * ((100vw - 24px) / 794));margin:0 auto 18px}.page{transform:scale(calc((100vw - 24px) / 794))}}@media print{.page-wrap{width:794px;height:auto;margin:0}.page{transform:none!important;box-shadow:none!important;page-break-after:always}}
+  </style></head><body><div class="toolbar"><button onclick="window.print()">Imprimer / enregistrer en PDF</button></div>${pages}<script>window.addEventListener('load',()=>{document.querySelectorAll('.footer strong').forEach(el=>{el.textContent=el.textContent.replace(/\\s+.{0,3}Document\\s+\\d+\\/\\d+$/,'')});setTimeout(()=>window.print(),300)});</script></body></html>`;
 
   const win = window.open('', '_blank', 'width=900,height=1200');
   if (!win) {

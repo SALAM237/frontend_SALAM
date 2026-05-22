@@ -334,7 +334,7 @@ function ReceiptModal({ member, year, onClose }: { member: MemberRow; year: numb
           <p className="text-center text-[10px] text-neutral-400">Reçu transmis par email à {member.email}.</p>
           <button onClick={() => openPaymentReceiptPdf(member, year)}
             className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700">
-            <Download size={14} /> AperÃ§u PDF A4
+            <Download size={14} /> Aperçu PDF A4
           </button>
           <button onClick={onClose}
             className="mt-2 w-full rounded-xl bg-neutral-900 py-2.5 text-sm font-black text-white transition hover:bg-neutral-800">

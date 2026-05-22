@@ -11,6 +11,7 @@ import { demoMembers } from '@/data/demo/demo-members';
 import { demoRoles } from '@/data/demo/demo-roles';
 import { demoPermissions } from '@/data/demo/demo-permissions';
 import { formatFullName, formatInitials } from '@/lib/format-name';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 type Tab = 'roles' | 'bureau' | 'permissions';
 
@@ -191,15 +192,11 @@ export default function DemoAdminRolesPage() {
           </div>
         </div>
 
-        <div className="flex gap-1 rounded-2xl border border-neutral-100 bg-white p-1 shadow-sm">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-black transition ${tab === t.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-50'}`}>
-              <t.icon size={14} />
-              <span className="hidden sm:inline">{t.label}</span>
-              <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${tab === t.id ? 'bg-white/20' : 'bg-neutral-100'}`}>{t.count}</span>
-            </button>
-          ))}
-        </div>
+        <AnimatedTabBar
+          value={tab}
+          onChange={setTab}
+          items={TABS.map(t => ({ value: t.id, label: t.label, icon: t.icon, count: t.count }))}
+        />
 
         {tab === 'roles' && (
           <div className={`grid gap-5 ${selectedRole ? 'lg:grid-cols-[300px_1fr]' : ''}`}>

@@ -13,6 +13,7 @@ import Papa from 'papaparse';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { useAdminMember, useCreateMember, useImportMembersCSV, useUpdateMember, type CsvImportMember, type ImportResult } from '@/lib/api/members';
 import { formatFirstName, formatFullName, formatLastName } from '@/lib/format-name';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 /* ─── Types ─────────────────────────────────────────────── */
 type Mode      = 'single' | 'csv';
@@ -170,7 +171,18 @@ export default function NouveauAdherentPage() {
   const [csvError,      setCsvError]      = useState<string | null>(null);
   const [importResult,  setImportResult]  = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const csvTopScrollRef = useRef<HTMLDivElement>(null);
+  const csvTableScrollRef = useRef<HTMLDivElement>(null);
   const importCSV    = useImportMembersCSV();
+  const csvTableMinWidth = 280 + csvHeaders.length * 150;
+
+  const syncCsvScroll = (source: 'top' | 'table') => {
+    const top = csvTopScrollRef.current;
+    const table = csvTableScrollRef.current;
+    if (!top || !table) return;
+    if (source === 'top') table.scrollLeft = top.scrollLeft;
+    else top.scrollLeft = table.scrollLeft;
+  };
 
   /* ── Handlers single ─────────────────────────── */
   const set = (k: keyof FormState) =>
@@ -448,16 +460,17 @@ export default function NouveauAdherentPage() {
 
       {/* Mode toggle */}
       {!isEditMode && (
-      <div className="flex gap-1 rounded-2xl border border-neutral-100 bg-white p-1 shadow-sm">
-        <button onClick={() => setMode('single')}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-black transition ${mode === 'single' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-50'}`}>
-          <UserPlus size={14} /> Saisie manuelle
-        </button>
-        <button onClick={() => { setMode('csv'); resetCsv(); }}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-black transition ${mode === 'csv' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:bg-neutral-50'}`}>
-          <FileSpreadsheet size={14} /> Importer CSV
-        </button>
-      </div>
+      <AnimatedTabBar
+        value={mode}
+        onChange={(value) => {
+          setMode(value);
+          if (value === 'csv') resetCsv();
+        }}
+        items={[
+          { value: 'single', label: 'Saisie manuelle', icon: UserPlus },
+          { value: 'csv', label: 'Importer CSV', icon: FileSpreadsheet },
+        ]}
+      />
       )}
 
       {/* ─── Mode saisie manuelle ──────────────── */}
@@ -614,18 +627,26 @@ export default function NouveauAdherentPage() {
               )}
 
               {/* Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
+              <div
+                ref={csvTopScrollRef}
+                onScroll={() => syncCsvScroll('top')}
+                className="mb-2 overflow-x-auto rounded-xl border border-neutral-100 bg-neutral-50/60"
+              >
+                <div className="h-3" style={{ width: csvTableMinWidth }} />
+              </div>
+
+              <div ref={csvTableScrollRef} onScroll={() => syncCsvScroll('table')} className="overflow-x-auto">
+                <table className="text-xs" style={{ minWidth: csvTableMinWidth }}>
                   <thead>
                     <tr className="border-b border-neutral-100 bg-neutral-50/70">
-                      <th className="w-10 px-4 py-3 text-center">
+                      <th className="sticky left-0 z-30 w-10 bg-neutral-50/95 px-4 py-3 text-center shadow-[1px_0_0_rgba(229,231,235,1)]">
                         <input type="checkbox"
                           checked={selectedSet.size > 0 && selectedSet.size === csvRows.filter(r => r.canCreate).length}
                           onChange={toggleAll}
                           className="h-4 w-4 rounded border-neutral-300 accent-emerald-600"
                         />
                       </th>
-                      <th className="min-w-[200px] px-4 py-3 text-left font-black uppercase tracking-[0.1em] text-neutral-400">
+                      <th className="sticky left-[48px] z-30 min-w-[220px] bg-neutral-50/95 px-4 py-3 text-left font-black uppercase tracking-[0.1em] text-neutral-400 shadow-[1px_0_0_rgba(229,231,235,1)]">
                         Détection automatique
                       </th>
                       {csvHeaders.map(h => (
@@ -641,10 +662,10 @@ export default function NouveauAdherentPage() {
                       return (
                         <tr key={i}
                           onClick={() => toggleRow(i)}
-                          className={`cursor-pointer transition-colors ${row.canCreate ? '' : 'opacity-50 cursor-not-allowed'} ${isSelected ? 'bg-emerald-50/60' : 'hover:bg-neutral-50/60'}`}>
+                          className={`group cursor-pointer transition-colors ${row.canCreate ? '' : 'opacity-50 cursor-not-allowed'} ${isSelected ? 'bg-emerald-50/60' : 'hover:bg-neutral-50/60'}`}>
 
                           {/* Checkbox */}
-                          <td className="px-4 py-3 text-center">
+                          <td className={`sticky left-0 z-20 px-4 py-3 text-center shadow-[1px_0_0_rgba(229,231,235,1)] ${isSelected ? 'bg-emerald-50' : 'bg-white group-hover:bg-neutral-50'}`}>
                             <input type="checkbox"
                               checked={isSelected}
                               disabled={!row.canCreate}
@@ -655,7 +676,7 @@ export default function NouveauAdherentPage() {
                           </td>
 
                           {/* Colonne détection */}
-                          <td className="px-4 py-3">
+                          <td className={`sticky left-[48px] z-20 px-4 py-3 shadow-[1px_0_0_rgba(229,231,235,1)] ${isSelected ? 'bg-emerald-50' : 'bg-white group-hover:bg-neutral-50'}`}>
                             {row.gender && (
                               <p className="text-[9px] font-black uppercase tracking-wide text-blue-600 mb-0.5">
                                 {row.gender === 'femme' ? 'Madame' : 'Monsieur'}
