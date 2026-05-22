@@ -8,7 +8,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Banknote, Bell, CalendarDays, ChevronRight, CreditCard, FileText, FolderOpen,
   History, Images, LayoutDashboard, Menu, MessageSquare, Newspaper, Settings,
-  Shield, User, Users, X, Globe, LogOut,
+  Shield, User, Users, X, Globe, LogOut, Bot, BriefcaseBusiness, Handshake,
+  Network, ClipboardCheck,
 } from 'lucide-react';
 import { demoAdminUser, demoMemberProfile } from '@/data/demo/demo-portal';
 import { formatFullName } from '@/lib/format-name';
@@ -17,9 +18,16 @@ type NavItem = { label: string; href: string; icon: React.ElementType };
 
 const adminNav: NavItem[] = [
   { label: 'Tableau de bord', href: '/demo/admin', icon: LayoutDashboard },
+  { label: 'Assistant IA', href: '/demo/admin/assistant-ia', icon: Bot },
   { label: 'Adherents', href: '/demo/admin/adherents', icon: Users },
   { label: "Frais d'adhesion", href: '/demo/admin/cotisations', icon: Banknote },
   { label: 'Facturation', href: '/demo/admin/facturation', icon: FileText },
+  { label: 'Tresorerie', href: '/demo/admin/tresorerie', icon: Banknote },
+  { label: 'IDP / ISP', href: '/demo/admin/idp-isp', icon: Handshake },
+  { label: 'Validations', href: '/demo/admin/validations', icon: ClipboardCheck },
+  { label: 'Opportunites', href: '/demo/admin/opportunites', icon: BriefcaseBusiness },
+  { label: 'Networking', href: '/demo/admin/networking', icon: Network },
+  { label: 'Bureau', href: '/demo/admin/bureau', icon: Users },
   { label: 'Activites', href: '/demo/admin/activites', icon: CalendarDays },
   { label: 'Galerie', href: '/demo/admin/galerie', icon: Images },
   { label: 'Actualites', href: '/demo/admin/actualites', icon: Newspaper },
@@ -37,6 +45,9 @@ const memberNav: NavItem[] = [
   { label: 'Cotisations', href: '/demo/member/cotisations', icon: Banknote },
   { label: 'Mes factures', href: '/demo/member/factures', icon: FileText },
   { label: 'Mes documents', href: '/demo/member/documents', icon: FolderOpen },
+  { label: 'Tresorerie', href: '/demo/member/tresorerie', icon: Banknote },
+  { label: 'Opportunites', href: '/demo/member/opportunites', icon: BriefcaseBusiness },
+  { label: 'Networking', href: '/demo/member/networking', icon: Network },
   { label: 'Activites', href: '/demo/member/activites', icon: CalendarDays },
   { label: 'Galerie', href: '/demo/member/galerie', icon: Images },
   { label: 'Actualites', href: '/demo/member/actualites', icon: Newspaper },

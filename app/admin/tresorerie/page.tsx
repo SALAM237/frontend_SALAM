@@ -414,7 +414,11 @@ export default function AdminTresoreriePage() {
             </Card>
             <Card>
               <CardTitle title="Top sources" />
-              <RankList items={sourceData.map(s => ({ label: sourceLabels[s.source], value: s.amount }))} />
+              <RankList items={sourceData.map((s, i) => ({
+                label: sourceLabels[s.source],
+                value: s.amount,
+                color: sourceColors[i % sourceColors.length],
+              }))} />
             </Card>
             <Card>
               <CardTitle title="Patrimoine" />
@@ -594,7 +598,7 @@ function InfoRow({ icon: Icon, title, text, tone, compact = false }: { icon: Rea
   );
 }
 
-function RankList({ items }: { items: { label: string; value: number }[] }) {
+function RankList({ items }: { items: { label: string; value: number; color?: string }[] }) {
   const max = Math.max(...items.map(i => i.value), 1);
   if (items.length === 0) return <p className="py-4 text-xs font-semibold text-neutral-400">Aucune donnee.</p>;
   return (
@@ -606,7 +610,13 @@ function RankList({ items }: { items: { label: string; value: number }[] }) {
             <span className="shrink-0 font-semibold text-neutral-500">{formatFcfa(item.value)}</span>
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-neutral-100">
-            <div className="h-full rounded-full bg-emerald-600" style={{ width: `${Math.max(8, (item.value / max) * 100)}%` }} />
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${Math.max(8, (item.value / max) * 100)}%`,
+                background: item.color ?? '#059669',
+              }}
+            />
           </div>
         </div>
       ))}

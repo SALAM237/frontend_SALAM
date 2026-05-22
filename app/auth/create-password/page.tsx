@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight, Loader2, CheckCircle, XCircle, KeyRound } from 'lucide-react';
@@ -13,7 +13,6 @@ function CreatePasswordContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
   const token        = searchParams.get('token');
-  const clearAuth    = useAuthStore(s => s.clearAuth);
   const setAuth      = useAuthStore(s => s.setAuth);
 
   const [password, setPassword] = useState('');
@@ -23,11 +22,6 @@ function CreatePasswordContent() {
   const [loading, setLoading]   = useState(false);
   const [success, setSuccess]   = useState(false);
   const [errors, setErrors]     = useState<{ password?: string; confirm?: string; global?: string }>({});
-
-  useEffect(() => {
-    clearAuth();
-    fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
-  }, [clearAuth]);
 
   const pwdStrength = (() => {
     if (!password) return 0;
@@ -114,8 +108,6 @@ function CreatePasswordContent() {
     setLoading(true);
 
     try {
-      clearAuth();
-      await fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
       const activated = await apiClient<{ accessToken: string; user: any; nextUrl?: string }>('/api/v1/auth/activate', {
         method: 'POST',
         body: JSON.stringify({ token, password }),
