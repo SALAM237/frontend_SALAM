@@ -6,6 +6,7 @@ import {
   CalendarDays, Banknote, FileText, CheckCircle2, Clock,
   Link as LinkIcon, Loader2, Trash2, Save, Download, Upload, Building2,
   CheckSquare, Square, UserPlus, Settings, ReceiptText, Pencil,
+  Palette, GripVertical, Bold, Italic,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -18,13 +19,13 @@ import {
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { formatFullName } from '@/lib/format-name';
 
-/* ─── Helpers ─────────────────────────────────────────── */
+/* â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 type InvoiceStatus = 'draft' | 'sent' | 'closed';
 
 const STATUS_CONFIG: Record<InvoiceStatus, { badge: string; label: string; icon: React.ReactNode }> = {
   draft:  { badge: 'bg-neutral-50 text-neutral-600 border-neutral-200',  label: 'Brouillon', icon: <FileText size={10} />    },
-  sent:   { badge: 'bg-blue-50 text-blue-700 border-blue-200',           label: 'Envoyée',   icon: <Clock size={10} />       },
-  closed: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',  label: 'Clôturée',  icon: <CheckCircle2 size={10} /> },
+  sent:   { badge: 'bg-blue-50 text-blue-700 border-blue-200',           label: 'EnvoyÃ©e',   icon: <Clock size={10} />       },
+  closed: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',  label: 'ClÃ´turÃ©e',  icon: <CheckCircle2 size={10} /> },
 };
 
 function fmt(d: string) {
@@ -37,6 +38,16 @@ function fmtCfa(amount: number) {
 
 type InvoiceLine = { id: number; designation: string; qty: number | string; ht: number | string; vat: number | string };
 type LayoutBlockId = 'assoc' | 'client' | 'items' | 'notes' | 'totals' | 'legal';
+type BlockDesign = {
+  bg: string;
+  border: string;
+  radius: number;
+  fontSize: number;
+  fontFamily: string;
+  bold: boolean;
+  italic: boolean;
+  color: string;
+};
 type InvoicePdfRecipient = { name: string; email?: string; phone?: string; address?: string; memberId?: string };
 type AssociationInvoiceInfo = {
   name: string;
@@ -63,6 +74,16 @@ type InvoicePdfDocument = {
 const ASSOCIATION_STORAGE_KEY = 'salam_invoice_association_v1';
 const A4_WIDTH = 794;
 const A4_HEIGHT = 1123;
+const defaultBlockDesign: BlockDesign = {
+  bg: '#ffffff',
+  border: '#e5e7eb',
+  radius: 14,
+  fontSize: 13,
+  fontFamily: 'Inter, system-ui, sans-serif',
+  bold: false,
+  italic: false,
+  color: '#111827',
+};
 
 function seq(n: number) {
   return String(n).padStart(4, '0');
@@ -70,9 +91,9 @@ function seq(n: number) {
 
 const initialAssociation: AssociationInvoiceInfo = {
   name: 'ASSOCIATION SALAM',
-  title: 'SALAM Cameroun · Maroc',
-  address: 'Adresse de l’association',
-  registration: 'N° d’immatriculation : SALAM-CMR-2026',
+  title: 'SALAM Cameroun Â· Maroc',
+  address: 'Adresse de lâ€™association',
+  registration: 'NÂ° dâ€™immatriculation : SALAM-CMR-2026',
   email: 'contact@salam-cameroun.com',
   phone: '+237 000 000 000',
   logo: 'SALAM',
@@ -94,50 +115,82 @@ function saveAssociationInfo(info: AssociationInvoiceInfo) {
   window.localStorage.setItem(ASSOCIATION_STORAGE_KEY, JSON.stringify(info));
 }
 
-function DraggableBox({ id, label, offsets, setOffsets, children, className = '' }: {
+function InvoiceBlockPalette({ label, design, onChange, onClose }: {
+  label: string;
+  design: BlockDesign;
+  onChange: (patch: Partial<BlockDesign>) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="absolute right-3 top-3 z-50 w-[260px] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Palette className="h-4 w-4" /></span>
+          <div><p className="text-sm font-black text-slate-900">Design</p><p className="text-[11px] font-semibold text-slate-400">{label}</p></div>
+        </div>
+        <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+      </div>
+      <div className="space-y-3">
+        <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Police</span><select value={design.fontFamily} onChange={e => onChange({ fontFamily: e.target.value })} className="mt-1 h-9 w-full rounded-lg border border-slate-200 px-2 text-xs outline-none"><option value="Inter, system-ui, sans-serif">Inter</option><option value="Georgia, serif">Georgia</option><option value="'Times New Roman', serif">Times</option><option value="'Courier New', monospace">Mono</option></select></label>
+        <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Taille : {design.fontSize}px</span><input type="range" min="10" max="26" value={design.fontSize} onChange={e => onChange({ fontSize: Number(e.target.value) })} className="mt-2 w-full accent-emerald-700" /></label>
+        <div className="grid grid-cols-3 gap-2"><button type="button" onClick={() => onChange({ bold: !design.bold })} className={`h-9 rounded-lg border ${design.bold ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500'}`}><Bold className="mx-auto h-4 w-4" /></button><button type="button" onClick={() => onChange({ italic: !design.italic })} className={`h-9 rounded-lg border ${design.italic ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500'}`}><Italic className="mx-auto h-4 w-4" /></button><div className="h-9 rounded-lg border border-slate-200 p-1"><input aria-label="Couleur du texte" type="color" value={design.color} onChange={e => onChange({ color: e.target.value })} className="h-full w-full" /></div></div>
+        <div className="grid grid-cols-2 gap-2"><label className="block"><span className="text-[10px] font-black uppercase text-slate-400">Fond</span><input type="color" value={design.bg} onChange={e => onChange({ bg: e.target.value })} className="mt-1 h-8 w-full rounded-lg" /></label><label className="block"><span className="text-[10px] font-black uppercase text-slate-400">Bordure</span><input type="color" value={design.border} onChange={e => onChange({ border: e.target.value })} className="mt-1 h-8 w-full rounded-lg" /></label></div>
+        <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Arrondi : {design.radius}px</span><input type="range" min="0" max="36" value={design.radius} onChange={e => onChange({ radius: Number(e.target.value) })} className="mt-2 w-full accent-emerald-700" /></label>
+      </div>
+    </div>
+  );
+}
+
+function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, activeDesign, setActiveDesign, children, className = '' }: {
   id: LayoutBlockId;
   label: string;
   offsets: Record<LayoutBlockId, { x: number; y: number }>;
   setOffsets: React.Dispatch<React.SetStateAction<Record<LayoutBlockId, { x: number; y: number }>>>;
+  designs: Record<LayoutBlockId, BlockDesign>;
+  setDesigns: React.Dispatch<React.SetStateAction<Record<LayoutBlockId, BlockDesign>>>;
+  activeDesign: LayoutBlockId | null;
+  setActiveDesign: React.Dispatch<React.SetStateAction<LayoutBlockId | null>>;
   children: React.ReactNode;
   className?: string;
 }) {
   const [drag, setDrag] = useState<{ startX: number; startY: number; x: number; y: number } | null>(null);
   const pos = offsets[id];
+  const design = designs[id] ?? defaultBlockDesign;
+  const updateDesign = (patch: Partial<BlockDesign>) => setDesigns(prev => ({ ...prev, [id]: { ...(prev[id] ?? defaultBlockDesign), ...patch } }));
 
   return (
     <div
-      className={`group relative ${className}`}
-      style={{ transform: `translate(${pos.x}px, ${pos.y}px)`, zIndex: drag ? 20 : undefined }}
+      className={`group relative border ${className}`}
+      style={{
+        transform: `translate(${pos.x}px, ${pos.y}px)`,
+        zIndex: drag || activeDesign === id ? 30 : undefined,
+        background: design.bg,
+        borderColor: design.border,
+        borderRadius: design.radius,
+        fontSize: design.fontSize,
+        fontFamily: design.fontFamily,
+        fontWeight: design.bold ? 800 : undefined,
+        fontStyle: design.italic ? 'italic' : undefined,
+        color: design.color,
+      }}
       onPointerMove={event => {
         if (!drag) return;
-        setOffsets(prev => ({
-          ...prev,
-          [id]: {
-            x: drag.x + event.clientX - drag.startX,
-            y: drag.y + event.clientY - drag.startY,
-          },
-        }));
+        setOffsets(prev => ({ ...prev, [id]: { x: drag.x + event.clientX - drag.startX, y: drag.y + event.clientY - drag.startY } }));
       }}
       onPointerUp={() => setDrag(null)}
       onPointerLeave={() => setDrag(null)}
     >
-      <button
-        type="button"
-        onPointerDown={event => {
-          event.preventDefault();
-          setDrag({ startX: event.clientX, startY: event.clientY, x: pos.x, y: pos.y });
-        }}
-        className="absolute -top-3 left-3 z-30 hidden rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] text-emerald-700 shadow-sm group-hover:block"
-        title="Glisser-déposer ce bloc"
-      >
-        Déplacer · {label}
-      </button>
+      <div className="absolute -top-9 left-3 z-40 hidden items-center gap-1 rounded-2xl border border-emerald-200 bg-white/95 px-2 py-1 shadow-lg backdrop-blur group-hover:flex">
+        <button type="button" onPointerDown={event => { event.preventDefault(); event.stopPropagation(); setDrag({ startX: event.clientX, startY: event.clientY, x: pos.x, y: pos.y }); }} className="flex h-7 w-7 cursor-grab items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100" title="Glisser-déposer ce bloc"><GripVertical className="h-4 w-4" /></button>
+        <button type="button" onClick={event => { event.stopPropagation(); setActiveDesign(activeDesign === id ? null : id); }} className="flex h-7 w-7 items-center justify-center rounded-xl text-emerald-700 hover:bg-emerald-50" title="Personnaliser le design"><Palette className="h-4 w-4" /></button>
+        <button type="button" className="flex h-7 w-7 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100" title="Modifier"><Pencil className="h-4 w-4" /></button>
+        <span className="px-1 text-[9px] font-black uppercase tracking-[0.08em] text-emerald-700">{label}</span>
+      </div>
       {children}
+      {activeDesign === id && <InvoiceBlockPalette label={label} design={design} onChange={updateDesign} onClose={() => setActiveDesign(null)} />}
     </div>
   );
 }
-
 function calcInvoiceTotals(lines: InvoiceLine[]) {
   const ht = lines.reduce((sum, line) => sum + Number(line.qty || 0) * Number(line.ht || 0), 0);
   const vat = lines.reduce((sum, line) => sum + Number(line.qty || 0) * Number(line.ht || 0) * (Number(line.vat || 0) / 100), 0);
@@ -229,33 +282,33 @@ function openInvoicePdfPreview(params: {
     <div class="flag"></div>
     <header class="header">
       <div class="eyebrow">${esc(params.association.name)}</div>
-      <p class="white-muted">Solidaire Associative des Lauréats du Maroc</p>
+      <p class="white-muted">Solidaire Associative des LaurÃ©ats du Maroc</p>
       <h1>${esc(params.invoiceTitle)}</h1>
-      <p class="white-muted">${esc(params.invoiceNumber)} · Échéance ${esc(params.dueDate || 'à renseigner')}</p>
+      <p class="white-muted">${esc(params.invoiceNumber)} Â· Ã‰chÃ©ance ${esc(params.dueDate || 'Ã  renseigner')}</p>
     </header>
     <section class="grid">
       <div class="card">
-        <h2>Émetteur</h2>
+        <h2>Ã‰metteur</h2>
         <div>
           <span class="logo">${params.association.logoUrl ? `<img src="${esc(params.association.logoUrl)}" alt="Logo" />` : esc(params.association.logo)}</span>
           <strong>${esc(params.association.title)}</strong>
         </div>
         <p class="muted">${esc(params.association.address)}</p>
         <p class="muted">${esc(params.association.registration)}</p>
-        <p class="muted">${esc(params.association.email)} · ${esc(params.association.phone)}</p>
+        <p class="muted">${esc(params.association.email)} Â· ${esc(params.association.phone)}</p>
       </div>
       <div class="card">
-        <h2>Facturé à</h2>
+        <h2>FacturÃ© Ã </h2>
         <strong>${esc(params.recipient.name)}</strong>
         <p class="muted">${esc(params.recipient.email)}</p>
         <p class="muted">${esc(params.recipient.phone)}</p>
         <p class="muted">${esc(params.recipient.address)}</p>
-        ${params.recipient.memberId ? `<p class="muted">N° membre : ${esc(params.recipient.memberId)}</p>` : ''}
+        ${params.recipient.memberId ? `<p class="muted">NÂ° membre : ${esc(params.recipient.memberId)}</p>` : ''}
       </div>
     </section>
     <table>
       <thead>
-        <tr><th>Désignation</th><th class="right">Qté</th><th class="right">HT</th><th class="right">TVA</th><th class="right">TTC</th></tr>
+        <tr><th>DÃ©signation</th><th class="right">QtÃ©</th><th class="right">HT</th><th class="right">TVA</th><th class="right">TTC</th></tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
@@ -266,9 +319,9 @@ function openInvoicePdfPreview(params: {
     </section>
     <section class="notes">
       <div class="card"><h2>Observations</h2><p class="muted">${esc(params.notes)}</p></div>
-      <div class="card"><h2>Mentions légales</h2><p class="muted">${esc(params.legal)}</p></div>
+      <div class="card"><h2>Mentions lÃ©gales</h2><p class="muted">${esc(params.legal)}</p></div>
     </section>
-    <footer class="footer">${esc(params.association.title)} · ${esc(params.association.email)} · ${esc(params.association.phone)} · ${esc(params.association.registration)}</footer>
+    <footer class="footer">${esc(params.association.title)} Â· ${esc(params.association.email)} Â· ${esc(params.association.phone)} Â· ${esc(params.association.registration)}</footer>
   </div>
   <script>window.addEventListener('load', () => setTimeout(() => window.print(), 250));</script>
 </body>
@@ -276,7 +329,7 @@ function openInvoicePdfPreview(params: {
 
   const win = window.open('', '_blank', 'width=900,height=1200');
   if (!win) {
-    toast.error('Ouverture du PDF bloquée par le navigateur. Autorisez les popups pour télécharger/imprimer.');
+    toast.error('Ouverture du PDF bloquÃ©e par le navigateur. Autorisez les popups pour tÃ©lÃ©charger/imprimer.');
     return;
   }
   win.document.write(html);
@@ -311,17 +364,17 @@ function openInvoicePdfBatch(documents: InvoicePdfDocument[]) {
           <div class="flag"></div>
           <header class="header">
             <div class="eyebrow">${esc(doc.association.name)}</div>
-            <p class="white-muted">Solidaire Associative des Lauréats du Maroc</p>
+            <p class="white-muted">Solidaire Associative des LaurÃ©ats du Maroc</p>
             <h1>${esc(doc.invoiceTitle)}</h1>
-            <p class="white-muted">${esc(doc.invoiceNumber)} · Échéance ${esc(doc.dueDate || 'à renseigner')}</p>
+            <p class="white-muted">${esc(doc.invoiceNumber)} Â· Ã‰chÃ©ance ${esc(doc.dueDate || 'Ã  renseigner')}</p>
           </header>
           <section class="grid">
-            <div class="card compact"><h2>Émetteur</h2><strong>${esc(doc.association.title)}</strong><p class="muted">${esc(doc.association.address)}</p><p class="muted">${esc(doc.association.registration)}</p><p class="muted">${esc(doc.association.email)} · ${esc(doc.association.phone)}</p></div>
-            <div class="card compact"><h2>Facturé à</h2><strong>${esc(doc.recipient.name)}</strong><p class="muted">${esc(doc.recipient.email)}</p><p class="muted">${esc(doc.recipient.phone)}</p><p class="muted">${esc(doc.recipient.address)}</p>${doc.recipient.memberId ? `<p class="muted">Réf. : ${esc(doc.recipient.memberId)}</p>` : ''}</div>
+            <div class="card compact"><h2>Ã‰metteur</h2><strong>${esc(doc.association.title)}</strong><p class="muted">${esc(doc.association.address)}</p><p class="muted">${esc(doc.association.registration)}</p><p class="muted">${esc(doc.association.email)} Â· ${esc(doc.association.phone)}</p></div>
+            <div class="card compact"><h2>FacturÃ© Ã </h2><strong>${esc(doc.recipient.name)}</strong><p class="muted">${esc(doc.recipient.email)}</p><p class="muted">${esc(doc.recipient.phone)}</p><p class="muted">${esc(doc.recipient.address)}</p>${doc.recipient.memberId ? `<p class="muted">RÃ©f. : ${esc(doc.recipient.memberId)}</p>` : ''}</div>
           </section>
-          <table><thead><tr><th>Désignation</th><th class="right">Qté</th><th class="right">HT</th><th class="right">TVA</th><th class="right">TTC</th></tr></thead><tbody>${rows}</tbody></table>
-          ${isLast ? `<section class="totals"><div class="row"><span>Total HT</span><strong>${fmtCfa(totals.ht)}</strong></div><div class="row"><span>TVA</span><strong>${fmtCfa(totals.vat)}</strong></div><div class="row total"><span>Total TTC</span><span>${fmtCfa(totals.ttc)}</span></div></section><section class="notes"><div class="card"><h2>Observations</h2><p class="muted">${esc(doc.notes)}</p></div><div class="card"><h2>Mentions légales</h2><p class="muted">${esc(doc.legal)}</p></div></section>` : '<p class="continued">Suite de la facture sur la page suivante.</p>'}
-          <footer class="footer"><span>${esc(doc.association.title)} · ${esc(doc.association.email)}</span><strong>Page ${pageIndex + 1}/${chunks.length}</strong></footer>
+          <table><thead><tr><th>DÃ©signation</th><th class="right">QtÃ©</th><th class="right">HT</th><th class="right">TVA</th><th class="right">TTC</th></tr></thead><tbody>${rows}</tbody></table>
+          ${isLast ? `<section class="totals"><div class="row"><span>Total HT</span><strong>${fmtCfa(totals.ht)}</strong></div><div class="row"><span>TVA</span><strong>${fmtCfa(totals.vat)}</strong></div><div class="row total"><span>Total TTC</span><span>${fmtCfa(totals.ttc)}</span></div></section><section class="notes"><div class="card"><h2>Observations</h2><p class="muted">${esc(doc.notes)}</p></div><div class="card"><h2>Mentions lÃ©gales</h2><p class="muted">${esc(doc.legal)}</p></div></section>` : '<p class="continued">Suite de la facture sur la page suivante.</p>'}
+          <footer class="footer"><span>${esc(doc.association.title)} Â· ${esc(doc.association.email)}</span><strong>Page ${pageIndex + 1}/${chunks.length}</strong></footer>
         </article>
         </div>`;
     });
@@ -334,7 +387,7 @@ function openInvoicePdfBatch(documents: InvoicePdfDocument[]) {
 
   const win = window.open('', '_blank', 'width=900,height=1200');
   if (!win) {
-    toast.error('Ouverture du PDF bloquée par le navigateur. Autorisez les popups pour télécharger/imprimer.');
+    toast.error('Ouverture du PDF bloquÃ©e par le navigateur. Autorisez les popups pour tÃ©lÃ©charger/imprimer.');
     return;
   }
   win.document.write(html);
@@ -350,18 +403,18 @@ function openSavedInvoicePdfLegacy(invoice: InvoiceDoc) {
     invoiceNumber: invoice.invoiceNumber,
     recipient: {
       name: `${invoice.recipients.length} destinataire(s)`,
-      email: 'Document généré depuis la facturation SALAM',
+      email: 'Document gÃ©nÃ©rÃ© depuis la facturation SALAM',
       phone: '',
       address: '',
     },
     lines: [{ id: 1, designation: invoice.description || invoice.title, qty: 1, ht: invoice.amount, vat: 0 }],
-    notes: 'Document généré depuis la facture enregistrée.',
-    legal: 'Association SALAM — document généré électroniquement.',
+    notes: 'Document gÃ©nÃ©rÃ© depuis la facture enregistrÃ©e.',
+    legal: 'Association SALAM â€” document gÃ©nÃ©rÃ© Ã©lectroniquement.',
     dueDate: invoice.dueDate,
   }]);
 }
 
-/* ─── Skeleton ────────────────────────────────────────── */
+/* â”€â”€â”€ Skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function openSavedInvoicePdf(invoice: InvoiceDoc) {
   const association = loadAssociationInfo();
   const lines = [{ id: 1, designation: invoice.description || invoice.title, qty: 1, ht: invoice.amount, vat: 0 }];
@@ -417,7 +470,7 @@ function Skeleton() {
   );
 }
 
-/* ─── Invoice detail modal ────────────────────────────── */
+/* â”€â”€â”€ Invoice detail modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose: () => void }) {
   const cfg = STATUS_CONFIG[invoice.status];
   const paidCount = invoice.recipients.filter(r => r.status === 'paid').length;
@@ -437,10 +490,10 @@ function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose
           )}
           {[
             { label: 'Montant',          value: fmtCfa(invoice.amount) },
-            { label: 'Date d\'émission', value: fmt(invoice.issuedAt) },
-            { label: 'Échéance',         value: fmt(invoice.dueDate) },
+            { label: 'Date d\'Ã©mission', value: fmt(invoice.issuedAt) },
+            { label: 'Ã‰chÃ©ance',         value: fmt(invoice.dueDate) },
             { label: 'Destinataires',    value: `${invoice.recipients.length} membres` },
-            { label: 'Paiements reçus',  value: `${paidCount} / ${invoice.recipients.length}` },
+            { label: 'Paiements reÃ§us',  value: `${paidCount} / ${invoice.recipients.length}` },
           ].map(row => (
             <div key={row.label} className="flex items-center justify-between border-b border-neutral-50 pb-2 last:border-0">
               <span className="text-xs font-semibold text-neutral-400">{row.label}</span>
@@ -474,7 +527,7 @@ function ClientDocuments({ client, onView }: { client: InvoiceClientDoc; onView:
   return (
     <div className="mt-3 rounded-2xl border border-amber-100 bg-amber-50/60 p-2">
       {isLoading && <p className="px-2 py-2 text-xs font-semibold text-amber-700">Chargement des documents...</p>}
-      {!isLoading && docs.length === 0 && <p className="px-2 py-2 text-xs font-semibold text-amber-700">Aucun document lié.</p>}
+      {!isLoading && docs.length === 0 && <p className="px-2 py-2 text-xs font-semibold text-amber-700">Aucun document liÃ©.</p>}
       {!isLoading && docs.map(doc => (
         <button key={doc._id} type="button" onClick={() => onView(doc)} className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-xs font-bold text-amber-900 transition hover:bg-white">
           <span className="min-w-0 truncate">{doc.title}</span>
@@ -509,7 +562,7 @@ function ClientsModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
           <div>
             <h3 className="text-lg font-black text-neutral-900">Clients externes</h3>
-            <p className="text-xs text-neutral-500">Contacts réutilisables dans les factures et documents édités.</p>
+            <p className="text-xs text-neutral-500">Contacts rÃ©utilisables dans les factures et documents Ã©ditÃ©s.</p>
           </div>
           <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500"><X size={16} /></button>
         </div>
@@ -525,7 +578,7 @@ function ClientsModal({ onClose }: { onClose: () => void }) {
                       <p className="font-black text-neutral-900">{client.name}</p>
                       <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-700">Client externe</span>
                     </div>
-                    <p className="mt-1 text-xs text-neutral-500">{client.email || 'Email non renseigné'} · {client.phone || 'Téléphone non renseigné'}</p>
+                    <p className="mt-1 text-xs text-neutral-500">{client.email || 'Email non renseignÃ©'} Â· {client.phone || 'TÃ©lÃ©phone non renseignÃ©'}</p>
                     {client.address && <p className="mt-1 text-xs text-neutral-400">{client.address}</p>}
                   </div>
                   <div className="flex gap-2">
@@ -542,7 +595,7 @@ function ClientsModal({ onClose }: { onClose: () => void }) {
             <h4 className="font-black text-neutral-900">{form._id ? 'Modifier le client' : 'Nouveau client'}</h4>
             <div className="mt-4 space-y-3">
               {[
-                ['name', 'Nom / Raison sociale *'], ['email', 'Email'], ['phone', 'Téléphone'], ['address', 'Adresse'], ['registration', 'N° immatriculation'],
+                ['name', 'Nom / Raison sociale *'], ['email', 'Email'], ['phone', 'TÃ©lÃ©phone'], ['address', 'Adresse'], ['registration', 'NÂ° immatriculation'],
               ].map(([key, label]) => (
                 <input key={key} value={String((form as any)[key] ?? '')} onChange={event => setField(key as keyof InvoiceClientDoc, event.target.value)} placeholder={label} className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-emerald-300" />
               ))}
@@ -565,7 +618,7 @@ function ClientsModal({ onClose }: { onClose: () => void }) {
             </div>
             <div className="space-y-3 px-6 py-5 text-sm">
               <div className="flex justify-between"><span className="text-neutral-400">Montant</span><b>{fmtCfa(viewDoc.amount)}</b></div>
-              <div className="flex justify-between"><span className="text-neutral-400">Échéance</span><b>{fmt(viewDoc.dueDate)}</b></div>
+              <div className="flex justify-between"><span className="text-neutral-400">Ã‰chÃ©ance</span><b>{fmt(viewDoc.dueDate)}</b></div>
               <div className="flex justify-between"><span className="text-neutral-400">Statut</span><b>{STATUS_CONFIG[viewDoc.status].label}</b></div>
             </div>
             <div className="flex gap-2 border-t border-neutral-100 px-6 py-4">
@@ -584,10 +637,10 @@ function ClientsModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* ─── Create invoice modal ────────────────────────────── */
+/* â”€â”€â”€ Create invoice modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const COTIS_LABEL: Record<MemberListItem['cotisationStatus'], string> = {
-  paid: 'À jour', unpaid: 'Impayé', exempt: 'Exempté',
+  paid: 'Ã€ jour', unpaid: 'ImpayÃ©', exempt: 'ExemptÃ©',
 };
 const COTIS_BADGE: Record<MemberListItem['cotisationStatus'], string> = {
   paid:   'bg-emerald-50 text-emerald-700',
@@ -599,8 +652,8 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const today = new Date().toISOString().slice(0, 10);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [association, setAssociation] = useState<AssociationInvoiceInfo>(() => loadAssociationInfo());
-  const [invoiceTitle, setInvoiceTitle] = useState('Adhésion');
-  const [description, setDescription] = useState('Frais et contribution liés aux activités de l’association.');
+  const [invoiceTitle, setInvoiceTitle] = useState('AdhÃ©sion');
+  const [description, setDescription] = useState('Frais et contribution liÃ©s aux activitÃ©s de lâ€™association.');
   const [dueDate, setDueDate] = useState(today);
   const [paymentLink, setPaymentLink] = useState('');
   const [recipientMode, setRecipientMode] = useState<'all' | 'select'>('select');
@@ -608,10 +661,10 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [memberSearch, setMemberSearch] = useState('');
   const [cotisFilter, setCotisFilter] = useState<'all' | MemberListItem['cotisationStatus']>('all');
-  const [notes, setNotes] = useState("Merci pour votre engagement au sein de SALAM. Cette facture correspond aux frais ou contributions validés par l'association.");
-  const [legal, setLegal] = useState('Association SALAM — document généré électroniquement. Paiement à effectuer selon les moyens validés par le bureau exécutif.');
+  const [notes, setNotes] = useState("Merci pour votre engagement au sein de SALAM. Cette facture correspond aux frais ou contributions validÃ©s par l'association.");
+  const [legal, setLegal] = useState('Association SALAM â€” document gÃ©nÃ©rÃ© Ã©lectroniquement. Paiement Ã  effectuer selon les moyens validÃ©s par le bureau exÃ©cutif.');
   const [lines, setLines] = useState<InvoiceLine[]>([
-    { id: 1, designation: 'Frais d’adhésion annuelle', qty: 1, ht: 5000, vat: 0 },
+    { id: 1, designation: 'Frais dâ€™adhÃ©sion annuelle', qty: 1, ht: 5000, vat: 0 },
   ]);
   const [blockOffsets, setBlockOffsets] = useState<Record<LayoutBlockId, { x: number; y: number }>>({
     assoc: { x: 0, y: 0 },
@@ -621,6 +674,15 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
     totals: { x: 0, y: 0 },
     legal: { x: 0, y: 0 },
   });
+  const [blockDesigns, setBlockDesigns] = useState<Record<LayoutBlockId, BlockDesign>>({
+    assoc: defaultBlockDesign,
+    client: defaultBlockDesign,
+    items: defaultBlockDesign,
+    notes: defaultBlockDesign,
+    totals: { ...defaultBlockDesign, bg: '#f9fafb' },
+    legal: defaultBlockDesign,
+  });
+  const [activeBlockDesign, setActiveBlockDesign] = useState<LayoutBlockId | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const createInvoice = useCreateInvoice();
   const { data: membersData } = useAdminMembers({ limit: 200, status: 'active' });
@@ -692,9 +754,9 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const validate = () => {
     const next: Record<string, string> = {};
     if (!invoiceTitle.trim()) next.title = 'Titre requis';
-    if (!dueDate) next.dueDate = 'Échéance requise';
-    if (totals.ttc <= 0) next.amount = 'Le total doit être supérieur à 0';
-    if (recipientMode === 'select' && selected.length === 0 && selectedClients.length === 0) next.recipients = 'Sélectionnez au moins un destinataire';
+    if (!dueDate) next.dueDate = 'Ã‰chÃ©ance requise';
+    if (totals.ttc <= 0) next.amount = 'Le total doit Ãªtre supÃ©rieur Ã  0';
+    if (recipientMode === 'select' && selected.length === 0 && selectedClients.length === 0) next.recipients = 'SÃ©lectionnez au moins un destinataire';
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -702,7 +764,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const handleCreate = () => {
     if (!validate()) return;
     persistAssociation();
-    const invoiceType = /adh[ée]sion|adhesion|cotisation|frais/i.test(`${invoiceTitle} ${description} ${notes}`)
+    const invoiceType = /adh[Ã©e]sion|adhesion|cotisation|frais/i.test(`${invoiceTitle} ${description} ${notes}`)
       ? 'cotisation'
       : 'event';
     createInvoice.mutate(
@@ -750,7 +812,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
           address: previewClient.address,
           memberId: previewClient.registration,
         }]
-      : [{ name: 'Destinataire à renseigner' }];
+      : [{ name: 'Destinataire Ã  renseigner' }];
 
     const targetRecipients = [...memberRecipients, ...clientRecipients];
     const docs = (targetRecipients.length ? targetRecipients : fallbackRecipients).map((recipient, index) => ({
@@ -776,18 +838,18 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
         <div className="flex flex-col gap-3 rounded-[26px] border border-white/10 bg-white px-4 py-4 shadow-2xl sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">Facturation SALAM</p>
-            <h3 className="text-xl font-black tracking-[-0.04em] text-neutral-900">Éditeur de facture A4</h3>
-            <p className="mt-1 text-xs text-neutral-500">Aperçu PDF au format A4 avec padding fixe pour éviter les débordements.</p>
+            <h3 className="text-xl font-black tracking-[-0.04em] text-neutral-900">Ã‰diteur de facture A4</h3>
+            <p className="mt-1 text-xs text-neutral-500">AperÃ§u PDF au format A4 avec padding fixe pour Ã©viter les dÃ©bordements.</p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex">
             <button type="button" onClick={persistAssociation} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-700 transition hover:border-emerald-200 hover:text-emerald-700">
-              <Save size={14} /> Mémoriser
+              <Save size={14} /> MÃ©moriser
             </button>
             <button type="button" onClick={handlePdf} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-700 transition hover:border-emerald-200 hover:text-emerald-700">
-              <Download size={14} /> Télécharger PDF
+              <Download size={14} /> TÃ©lÃ©charger PDF
             </button>
             <button type="button" onClick={handleCreate} disabled={createInvoice.isPending} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-60">
-              {createInvoice.isPending ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} Créer
+              {createInvoice.isPending ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} CrÃ©er
             </button>
             <button type="button" onClick={onClose} className="inline-flex h-10 items-center justify-center rounded-xl bg-neutral-950 px-3 text-xs font-black text-white transition hover:bg-neutral-800">
               <X size={15} />
@@ -805,14 +867,14 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                 <div className="absolute left-0 right-0 top-0 h-2 bg-gradient-to-r from-emerald-600 via-red-600 to-amber-400" />
                 <header className="bg-gradient-to-br from-[#087348] via-[#075f41] to-[#043d2d] px-10 pb-6 pt-10 text-white">
                   <input value={association.name} onChange={event => updateAssociation({ name: event.target.value })} className="w-full bg-transparent text-[11px] font-black uppercase tracking-[0.28em] text-yellow-200 outline-none" />
-                  <p className="mt-1 text-xs font-semibold text-white/75">Solidaire Associative des Lauréats du Maroc</p>
+                  <p className="mt-1 text-xs font-semibold text-white/75">Solidaire Associative des LaurÃ©ats du Maroc</p>
                   <input value={invoiceTitle} onChange={event => setInvoiceTitle(event.target.value)} className="mt-3 w-full bg-transparent text-[29px] font-black leading-none tracking-[-0.04em] text-white outline-none" />
                   <input value={previewNumber} readOnly className="mt-2 w-full bg-transparent font-mono text-xs text-white/70 outline-none" />
                 </header>
 
                 <div className="space-y-6 px-12 py-8">
                   <div className="grid grid-cols-2 gap-5">
-                    <DraggableBox id="assoc" label="Émetteur" offsets={blockOffsets} setOffsets={setBlockOffsets}>
+                    <DraggableBox id="assoc" label="Ã‰metteur" offsets={blockOffsets} setOffsets={setBlockOffsets} designs={blockDesigns} setDesigns={setBlockDesigns} activeDesign={activeBlockDesign} setActiveDesign={setActiveBlockDesign}>
                     <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
                       <div className="mb-4 flex items-center gap-3">
                         <button type="button" onClick={() => logoInputRef.current?.click()} className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-emerald-700 text-xs font-black text-white">
@@ -825,7 +887,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                         <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={event => handleLogoImport(event.target.files?.[0])} />
                         <div className="min-w-0 flex-1">
                           <input value={association.title} onChange={event => updateAssociation({ title: event.target.value })} className="w-full font-black text-neutral-900 outline-none" />
-                          <p className="text-xs text-neutral-400">Émetteur</p>
+                          <p className="text-xs text-neutral-400">Ã‰metteur</p>
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -837,31 +899,31 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                     </section>
                     </DraggableBox>
 
-                    <DraggableBox id="client" label="Client" offsets={blockOffsets} setOffsets={setBlockOffsets}>
+                    <DraggableBox id="client" label="Client" offsets={blockOffsets} setOffsets={setBlockOffsets} designs={blockDesigns} setDesigns={setBlockDesigns} activeDesign={activeBlockDesign} setActiveDesign={setActiveBlockDesign}>
                     <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
-                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-400">Facturé à</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-400">FacturÃ© Ã </p>
                       {previewMember ? (
                         <div className="mt-4 space-y-1 text-sm">
                           <p className="text-base font-black text-neutral-900">{formatFullName(previewMember.firstName, previewMember.lastName)}</p>
                           <p className="text-neutral-500">{previewMember.email}</p>
-                          <p className="text-neutral-500">{previewMember.phone ?? 'Téléphone non renseigné'}</p>
-                          <p className="text-neutral-500">{[(previewMember as any).residenceCity, (previewMember as any).city, (previewMember as any).country].filter(Boolean).join(', ') || 'Adresse non renseignée'}</p>
+                          <p className="text-neutral-500">{previewMember.phone ?? 'TÃ©lÃ©phone non renseignÃ©'}</p>
+                          <p className="text-neutral-500">{[(previewMember as any).residenceCity, (previewMember as any).city, (previewMember as any).country].filter(Boolean).join(', ') || 'Adresse non renseignÃ©e'}</p>
                           <p className="font-mono text-xs text-neutral-400">{previewMember.memberId}</p>
                         </div>
                       ) : previewClient ? (
                         <div className="mt-4 space-y-1 text-sm">
                           <p className="text-base font-black text-neutral-900">{previewClient.name}</p>
-                          <p className="text-neutral-500">{previewClient.email || 'Email non renseigné'}</p>
-                          <p className="text-neutral-500">{previewClient.phone || 'Téléphone non renseigné'}</p>
-                          <p className="text-neutral-500">{previewClient.address || 'Adresse non renseignée'}</p>
+                          <p className="text-neutral-500">{previewClient.email || 'Email non renseignÃ©'}</p>
+                          <p className="text-neutral-500">{previewClient.phone || 'TÃ©lÃ©phone non renseignÃ©'}</p>
+                          <p className="text-neutral-500">{previewClient.address || 'Adresse non renseignÃ©e'}</p>
                           <p className="font-mono text-xs text-amber-600">{previewClient.registration || 'Client externe'}</p>
                         </div>
                       ) : (
-                        <p className="mt-4 text-sm font-semibold text-neutral-400">Sélectionnez un destinataire.</p>
+                        <p className="mt-4 text-sm font-semibold text-neutral-400">SÃ©lectionnez un destinataire.</p>
                       )}
                       <div className="mt-5 grid grid-cols-2 gap-3">
                         <label className="block">
-                          <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Échéance</span>
+                          <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Ã‰chÃ©ance</span>
                           <input type="date" min={today} value={dueDate} onChange={event => setDueDate(event.target.value)} className={inputCls(errors.dueDate)} />
                         </label>
                         <label className="block">
@@ -873,14 +935,14 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                     </DraggableBox>
                   </div>
 
-                  <DraggableBox id="items" label="Lignes" offsets={blockOffsets} setOffsets={setBlockOffsets}>
+                  <DraggableBox id="items" label="Lignes" offsets={blockOffsets} setOffsets={setBlockOffsets} designs={blockDesigns} setDesigns={setBlockDesigns} activeDesign={activeBlockDesign} setActiveDesign={setActiveBlockDesign}>
                   <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
                     <div className="mb-3 flex items-center justify-between">
-                      <h4 className="font-black text-neutral-900">Désignations</h4>
+                      <h4 className="font-black text-neutral-900">DÃ©signations</h4>
                       <button type="button" onClick={addLine} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-black text-white"><Plus size={13} /> Ligne</button>
                     </div>
                     <div className="grid grid-cols-[1fr_64px_95px_64px_100px_32px] rounded-t-xl bg-neutral-950 px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-white">
-                      <span>Désignation</span><span>Qté</span><span>HT</span><span>TVA</span><span>TTC</span><span />
+                      <span>DÃ©signation</span><span>QtÃ©</span><span>HT</span><span>TVA</span><span>TTC</span><span />
                     </div>
                     {lines.map(line => {
                       const ttc = Number(line.qty || 0) * Number(line.ht || 0) * (1 + Number(line.vat || 0) / 100);
@@ -899,13 +961,13 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                   </DraggableBox>
 
                   <div className="grid grid-cols-[1fr_310px] gap-5">
-                    <DraggableBox id="notes" label="Observations" offsets={blockOffsets} setOffsets={setBlockOffsets}>
+                    <DraggableBox id="notes" label="Observations" offsets={blockOffsets} setOffsets={setBlockOffsets} designs={blockDesigns} setDesigns={setBlockDesigns} activeDesign={activeBlockDesign} setActiveDesign={setActiveBlockDesign}>
                     <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
                       <h4 className="mb-2 font-black text-neutral-900">Observations</h4>
                       <textarea value={notes} onChange={event => setNotes(event.target.value)} rows={4} className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-emerald-300" />
                     </section>
                     </DraggableBox>
-                    <DraggableBox id="totals" label="Totaux" offsets={blockOffsets} setOffsets={setBlockOffsets}>
+                    <DraggableBox id="totals" label="Totaux" offsets={blockOffsets} setOffsets={setBlockOffsets} designs={blockDesigns} setDesigns={setBlockDesigns} activeDesign={activeBlockDesign} setActiveDesign={setActiveBlockDesign}>
                     <section className="rounded-[18px] border border-neutral-200 bg-neutral-50 p-5">
                       <h4 className="mb-3 font-black text-neutral-900">Totaux</h4>
                       <div className="space-y-2 text-sm">
@@ -917,9 +979,9 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                     </DraggableBox>
                   </div>
 
-                  <DraggableBox id="legal" label="Mentions" offsets={blockOffsets} setOffsets={setBlockOffsets}>
+                  <DraggableBox id="legal" label="Mentions" offsets={blockOffsets} setOffsets={setBlockOffsets} designs={blockDesigns} setDesigns={setBlockDesigns} activeDesign={activeBlockDesign} setActiveDesign={setActiveBlockDesign}>
                   <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
-                    <h4 className="mb-2 font-black text-neutral-900">Mentions légales</h4>
+                    <h4 className="mb-2 font-black text-neutral-900">Mentions lÃ©gales</h4>
                     <textarea value={legal} onChange={event => setLegal(event.target.value)} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-xs outline-emerald-300" />
                   </section>
                   </DraggableBox>
@@ -932,7 +994,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
             <section className="rounded-[26px] border border-white/10 bg-white p-5 shadow-xl">
               <div className="mb-4 flex items-center gap-2">
                 <ReceiptText size={18} className="text-emerald-700" />
-                <h4 className="font-black text-neutral-900">Paramètres</h4>
+                <h4 className="font-black text-neutral-900">ParamÃ¨tres</h4>
               </div>
               <div className="space-y-3">
                 <label className="block">
@@ -946,7 +1008,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
               </div>
               {(errors.title || errors.amount || errors.recipients || errors.dueDate) && (
                 <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-xs font-semibold text-red-600">
-                  {Object.values(errors).filter(Boolean).join(' · ')}
+                  {Object.values(errors).filter(Boolean).join(' Â· ')}
                 </div>
               )}
             </section>
@@ -961,7 +1023,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                   Tous actifs
                 </button>
                 <button type="button" onClick={() => setRecipientMode('select')} className={`flex-1 rounded-xl border px-3 py-2 text-xs font-black ${recipientMode === 'select' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}>
-                  Sélection
+                  SÃ©lection
                 </button>
               </div>
               <div className="relative">
@@ -971,7 +1033,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {(['all', 'unpaid', 'paid', 'exempt'] as const).map(filter => (
                   <button key={filter} type="button" onClick={() => setCotisFilter(filter)} className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${cotisFilter === filter ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}>
-                    {filter === 'all' ? 'Tous' : filter === 'unpaid' ? 'Impayé' : filter === 'paid' ? 'À jour' : 'Exempté'}
+                    {filter === 'all' ? 'Tous' : filter === 'unpaid' ? 'ImpayÃ©' : filter === 'paid' ? 'Ã€ jour' : 'ExemptÃ©'}
                   </button>
                 ))}
               </div>
@@ -979,7 +1041,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                 <>
                   <button type="button" onClick={toggleSelectAll} className="mt-3 flex items-center gap-2 text-xs font-black text-emerald-700">
                     {allFilteredSelected ? <CheckSquare size={15} /> : <Square size={15} />}
-                    Sélectionner tout ({filteredMembers.length})
+                    SÃ©lectionner tout ({filteredMembers.length})
                   </button>
                   <div className="mt-3 max-h-72 divide-y divide-neutral-50 overflow-auto rounded-2xl border border-neutral-100">
                     {filteredMembers.map(member => (
@@ -1008,7 +1070,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                           />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-xs font-black text-neutral-900">{client.name}</p>
-                            <p className="truncate text-[10px] text-amber-700">{client.email || 'Email non renseigné'}</p>
+                            <p className="truncate text-[10px] text-amber-700">{client.email || 'Email non renseignÃ©'}</p>
                           </div>
                           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-black text-amber-700">Client</span>
                         </label>
@@ -1019,20 +1081,20 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
               )}
               <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-center">
                 <p className="text-3xl font-black text-emerald-800">{recipients.length + selectedClientDocs.length}</p>
-                <p className="text-xs font-bold text-emerald-700">facture(s) préparée(s)</p>
+                <p className="text-xs font-bold text-emerald-700">facture(s) prÃ©parÃ©e(s)</p>
               </div>
             </section>
 
             <section className="rounded-[26px] border border-white/10 bg-white p-5 shadow-xl">
               <div className="mb-3 flex items-center gap-2">
                 <Settings size={18} className="text-emerald-700" />
-                <h4 className="font-black text-neutral-900">Contrôle A4</h4>
+                <h4 className="font-black text-neutral-900">ContrÃ´le A4</h4>
               </div>
               <ul className="space-y-2 text-xs font-semibold text-neutral-500">
-                <li>Format aperçu : 794 × 1123 px</li>
+                <li>Format aperÃ§u : 794 Ã— 1123 px</li>
                 <li>Padding PDF : 48 px</li>
                 <li>Export navigateur : A4 portrait</li>
-                <li>Infos association mémorisables</li>
+                <li>Infos association mÃ©morisables</li>
                 <li>Montant API = Total TTC</li>
               </ul>
             </section>
@@ -1166,8 +1228,8 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
     const e: Record<string, string> = {};
     if (!title.trim())                                          e.title      = 'Titre requis';
     if (!amount || Number(amount) <= 0)                         e.amount     = 'Montant invalide';
-    if (!dueDate)                                               e.dueDate    = 'Échéance requise';
-    if (recipientMode === 'select' && selected.length === 0)    e.recipients = 'Sélectionnez au moins un destinataire';
+    if (!dueDate)                                               e.dueDate    = 'Ã‰chÃ©ance requise';
+    if (recipientMode === 'select' && selected.length === 0)    e.recipients = 'SÃ©lectionnez au moins un destinataire';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -1196,7 +1258,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 shrink-0">
           <div>
             <h3 className="font-black text-neutral-900">Nouvelle facture</h3>
-            <p className="text-xs text-neutral-500 mt-0.5">Générer une facture pour un événement</p>
+            <p className="text-xs text-neutral-500 mt-0.5">GÃ©nÃ©rer une facture pour un Ã©vÃ©nement</p>
           </div>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
         </div>
@@ -1206,14 +1268,14 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Titre <span className="text-red-500">*</span></label>
             <input value={title} onChange={e => { setTitle(e.target.value); setErrors(p => ({...p, title: ''})); }}
-              placeholder="Ex: Soirée Gala 2025" className={inputCls(errors.title)} />
+              placeholder="Ex: SoirÃ©e Gala 2025" className={inputCls(errors.title)} />
             {errors.title && <p className="text-[11px] text-red-500">{errors.title}</p>}
           </div>
 
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Description <span className="text-neutral-300 font-normal normal-case">(optionnel)</span></label>
             <textarea value={description} onChange={e => setDescription(e.target.value)}
-              placeholder="Description de l'événement…" rows={2}
+              placeholder="Description de l'Ã©vÃ©nementâ€¦" rows={2}
               className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none placeholder:text-neutral-300 transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" />
           </div>
 
@@ -1229,7 +1291,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
               {errors.amount && <p className="text-[11px] text-red-500">{errors.amount}</p>}
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Échéance <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Ã‰chÃ©ance <span className="text-red-500">*</span></label>
               <div className="relative">
                 <CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                 <input type="date" value={dueDate} min={today}
@@ -1245,7 +1307,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
             <div className="relative">
               <LinkIcon size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
               <input value={paymentLink} onChange={e => setPaymentLink(e.target.value)}
-                placeholder="https://…" className={`${inputCls()} pl-9`} />
+                placeholder="https://â€¦" className={`${inputCls()} pl-9`} />
             </div>
           </div>
 
@@ -1262,7 +1324,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
                   setTimeout(() => recipientRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
                 }}
                 className={`rounded-xl border px-4 py-2 text-xs font-black transition ${recipientMode === 'select' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300'}`}>
-                Sélection manuelle
+                SÃ©lection manuelle
               </button>
             </div>
 
@@ -1272,7 +1334,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
                 <div className="relative border-b border-neutral-100">
                   <Search size={13} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                   <input value={memberSearch} onChange={e => setMemberSearch(e.target.value)}
-                    placeholder="Rechercher par nom ou prénom…"
+                    placeholder="Rechercher par nom ou prÃ©nomâ€¦"
                     className="h-9 w-full bg-neutral-50 pl-9 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:bg-white" />
                 </div>
 
@@ -1281,7 +1343,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
                   {(['all', 'unpaid', 'paid', 'exempt'] as const).map(f => (
                     <button key={f} type="button" onClick={() => setCotisFilter(f)}
                       className={`rounded-full border px-2.5 py-0.5 text-[10px] font-black transition ${cotisFilter === f ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300'}`}>
-                      {f === 'all' ? 'Tous' : f === 'unpaid' ? 'Impayé' : f === 'paid' ? 'À jour' : 'Exempté'}
+                      {f === 'all' ? 'Tous' : f === 'unpaid' ? 'ImpayÃ©' : f === 'paid' ? 'Ã€ jour' : 'ExemptÃ©'}
                     </button>
                   ))}
                 </div>
@@ -1294,11 +1356,11 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
                     onChange={toggleSelectAll}
                     className="h-4 w-4 cursor-pointer rounded border-neutral-300 accent-emerald-600" />
                   <label htmlFor="select-all" className="flex-1 cursor-pointer text-xs font-black text-neutral-600">
-                    Sélectionner tout ({filteredMembers.length})
+                    SÃ©lectionner tout ({filteredMembers.length})
                   </label>
                   {selected.length > 0 && (
                     <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">
-                      {selected.length} sélectionné{selected.length > 1 ? 's' : ''}
+                      {selected.length} sÃ©lectionnÃ©{selected.length > 1 ? 's' : ''}
                     </span>
                   )}
                 </div>
@@ -1306,7 +1368,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
                 {/* Member list */}
                 <div className="max-h-44 divide-y divide-neutral-50 overflow-y-auto">
                   {filteredMembers.length === 0 && (
-                    <p className="py-6 text-center text-xs text-neutral-400">Aucun membre trouvé</p>
+                    <p className="py-6 text-center text-xs text-neutral-400">Aucun membre trouvÃ©</p>
                   )}
                   {filteredMembers.map(m => (
                     <label key={m._id} htmlFor={`m-${m._id}`}
@@ -1336,7 +1398,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
           <button onClick={handleCreate} disabled={createInvoice.isPending}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-60">
             {createInvoice.isPending && <Loader2 size={14} className="animate-spin" />}
-            Créer la facture
+            CrÃ©er la facture
           </button>
         </div>
       </div>
@@ -1345,7 +1407,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
 }
 
 
-/* ─── Page principale ─────────────────────────────────── */
+/* â”€â”€â”€ Page principale â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function FacturationAdminPage() {
   const [search,      setSearch]      = useState('');
   const [showCreate,  setShowCreate]  = useState(false);
@@ -1379,7 +1441,7 @@ export default function FacturationAdminPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Facturation</h1>
-          <p className="mt-1 text-sm text-neutral-500">Générer et envoyer des factures pour les événements de l&apos;association.</p>
+          <p className="mt-1 text-sm text-neutral-500">GÃ©nÃ©rer et envoyer des factures pour les Ã©vÃ©nements de l&apos;association.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setShowClients(true)}
@@ -1397,12 +1459,12 @@ export default function FacturationAdminPage() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: 'Total',      value: stats.total,  color: 'text-neutral-900', bg: 'bg-neutral-50 border-neutral-100'  },
-          { label: 'Envoyées',   value: stats.sent,   color: 'text-blue-700',    bg: 'bg-blue-50    border-blue-100'     },
-          { label: 'Clôturées',  value: stats.closed, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100'  },
+          { label: 'EnvoyÃ©es',   value: stats.sent,   color: 'text-blue-700',    bg: 'bg-blue-50    border-blue-100'     },
+          { label: 'ClÃ´turÃ©es',  value: stats.closed, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100'  },
           { label: 'Brouillons', value: stats.draft,  color: 'text-neutral-600', bg: 'bg-neutral-50 border-neutral-200'  },
         ].map(s => (
           <div key={s.label} className={`rounded-2xl border p-4 ${s.bg}`}>
-            <p className={`text-2xl font-black leading-none ${s.color}`}>{isLoading ? '…' : s.value}</p>
+            <p className={`text-2xl font-black leading-none ${s.color}`}>{isLoading ? 'â€¦' : s.value}</p>
             <p className="mt-1.5 text-xs font-semibold text-neutral-500">{s.label}</p>
           </div>
         ))}
@@ -1412,7 +1474,7 @@ export default function FacturationAdminPage() {
       <div className="relative">
         <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
         <input value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Rechercher une facture…"
+          placeholder="Rechercher une factureâ€¦"
           className="h-10 w-full rounded-xl border border-neutral-200 bg-white pl-10 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
         />
       </div>
@@ -1421,14 +1483,14 @@ export default function FacturationAdminPage() {
       <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
         <div className="border-b border-neutral-100 px-5 py-3.5">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-neutral-500">
-            {isLoading ? 'Chargement…' : `${filtered.length} facture${filtered.length > 1 ? 's' : ''}`}
+            {isLoading ? 'Chargementâ€¦' : `${filtered.length} facture${filtered.length > 1 ? 's' : ''}`}
           </p>
         </div>
         <div className="divide-y divide-neutral-50">
           {isLoading && <Skeleton />}
           {isError && <div className="px-5 py-10 text-center text-sm text-red-500">Erreur de chargement.</div>}
           {!isLoading && !isError && filtered.length === 0 && (
-            <div className="px-5 py-10 text-center text-sm text-neutral-400">Aucune facture trouvée.</div>
+            <div className="px-5 py-10 text-center text-sm text-neutral-400">Aucune facture trouvÃ©e.</div>
           )}
           {!isLoading && !isError && filtered.map(inv => {
             const cfg      = STATUS_CONFIG[inv.status];
@@ -1455,13 +1517,13 @@ export default function FacturationAdminPage() {
                       <div className="h-1 flex-1 max-w-32 overflow-hidden rounded-full bg-neutral-100">
                         <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
                       </div>
-                      <span className="text-[10px] text-neutral-400">{paidCount}/{inv.recipients.length} payés</span>
+                      <span className="text-[10px] text-neutral-400">{paidCount}/{inv.recipients.length} payÃ©s</span>
                     </div>
                   )}
                 </div>
                 <div className="hidden text-right sm:block shrink-0">
                   <p className="text-xs font-black text-neutral-700">{fmtCfa(inv.amount)}</p>
-                  <p className="text-[10px] text-neutral-400">Échéance {fmt(inv.dueDate)}</p>
+                  <p className="text-[10px] text-neutral-400">Ã‰chÃ©ance {fmt(inv.dueDate)}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={() => openSavedInvoicePdf(inv)} title="Voir la facture"

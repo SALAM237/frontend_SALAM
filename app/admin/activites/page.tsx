@@ -1,22 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { CalendarDays, Plus, X, MapPin, Users, Loader2, Trash2, Edit3 } from 'lucide-react';
+import { CalendarDays, Plus, X, MapPin, Users, Loader2, Trash2, Edit3, PlusCircle } from 'lucide-react';
 import {
   useActivities, useCreateActivity, useUpdateActivity, useDeleteActivity,
   ACTIVITY_CATEGORIES, type ActivityDoc,
 } from '@/lib/api/activities';
+import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
+
+type ExtraBlock = { id: string; label: string; value: string };
 
 const sCfg: Record<string, { label: string; cls: string }> = {
-  published: { label: 'Publiée',   cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  published: { label: 'PubliÃ©e',   cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   draft:     { label: 'Brouillon', cls: 'bg-yellow-50  text-yellow-700  border-yellow-200'  },
-  finished:  { label: 'Passée',    cls: 'bg-neutral-50 text-neutral-500 border-neutral-200' },
-  cancelled: { label: 'Annulée',   cls: 'bg-red-50     text-red-600     border-red-200'     },
+  finished:  { label: 'PassÃ©e',    cls: 'bg-neutral-50 text-neutral-500 border-neutral-200' },
+  cancelled: { label: 'AnnulÃ©e',   cls: 'bg-red-50     text-red-600     border-red-200'     },
 };
 
 const visiLabels: Record<string, string> = { public: 'Public', members: 'Membres', office: 'Bureau' };
 
-/* ─── Activity Form (shared between Create & Edit) ────────── */
+/* â”€â”€â”€ Activity Form (shared between Create & Edit) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function ActivityForm({
   initial, onSubmit, onClose, isPending, title,
 }: {
@@ -38,6 +41,9 @@ function ActivityForm({
     status:      initial?.status      ?? 'draft',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [activeDesign, setActiveDesign] = useState<string | null>(null);
+  const [styles, setStyles] = useState<Record<string, DesignStyle>>({});
+  const [extraBlocks, setExtraBlocks] = useState<ExtraBlock[]>([]);
 
   const upd = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setF(p => ({ ...p, [k]: e.target.value }));
@@ -48,11 +54,17 @@ function ActivityForm({
   const handleSubmit = () => {
     const e: Record<string, string> = {};
     if (!f.title.trim()) e.title = 'Titre requis';
-    if (!f.category)     e.category = 'Catégorie requise';
+    if (!f.category)     e.category = 'CatÃ©gorie requise';
     setErrors(e);
     if (Object.keys(e).length) return;
+    const extraDescription = extraBlocks
+      .filter(block => block.value.trim())
+      .map(block => `${block.label}\n${block.value.trim()}`)
+      .join('\n\n');
     onSubmit({
-      title: f.title, category: f.category, description: f.description || undefined,
+      title: f.title,
+      category: f.category,
+      description: [f.description, extraDescription].filter(Boolean).join('\n\n') || undefined,
       startDate: f.startDate || undefined, endDate: f.endDate || undefined,
       location: f.location || undefined,
       capacity: f.capacity ? Number(f.capacity) : undefined,
@@ -67,48 +79,82 @@ function ActivityForm({
           <h3 className="font-black text-neutral-900">{title}</h3>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
         </div>
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4" onClick={() => setActiveDesign(null)}>
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Titre <span className="text-red-500">*</span></label>
-            <input value={f.title} onChange={upd('title')} className={inp(errors.title)} />
+            <DesignEditorField id="title" label="Titre" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>{style => <input value={f.title} onChange={upd('title')} className={inp(errors.title)} style={style} />}</DesignEditorField>
             {errors.title && <p className="text-[11px] text-red-500">{errors.title}</p>}
           </div>
           <div className="space-y-1.5">
-            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Catégorie <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">CatÃ©gorie <span className="text-red-500">*</span></label>
             <select value={f.category} onChange={upd('category')} className={inp(errors.category)}>
-              <option value="">Choisir…</option>
+              <option value="">Choisirâ€¦</option>
               {ACTIVITY_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
             {errors.category && <p className="text-[11px] text-red-500">{errors.category}</p>}
           </div>
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Description</label>
-            <textarea value={f.description} onChange={upd('description')} rows={3}
-              className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" />
+            <DesignEditorField id="description" label="Description" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>{style => <textarea value={f.description} onChange={upd('description')} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />}</DesignEditorField>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date début</label>
-              <input type="datetime-local" value={f.startDate} onChange={upd('startDate')} className={inp()} />
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date dÃ©but</label>
+              <DesignEditorField id="startDate" label="Date début" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+                {style => <input type="datetime-local" value={f.startDate} onChange={upd('startDate')} className={inp()} style={style} />}
+              </DesignEditorField>
             </div>
             <div className="space-y-1.5">
               <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date fin</label>
-              <input type="datetime-local" value={f.endDate} onChange={upd('endDate')} className={inp()} />
+              <DesignEditorField id="endDate" label="Date fin" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+                {style => <input type="datetime-local" value={f.endDate} onChange={upd('endDate')} className={inp()} style={style} />}
+              </DesignEditorField>
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Lieu</label>
-              <input value={f.location} onChange={upd('location')} placeholder="Paris 12e" className={inp()} />
+              <DesignEditorField id="location" label="Lieu" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+                {style => <input value={f.location} onChange={upd('location')} placeholder="Paris 12e" className={inp()} style={style} />}
+              </DesignEditorField>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Capacité</label>
-              <input type="number" min="1" value={f.capacity} onChange={upd('capacity')} placeholder="50" className={inp()} />
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">CapacitÃ©</label>
+              <DesignEditorField id="capacity" label="Capacité" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+                {style => <input type="number" min="1" value={f.capacity} onChange={upd('capacity')} placeholder="50" className={inp()} style={style} />}
+              </DesignEditorField>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 p-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">Blocs libres</p>
+                <p className="text-[11px] text-neutral-500">Ajoutez des éléments de contenu à déplacer et styliser.</p>
+              </div>
+              <button type="button" onClick={() => setExtraBlocks(prev => [...prev, { id: `activity-extra-${Date.now()}`, label: `Bloc ${prev.length + 1}`, value: '' }])}
+                className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-black text-white">
+                <PlusCircle size={13} /> Ajouter
+              </button>
+            </div>
+            <div className="space-y-3">
+              {extraBlocks.map(block => (
+                <DesignEditorField key={block.id} id={block.id} label={block.label} styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+                  {style => (
+                    <div className="grid gap-2 sm:grid-cols-[120px_1fr_32px]">
+                      <input value={block.label} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, label: e.target.value } : b))} className={inp()} style={style} />
+                      <textarea value={block.value} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, value: e.target.value } : b))} rows={2} className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none" style={style} />
+                      <button type="button" onClick={() => setExtraBlocks(prev => prev.filter(b => b.id !== block.id))} className="flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 text-red-400 hover:border-red-300 hover:text-red-600">
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  )}
+                </DesignEditorField>
+              ))}
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Visibilité</label>
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">VisibilitÃ©</label>
               <select value={f.visibility} onChange={upd('visibility')} className={inp()}>
                 <option value="public">Public</option>
                 <option value="members">Membres uniquement</option>
@@ -119,9 +165,9 @@ function ActivityForm({
               <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Statut</label>
               <select value={f.status} onChange={upd('status')} className={inp()}>
                 <option value="draft">Brouillon</option>
-                <option value="published">Publiée</option>
-                <option value="finished">Passée</option>
-                <option value="cancelled">Annulée</option>
+                <option value="published">PubliÃ©e</option>
+                <option value="finished">PassÃ©e</option>
+                <option value="cancelled">AnnulÃ©e</option>
               </select>
             </div>
           </div>
@@ -131,7 +177,7 @@ function ActivityForm({
           <button onClick={handleSubmit} disabled={isPending}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-60 transition">
             {isPending ? <Loader2 size={14} className="animate-spin" /> : <CalendarDays size={14} />}
-            {initial ? 'Mettre à jour' : 'Créer'}
+            {initial ? 'Mettre Ã  jour' : 'CrÃ©er'}
           </button>
         </div>
       </div>
@@ -139,12 +185,12 @@ function ActivityForm({
   );
 }
 
-/* ─── Edit wrapper ────────────────────────────────────────── */
+/* â”€â”€â”€ Edit wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function EditActivityModal({ activity, onClose }: { activity: ActivityDoc; onClose: () => void }) {
   const update = useUpdateActivity(activity._id);
   return (
     <ActivityForm
-      title="Modifier l'activité"
+      title="Modifier l'activitÃ©"
       initial={activity}
       isPending={update.isPending}
       onClose={onClose}
@@ -153,7 +199,7 @@ function EditActivityModal({ activity, onClose }: { activity: ActivityDoc; onClo
   );
 }
 
-/* ─── Page ────────────────────────────────────────────────── */
+/* â”€â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function AdminActivitesPage() {
   const [filter,      setFilter]      = useState<string>('all');
   const [showCreate,  setShowCreate]  = useState(false);
@@ -171,7 +217,7 @@ export default function AdminActivitesPage() {
   };
 
   const handleDelete = (id: string, title: string) => {
-    if (!confirm(`Supprimer "${title}" ? Cette action est irréversible.`)) return;
+    if (!confirm(`Supprimer "${title}" ? Cette action est irrÃ©versible.`)) return;
     deleteActivity.mutate(id);
   };
 
@@ -179,23 +225,23 @@ export default function AdminActivitesPage() {
     <div className="w-full space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">Activités</h1>
-          <p className="mt-0.5 text-sm text-neutral-500">{isLoading ? '…' : `${activities.length} activité${activities.length > 1 ? 's' : ''}`}</p>
+          <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">ActivitÃ©s</h1>
+          <p className="mt-0.5 text-sm text-neutral-500">{isLoading ? 'â€¦' : `${activities.length} activitÃ©${activities.length > 1 ? 's' : ''}`}</p>
         </div>
         <button onClick={() => setShowCreate(true)}
           className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white hover:bg-emerald-700 transition-colors shadow-sm">
-          <Plus size={14} /><span className="hidden sm:inline">Nouvelle activité</span>
+          <Plus size={14} /><span className="hidden sm:inline">Nouvelle activitÃ©</span>
         </button>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Publiées',   value: stats.published, color: 'text-emerald-700' },
+          { label: 'PubliÃ©es',   value: stats.published, color: 'text-emerald-700' },
           { label: 'Brouillons', value: stats.draft,     color: 'text-yellow-700'  },
-          { label: 'Passées',    value: stats.finished,  color: 'text-neutral-500' },
+          { label: 'PassÃ©es',    value: stats.finished,  color: 'text-neutral-500' },
         ].map(({ label, value, color }) => (
           <div key={label} className="rounded-2xl border border-neutral-100 bg-white p-3 text-center shadow-sm sm:p-4">
-            <p className={`text-2xl font-black leading-none tracking-[-0.04em] sm:text-3xl ${color}`}>{isLoading ? '…' : value}</p>
+            <p className={`text-2xl font-black leading-none tracking-[-0.04em] sm:text-3xl ${color}`}>{isLoading ? 'â€¦' : value}</p>
             <p className="mt-1 text-[10px] font-semibold text-neutral-500 sm:text-xs">{label}</p>
           </div>
         ))}
@@ -214,13 +260,13 @@ export default function AdminActivitesPage() {
         {isLoading && (
           <div className="flex flex-col items-center py-14 text-center">
             <Loader2 size={24} className="animate-spin text-neutral-300 mb-3" />
-            <p className="text-sm text-neutral-400">Chargement…</p>
+            <p className="text-sm text-neutral-400">Chargementâ€¦</p>
           </div>
         )}
         {!isLoading && activities.length === 0 && (
           <div className="flex flex-col items-center px-5 py-14 text-center">
             <CalendarDays size={32} className="mb-3 text-neutral-200" />
-            <p className="text-sm font-semibold text-neutral-400">Aucune activité pour le moment.</p>
+            <p className="text-sm font-semibold text-neutral-400">Aucune activitÃ© pour le moment.</p>
           </div>
         )}
         {!isLoading && activities.length > 0 && (
@@ -269,7 +315,7 @@ export default function AdminActivitesPage() {
 
       {showCreate && (
         <ActivityForm
-          title="Nouvelle activité"
+          title="Nouvelle activitÃ©"
           isPending={createActivity.isPending}
           onClose={() => setShowCreate(false)}
           onSubmit={data => createActivity.mutate(data, { onSuccess: () => setShowCreate(false) })}
