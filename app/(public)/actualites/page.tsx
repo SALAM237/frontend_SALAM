@@ -11,6 +11,10 @@ const CATS = [
   ...ARTICLE_CATEGORIES.map(c => ({ id: c.value, label: c.label })),
 ];
 
+function articleImage(article: any) {
+  return article?.data?.imageUrl || article?.imageUrl || '';
+}
+
 export default function ActualitesPage() {
   const [cat, setCat]       = useState('all');
   const [search, setSearch] = useState('');
@@ -64,12 +68,14 @@ export default function ActualitesPage() {
 
           {!isLoading && filtered.length > 0 && (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((n: any) => (
+              {filtered.map((n: any) => {
+                const image = articleImage(n);
+                return (
                 <Link key={n._id} href={`/actualites/${n._id}`} className="group flex flex-col gap-3 rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md">
                   <div className="aspect-[16/9] overflow-hidden rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50">
-                    {n.data?.imageUrl && (
+                    {image && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={n.data.imageUrl} alt="" className="h-full w-full object-cover" />
+                      <img src={image} alt={n.title} className="h-full w-full object-cover" />
                     )}
                   </div>
                   <span className="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
@@ -86,7 +92,7 @@ export default function ActualitesPage() {
                     </span>
                   </div>
                 </Link>
-              ))}
+              );})}
             </div>
           )}
 

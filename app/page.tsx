@@ -11,6 +11,7 @@ import { CTABanner }        from '@/components/public/CTABanner';
 
 const ActivityPreview = dynamic(() => import('@/components/public/ActivityPreview').then(mod => mod.ActivityPreview));
 const OpportunityPreview = dynamic(() => import('@/components/public/OpportunityPreview').then(mod => mod.OpportunityPreview));
+const NewsPreview = dynamic(() => import('@/components/public/NewsPreview').then(mod => mod.NewsPreview));
 const GalleryPreview = dynamic(() => import('@/components/public/GalleryPreview').then(mod => mod.GalleryPreview));
 
 export default function HomePage() {
@@ -24,6 +25,7 @@ export default function HomePage() {
       <EngagementSection />
       <ActivityPreview />
       <OpportunityPreview />
+      <NewsPreview />
       <GalleryPreview />
       <CTABanner />
     </main>

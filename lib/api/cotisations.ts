@@ -46,7 +46,7 @@ export function useAdminCotisations(year: number) {
     queryKey: ['admin-cotisations', year],
     queryFn: () =>
       apiClient<AdminCotisationRow[]>(
-        `/api/v1/admin/cotisations??year=${year}`,
+        `/api/v1/admin/cotisations?year=${year}`,
         { token: token ?? '' },
       ),
     enabled: !!token,
@@ -88,7 +88,7 @@ export function useDeleteCotisation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ userId, year }: { userId: string; year: number }) =>
-      apiClient(`/api/v1/admin/cotisations/${userId}??year=${year}`, {
+      apiClient(`/api/v1/admin/cotisations/${userId}?year=${year}`, {
         method: 'DELETE',
         token: token ?? '',
       }),
@@ -115,6 +115,24 @@ export function useSendReminders() {
         token: token ?? '',
       }),
     onSuccess: res => toast.success(`${(res.data as any)?.sent ?? 0} relance(s) envoyée(s)`),
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useResendCotisationReceipt() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, year }: { userId: string; year: number }) =>
+      apiClient(`/api/v1/admin/cotisations/${userId}/resend-receipt`, {
+        method: 'POST',
+        body: JSON.stringify({ year }),
+        token: token ?? '',
+      }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['cotisation-logs'] });
+      toast.success((res as any).message ?? 'Recu renvoye');
+    },
     onError: (err: Error) => toast.error(err.message),
   });
 }

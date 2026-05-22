@@ -10,11 +10,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  useAdminInvoices, useCreateInvoice, useSendInvoice, useDeleteInvoice,
+  useAdminInvoices, useCreateInvoice, useDeleteInvoice,
   useUpdateInvoice,
   useInvoiceClients, useSaveInvoiceClient, useDeleteInvoiceClient, useClientDocuments,
-  useResendClientDocument,
-  type InvoiceClientDoc, type InvoiceDoc,
+  useResendClientDocument, useResendInvoiceRecipient,
+  type InvoiceClientDoc, type InvoiceDoc, type RecipientDoc,
 } from '@/lib/api/invoices';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { formatFullName } from '@/lib/format-name';
@@ -26,6 +26,13 @@ const STATUS_CONFIG: Record<InvoiceStatus, { badge: string; label: string; icon:
   draft:  { badge: 'bg-neutral-50 text-neutral-600 border-neutral-200',  label: 'Brouillon', icon: <FileText size={10} />    },
   sent:   { badge: 'bg-blue-50 text-blue-700 border-blue-200',           label: 'Envoyée',   icon: <Clock size={10} />       },
   closed: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',  label: 'Clôturée',  icon: <CheckCircle2 size={10} /> },
+};
+
+const RECIPIENT_STATUS_CONFIG: Record<RecipientDoc['status'], { badge: string; label: string }> = {
+  pending:   { badge: 'bg-neutral-50 text-neutral-600 border-neutral-200', label: 'A envoyer' },
+  sent:      { badge: 'bg-blue-50 text-blue-700 border-blue-200', label: 'Envoyee' },
+  paid:      { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Payee' },
+  cancelled: { badge: 'bg-red-50 text-red-700 border-red-200', label: 'Annulee' },
 };
 
 function fmt(d: string) {
@@ -451,6 +458,70 @@ function openSavedInvoicePdf(invoice: InvoiceDoc) {
       dueDate: invoice.dueDate,
     }];
   openInvoicePdfBatch(docs);
+}
+
+type InvoiceRecipientRow = {
+  key: string;
+  invoice: InvoiceDoc;
+  recipient: RecipientDoc;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  memberId?: string;
+  invoiceNumber: string;
+  status: RecipientDoc['status'] | InvoiceDoc['status'];
+  isClient: boolean;
+};
+
+function invoiceRecipientIdentity(recipient: RecipientDoc, index: number) {
+  const member = typeof recipient.userId === 'object' ? recipient.userId : null;
+  const client = typeof recipient.clientId === 'object' ? recipient.clientId : null;
+  const name = client?.name || [member?.firstName, member?.lastName].filter(Boolean).join(' ') || `Destinataire ${index + 1}`;
+  return {
+    name,
+    email: client?.email || member?.email || '',
+    phone: client?.phone || member?.phone || '',
+    address: client?.address || [member?.residenceCity || member?.city, member?.country].filter(Boolean).join(', '),
+    memberId: member?._id ? `SALAM-${String(member._id).slice(-6).toUpperCase()}` : client?.registration,
+    isClient: Boolean(client || recipient.recipientType === 'client'),
+  };
+}
+
+function makeInvoiceRecipientRows(invoices: InvoiceDoc[]): InvoiceRecipientRow[] {
+  return invoices.flatMap(invoice => {
+    if (!invoice.recipients.length) {
+      return [{
+        key: `${invoice._id}-fallback`,
+        invoice,
+        recipient: { invoiceNumber: invoice.invoiceNumber, status: invoice.status === 'draft' ? 'pending' : 'sent' },
+        name: 'Destinataire non renseigne',
+        email: '',
+        phone: '',
+        address: '',
+        memberId: undefined,
+        invoiceNumber: invoice.invoiceNumber,
+        status: 'pending',
+        isClient: false,
+      }];
+    }
+
+    return invoice.recipients.map((recipient, index) => {
+      const identity = invoiceRecipientIdentity(recipient, index);
+      return {
+        key: `${invoice._id}-${recipient.invoiceNumber || index}`,
+        invoice,
+        recipient,
+        ...identity,
+        invoiceNumber: recipient.invoiceNumber || `${invoice.invoiceNumber}-${seq(index + 1)}`,
+        status: recipient.status || invoice.status,
+      };
+    });
+  });
+}
+
+function openSavedInvoiceRecipientPdf(invoice: InvoiceDoc, recipient: RecipientDoc) {
+  openSavedInvoicePdf({ ...invoice, recipients: [recipient] });
 }
 
 function Skeleton() {
@@ -1417,23 +1488,24 @@ export default function FacturationAdminPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useAdminInvoices();
-  const sendInvoice = useSendInvoice();
+  const resendInvoiceRecipient = useResendInvoiceRecipient();
   const deleteInvoice = useDeleteInvoice();
 
   const invoices = data?.data ?? [];
+  const invoiceRows = useMemo(() => makeInvoiceRecipientRows(invoices), [invoices]);
 
   const filtered = useMemo(() =>
-    invoices.filter(inv =>
-      `${inv.title} ${inv.invoiceNumber}`.toLowerCase().includes(search.toLowerCase())
+    invoiceRows.filter(row =>
+      `${row.invoice.title} ${row.invoice.invoiceNumber} ${row.invoiceNumber} ${row.name} ${row.email}`.toLowerCase().includes(search.toLowerCase())
     ),
-  [invoices, search]);
+  [invoiceRows, search]);
 
   const stats = useMemo(() => ({
-    total:  invoices.length,
-    sent:   invoices.filter(i => i.status === 'sent').length,
-    closed: invoices.filter(i => i.status === 'closed').length,
-    draft:  invoices.filter(i => i.status === 'draft').length,
-  }), [invoices]);
+    total:  invoiceRows.length,
+    sent:   invoiceRows.filter(r => r.status === 'sent').length,
+    closed: invoiceRows.filter(r => r.status === 'paid').length,
+    draft:  invoiceRows.filter(r => r.invoice.status === 'draft' || r.status === 'pending').length,
+  }), [invoiceRows]);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -1483,7 +1555,7 @@ export default function FacturationAdminPage() {
       <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
         <div className="border-b border-neutral-100 px-5 py-3.5">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-neutral-500">
-            {isLoading ? 'Chargement…' : `${filtered.length} facture${filtered.length > 1 ? 's' : ''}`}
+            {isLoading ? 'Chargement...' : `${filtered.length} document${filtered.length > 1 ? 's' : ''}`}
           </p>
         </div>
         <div className="divide-y divide-neutral-50">
@@ -1492,58 +1564,57 @@ export default function FacturationAdminPage() {
           {!isLoading && !isError && filtered.length === 0 && (
             <div className="px-5 py-10 text-center text-sm text-neutral-400">Aucune facture trouvée.</div>
           )}
-          {!isLoading && !isError && filtered.map(inv => {
-            const cfg      = STATUS_CONFIG[inv.status];
-            const paidCount = inv.recipients.filter(r => r.status === 'paid').length;
-            const progress  = inv.recipients.length > 0
-              ? Math.round((paidCount / inv.recipients.length) * 100)
-              : 0;
+          {!isLoading && !isError && filtered.map(row => {
+            const inv = row.invoice;
+            const invoiceCfg = STATUS_CONFIG[inv.status];
+            const recipientCfg = RECIPIENT_STATUS_CONFIG[row.recipient.status] ?? RECIPIENT_STATUS_CONFIG.pending;
             const isDeleting = confirmDeleteId === inv._id;
+            const isSending = resendInvoiceRecipient.isPending;
             return (
-              <div key={inv._id} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-neutral-50/60">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 border border-violet-100">
+              <div key={row.key} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-neutral-50/60">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${row.isClient ? 'border-amber-100 bg-amber-50' : 'border-violet-100 bg-violet-50'}`}>
                   <FileText size={16} className="text-violet-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-black text-sm text-neutral-900">{inv.title}</p>
-                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${cfg.badge}`}>
-                      {cfg.icon} {cfg.label}
+                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${invoiceCfg.badge}`}>
+                      {invoiceCfg.icon} {invoiceCfg.label}
+                    </span>
+                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black ${recipientCfg.badge}`}>
+                      {recipientCfg.label}
+                    </span>
+                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-black ${row.isClient ? 'bg-amber-100 text-amber-700' : 'bg-violet-100 text-violet-700'}`}>
+                      {row.isClient ? 'Client' : 'Membre'}
                     </span>
                   </div>
-                  <p className="text-[11px] text-neutral-400 font-mono mt-0.5">{inv.invoiceNumber}</p>
-                  {inv.status !== 'draft' && inv.recipients.length > 0 && (
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <div className="h-1 flex-1 max-w-32 overflow-hidden rounded-full bg-neutral-100">
-                        <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
-                      </div>
-                      <span className="text-[10px] text-neutral-400">{paidCount}/{inv.recipients.length} payés</span>
-                    </div>
-                  )}
+                  <p className="mt-0.5 text-[11px] font-mono text-neutral-400">{row.invoiceNumber}</p>
+                  <p className="mt-1 truncate text-xs font-bold text-neutral-700">{row.name}</p>
+                  <p className="truncate text-[11px] text-neutral-400">{row.email || row.phone || row.memberId || 'Coordonnees non renseignees'}</p>
                 </div>
                 <div className="hidden text-right sm:block shrink-0">
                   <p className="text-xs font-black text-neutral-700">{fmtCfa(inv.amount)}</p>
                   <p className="text-[10px] text-neutral-400">Échéance {fmt(inv.dueDate)}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={() => openSavedInvoicePdf(inv)} title="Voir la facture"
+                  <button onClick={() => openSavedInvoiceRecipientPdf(inv, row.recipient)} title="Voir la facture"
                     className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600">
                     <Eye size={13} />
                   </button>
                   {inv.status === 'draft' && (
-                    <>
-                      <button onClick={() => setEditInvoice(inv)} title="Modifier le brouillon"
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100">
-                        <Pencil size={13} />
-                      </button>
-                      <button onClick={() => sendInvoice.mutate(inv._id)}
-                        disabled={sendInvoice.isPending}
-                        className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:opacity-60">
-                        {sendInvoice.isPending ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
-                        Envoyer
-                      </button>
-                    </>
+                    <button onClick={() => setEditInvoice(inv)} title="Modifier le brouillon"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100">
+                      <Pencil size={13} />
+                    </button>
                   )}
+                  <button
+                    onClick={() => resendInvoiceRecipient.mutate({ id: inv._id, invoiceNumber: row.invoiceNumber })}
+                    disabled={isSending || !row.email}
+                    title={row.status === 'sent' || row.status === 'paid' ? 'Renvoyer la facture' : 'Envoyer la facture'}
+                    className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:opacity-60">
+                    {isSending ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                    {row.status === 'sent' || row.status === 'paid' ? 'Renvoyer' : 'Envoyer'}
+                  </button>
                   {isDeleting ? (
                     <button
                       onClick={() => deleteInvoice.mutate(inv._id, { onSuccess: () => setConfirmDeleteId(null) })}

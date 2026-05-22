@@ -14,6 +14,10 @@ const CAT_COLORS: Record<string, string> = {
   vie_asso:    'bg-emerald-100 text-emerald-700',
 };
 
+function articleImage(article: any) {
+  return article?.data?.imageUrl || article?.imageUrl || '';
+}
+
 export default function ActualiteDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const { data, isLoading, isError } = usePublicArticle(slug);
@@ -68,9 +72,9 @@ export default function ActualiteDetailPage({ params }: { params: Promise<{ slug
             <article className="space-y-6">
               {/* Cover */}
               <div className="aspect-[21/9] overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-emerald-400 to-teal-600">
-                {article.data?.imageUrl && (
+                {articleImage(article) && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={article.data.imageUrl} alt="" className="h-full w-full object-cover" />
+                  <img src={articleImage(article)} alt={article.title} className="h-full w-full object-cover" />
                 )}
               </div>
 

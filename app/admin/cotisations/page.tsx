@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import {
   useAdminCotisations, useUpdateCotisationStatus, useDeleteCotisation, useSendReminders, useCotisationLogs,
+  useResendCotisationReceipt,
   type CotisationStatus, type AdminCotisationRow,
 } from '@/lib/api/cotisations';
 import type { AuditLogDoc } from '@/lib/api/audit-logs';
@@ -295,6 +296,7 @@ function SettingsPanel({ year, deadline, setDeadline }: {
 
 /* ─── Receipt modal ───────────────────────────────────────── */
 function ReceiptModal({ member, year, onClose }: { member: MemberRow; year: number; onClose: () => void }) {
+  const resendReceipt = useResendCotisationReceipt();
   const receiptNum = member.cotisationId
     ? `SALAM-RECU-${year}-${member.cotisationId.slice(-6).toUpperCase()}`
     : `SALAM-RECU-${year}-${member.userId.slice(-4).toUpperCase()}`;
@@ -335,6 +337,14 @@ function ReceiptModal({ member, year, onClose }: { member: MemberRow; year: numb
           <button onClick={() => openPaymentReceiptPdf(member, year)}
             className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700">
             <Download size={14} /> Aperçu PDF A4
+          </button>
+          <button
+            onClick={() => resendReceipt.mutate({ userId: member.userId, year })}
+            disabled={resendReceipt.isPending || !member.email}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-sm font-black text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {resendReceipt.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+            Renvoyer le recu
           </button>
           <button onClick={onClose}
             className="mt-2 w-full rounded-xl bg-neutral-900 py-2.5 text-sm font-black text-white transition hover:bg-neutral-800">

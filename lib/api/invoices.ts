@@ -145,6 +145,25 @@ export function useSendInvoice() {
 
 /* ── Member ─────────────────────────────────────────────── */
 
+export function useResendInvoiceRecipient() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, invoiceNumber }: { id: string; invoiceNumber: string }) =>
+      apiClient(`/api/v1/admin/invoices/${id}/recipients/${encodeURIComponent(invoiceNumber)}/resend`, {
+        method: 'POST',
+        token: token ?? '',
+      }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['admin-invoices'] });
+      qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
+      toast.success((res as any).message ?? 'Facture renvoyee');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 export function useDeleteInvoice() {
   const token = useAuthStore(s => s.accessToken);
   const qc = useQueryClient();
