@@ -294,7 +294,7 @@ export default function AdminAdherentsPage() {
                             </Link>
 
                             <Link
-                              href={`/admin/adherents/nouveau?edit=${m._id}`}
+                              href={`/admin/adherents/nouveau??edit=${m._id}`}
                               title="Modifier"
                               className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-50 text-neutral-500 transition-all hover:bg-yellow-400 hover:text-neutral-950"
                             >
@@ -409,7 +409,7 @@ export default function AdminAdherentsPage() {
                                   <Eye size={12} />
                                 </Link>
                                 <Link
-                                  href={`/admin/adherents/nouveau?edit=${m._id}`}
+                                  href={`/admin/adherents/nouveau??edit=${m._id}`}
                                   title="Modifier"
                                   className="flex h-7 w-7 items-center justify-center rounded-lg bg-yellow-50 text-yellow-700 transition hover:bg-yellow-400 hover:text-neutral-950"
                                 >
@@ -422,7 +422,7 @@ export default function AdminAdherentsPage() {
                                       disabled={hardDelete.isPending}
                                       className="flex h-7 items-center gap-1 rounded-lg bg-red-500 px-2 text-[9px] font-black text-white transition hover:bg-red-600 disabled:opacity-50"
                                     >
-                                      {hardDelete.isPending ? <Loader2 size={11} className="animate-spin" /> : 'OK ?'}
+                                      {hardDelete.isPending ? <Loader2 size={11} className="animate-spin" /> : 'OK ??'}
                                     </button>
                                   ) : (
                                     <button

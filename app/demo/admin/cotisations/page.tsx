@@ -3,11 +3,12 @@
 import { useMemo, useState } from 'react';
 import {
   AlertTriangle, Bell, CalendarDays, CheckCircle2, ChevronDown, Eye,
-  History, Loader2, Search, Send, Settings2, ShieldOff, Upload, X, XCircle,
+  FileText, History, Loader2, Search, Send, Settings2, ShieldOff, Upload, X, XCircle,
 } from 'lucide-react';
 import { DemoPortalShell } from '../../_components/DemoShell';
 import { demoMembers } from '@/data/demo/demo-members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
+import { DemoFinancialDocumentModal, type DemoFinancialDocument } from '@/components/demo/DemoFinancialDocument';
 
 type CotisationStatus = 'paid' | 'unpaid' | 'exempt';
 
@@ -40,6 +41,45 @@ const REMINDER_OPTIONS = [
 function fmt(dateStr?: string | null) {
   if (!dateStr) return '-';
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function memberRecipient(member: MemberRow) {
+  return {
+    name: formatFullName(member.firstName, member.lastName),
+    email: member.email,
+    memberId: member.memberId,
+    address: 'Rabat, Maroc',
+  };
+}
+
+function membershipInvoiceDocument(member: MemberRow, year: number): DemoFinancialDocument {
+  return {
+    id: `SALAM-FACT-${year}-${member.userId.slice(-4).toUpperCase()}`,
+    type: 'invoice',
+    title: `Frais d'adhésion annuelle ${year}`,
+    number: `SALAM-FACT-${year}-${member.userId.slice(-4).toUpperCase()}`,
+    issuedAt: `${year}-01-10`,
+    dueDate: `${year}-03-31`,
+    recipient: memberRecipient(member),
+    lines: [{ designation: `Frais d'adhésion annuelle ${year}`, qty: 1, unitPrice: 5000 }],
+    statusLabel: member.status === 'paid' ? 'Payée' : member.status === 'exempt' ? 'Exemptée' : 'En attente',
+  };
+}
+
+function membershipReceiptDocument(member: MemberRow, year: number): DemoFinancialDocument {
+  return {
+    id: `SALAM-RECU-${year}-${member.userId.slice(-4).toUpperCase()}`,
+    type: 'receipt',
+    title: 'Reçu de paiement',
+    number: `SALAM-RECU-${year}-${member.userId.slice(-4).toUpperCase()}`,
+    issuedAt: member.paidAt ?? `${year}-01-10`,
+    paidAt: member.paidAt ?? `${year}-01-10`,
+    recipient: memberRecipient(member),
+    lines: [{ designation: `Frais d'adhésion annuelle ${year}`, qty: 1, unitPrice: 5000 }],
+    statusLabel: 'Payé',
+    reference: member.reference ?? 'DEMO-REF',
+    note: "Reçu demo établi après confirmation du paiement de la cotisation.",
+  };
 }
 
 function SettingsPanel({ year, deadline, setDeadline }: { year: number; deadline: string; setDeadline: (v: string) => void }) {
@@ -198,7 +238,7 @@ export default function DemoAdminCotisationsPage() {
   const [search, setSearch] = useState('');
   const [showLogs, setShowLogs] = useState(false);
   const [modal, setModal] = useState<MemberRow | null>(null);
-  const [receiptFor, setReceiptFor] = useState<MemberRow | null>(null);
+  const [documentPreview, setDocumentPreview] = useState<DemoFinancialDocument | null>(null);
   const [reminderSentId, setReminderSentId] = useState<string | null>(null);
 
   const [members, setMembers] = useState<MemberRow[]>(() => demoMembers.map((member, index) => ({
@@ -304,10 +344,13 @@ export default function DemoAdminCotisationsPage() {
                       </button>
                     )}
                     {member.status === 'paid' && (
-                      <button onClick={() => setReceiptFor(member)} title="Voir le recu" className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600">
+                      <button onClick={() => setDocumentPreview(membershipReceiptDocument(member, year))} title="Voir le recu" className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600">
                         <Eye size={13} />
                       </button>
                     )}
+                    <button onClick={() => setDocumentPreview(membershipInvoiceDocument(member, year))} title="Voir la facture" className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-600">
+                      <FileText size={13} />
+                    </button>
                   </div>
                   <div className="relative shrink-0">
                     <select value={member.status} onChange={e => handleStatusChange(member, e.target.value as CotisationStatus)} className={`h-8 cursor-pointer appearance-none rounded-full border pl-3 pr-7 text-[11px] font-black outline-none ${cfg.badge}`}>
@@ -358,7 +401,7 @@ export default function DemoAdminCotisationsPage() {
         )}
 
         {modal && <PaymentModal member={modal} onConfirm={confirmPayment} onClose={() => setModal(null)} />}
-        {receiptFor && <ReceiptModal member={receiptFor} year={year} onClose={() => setReceiptFor(null)} />}
+        {documentPreview && <DemoFinancialDocumentModal documents={[documentPreview]} onClose={() => setDocumentPreview(null)} />}
       </div>
     </DemoPortalShell>
   );

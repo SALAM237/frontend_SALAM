@@ -7,7 +7,7 @@ import { usePublicBureau, type BureauMember } from '@/lib/api/roles';
 import { assetUrl } from '@/lib/assets';
 import { formatFullName } from '@/lib/format-name';
 
-const PLACEHOLDER_PHOTO = '/images/gallery/image_parallax_SALAM.png';
+const PLACEHOLDER_PHOTO = '/images/gallery/image_parallax_SALAM_1200.webp';
 const PRESIDENT_PHOTO = '/images/bureau/aoua_presidente_salam_2_bn.jpg';
 const FEMININE_BUREAU_POSTES: Record<string, string> = {
   president: 'Présidente',
@@ -230,7 +230,7 @@ export default function BureauExecutifPage() {
                 Les membres du bureau exécutif seront présentés après l'assemblée générale.
               </p>
               <p className="mt-1 text-xs text-emerald-600">
-                Vous souhaitez vous présenter aux élections ? Contactez-nous.
+                Vous souhaitez vous présenter aux élections ?? Contactez-nous.
               </p>
               <Link href="/contact" className="mt-4 inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-5 text-xs font-black text-white transition-all hover:bg-emerald-700">
                 Nous contacter

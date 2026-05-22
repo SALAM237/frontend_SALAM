@@ -160,7 +160,7 @@ function LoginForm() {
               <div className="flex items-start gap-2.5">
                 <MailWarning size={15} className="mt-0.5 shrink-0 text-amber-600" />
                 <p className="text-xs leading-relaxed text-amber-800">
-                  Vous n&apos;avez pas reçu l&apos;email de confirmation ? Cliquez sur le bouton ci-dessous pour recevoir un nouveau lien.
+                  Vous n&apos;avez pas reçu l&apos;email de confirmation ?? Cliquez sur le bouton ci-dessous pour recevoir un nouveau lien.
                 </p>
               </div>
 
@@ -205,7 +205,7 @@ function LoginForm() {
       </div>
 
       <p className="text-center text-sm text-neutral-500">
-        Pas encore membre ?{' '}
+        Pas encore membre ??{' '}
         <Link href="/auth/register" className="font-black text-emerald-700 hover:text-emerald-600">
           Créer mon compte
         </Link>

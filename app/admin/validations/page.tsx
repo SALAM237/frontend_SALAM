@@ -115,7 +115,7 @@ export default function AdminValidationsPage() {
                               <img src={submitterPhoto} alt={submitterName} className={`h-7 w-7 shrink-0 rounded-full border-2 object-cover ${memberAvatarBorderClass(submitter.gender)}`} />
                             ) : (
                               <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${memberInitialsClass(submitter.gender)}`}>
-                                {formatInitials(submitter.firstName ?? '', submitter.lastName ?? '', '?')}
+                                {formatInitials(submitter.firstName ?? '', submitter.lastName ?? '', '??')}
                               </div>
                             )}
                             <div className="min-w-0">

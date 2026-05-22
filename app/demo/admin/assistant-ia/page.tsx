@@ -8,7 +8,7 @@ const suggestions = [
   'Liste les membres en retard de frais d adhesion',
   'Propose les relances de cotisation',
   'Analyse les dons et partenariats chauds',
-  'Quels contenus doivent etre valides aujourd hui ?',
+  'Quels contenus doivent etre valides aujourd hui ??',
 ];
 
 const insights: Array<{ icon: React.ElementType; text: string }> = [

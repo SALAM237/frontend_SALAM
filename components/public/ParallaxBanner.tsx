@@ -106,7 +106,7 @@ export function ParallaxBanner() {
       <div
         className="absolute inset-0 hidden bg-cover bg-center bg-fixed lg:block"
         style={{
-          backgroundImage: "url('/images/gallery/image_parallax_SALAM.png')",
+          backgroundImage: "url('/images/gallery/image_parallax_SALAM_1920.webp')",
         }}
       />
 
@@ -115,7 +115,7 @@ export function ParallaxBanner() {
         ref={mobileRef}
         className="absolute inset-x-0 -top-[25%] bottom-[-25%] bg-cover bg-center will-change-transform lg:hidden"
         style={{
-          backgroundImage: "url('/images/gallery/image_parallax_SALAM.png')",
+          backgroundImage: "url('/images/gallery/image_parallax_SALAM_1200.webp')",
         }}
       />
 

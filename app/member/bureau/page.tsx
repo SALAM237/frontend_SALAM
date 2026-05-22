@@ -5,7 +5,7 @@ import { useMemberBureau, type BureauMember } from '@/lib/api/roles';
 import { assetUrl } from '@/lib/assets';
 import { formatFullName } from '@/lib/format-name';
 
-const PLACEHOLDER_PHOTO = '/images/gallery/image_parallax_SALAM.png';
+const PLACEHOLDER_PHOTO = '/images/gallery/image_parallax_SALAM_1200.webp';
 
 const FEMININE_BUREAU_POSTES: Record<string, string> = {
   president: 'Présidente',

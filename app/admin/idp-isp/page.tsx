@@ -51,7 +51,7 @@ function whatsappHref(lead: SalamChatLead) {
   const phone = lead.phone?.replace(/[\s.-]/g, '').replace(/^0/, '237');
   if (phone) return `https://wa.me/${phone}`;
   const text = encodeURIComponent('Bonjour, je vous contacte suite à votre échange avec SALAM Cameroun · Maroc.');
-  return `https://wa.me/23795859445?text=${text}`;
+  return `https://wa.me/23795859445??text=${text}`;
 }
 
 function LeadRow({ lead, onStatusChange }: { lead: SalamChatLead; onStatusChange: (id: string, status: ChatLeadStatus) => void }) {
@@ -135,7 +135,7 @@ function LeadRow({ lead, onStatusChange }: { lead: SalamChatLead; onStatusChange
               <MessageCircle size={14} /> WhatsApp
             </a>
             {lead.email && (
-              <a href={`mailto:${lead.email}?subject=Suite à votre demande auprès de SALAM`} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700">
+              <a href={`mailto:${lead.email}??subject=Suite à votre demande auprès de SALAM`} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700">
                 <Mail size={14} /> Email
               </a>
             )}

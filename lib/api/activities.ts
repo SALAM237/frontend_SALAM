@@ -83,7 +83,7 @@ export function useActivities(params?: { status?: string; category?: string }) {
   if (params?.category) qs.set('category', params.category);
   return useQuery({
     queryKey: ['admin-activities', params],
-    queryFn:  () => apiClient<{ activities: ActivityDoc[]; total: number }>(`/api/v1/admin/activities?${qs}`, { token: token ?? '' }),
+    queryFn:  () => apiClient<{ activities: ActivityDoc[]; total: number }>(`/api/v1/admin/activities??${qs}`, { token: token ?? '' }),
     enabled:  !!token,
   });
 }

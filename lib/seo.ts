@@ -123,7 +123,7 @@ export const schemaOrg = {
   alternateName: SITE_FULLNAME,
   description:   "Association camerounaise internationale dédiée à l'accompagnement des étudiants camerounais au Maroc, à la solidarité sociale, à l'insertion professionnelle et au développement du Cameroun.",
   url:           SITE_URL,
-  logo:          `${SITE_URL}/images/logo/logo_salam_wbg.png`,
+  logo:          `${SITE_URL}/images/logo/logo_salam_192.webp`,
   email:         SITE_EMAIL,
 
   /* Identité */
@@ -237,7 +237,7 @@ export const organizationSchema = {
   name:          SITE_NAME,
   alternateName: SITE_FULLNAME,
   url:           SITE_URL,
-  logo:          `${SITE_URL}/images/logo/logo_salam_wbg.png`,
+  logo:          `${SITE_URL}/images/logo/logo_salam_192.webp`,
   email:         SITE_EMAIL,
   description:   "Association camerounaise internationale engagée pour la solidarité étudiante, l'accompagnement académique et l'insertion professionnelle.",
   foundingDate:  '2010-02-20',
@@ -266,7 +266,7 @@ export const websiteSchema = {
     '@type': 'SearchAction',
     target: {
       '@type':      'EntryPoint',
-      urlTemplate:  `${SITE_URL}/actualites?q={search_term_string}`,
+      urlTemplate:  `${SITE_URL}/actualites??q={search_term_string}`,
     },
     'query-input': 'required name=search_term_string',
   },
@@ -281,7 +281,7 @@ export const faqSchema = {
   mainEntity: [
     {
       '@type': 'Question',
-      name:    "Qu'est-ce que l'association SALAM ?",
+      name:    "Qu'est-ce que l'association SALAM ??",
       acceptedAnswer: {
         '@type': 'Answer',
         text:    "SALAM signifie Solidaire Associative des Lauréats du Maroc. C'est une association camerounaise internationale fondée à Yaoundé, dont la mission est d'accompagner les étudiants camerounais au Maroc, de soutenir la diaspora camerounaise, de favoriser l'insertion socioprofessionnelle et de contribuer au développement du Cameroun.",
@@ -289,7 +289,7 @@ export const faqSchema = {
     },
     {
       '@type': 'Question',
-      name:    'Comment étudier au Maroc quand on est camerounais ?',
+      name:    'Comment étudier au Maroc quand on est camerounais ??',
       acceptedAnswer: {
         '@type': 'Answer',
         text:    "SALAM accompagne les bacheliers camerounais dans toutes les étapes pour étudier au Maroc : information sur les universités, préparation du dossier d'inscription, conseils sur la vie étudiante, mise en relation avec des étudiants déjà sur place et accompagnement à l'arrivée.",
@@ -297,7 +297,7 @@ export const faqSchema = {
     },
     {
       '@type': 'Question',
-      name:    "Comment rejoindre l'association SALAM ?",
+      name:    "Comment rejoindre l'association SALAM ??",
       acceptedAnswer: {
         '@type': 'Answer',
         text:    "Pour rejoindre l'association SALAM, rendez-vous sur la page d'adhésion du site association-salam.org, remplissez le formulaire d'inscription et notre équipe vous contactera dans les 48h pour valider votre adhésion et vous accueillir dans la communauté.",
@@ -305,7 +305,7 @@ export const faqSchema = {
     },
     {
       '@type': 'Question',
-      name:    'SALAM aide-t-elle les étudiants camerounais au Maroc ?',
+      name:    'SALAM aide-t-elle les étudiants camerounais au Maroc ??',
       acceptedAnswer: {
         '@type': 'Answer',
         text:    "Oui. SALAM — Solidaire Associative des Lauréats du Maroc — accompagne les étudiants camerounais dans leur orientation, leur intégration au Maroc, leur insertion professionnelle et leur retour au Cameroun. L'association propose des ateliers, des événements de networking, un réseau Alumni et des actions solidaires.",
@@ -313,7 +313,7 @@ export const faqSchema = {
     },
     {
       '@type': 'Question',
-      name:    "Quels accompagnements propose l'association SALAM ?",
+      name:    "Quels accompagnements propose l'association SALAM ??",
       acceptedAnswer: {
         '@type': 'Answer',
         text:    "SALAM propose : orientation académique et préparation à l'admission au Maroc, accompagnement à l'arrivée, soutien social et entraide communautaire, ateliers de développement professionnel, networking et mise en relation avec des employeurs, préparation au retour au Cameroun, et accès à la galerie privée membres.",
@@ -321,7 +321,7 @@ export const faqSchema = {
     },
     {
       '@type': 'Question',
-      name:    'Comment intégrer le réseau Alumni SALAM ?',
+      name:    'Comment intégrer le réseau Alumni SALAM ??',
       acceptedAnswer: {
         '@type': 'Answer',
         text:    "Le réseau Alumni SALAM est accessible aux diplômés camerounais formés au Maroc. Rejoignez l'association en tant que membre pour accéder au réseau, aux événements professionnels, aux opportunités de mentorat et au portail adhérent.",
@@ -329,7 +329,7 @@ export const faqSchema = {
     },
     {
       '@type': 'Question',
-      name:    "Quelle est la différence entre SALAM et d'autres associations camerounaises ?",
+      name:    "Quelle est la différence entre SALAM et d'autres associations camerounaises ??",
       acceptedAnswer: {
         '@type': 'Answer',
         text:    "SALAM est spécialisée dans l'accompagnement des étudiants camerounais ayant étudié ou étudiant au Maroc. Elle couvre tout le parcours : de l'orientation avant le départ jusqu'à l'insertion professionnelle au Cameroun. Elle dispose d'un portail numérique dédié aux membres et d'un réseau Alumni actif.",

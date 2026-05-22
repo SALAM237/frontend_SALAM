@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -78,7 +78,7 @@ function DemoSidebar({ type, nav, open, onClose }: { type: 'admin' | 'member'; n
       >
         <div className="h-[4px] w-full shrink-0" style={{ background: 'linear-gradient(90deg, #0B8F3A 33%, #C8102E 33%, #C8102E 66%, #F7C600 66%)' }} />
         <div className="flex items-center gap-3 border-b border-white/[0.06] px-5 py-4">
-          <Image src="/images/logo/logo_salam_wbg.png" alt="SALAM" width={36} height={36} className="h-9 w-9 rounded-full object-cover ring-1 ring-emerald-500/30" priority />
+          <Image src="/images/logo/logo_salam_96.webp" alt="SALAM" width={36} height={36} className="h-9 w-9 rounded-full object-cover ring-1 ring-emerald-500/30" priority />
           <div>
             <p className="text-sm font-black tracking-[0.16em] text-white">SALAM</p>
             <p className="text-[10px] font-semibold tracking-widest text-white/35">{type === 'admin' ? 'ADMIN DEMO' : 'ESPACE MEMBRE DEMO'}</p>
@@ -220,3 +220,4 @@ export function DemoStatus({ children, tone = 'neutral' }: { children: React.Rea
   };
   return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black leading-none ${styles[tone]}`}>{children}</span>;
 }
+

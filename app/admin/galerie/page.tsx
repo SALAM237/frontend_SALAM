@@ -118,7 +118,7 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
 
   const handleBulkDelete = async () => {
     if (selected.length === 0) return;
-    if (!confirm(`Supprimer ${selected.length} image${selected.length > 1 ? 's' : ''} sélectionnée${selected.length > 1 ? 's' : ''} ?`)) return;
+    if (!confirm(`Supprimer ${selected.length} image${selected.length > 1 ? 's' : ''} sélectionnée${selected.length > 1 ? 's' : ''} ??`)) return;
     for (const idx of [...selected].sort((a, b) => b - a)) {
       await removeImg.mutateAsync(idx);
     }
@@ -128,7 +128,7 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
 
   const handleReplaceClick = () => {
     if (selected.length !== 1) return;
-    if (!confirm('Remplacer cette image par une nouvelle image ?')) return;
+    if (!confirm('Remplacer cette image par une nouvelle image ??')) return;
     replaceRef.current?.click();
   };
 
@@ -223,7 +223,7 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
                   {!selectMode && (
                     <button
                       onClick={() => {
-                        if (!confirm('Supprimer cette photo ?')) return;
+                        if (!confirm('Supprimer cette photo ??')) return;
                         removeImg.mutate(i);
                       }}
                       className="absolute right-1.5 top-1.5 hidden h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white/80 transition hover:bg-red-600/90 hover:text-white group-hover:flex"
@@ -269,7 +269,7 @@ export default function AdminGaleriePage() {
   const albums = (data?.data ?? []) as AlbumDoc[];
 
   const handleDelete = (id: string, title: string) => {
-    if (!confirm(`Supprimer l'album "${title}" ? Toutes les photos seront perdues.`)) return;
+    if (!confirm(`Supprimer l'album "${title}" ?? Toutes les photos seront perdues.`)) return;
     deleteAlbum.mutate(id);
   };
 

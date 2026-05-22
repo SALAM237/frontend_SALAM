@@ -4,9 +4,9 @@ import { useEffect, useRef } from 'react';
 import { refreshAuthSession } from '@/lib/api/client';
 import { useAuthStore } from '@/store/auth.store';
 
-const REFRESH_EVERY_MS = 4 * 60 * 1000;
+const REFRESH_EVERY_MS = 10 * 60 * 1000;
 const REFRESH_WHEN_BACK_AFTER_MS = 60 * 1000;
-const REFRESH_AFTER_ACTIVITY_MS = 2 * 60 * 1000;
+const REFRESH_AFTER_ACTIVITY_MS = 8 * 60 * 1000;
 
 export default function AuthSessionKeeper() {
   const accessToken = useAuthStore(s => s.accessToken);

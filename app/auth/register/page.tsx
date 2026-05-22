@@ -138,7 +138,7 @@ export default function RegisterPage() {
           </p>
         </div>
         <p className="text-center text-sm text-neutral-500">
-          Déjà activé ?{' '}
+          Déjà activé ??{' '}
           <Link href="/auth/login" className="font-black text-emerald-700 hover:text-emerald-600">
             Se connecter
           </Link>
@@ -390,7 +390,7 @@ export default function RegisterPage() {
       </div>
 
       <p className="text-center text-sm text-neutral-500">
-        Déjà membre ?{' '}
+        Déjà membre ??{' '}
         <Link href="/auth/login" className="font-black text-emerald-700 hover:text-emerald-600">
           Se connecter
         </Link>

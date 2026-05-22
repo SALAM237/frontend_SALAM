@@ -214,7 +214,7 @@ export default function ProfilPage() {
     }
   };
 
-  const initials = formatInitials(form.firstName, form.lastName, '?');
+  const initials = formatInitials(form.firstName, form.lastName, '??');
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">

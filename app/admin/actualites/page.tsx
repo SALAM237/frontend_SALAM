@@ -352,7 +352,7 @@ export default function AdminActualitesPage() {
   const drafts    = articles.filter((a: ArticleDoc) => a.status === 'draft').length;
 
   const handleDelete = (id: string, title: string) => {
-    if (!confirm(`Supprimer "${title}" ?`)) return;
+    if (!confirm(`Supprimer "${title}" ??`)) return;
     deleteArticle.mutate(id);
   };
 

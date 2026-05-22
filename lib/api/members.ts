@@ -128,7 +128,7 @@ export function useAdminMembers(params: {
   return useQuery({
     queryKey: ['admin-members', params],
     queryFn: () =>
-      apiClient<MembersListResponse>(`/api/v1/admin/members?${qs}`, {
+      apiClient<MembersListResponse>(`/api/v1/admin/members??${qs}`, {
         token: token ?? '',
       }),
     enabled: !!token,

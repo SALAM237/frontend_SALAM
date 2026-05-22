@@ -10,9 +10,10 @@ export interface ApiResponse<T = unknown> {
 let _refreshing: Promise<string | null> | null = null;
 let _refreshFailures = 0;
 let _nextPeriodicRefreshAt = 0;
+let _sessionUncertain = false;
 
-const MAX_PERIODIC_AUTH_FAILURES = 3;
-const BASE_REFRESH_BACKOFF_MS = 30 * 1000;
+const MAX_PERIODIC_AUTH_FAILURES = 5;
+const BASE_REFRESH_BACKOFF_MS = 60_000;
 const MAX_REFRESH_BACKOFF_MS = 5 * 60 * 1000;
 
 type RefreshAuthOptions = {
@@ -84,6 +85,7 @@ export async function refreshAuthSession(options: RefreshAuthOptions = {}): Prom
 
       _refreshFailures = 0;
       _nextPeriodicRefreshAt = 0;
+      _sessionUncertain = false;
       return newToken;
     } catch (error) {
       const status = error instanceof RefreshError ? error.status : undefined;
@@ -97,9 +99,10 @@ export async function refreshAuthSession(options: RefreshAuthOptions = {}): Prom
         );
         _nextPeriodicRefreshAt = Date.now() + backoff;
 
-        if (logoutOnFailure && isAuthRefusal && _refreshFailures >= MAX_PERIODIC_AUTH_FAILURES) {
-          await clearLocalSessionAndRedirect();
-        }
+        // Un 401 périodique (Railway redémarre, réseau instable, dev local→prod) ne déconnecte
+        // pas l'utilisateur. On marque la session incertaine : le prochain appel API qui
+        // retourne 401 tentera un refresh et déconnectera si ce refresh échoue aussi.
+        if (isAuthRefusal) _sessionUncertain = true;
         return null;
       }
 

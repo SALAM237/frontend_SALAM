@@ -169,11 +169,11 @@ export default function AdminTresoreriePage() {
   };
 
   const handleDeleteTx = (id: string) => {
-    if (window.confirm('Supprimer cette operation de tresorerie ?')) deleteTx.mutate(id);
+    if (window.confirm('Supprimer cette operation de tresorerie ??')) deleteTx.mutate(id);
   };
 
   const handleDeleteAsset = (id: string) => {
-    if (window.confirm('Supprimer cet element de patrimoine ?')) deleteAsset.mutate(id);
+    if (window.confirm('Supprimer cet element de patrimoine ??')) deleteAsset.mutate(id);
   };
 
   const exportCsv = () => {

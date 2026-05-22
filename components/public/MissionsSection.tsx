@@ -300,7 +300,7 @@ export default function MissionsSection() {
               {MISSIONS[activeIdx].num}
             </div>
             <Link
-              href={`/missions?m=${{ "01": "preparer", "02": "insertion", "03": "solidarite", "04": "developpement" }[MISSIONS[activeIdx].num]}`}
+              href={`/missions??m=${{ "01": "preparer", "02": "insertion", "03": "solidarite", "04": "developpement" }[MISSIONS[activeIdx].num]}`}
               className="pointer-events-auto -mt-1 inline-flex items-center gap-1.5 text-xs font-black tracking-[0.04em] transition-opacity duration-200 hover:opacity-70"
               style={{ color: MISSIONS[activeIdx].accent }}
             >
@@ -580,7 +580,7 @@ function StickyMissionStack({
             </p>
 
             <Link
-              href={`/missions?m=${{ "01": "preparer", "02": "insertion", "03": "solidarite", "04": "developpement" }[mission.num]}`}
+              href={`/missions??m=${{ "01": "preparer", "02": "insertion", "03": "solidarite", "04": "developpement" }[mission.num]}`}
               className="mt-[clamp(0.8rem,1.8vw,1.2rem)] hidden items-center gap-1.5 text-[clamp(0.78rem,1.5vw,0.88rem)] font-black tracking-[0.04em] transition-opacity duration-200 hover:opacity-70 lg:inline-flex"
               style={{ color: acc }}
             >

@@ -7,7 +7,7 @@ import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard'
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName } from '@/lib/format-name';
 
-/* ── Canvas helpers ─────────────────────────────────────── */
+/* Canvas helpers */
 
 function loadImg(src: string): Promise<HTMLImageElement> {
   return new Promise((res, rej) => {
@@ -58,7 +58,7 @@ async function generateCardBlob(member: MemberCardData): Promise<Blob> {
 
   /* logo circle */
   try {
-    const logo = await loadImg('/images/logo/logo_salam_wbg.png');
+    const logo = await loadImg('/images/logo/logo_salam_96.webp');
     ctx.save();
     ctx.beginPath(); ctx.arc(62, 78, 32, 0, Math.PI * 2); ctx.clip();
     ctx.drawImage(logo, 30, 46, 64, 64);
@@ -114,7 +114,7 @@ async function generateCardBlob(member: MemberCardData): Promise<Blob> {
 
   /* QR code */
   try {
-    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://www.association-salam.org/verify/${member.id}`)}&bgcolor=07140d&color=ffffff&margin=8&qzone=1`;
+    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/??size=200x200&data=${encodeURIComponent(`https://www.association-salam.org/verify/${member.id}`)}&bgcolor=07140d&color=ffffff&margin=8&qzone=1`;
     const qr = await loadImg(qrSrc);
     ctx.save();
     ctx.beginPath(); rrect(ctx, W - 220, 26, 190, 190, 14); ctx.clip();
@@ -132,7 +132,7 @@ async function generateCardBlob(member: MemberCardData): Promise<Blob> {
   });
 }
 
-/* ── Page ───────────────────────────────────────────────── */
+/* Page */
 
 export default function MembreCartePage() {
   const [downloading, setDownloading] = useState(false);
@@ -141,12 +141,12 @@ export default function MembreCartePage() {
   const user = useAuthStore(s => s.user);
 
   const year     = new Date().getFullYear();
-  const memberId = user?._id ? `SALAM-${year}-${user._id.slice(-4).toUpperCase()}` : '—';
+  const memberId = user?._id ? `SALAM-${year}-${user._id.slice(-4).toUpperCase()}` : '-';
 
   const memberData: MemberCardData = {
     id:        memberId,
-    firstName: user?.firstName ?? '—',
-    lastName:  user?.lastName  ?? '—',
+    firstName: user?.firstName ?? '-',
+    lastName:  user?.lastName  ?? '-',
     gender:    user?.gender,
     role:      'Membre actif',
     year,
@@ -177,7 +177,7 @@ export default function MembreCartePage() {
 
   const handleShare = async () => {
     const url  = `https://www.association-salam.org/verify/${memberId}`;
-    const text = `Ma carte de membre SALAM — ${memberId}`;
+    const text = `Ma carte de membre SALAM - ${memberId}`;
     setSharing(true);
     try {
       if (navigator.share) {
@@ -237,7 +237,7 @@ export default function MembreCartePage() {
             }`}
           >
             {downloading
-              ? <><Loader2 size={14} className="animate-spin" /> Génération…</>
+              ? <><Loader2 size={14} className="animate-spin" /> Génération⬦</>
               : downloaded
                 ? <><CheckCircle2 size={14} /> Téléchargée !</>
                 : <><Download size={14} /> Télécharger (PNG)</>}
@@ -249,7 +249,7 @@ export default function MembreCartePage() {
             className="inline-flex h-10 items-center gap-2 rounded-full border border-neutral-200 px-6 text-sm font-semibold text-neutral-600 transition-all hover:border-emerald-300 hover:text-emerald-700 disabled:opacity-50"
           >
             {sharing
-              ? <><Loader2 size={14} className="animate-spin" /> Partage…</>
+              ? <><Loader2 size={14} className="animate-spin" /> Partage⬦</>
               : <><Share2 size={14} /> Partager</>}
           </button>
 
@@ -298,7 +298,7 @@ export default function MembreCartePage() {
           </div>
           <div className="space-y-3">
             {[
-              { label: 'Nom complet', value: user ? formatFullName(user.firstName, user.lastName) : '—' },
+              { label: 'Nom complet', value: user ? formatFullName(user.firstName, user.lastName) : '-' },
               { label: 'N° membre',   value: memberId },
               { label: 'Rôle',        value: 'Membre actif' },
               { label: 'Validité',    value: `Année ${year}` },

@@ -46,7 +46,7 @@ export function useAdminCotisations(year: number) {
     queryKey: ['admin-cotisations', year],
     queryFn: () =>
       apiClient<AdminCotisationRow[]>(
-        `/api/v1/admin/cotisations?year=${year}`,
+        `/api/v1/admin/cotisations??year=${year}`,
         { token: token ?? '' },
       ),
     enabled: !!token,
@@ -88,7 +88,7 @@ export function useDeleteCotisation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ userId, year }: { userId: string; year: number }) =>
-      apiClient(`/api/v1/admin/cotisations/${userId}?year=${year}`, {
+      apiClient(`/api/v1/admin/cotisations/${userId}??year=${year}`, {
         method: 'DELETE',
         token: token ?? '',
       }),

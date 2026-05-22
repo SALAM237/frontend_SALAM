@@ -35,7 +35,7 @@ export default function ChoisirEspacePage() {
     if (!admin && !member) { router.replace('/auth/login'); return; }
     if (!admin)  { handleSelectSpace('member'); return; }
     if (!member) { handleSelectSpace('admin');  return; }
-    // both — stay on this page for user to choose
+    // both roles available - stay on this page for user to choose
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -80,7 +80,7 @@ export default function ChoisirEspacePage() {
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-5 sm:px-10">
         <Link href="/" className="flex items-center gap-3">
-          <Image src="/images/logo/logo_salam_wbg.png" alt="SALAM" width={36} height={36}
+          <Image src="/images/logo/logo_salam_96.webp" alt="SALAM" width={36} height={36}
             className="h-9 w-9 rounded-full object-cover ring-1 ring-emerald-500/30" priority />
           <div>
             <p className="text-sm font-black tracking-[0.2em] text-white">SALAM</p>
@@ -176,3 +176,4 @@ export default function ChoisirEspacePage() {
     </div>
   );
 }
+

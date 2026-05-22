@@ -80,7 +80,7 @@ function CreatePasswordContent() {
           </p>
         </div>
         <button
-          onClick={() => router.push('/member/profil?complete=1')}
+          onClick={() => router.push('/member/profil??complete=1')}
           className="group flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-black text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98]"
         >
           Se connecter <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
@@ -119,7 +119,7 @@ function CreatePasswordContent() {
       }).catch(() => {});
       setAuth(activated.data.user, activated.data.accessToken);
       setSuccess(true);
-      setTimeout(() => router.push(activated.data.nextUrl ?? '/member/profil?complete=1'), 1200);
+      setTimeout(() => router.push(activated.data.nextUrl ?? '/member/profil??complete=1'), 1200);
     } catch (err: unknown) {
       setErrors({ global: err instanceof Error ? err.message : 'Lien d\'invitation invalide ou expiré.' });
     } finally {

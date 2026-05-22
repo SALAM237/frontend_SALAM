@@ -59,7 +59,7 @@ export default function ConseilDesSagesPage() {
               Les membres du conseil des sages seront présentés prochainement.
             </p>
             <p className="mt-1 text-xs text-yellow-600">
-              Vous avez une expertise à apporter à SALAM ? Contactez-nous.
+              Vous avez une expertise à apporter à SALAM ?? Contactez-nous.
             </p>
             <Link href="/contact" className="mt-4 inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-5 text-xs font-black text-white hover:bg-emerald-700 transition-all">
               Nous contacter

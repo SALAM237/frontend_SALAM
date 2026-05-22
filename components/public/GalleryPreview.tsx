@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, ImageIcon, Play } from 'lucide-react';
 import { usePublicAlbums } from '@/lib/api/gallery';
 
@@ -23,7 +24,7 @@ export function GalleryPreview() {
         id: `${album._id}-${image.url}`,
         title: image.alt || album.title,
         category: album.tags?.[0] || 'Galerie',
-        url: image.url,
+        url: image.thumbnailUrl || image.mediumUrl || image.url,
         albumTitle: album.title,
       })))
     .slice(0, 5);
@@ -96,8 +97,14 @@ export function GalleryPreview() {
                     minHeight: large ? 'clamp(200px,28vw,320px)' : 'clamp(100px,14vw,180px)',
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo.url} alt={photo.title} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                  <Image
+                    src={photo.url}
+                    alt={photo.title}
+                    fill
+                    loading="lazy"
+                    sizes={large ? '(max-width: 768px) 100vw, 520px' : '(max-width: 768px) 50vw, 250px'}
+                    className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
                   <div className="absolute inset-0 bg-black/10 transition-colors duration-300 group-hover:bg-black/30" />
                   {large && (
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">

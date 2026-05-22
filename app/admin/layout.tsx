@@ -125,7 +125,7 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
 
         {/* Logo */}
         <div className="flex items-center gap-3 border-b border-white/[0.06] px-5 py-4">
-          <Image src="/images/logo/logo_salam_wbg.png" alt="SALAM" width={36} height={36} className="h-9 w-9 rounded-full object-cover ring-1 ring-emerald-500/30" priority />
+          <Image src="/images/logo/logo_salam_96.webp" alt="SALAM" width={36} height={36} className="h-9 w-9 rounded-full object-cover ring-1 ring-emerald-500/30" priority />
           <div>
             <p className="text-sm font-black tracking-[0.16em] text-white">SALAM</p>
             <p className="text-[10px] font-semibold tracking-widest text-white/35">ADMIN</p>
@@ -140,7 +140,7 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
           <p className="mb-2 px-2 text-[9px] font-black uppercase tracking-[0.22em] text-white/20">Navigation</p>
           <ul className="flex flex-col gap-0.5">
             {nav.map(({ label, href, icon: Icon }) => {
-              const [hrefPath, hrefQuery] = href.split('?');
+              const [hrefPath, hrefQuery] = href.split('??');
               const hrefTab = new URLSearchParams(hrefQuery ?? '').get('tab');
               const active = hrefTab
                 ? pathname === hrefPath && currentTab === hrefTab
@@ -293,7 +293,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/bureau-executif/connexion');
   };
 
-  // Écran de chargement pendant la restauration de session
+  // Ecran de chargement pendant la restauration de session
   if (restoring) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f4f6f5]">
@@ -409,3 +409,4 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 }
+

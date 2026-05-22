@@ -56,14 +56,14 @@ const suggestions = [
     color: 'bg-rose-50 text-rose-700 border-rose-100',
     icon: Target,
     label: 'Leads prioritaires',
-    prompt: 'Quels leads donateurs ou sponsors sont prioritaires ?',
+    prompt: 'Quels leads donateurs ou sponsors sont prioritaires ??',
   },
   {
     category: 'Contrôle',
     color: 'bg-slate-100 text-slate-700 border-slate-200',
     icon: AlertTriangle,
     label: 'Points de vigilance',
-    prompt: 'Quels sont les points de vigilance admin à traiter cette semaine ?',
+    prompt: 'Quels sont les points de vigilance admin à traiter cette semaine ??',
   },
 ];
 
@@ -251,7 +251,7 @@ export default function AdminAIAssistantPage() {
       id: 'welcome-reset',
       role: 'assistant',
       timestamp: new Date(),
-      content: 'Conversation réinitialisée. Quelle analyse voulez-vous lancer ?',
+      content: 'Conversation réinitialisée. Quelle analyse voulez-vous lancer ??',
     }]);
   };
 

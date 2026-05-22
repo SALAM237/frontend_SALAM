@@ -6,6 +6,7 @@ import { DemoPortalShell } from '../../_components/DemoShell';
 import { demoInvoices } from '@/data/demo/demo-portal';
 import { demoMembers } from '@/data/demo/demo-members';
 import { formatFullName } from '@/lib/format-name';
+import { DemoFinancialDocumentModal, type DemoFinancialDocument } from '@/components/demo/DemoFinancialDocument';
 
 type DemoInvoice = typeof demoInvoices[number] & { _id: string; title: string; invoiceNumber: string; status: 'draft' | 'sent' | 'closed'; dueDate: string; recipients: { status: 'paid' | 'pending' }[]; description?: string; paymentLink?: string };
 
@@ -31,6 +32,28 @@ function invoices(): DemoInvoice[] {
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function invoiceDocuments(invoice: DemoInvoice): DemoFinancialDocument[] {
+  const recipients = demoMembers.slice(0, Math.max(1, invoice.recipients.length));
+  return recipients.map((member, index) => ({
+    id: `${invoice.invoiceNumber}-${String(index + 1).padStart(2, '0')}`,
+    type: 'invoice',
+    title: invoice.title,
+    number: recipients.length > 1 ? `${invoice.invoiceNumber}-${String(index + 1).padStart(2, '0')}` : invoice.invoiceNumber,
+    issuedAt: invoice.issuedAt,
+    dueDate: invoice.dueDate,
+    recipient: {
+      name: formatFullName(member.firstName, member.lastName),
+      email: member.email,
+      phone: (member as { phone?: string }).phone,
+      address: `${(member as { residenceCity?: string }).residenceCity ?? member.city ?? 'Rabat'}, ${member.country ?? 'Maroc'}`,
+      memberId: member.memberId,
+    },
+    lines: [{ designation: invoice.title, qty: 1, unitPrice: invoice.amount }],
+    statusLabel: invoice.status === 'closed' ? 'Clôturée' : invoice.status === 'sent' ? 'Envoyée' : 'Brouillon',
+    note: 'Document A4 individualisé par destinataire, comme dans la facturation réelle.',
+  }));
 }
 
 function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
@@ -79,7 +102,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function InvoiceDetailModal({ invoice, onClose }: { invoice: DemoInvoice; onClose: () => void }) {
+function InvoiceDetailModal({ invoice, onClose, onOpenPdf }: { invoice: DemoInvoice; onClose: () => void; onOpenPdf: () => void }) {
   const cfg = STATUS_CONFIG[invoice.status];
   const paidCount = invoice.recipients.filter(r => r.status === 'paid').length;
   return (
@@ -96,7 +119,10 @@ function InvoiceDetailModal({ invoice, onClose }: { invoice: DemoInvoice; onClos
           {[['Montant', `${Number(invoice.amount).toLocaleString('fr-FR')} F.CFA`], ['Date emission', fmt(invoice.issuedAt)], ['Echeance', fmt(invoice.dueDate)], ['Destinataires', `${invoice.recipients.length} membres`], ['Paiements recus', `${paidCount} / ${invoice.recipients.length}`]].map(([label, value]) => <div key={label} className="flex items-center justify-between border-b border-neutral-50 pb-2 last:border-0"><span className="text-xs font-semibold text-neutral-400">{label}</span><span className="text-xs font-black text-neutral-900">{value}</span></div>)}
           <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black leading-none ${cfg.badge}`}>{cfg.icon} {cfg.label}</span>
         </div>
-        <div className="border-t border-neutral-100 px-6 py-4"><button onClick={onClose} className="w-full rounded-xl bg-neutral-900 py-2.5 text-sm font-black text-white transition hover:bg-neutral-800">Fermer</button></div>
+        <div className="grid grid-cols-2 gap-3 border-t border-neutral-100 px-6 py-4">
+          <button onClick={onOpenPdf} className="rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700">Voir le PDF A4</button>
+          <button onClick={onClose} className="rounded-xl bg-neutral-900 py-2.5 text-sm font-black text-white transition hover:bg-neutral-800">Fermer</button>
+        </div>
       </div>
     </div>
   );
@@ -106,6 +132,7 @@ export default function DemoAdminFacturationPage() {
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [viewInvoice, setViewInvoice] = useState<DemoInvoice | null>(null);
+  const [pdfDocs, setPdfDocs] = useState<DemoFinancialDocument[] | null>(null);
   const list = invoices();
   const filtered = useMemo(() => list.filter(inv => `${inv.title} ${inv.invoiceNumber}`.toLowerCase().includes(search.toLowerCase())), [search]);
   const stats = { total: list.length, sent: list.filter(i => i.status === 'sent').length, closed: list.filter(i => i.status === 'closed').length, draft: list.filter(i => i.status === 'draft').length };
@@ -133,14 +160,15 @@ export default function DemoAdminFacturationPage() {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-100 bg-violet-50"><FileText size={16} className="text-violet-600" /></div>
                   <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-black text-neutral-900">{inv.title}</p><span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black leading-none ${cfg.badge}`}>{cfg.icon} {cfg.label}</span></div><p className="mt-0.5 font-mono text-[11px] text-neutral-400">{inv.invoiceNumber}</p>{inv.status !== 'draft' && <div className="mt-1.5 flex items-center gap-2"><div className="h-1 max-w-32 flex-1 overflow-hidden rounded-full bg-neutral-100"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${progress}%` }} /></div><span className="text-[10px] text-neutral-400">{paidCount}/{inv.recipients.length} payes</span></div>}</div>
                   <div className="hidden shrink-0 text-right sm:block"><p className="text-xs font-black text-neutral-700">{Number(inv.amount).toLocaleString('fr-FR')} F.CFA</p><p className="text-[10px] text-neutral-400">Echeance {fmt(inv.dueDate)}</p></div>
-                  <div className="flex shrink-0 items-center gap-2"><button onClick={() => setViewInvoice(inv)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600"><Eye size={13} /></button>{inv.status === 'draft' && <button className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-100"><Send size={11} /> Envoyer</button>}</div>
+                  <div className="flex shrink-0 items-center gap-2"><button onClick={() => setPdfDocs(invoiceDocuments(inv))} className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600"><Eye size={13} /></button>{inv.status === 'draft' && <button className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-100"><Send size={11} /> Envoyer</button>}</div>
                 </div>
               );
             })}
           </div>
         </div>
         {showCreate && <CreateInvoiceModal onClose={() => setShowCreate(false)} />}
-        {viewInvoice && <InvoiceDetailModal invoice={viewInvoice} onClose={() => setViewInvoice(null)} />}
+        {viewInvoice && <InvoiceDetailModal invoice={viewInvoice} onClose={() => setViewInvoice(null)} onOpenPdf={() => setPdfDocs(invoiceDocuments(viewInvoice))} />}
+        {pdfDocs && <DemoFinancialDocumentModal documents={pdfDocs} onClose={() => setPdfDocs(null)} />}
       </div>
     </DemoPortalShell>
   );

@@ -6,7 +6,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen">
 
-      {/* ── Panneau gauche — identité SALAM ── */}
+      {/* Panneau gauche - identite SALAM */}
       <div className="relative hidden w-[480px] shrink-0 flex-col overflow-hidden bg-gradient-to-b from-[#05120b] via-[#07190f] to-[#061009] lg:flex xl:w-[520px]">
 
         {/* Texture subtile */}
@@ -24,7 +24,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           {/* Logo */}
           <Link href="/" className="group flex w-fit items-center gap-3">
             <Image
-              src="/images/logo/logo_salam_wbg.png"
+              src="/images/logo/logo_salam_96.webp"
               alt="SALAM"
               width={40}
               height={40}
@@ -63,7 +63,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      {/* ── Panneau droit — formulaire ── */}
+      {/* Panneau droit - formulaire */}
       <div className="flex flex-1 flex-col bg-[#f7f8f6]">
 
         {/* Mobile header */}
@@ -71,7 +71,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <div className="h-[3px] w-6 rounded-full" style={{ background: 'linear-gradient(90deg, #0B8F3A 33%, #C8102E 33%, #C8102E 66%, #F7C600 66%)' }} />
           <Link href="/" className="flex items-center gap-2">
             <Image
-              src="/images/logo/logo_salam_wbg.png"
+              src="/images/logo/logo_salam_96.webp"
               alt="SALAM"
               width={28}
               height={28}
@@ -101,3 +101,4 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+

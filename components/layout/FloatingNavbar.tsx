@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -106,8 +106,11 @@ export function FloatingNavbar() {
         <Link href="/" className="flex min-w-0 items-center gap-2.5" aria-label="Accueil SALAM">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/images/logo/logo_salam_wbg.png"
+            src="/images/logo/logo_salam_96.webp"
             alt="Logo SALAM"
+            width={40}
+            height={40}
+            fetchPriority="high"
             className="h-10 w-10 shrink-0 rounded-full object-cover shadow-md"
           />
           <div className="min-w-0 leading-tight">
@@ -241,3 +244,4 @@ export function FloatingNavbar() {
     </div>
   );
 }
+

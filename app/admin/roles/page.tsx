@@ -294,7 +294,7 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
   };
 
   const handleDelete = () => {
-    if (!confirm(`Supprimer le rôle "${role.name}" ? Cette action est irréversible.`)) return;
+    if (!confirm(`Supprimer le rôle "${role.name}" ?? Cette action est irréversible.`)) return;
     deleteRole.mutate(role._id, { onSuccess: () => onClose() });
   };
 
@@ -1310,12 +1310,12 @@ export default function RolesPage() {
   ];
 
   const handleRevoke = (id: string) => {
-    if (!confirm('Révoquer l\'accès administrateur de cet utilisateur ?')) return;
+    if (!confirm('Révoquer l\'accès administrateur de cet utilisateur ??')) return;
     revokeAdmin.mutate(id);
   };
 
   const handleSuspend = (id: string) => {
-    if (!confirm('Bloquer ce compte ? L\'utilisateur ne pourra plus se connecter.')) return;
+    if (!confirm('Bloquer ce compte ?? L\'utilisateur ne pourra plus se connecter.')) return;
     suspendMember.mutate(id);
   };
 

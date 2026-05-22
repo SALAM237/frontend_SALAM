@@ -161,9 +161,13 @@ export function HeroSection() {
         loop
         playsInline
         preload="metadata"
+        poster="/videos/hero-poster.jpg"
         aria-hidden="true"
       >
-        <source src="/videos/hero-bg.mp4#t=0.1" type="video/mp4" />
+        <source src="/videos/hero-mobile.webm" type="video/webm" media="(max-width: 767px)" />
+        <source src="/videos/hero-mobile.mp4" type="video/mp4" media="(max-width: 767px)" />
+        <source src="/videos/hero-desktop.webm" type="video/webm" />
+        <source src="/videos/hero-desktop.mp4" type="video/mp4" />
       </video>
 
       {/* ── Overlays ── */}
@@ -196,8 +200,11 @@ export function HeroSection() {
           <Link href="/" className="flex min-w-0 items-center gap-2.5" aria-label="Accueil SALAM">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/images/logo/logo_salam_wbg.png"
+              src="/images/logo/logo_salam_96.webp"
               alt="Logo SALAM"
+              width={40}
+              height={40}
+              fetchPriority="high"
               className="h-10 w-10 shrink-0 rounded-full object-cover shadow-md"
             />
             <div className="min-w-0 leading-tight">

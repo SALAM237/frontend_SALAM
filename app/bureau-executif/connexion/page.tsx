@@ -38,7 +38,7 @@ export default function BureauConnexionPage() {
       );
 
       if (res.data.requires2FA) {
-        setError('Authentification 2FA requise — fonctionnalité disponible prochainement.');
+        setError('Authentification 2FA requise - fonctionnalit?? disponible prochainement.');
         return;
       }
 
@@ -84,7 +84,7 @@ export default function BureauConnexionPage() {
   return (
     <div className="flex min-h-screen">
 
-      {/* ── Panneau gauche — identité Bureau ── */}
+      {/* Panneau gauche - identite Bureau */}
       <div className="relative hidden w-[480px] shrink-0 flex-col overflow-hidden bg-gradient-to-b from-[#030a05] via-[#05120b] to-[#030a05] lg:flex xl:w-[520px]">
 
         {/* Texture */}
@@ -102,7 +102,7 @@ export default function BureauConnexionPage() {
 
           {/* Logo */}
           <Link href="/" className="group flex w-fit items-center gap-3">
-            <Image src="/images/logo/logo_salam_wbg.png" alt="SALAM" width={40} height={40}
+            <Image src="/images/logo/logo_salam_96.webp" alt="SALAM" width={40} height={40}
               className="h-10 w-10 rounded-full object-cover ring-1 ring-emerald-500/30 transition group-hover:ring-emerald-400/60" priority />
             <div>
               <p className="text-sm font-black tracking-[0.2em] text-white">SALAM</p>
@@ -148,7 +148,7 @@ export default function BureauConnexionPage() {
         </div>
       </div>
 
-      {/* ── Panneau droit — formulaire ── */}
+      {/* Panneau droit - formulaire */}
       <div className="flex flex-1 flex-col bg-[#f7f8f6]">
 
         {/* Mobile header */}
@@ -156,7 +156,7 @@ export default function BureauConnexionPage() {
           <div className="h-[3px] w-6 rounded-full"
             style={{ background: 'linear-gradient(90deg, #0B8F3A 33%, #C8102E 33%, #C8102E 66%, #F7C600 66%)' }} />
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/images/logo/logo_salam_wbg.png" alt="SALAM" width={28} height={28} className="h-7 w-7 rounded-full object-cover" priority />
+            <Image src="/images/logo/logo_salam_96.webp" alt="SALAM" width={28} height={28} className="h-7 w-7 rounded-full object-cover" priority />
             <span className="text-sm font-black tracking-[0.15em] text-neutral-800">SALAM</span>
           </Link>
         </div>
@@ -217,7 +217,7 @@ export default function BureauConnexionPage() {
                     id="be-password" type={showPwd ? 'text' : 'password'}
                     autoComplete="current-password" required
                     value={password} onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder="⬢⬢⬢⬢⬢⬢⬢⬢"
                     className="w-full rounded-xl border border-neutral-200 bg-white py-3 pl-4 pr-11 text-sm text-neutral-900 outline-none placeholder:text-neutral-300 transition-all focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15"
                   />
                   <button type="button" onClick={() => setShowPwd(v => !v)}
@@ -246,7 +246,7 @@ export default function BureauConnexionPage() {
                     <div className="flex items-start gap-2.5">
                       <MailWarning size={15} className="mt-0.5 shrink-0 text-amber-600" />
                       <p className="text-xs leading-relaxed text-amber-800">
-                        Vous n&apos;avez pas reçu l&apos;email ? Cliquez ci-dessous pour en recevoir un nouveau.
+                        Vous n&apos;avez pas reçu l&apos;email ?? Cliquez ci-dessous pour en recevoir un nouveau.
                       </p>
                     </div>
                     {resendStatus === 'sent' ? (
@@ -277,7 +277,7 @@ export default function BureauConnexionPage() {
 
             <div className="text-center">
               <p className="text-xs text-neutral-400">
-                Vous êtes un membre ?{' '}
+                Vous êtes un membre ??{' '}
                 <Link href="/auth/login" className="font-black text-emerald-700 hover:text-emerald-600">
                   Espace membre
                 </Link>
@@ -290,3 +290,4 @@ export default function BureauConnexionPage() {
     </div>
   );
 }
+

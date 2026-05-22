@@ -82,7 +82,7 @@ export default function CommissionsPage() {
         <div className="mx-auto max-w-4xl text-center">
           <h3 className="text-xl font-black text-white">Proposer une nouvelle commission</h3>
           <p className="mt-2 text-sm text-white/50">
-            Vous avez une idée de groupe de travail qui manque à SALAM ? Partagez-la avec nous.
+            Vous avez une idée de groupe de travail qui manque à SALAM ?? Partagez-la avec nous.
           </p>
           <Link href="/contact" className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-emerald-500 px-6 text-sm font-black text-white hover:bg-emerald-400 transition-all">
             Nous contacter →

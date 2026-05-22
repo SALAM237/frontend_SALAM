@@ -79,7 +79,7 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl
 
         {/* Logo */}
         <div className="flex items-center gap-3 border-b border-white/[0.06] px-5 py-4">
-          <Image src="/images/logo/logo_salam_wbg.png" alt="SALAM" width={36} height={36} className="h-9 w-9 rounded-full object-cover ring-1 ring-emerald-500/30" priority />
+          <Image src="/images/logo/logo_salam_96.webp" alt="SALAM" width={36} height={36} className="h-9 w-9 rounded-full object-cover ring-1 ring-emerald-500/30" priority />
           <div>
             <p className="text-sm font-black tracking-[0.16em] text-white">SALAM</p>
             <p className="text-[10px] font-semibold tracking-widest text-white/35">ESPACE MEMBRE</p>
@@ -93,7 +93,7 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl
         <div className="mx-3 my-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] p-3">
           <p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-400/70">Carte membre</p>
           <p className="mt-1 text-sm font-black text-white">
-            {firstName || lastName ? formatFullName(firstName, lastName) : '—'}
+            {firstName || lastName ? formatFullName(firstName, lastName) : '-'}
           </p>
           <Link
             href="/member/carte"
@@ -143,7 +143,7 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl
             )}
             <div className="flex-1 min-w-0">
               <p className="truncate text-sm font-black text-white/80">
-                {firstName || lastName ? formatFullName(firstName, lastName) : '—'}
+                {firstName || lastName ? formatFullName(firstName, lastName) : '-'}
               </p>
               <p className="truncate text-[10px] text-white/30">Membre actif</p>
             </div>
@@ -203,7 +203,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
 
         restoreAuth(restoredUser, token);
       } catch {
-        // Session expirée → retour au login
+        // Session expiree - retour au login
         clearAuth();
         await fetch('/api/auth/session', { method: 'DELETE' });
         router.replace('/auth/login');
@@ -224,7 +224,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
     router.push('/auth/login');
   };
 
-  // Écran de chargement pendant la restauration de session
+  // Ecran de chargement pendant la restauration de session
   if (restoring) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f4f6f5]">
@@ -236,7 +236,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
   const currentPage = NAV.find(n => pathname.startsWith(n.href));
   const firstName  = formatFirstName(user?.firstName ?? '');
   const lastName   = user?.lastName ?? '';
-  const initials   = firstName && lastName ? formatInitials(firstName, lastName) : '…';
+  const initials   = firstName && lastName ? formatInitials(firstName, lastName) : '⬦';
   const avatarUrl = memberPhotoUrl(user);
   const initialsClass = memberInitialsClass(user?.gender);
   const profileMissing = missingProfileFields(user);
@@ -333,3 +333,4 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
     </div>
   );
 }
+

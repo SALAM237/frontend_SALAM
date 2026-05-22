@@ -57,7 +57,7 @@ export default function ContactPage() {
         title="Contactez-nous"
         accentWord="SALAM"
         accentPosition="end"
-        subtitle="Une question, une idée ou envie de rejoindre notre réseau ? Notre équipe vous répond dans les plus brefs délais."
+        subtitle="Une question, une idée ou envie de rejoindre notre réseau ?? Notre équipe vous répond dans les plus brefs délais."
         breadcrumbs={[{ label: 'Contact' }]}
       />
 

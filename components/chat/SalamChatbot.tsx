@@ -26,8 +26,8 @@ const REQUEST_OPTIONS: QuickReply[] = [
   { label: 'Faire un don / soutenir', value: 'Je souhaite soutenir SALAM ou faire un don' },
   { label: 'Partenariat', value: 'Je souhaite proposer un partenariat avec SALAM' },
   { label: 'Bénévolat', value: 'Je souhaite participer comme bénévole' },
-  { label: 'Activités', value: 'Quelles sont les activités de SALAM ?' },
-  { label: 'Contact', value: 'Comment contacter SALAM ?' },
+  { label: 'Activités', value: 'Quelles sont les activités de SALAM ??' },
+  { label: 'Contact', value: 'Comment contacter SALAM ??' },
   { label: 'Espace membre', value: 'Je souhaite accéder à mon espace membre' },
 ];
 
@@ -37,7 +37,7 @@ const WELCOME: ChatMessage = {
 
 Je peux vous aider pour devenir membre, obtenir une orientation pour étudier au Maroc, soutenir les actions de SALAM, proposer un partenariat, participer comme bénévole, découvrir les activités ou contacter l'association.
 
-Comment puis-je vous aider ?`,
+Comment puis-je vous aider ??`,
   quickReplies: REQUEST_OPTIONS,
   sentAt: new Date().toISOString(),
 };
@@ -73,7 +73,7 @@ Vous pouvez vous rendre sur la page **Adhésion** du site pour commencer votre d
       quickReplies: [
         { label: 'Soutenir SALAM', value: 'Je souhaite soutenir SALAM' },
         { label: 'Proposer un partenariat', value: 'Je souhaite proposer un partenariat' },
-        { label: 'Contacter SALAM', value: 'Comment contacter SALAM ?' },
+        { label: 'Contacter SALAM', value: 'Comment contacter SALAM ??' },
       ],
     };
   }
@@ -84,7 +84,7 @@ Vous pouvez vous rendre sur la page **Adhésion** du site pour commencer votre d
 
 SALAM accompagne les futurs étudiants camerounais qui souhaitent poursuivre leurs études au Maroc : préparation, intégration, transmission d'expérience et orientation vers les bonnes structures étudiantes.
 
-Souhaitez-vous être orienté, devenir membre ou soutenir cette mission ?`,
+Souhaitez-vous être orienté, devenir membre ou soutenir cette mission ??`,
       quickReplies: [
         { label: 'Être orienté', value: 'Je souhaite être orienté pour étudier au Maroc' },
         { label: 'Soutenir cette mission', value: 'Je souhaite soutenir cette mission' },
@@ -99,7 +99,7 @@ Souhaitez-vous être orienté, devenir membre ou soutenir cette mission ?`,
 
 Votre soutien peut aider SALAM à renforcer ses missions : orientation des futurs étudiants, actions solidaires, événements culturels et éducatifs, insertion socioprofessionnelle et accompagnement du réseau Cameroun-Maroc.
 
-Souhaitez-vous laisser votre email ou téléphone pour être contacté ?`,
+Souhaitez-vous laisser votre email ou téléphone pour être contacté ??`,
       quickReplies: [
         { label: 'Être contacté', value: 'Je souhaite être contacté pour soutenir SALAM' },
         { label: 'Partenariat', value: 'Je souhaite proposer un partenariat avec SALAM' },

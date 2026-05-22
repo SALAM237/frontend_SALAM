@@ -35,7 +35,7 @@ export function SalamLogo({
   const inner = (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <Image
-        src="/images/logo/logo_salam_wbg.png"
+        src="/images/logo/logo_salam_96.webp"
         alt="Logo SALAM"
         width={px}
         height={px}
@@ -69,8 +69,9 @@ export function SalamLogo({
 
   if (!href) return inner;
   return (
-    <Link href={href} aria-label="SALAM — Retour à l'accueil" className="inline-flex">
+    <Link href={href} aria-label="SALAM - Retour ?? l'accueil" className="inline-flex">
       {inner}
     </Link>
   );
 }
+

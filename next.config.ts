@@ -41,6 +41,7 @@ const nextConfig: NextConfig = {
       // Backend Railway (prod + dev)
       { protocol: 'https', hostname: 'backendsalam-production.up.railway.app' },
       { protocol: 'https', hostname: 'backend.salam-cameroun.com' },
+      { protocol: 'https', hostname: 'media.salam-cameroun.com' },
       // QR code generator (carte membre)
       { protocol: 'https', hostname: 'api.qrserver.com' },
       // Avatars ou assets CDN futurs
@@ -50,7 +51,7 @@ const nextConfig: NextConfig = {
     // Tailles de device pour srcSet optimal mobile Afrique
     deviceSizes: [375, 640, 750, 828, 1080, 1200, 1920],
     imageSizes:  [16, 32, 48, 64, 96, 128, 256],
-    minimumCacheTTL: 86400, // cache images 24h côté Next
+    minimumCacheTTL: 31536000,
   },
 
   experimental: {
@@ -90,14 +91,14 @@ const nextConfig: NextConfig = {
         source: '/demo/admin/:path*',
         headers: [...SECURITY_HEADERS, ...NOINDEX],
       },
-      // Cache long sur les assets statiques (images, fonts, JS)
+      // Cache long sur les assets publics versionnes.
       {
-        source: '/_next/static/:path*',
+        source: '/images/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
       {
-        source: '/images/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=3600' }],
+        source: '/videos/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
     ];
   },

@@ -231,7 +231,7 @@ export default function AdminActivitesPage() {
   };
 
   const handleDelete = (id: string, title: string) => {
-    if (!confirm(`Supprimer "${title}" ? Cette action est irréversible.`)) return;
+    if (!confirm(`Supprimer "${title}" ?? Cette action est irréversible.`)) return;
     deleteActivity.mutate(id);
   };
 

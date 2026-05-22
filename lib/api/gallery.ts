@@ -3,7 +3,16 @@ import { toast } from 'sonner';
 import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
 
-export interface AlbumImage { url: string; alt?: string; isPublished: boolean; visibility?: 'public' | 'members'; order?: number }
+export interface AlbumImage {
+  url: string;
+  alt?: string;
+  isPublished: boolean;
+  visibility?: 'public' | 'members';
+  order?: number;
+  thumbnailUrl?: string;
+  mediumUrl?: string;
+  largeUrl?: string;
+}
 
 export interface AlbumDoc {
   _id: string;
