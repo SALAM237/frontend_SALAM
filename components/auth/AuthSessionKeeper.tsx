@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth.store';
 
 const REFRESH_EVERY_MS = 4 * 60 * 1000;
 const REFRESH_WHEN_BACK_AFTER_MS = 60 * 1000;
+const REFRESH_AFTER_ACTIVITY_MS = 2 * 60 * 1000;
 
 export default function AuthSessionKeeper() {
   const accessToken = useAuthStore(s => s.accessToken);
@@ -15,7 +16,7 @@ export default function AuthSessionKeeper() {
     if (!accessToken) return;
 
     const refresh = async () => {
-      const token = await refreshAuthSession();
+      const token = await refreshAuthSession({ reason: 'periodic', logoutOnFailure: true });
       if (token) lastRefresh.current = Date.now();
     };
 
@@ -30,10 +31,20 @@ export default function AuthSessionKeeper() {
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onFocus);
 
+    const onActivity = () => {
+      if (document.visibilityState === 'hidden') return;
+      if (Date.now() - lastRefresh.current > REFRESH_AFTER_ACTIVITY_MS) {
+        void refresh();
+      }
+    };
+    const activityEvents: Array<keyof WindowEventMap> = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'];
+    activityEvents.forEach(event => window.addEventListener(event, onActivity, { passive: true }));
+
     return () => {
       window.clearInterval(timer);
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onFocus);
+      activityEvents.forEach(event => window.removeEventListener(event, onActivity));
     };
   }, [accessToken]);
 
