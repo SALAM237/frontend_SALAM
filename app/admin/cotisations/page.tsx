@@ -130,12 +130,12 @@ function openPaymentReceiptPdf(member: MemberRow, year: number) {
   <style>
     @page { size: A4 portrait; margin: 0; }
     * { box-sizing: border-box; }
-    body { margin: 0; background: #e5e7eb; font-family: Arial, sans-serif; color: #0f172a; }
-    .page { width: 794px; min-height: 1123px; margin: 0 auto; background: white; padding: 48px; position: relative; overflow: hidden; }
-    .flag { position: absolute; left: 0; right: 0; top: 0; height: 8px; background: linear-gradient(90deg,#0B8F3A 0 33%,#C8102E 33% 66%,#F7C600 66%); }
-    .header { margin: -48px -48px 32px; padding: 54px 48px 34px; background: linear-gradient(135deg,#087348,#075f41 62%,#043d2d); color: white; }
-    .eyebrow { color: #fde68a; font-size: 11px; font-weight: 800; letter-spacing: .24em; text-transform: uppercase; }
-    h1 { margin: 14px 0 6px; font-size: 34px; line-height: 1; }
+    body { margin: 0; background: #e5e7eb; font-family: Arial, sans-serif; color: #0f172a; font-size: clamp(10px, 1.45vw, 13px); }
+    .page { width: min(100vw, 794px); min-height: min(1123px, calc(100vw * 1.414)); margin: 0 auto; background: white; padding: clamp(22px, 4.8vw, 42px); position: relative; overflow: hidden; }
+    .flag { position: absolute; left: 0; right: 0; top: 0; height: clamp(4px, .8vw, 7px); background: linear-gradient(90deg,#0B8F3A 0 33%,#C8102E 33% 66%,#F7C600 66%); }
+    .header { margin: calc(clamp(22px, 4.8vw, 42px) * -1) calc(clamp(22px, 4.8vw, 42px) * -1) clamp(18px, 3vw, 28px); padding: clamp(32px, 5vw, 42px) clamp(22px, 4.8vw, 42px) clamp(18px, 3vw, 26px); background: linear-gradient(135deg,#087348,#075f41 62%,#043d2d); color: white; }
+    .eyebrow { color: #fde68a; font-size: clamp(8px, 1.6vw, 11px); font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+    h1 { margin: clamp(8px, 2vw, 12px) 0 5px; font-size: clamp(22px, 5vw, 31px); line-height: 1; }
     .muted { color: #64748b; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
     .card { border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; background: #fff; }
@@ -147,7 +147,7 @@ function openPaymentReceiptPdf(member: MemberRow, year: number) {
     .paid { display: inline-flex; align-items:center; justify-content:center; border: 2px solid #059669; color: #047857; border-radius: 999px; padding: 10px 28px; font-weight: 900; letter-spacing: .18em; margin: 26px auto; }
     .thanks { margin-top: 24px; border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 18px; padding: 20px; color: #047857; font-weight: 700; line-height: 1.6; }
     .footer { position: absolute; left: 48px; right: 48px; bottom: 30px; border-top: 1px solid #e5e7eb; padding-top: 14px; text-align: center; color: #64748b; font-size: 11px; }
-    @media print { body { background: white; } .page { margin: 0; } }
+    @media print { body { background: white; font-size: 12px; } .page { width: 794px; min-height: 1123px; margin: 0; padding: 38px; } .header { margin: -38px -38px 26px; padding: 40px 38px 24px; } }
   </style>
 </head>
 <body>
@@ -194,7 +194,7 @@ function openPaymentReceiptPdf(member: MemberRow, year: number) {
   <script>window.addEventListener('load', () => setTimeout(() => window.print(), 250));</script>
 </body>
 </html>`;
-  const win = window.open('', '_blank', 'noopener,noreferrer,width=900,height=1200');
+  const win = window.open('', '_blank', 'width=900,height=1200');
   if (!win) return;
   win.document.write(html);
   win.document.close();
@@ -445,7 +445,6 @@ export default function CotisationsAdminPage() {
   const [search,     setSearch]     = useState('');
   const [showLogs,   setShowLogs]   = useState(false);
   const [modal,      setModal]      = useState<MemberRow | null>(null);
-  const [receiptFor, setReceiptFor] = useState<MemberRow | null>(null);
   const [reminderSentId, setReminderSentId] = useState<string | null>(null);
 
   const { data: rawData, isLoading, isError } = useAdminCotisations(year);
@@ -484,7 +483,7 @@ export default function CotisationsAdminPage() {
     const paidMember: MemberRow = { ...modal, status: 'paid', paidAt: data.paidAt, reference: data.reference, notes: data.notes };
     updateStatus.mutate(
       { userId: modal.userId, year, status: 'paid', paidAt: data.paidAt, reference: data.reference, notes: data.notes },
-      { onSuccess: () => { setModal(null); setReceiptFor(paidMember); setTimeout(() => openPaymentReceiptPdf(paidMember, year), 350); } },
+      { onSuccess: () => { setModal(null); setTimeout(() => openPaymentReceiptPdf(paidMember, year), 250); } },
     );
   };
 
@@ -605,7 +604,7 @@ export default function CotisationsAdminPage() {
                       </button>
                     )}
                     {member.status === 'paid' && (
-                      <button onClick={() => setReceiptFor(member)} title="Voir le reçu"
+                      <button onClick={() => openPaymentReceiptPdf(member, year)} title="Voir le reçu"
                         className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600">
                         <Eye size={13} />
                       </button>
@@ -713,9 +712,6 @@ export default function CotisationsAdminPage() {
           onConfirm={confirmPayment}
           onClose={() => setModal(null)}
         />
-      )}
-      {receiptFor && (
-        <ReceiptModal member={receiptFor} year={year} onClose={() => setReceiptFor(null)} />
       )}
     </div>
   );

@@ -75,6 +75,8 @@ export function useUpdateCotisationStatus() {
       qc.invalidateQueries({ queryKey: ['cotisation-logs'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
       qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['admin-invoices'] });
+      qc.invalidateQueries({ queryKey: ['member-invoices'] });
       toast.success((res as any).message ?? 'Statut mis à jour');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -95,6 +97,8 @@ export function useDeleteCotisation() {
       qc.invalidateQueries({ queryKey: ['cotisation-logs'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
       qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['admin-invoices'] });
+      qc.invalidateQueries({ queryKey: ['member-invoices'] });
       toast.success((res as any).message ?? 'Frais supprimé');
     },
     onError: (err: Error) => toast.error(err.message),

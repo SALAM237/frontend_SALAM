@@ -36,6 +36,7 @@ function fmtCfa(amount: number) {
 
 type InvoiceLine = { id: number; designation: string; qty: number | string; ht: number | string; vat: number | string };
 type LayoutBlockId = 'assoc' | 'client' | 'items' | 'notes' | 'totals' | 'legal';
+type InvoicePdfRecipient = { name: string; email?: string; phone?: string; address?: string; memberId?: string };
 type AssociationInvoiceInfo = {
   name: string;
   title: string;
@@ -47,9 +48,24 @@ type AssociationInvoiceInfo = {
   logoUrl: string;
 };
 
+type InvoicePdfDocument = {
+  association: AssociationInvoiceInfo;
+  invoiceTitle: string;
+  invoiceNumber: string;
+  recipient: InvoicePdfRecipient;
+  lines: InvoiceLine[];
+  notes: string;
+  legal: string;
+  dueDate: string;
+};
+
 const ASSOCIATION_STORAGE_KEY = 'salam_invoice_association_v1';
 const A4_WIDTH = 794;
 const A4_HEIGHT = 1123;
+
+function seq(n: number) {
+  return String(n).padStart(4, '0');
+}
 
 const initialAssociation: AssociationInvoiceInfo = {
   name: 'ASSOCIATION SALAM',
@@ -267,9 +283,64 @@ function openInvoicePdfPreview(params: {
   win.focus();
 }
 
+function splitInvoiceLines(lines: InvoiceLine[]) {
+  const chunks: InvoiceLine[][] = [];
+  let index = 0;
+  while (index < lines.length) {
+    const size = chunks.length === 0 ? 8 : 14;
+    chunks.push(lines.slice(index, index + size));
+    index += size;
+  }
+  return chunks.length ? chunks : [[]];
+}
+
+function openInvoicePdfBatch(documents: InvoicePdfDocument[]) {
+  const pages = documents.flatMap((doc, docIndex) => {
+    const chunks = splitInvoiceLines(doc.lines);
+    const totals = calcInvoiceTotals(doc.lines);
+    return chunks.map((chunk, pageIndex) => {
+      const isLast = pageIndex === chunks.length - 1;
+      const rows = chunk.map(line => {
+        const ttc = Number(line.qty || 0) * Number(line.ht || 0) * (1 + Number(line.vat || 0) / 100);
+        return `<tr><td>${esc(line.designation)}</td><td class="right">${esc(line.qty)}</td><td class="right">${fmtCfa(Number(line.ht || 0))}</td><td class="right">${esc(line.vat)}%</td><td class="right strong">${fmtCfa(ttc)}</td></tr>`;
+      }).join('');
+      return `
+        <article class="page">
+          <div class="flag"></div>
+          <header class="header">
+            <div class="eyebrow">${esc(doc.association.name)}</div>
+            <p class="white-muted">Solidaire Associative des Lauréats du Maroc</p>
+            <h1>${esc(doc.invoiceTitle)}</h1>
+            <p class="white-muted">${esc(doc.invoiceNumber)} · Échéance ${esc(doc.dueDate || 'à renseigner')}</p>
+          </header>
+          <section class="grid">
+            <div class="card compact"><h2>Émetteur</h2><strong>${esc(doc.association.title)}</strong><p class="muted">${esc(doc.association.address)}</p><p class="muted">${esc(doc.association.registration)}</p><p class="muted">${esc(doc.association.email)} · ${esc(doc.association.phone)}</p></div>
+            <div class="card compact"><h2>Facturé à</h2><strong>${esc(doc.recipient.name)}</strong><p class="muted">${esc(doc.recipient.email)}</p><p class="muted">${esc(doc.recipient.phone)}</p><p class="muted">${esc(doc.recipient.address)}</p>${doc.recipient.memberId ? `<p class="muted">Réf. : ${esc(doc.recipient.memberId)}</p>` : ''}</div>
+          </section>
+          <table><thead><tr><th>Désignation</th><th class="right">Qté</th><th class="right">HT</th><th class="right">TVA</th><th class="right">TTC</th></tr></thead><tbody>${rows}</tbody></table>
+          ${isLast ? `<section class="totals"><div class="row"><span>Total HT</span><strong>${fmtCfa(totals.ht)}</strong></div><div class="row"><span>TVA</span><strong>${fmtCfa(totals.vat)}</strong></div><div class="row total"><span>Total TTC</span><span>${fmtCfa(totals.ttc)}</span></div></section><section class="notes"><div class="card"><h2>Observations</h2><p class="muted">${esc(doc.notes)}</p></div><div class="card"><h2>Mentions légales</h2><p class="muted">${esc(doc.legal)}</p></div></section>` : '<p class="continued">Suite de la facture sur la page suivante.</p>'}
+          <footer class="footer"><span>${esc(doc.association.title)} · ${esc(doc.association.email)}</span><strong>Page ${pageIndex + 1}/${chunks.length}${documents.length > 1 ? ` · Document ${docIndex + 1}/${documents.length}` : ''}</strong></footer>
+        </article>`;
+    });
+  }).join('');
+
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Factures SALAM</title><style>
+    @page{size:A4 portrait;margin:0}*{box-sizing:border-box}body{margin:0;background:#e5e7eb;font-family:Arial,sans-serif;color:#0f172a;font-size:clamp(10px,1.45vw,13px)}.toolbar{position:sticky;top:0;z-index:10;display:flex;justify-content:center;padding:12px;background:rgba(15,23,42,.88)}.toolbar button{border:0;border-radius:999px;background:#059669;color:white;padding:10px 16px;font-weight:800}.page{width:min(100vw,794px);min-height:min(1123px,calc(100vw * 1.414));margin:0 auto 18px;background:white;padding:clamp(22px,4.8vw,42px);position:relative;overflow:hidden;box-shadow:0 18px 55px rgba(15,23,42,.18)}.flag{position:absolute;left:0;right:0;top:0;height:clamp(4px,.8vw,7px);background:linear-gradient(90deg,#0B8F3A 0 33%,#C8102E 33% 66%,#F7C600 66%)}.header{margin:calc(clamp(22px,4.8vw,42px) * -1) calc(clamp(22px,4.8vw,42px) * -1) clamp(18px,3vw,28px);padding:clamp(32px,5vw,42px) clamp(22px,4.8vw,42px) clamp(18px,3vw,26px);background:linear-gradient(135deg,#087348,#075f41 62%,#043d2d);color:white}.eyebrow{color:#fde68a;font-size:clamp(8px,1.6vw,11px);font-weight:800;letter-spacing:.2em;text-transform:uppercase}h1{margin:clamp(8px,2vw,12px) 0 5px;font-size:clamp(22px,5vw,31px);line-height:1}.white-muted{color:rgba(255,255,255,.74)}.muted{color:#64748b;overflow-wrap:anywhere}.grid,.notes{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,2.4vw,18px)}.card{border:1px solid #e5e7eb;border-radius:clamp(12px,2.5vw,18px);padding:clamp(13px,2.6vw,20px);background:white}.compact{min-height:clamp(128px,23vw,170px)}.card h2{margin:0 0 10px;font-size:clamp(9px,1.7vw,12px);letter-spacing:.14em;text-transform:uppercase;color:#64748b}table{width:100%;border-collapse:collapse;margin-top:clamp(16px,3vw,22px);font-size:clamp(9px,1.6vw,12px);table-layout:fixed}th{background:#0f172a;color:white;text-align:left;padding:clamp(8px,1.7vw,11px) clamp(6px,1.5vw,10px);font-size:clamp(7px,1.4vw,10px);letter-spacing:.1em;text-transform:uppercase}td{border-bottom:1px solid #eef2f7;padding:clamp(8px,1.7vw,11px) clamp(6px,1.5vw,10px);vertical-align:top;overflow-wrap:anywhere}th:first-child,td:first-child{width:44%}.right{text-align:right}.strong{font-weight:800}.totals{width:min(100%,310px);margin-left:auto;margin-top:clamp(16px,3vw,22px);border:1px solid #e5e7eb;border-radius:18px;padding:clamp(14px,2.6vw,18px);background:#f8fafc}.row{display:flex;justify-content:space-between;gap:18px;margin:8px 0}.total{background:#087348;color:white;border-radius:14px;padding:clamp(11px,2.2vw,14px);margin-top:12px;font-weight:900}.notes{margin-top:clamp(18px,3vw,24px)}.continued{margin-top:20px;color:#64748b;font-weight:700;text-align:right}.footer{position:absolute;left:clamp(22px,4.8vw,42px);right:clamp(22px,4.8vw,42px);bottom:clamp(14px,3vw,26px);display:flex;justify-content:space-between;gap:14px;border-top:1px solid #e5e7eb;padding-top:12px;color:#64748b;font-size:clamp(8px,1.5vw,11px)}@media(max-width:640px){.grid,.notes{grid-template-columns:1fr}.footer{flex-direction:column}}@media print{body{background:white;font-size:12px}.toolbar{display:none}.page{width:794px;min-height:1123px;margin:0;padding:38px;box-shadow:none;page-break-after:always}.header{margin:-38px -38px 26px;padding:40px 38px 24px}.flag{height:7px}.grid,.notes{grid-template-columns:1fr 1fr}.footer{left:38px;right:38px;bottom:24px}}
+  </style></head><body><div class="toolbar"><button onclick="window.print()">Imprimer / enregistrer en PDF</button></div>${pages}<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),300));</script></body></html>`;
+
+  const win = window.open('', '_blank', 'width=900,height=1200');
+  if (!win) {
+    toast.error('Ouverture du PDF bloquée par le navigateur. Autorisez les popups pour télécharger/imprimer.');
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+}
+
 function openSavedInvoicePdf(invoice: InvoiceDoc) {
   const association = loadAssociationInfo();
-  openInvoicePdfPreview({
+  openInvoicePdfBatch([{
     association,
     invoiceTitle: invoice.title,
     invoiceNumber: invoice.invoiceNumber,
@@ -283,7 +354,7 @@ function openSavedInvoicePdf(invoice: InvoiceDoc) {
     notes: 'Document généré depuis la facture enregistrée.',
     legal: 'Association SALAM — document généré électroniquement.',
     dueDate: invoice.dueDate,
-  });
+  }]);
 }
 
 /* ─── Skeleton ────────────────────────────────────────── */
@@ -588,6 +659,9 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const handleCreate = () => {
     if (!validate()) return;
     persistAssociation();
+    const invoiceType = /adh[ée]sion|adhesion|cotisation|frais/i.test(`${invoiceTitle} ${description} ${notes}`)
+      ? 'cotisation'
+      : 'event';
     createInvoice.mutate(
       {
         title: invoiceTitle.trim(),
@@ -595,6 +669,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
         amount: totals.ttc,
         dueDate,
         paymentLink: paymentLink.trim() || undefined,
+        type: invoiceType,
         recipientIds: recipientMode === 'select' ? selected : undefined,
         clientIds: recipientMode === 'select' ? selectedClients : undefined,
       },
@@ -603,23 +678,50 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   };
 
   const handlePdf = () => {
-    const recipient = previewMember
-      ? {
+    const memberRecipients = recipients.map(member => ({
+      name: formatFullName(member.firstName, member.lastName),
+      email: member.email,
+      phone: member.phone ?? '',
+      address: [(member as any).residenceCity, (member as any).city, (member as any).country].filter(Boolean).join(', '),
+      memberId: member.memberId,
+    }));
+    const clientRecipients = selectedClientDocs.map(client => ({
+      name: client.name,
+      email: client.email,
+      phone: client.phone,
+      address: client.address,
+      memberId: client.registration,
+    }));
+    const fallbackRecipients = previewMember
+      ? [{
           name: formatFullName(previewMember.firstName, previewMember.lastName),
           email: previewMember.email,
           phone: previewMember.phone ?? '',
           address: [(previewMember as any).residenceCity, (previewMember as any).city, (previewMember as any).country].filter(Boolean).join(', '),
           memberId: previewMember.memberId,
-        }
-      : previewClient ? {
+        }]
+      : previewClient ? [{
           name: previewClient.name,
           email: previewClient.email,
           phone: previewClient.phone,
           address: previewClient.address,
           memberId: previewClient.registration,
-        }
-      : { name: 'Destinataire à renseigner' };
-    openInvoicePdfPreview({ association, invoiceTitle, invoiceNumber: previewNumber, recipient, lines, notes, legal, dueDate });
+        }]
+      : [{ name: 'Destinataire à renseigner' }];
+
+    const targetRecipients = [...memberRecipients, ...clientRecipients];
+    const docs = (targetRecipients.length ? targetRecipients : fallbackRecipients).map((recipient, index) => ({
+      association,
+      invoiceTitle,
+      invoiceNumber: `${previewNumber}-${seq(index + 1)}`,
+      recipient,
+      lines,
+      notes,
+      legal,
+      dueDate,
+    }));
+
+    openInvoicePdfBatch(docs);
   };
 
   const inputCls = (err?: string) =>
@@ -658,10 +760,10 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                 style={{ width: A4_WIDTH, minHeight: A4_HEIGHT }}
               >
                 <div className="absolute left-0 right-0 top-0 h-2 bg-gradient-to-r from-emerald-600 via-red-600 to-amber-400" />
-                <header className="bg-gradient-to-br from-[#087348] via-[#075f41] to-[#043d2d] px-12 pb-9 pt-14 text-white">
+                <header className="bg-gradient-to-br from-[#087348] via-[#075f41] to-[#043d2d] px-10 pb-6 pt-10 text-white">
                   <input value={association.name} onChange={event => updateAssociation({ name: event.target.value })} className="w-full bg-transparent text-[11px] font-black uppercase tracking-[0.28em] text-yellow-200 outline-none" />
                   <p className="mt-1 text-xs font-semibold text-white/75">Solidaire Associative des Lauréats du Maroc</p>
-                  <input value={invoiceTitle} onChange={event => setInvoiceTitle(event.target.value)} className="mt-4 w-full bg-transparent text-[34px] font-black leading-none tracking-[-0.05em] text-white outline-none" />
+                  <input value={invoiceTitle} onChange={event => setInvoiceTitle(event.target.value)} className="mt-3 w-full bg-transparent text-[29px] font-black leading-none tracking-[-0.04em] text-white outline-none" />
                   <input value={previewNumber} readOnly className="mt-2 w-full bg-transparent font-mono text-xs text-white/70 outline-none" />
                 </header>
 

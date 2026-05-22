@@ -62,6 +62,7 @@ export function useCreateInvoice() {
   return useMutation({
     mutationFn: (body: {
       title: string;
+      type?: 'cotisation' | 'event' | 'other';
       description?: string;
       amount: number;
       dueDate: string;
@@ -76,6 +77,8 @@ export function useCreateInvoice() {
       }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-invoices'] });
+      qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       toast.success((res as any).message ?? 'Facture créée');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -93,6 +96,8 @@ export function useSendInvoice() {
       }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-invoices'] });
+      qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       toast.success((res as any).message ?? 'Factures envoyées');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -112,6 +117,13 @@ export function useDeleteInvoice() {
       }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-invoices'] });
+      qc.invalidateQueries({ queryKey: ['cotisation-logs'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-transactions'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-transactions'] });
+      qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       toast.success((res as any).message ?? 'Facture supprimÃ©e');
     },
     onError: (err: Error) => toast.error(err.message),
