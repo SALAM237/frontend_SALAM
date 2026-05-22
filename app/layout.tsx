@@ -4,6 +4,7 @@ import './globals.css';
 import { Footer } from '@/components/layout/Footer';
 import { ConditionalHeader } from '@/components/layout/ConditionalHeader';
 import { Providers }         from '@/components/shared/Providers';
+import SalamChatbot          from '@/components/chat/SalamChatbot';
 import { defaultMetadata, schemaOrg, organizationSchema, websiteSchema, faqSchema } from '@/lib/seo';
 
 /* ── Font ── */
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ConditionalHeader />
           {children}
           <Footer />
+          <SalamChatbot />
         </Providers>
       </body>
     </html>

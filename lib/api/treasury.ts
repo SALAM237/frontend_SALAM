@@ -43,7 +43,10 @@ export interface TreasuryOverview {
     activeMembers: number;
     expectedAdhesions: number;
     paidAdhesions: number;
+    recoveryRate: number;
     membershipFee: number;
+    donations: number;
+    partners: number;
     assetsCount: number;
     assetsValue: number;
   };
@@ -77,11 +80,14 @@ export function useTreasuryOverview(admin = false) {
   });
 }
 
-export function useTreasuryTransactions(kind?: TreasuryKind, admin = false) {
+export function useTreasuryTransactions(kind?: TreasuryKind, admin = false, source?: TreasurySource) {
   const token = useAuthStore(s => s.accessToken);
-  const qs = kind ? `?kind=${kind}` : '';
+  const params = new URLSearchParams();
+  if (kind) params.set('kind', kind);
+  if (source) params.set('source', source);
+  const qs = params.toString() ? `?${params.toString()}` : '';
   return useQuery({
-    queryKey: [admin ? 'admin-treasury-transactions' : 'member-treasury-transactions', kind],
+    queryKey: [admin ? 'admin-treasury-transactions' : 'member-treasury-transactions', kind, source],
     queryFn: () => apiClient<{ items: TreasuryTransaction[]; total: number }>(`/api/v1/${admin ? 'admin' : 'member'}/treasury/transactions${qs}`, { token: token ?? '' }),
     enabled: !!token,
   });

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   ChevronDown, Search, CheckCircle2, XCircle, ShieldOff,
   CalendarDays, History, X, Upload, AlertTriangle,
-  Eye, Settings2, Send, Loader2,
+  Eye, Settings2, Send, Loader2, Edit3, Download,
 } from 'lucide-react';
 import {
   useAdminCotisations, useUpdateCotisationStatus, useSendReminders, useCotisationLogs,
@@ -63,7 +63,7 @@ function fmtTime(iso: string) {
 }
 
 function logDetails(log: AuditLogDoc): string {
-  const d = log.details;
+  const d = log.details ?? log.meta ?? {};
   const parts: string[] = [];
   if (d.memberName) parts.push(String(d.memberName));
   if (d.year)       parts.push(`Année ${d.year}`);
@@ -93,6 +93,110 @@ function mapRows(data: AdminCotisationRow[], year: number): MemberRow[] {
 
 function formatCfa(amount?: number) {
   return `${Number(amount ?? 0).toLocaleString('fr-FR')} F.CFA`;
+}
+
+const RECEIPT_ASSOCIATION = {
+  name: 'ASSOCIATION SALAM',
+  title: 'SALAM Cameroun · Maroc',
+  address: 'Adresse de l’association',
+  registration: 'N° d’immatriculation : SALAM-CMR-2026',
+  email: 'contact@salam-cameroun.com',
+  phone: '+237 000 000 000',
+};
+
+function escReceipt(value: unknown) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function openPaymentReceiptPdf(member: MemberRow, year: number) {
+  const receiptNum = member.cotisationId
+    ? `SALAM-RECU-${year}-${member.cotisationId.slice(-6).toUpperCase()}`
+    : `SALAM-RECU-${year}-${member.userId.slice(-4).toUpperCase()}`;
+  const invoiceNum = `SALAM-ADH-${year}-${member.userId.slice(-4).toUpperCase()}`;
+  const memberName = formatFullName(member.firstName, member.lastName);
+  const paidAt = fmt(member.paidAt);
+  const html = `
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>${escReceipt(receiptNum)}</title>
+  <style>
+    @page { size: A4 portrait; margin: 0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #e5e7eb; font-family: Arial, sans-serif; color: #0f172a; }
+    .page { width: 794px; min-height: 1123px; margin: 0 auto; background: white; padding: 48px; position: relative; overflow: hidden; }
+    .flag { position: absolute; left: 0; right: 0; top: 0; height: 8px; background: linear-gradient(90deg,#0B8F3A 0 33%,#C8102E 33% 66%,#F7C600 66%); }
+    .header { margin: -48px -48px 32px; padding: 54px 48px 34px; background: linear-gradient(135deg,#087348,#075f41 62%,#043d2d); color: white; }
+    .eyebrow { color: #fde68a; font-size: 11px; font-weight: 800; letter-spacing: .24em; text-transform: uppercase; }
+    h1 { margin: 14px 0 6px; font-size: 34px; line-height: 1; }
+    .muted { color: #64748b; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; background: #fff; }
+    .card h2 { margin: 0 0 14px; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: #64748b; }
+    table { width: 100%; border-collapse: collapse; margin-top: 24px; font-size: 13px; }
+    th { background: #0f172a; color: white; text-align: left; padding: 12px 10px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+    td { border-bottom: 1px solid #eef2f7; padding: 12px 10px; }
+    .right { text-align: right; }
+    .paid { display: inline-flex; align-items:center; justify-content:center; border: 2px solid #059669; color: #047857; border-radius: 999px; padding: 10px 28px; font-weight: 900; letter-spacing: .18em; margin: 26px auto; }
+    .thanks { margin-top: 24px; border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 18px; padding: 20px; color: #047857; font-weight: 700; line-height: 1.6; }
+    .footer { position: absolute; left: 48px; right: 48px; bottom: 30px; border-top: 1px solid #e5e7eb; padding-top: 14px; text-align: center; color: #64748b; font-size: 11px; }
+    @media print { body { background: white; } .page { margin: 0; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="flag"></div>
+    <header class="header">
+      <div class="eyebrow">${escReceipt(RECEIPT_ASSOCIATION.name)}</div>
+      <p style="color:rgba(255,255,255,.72)">Solidaire Associative des Lauréats du Maroc</p>
+      <h1>Reçu de paiement</h1>
+      <p style="color:rgba(255,255,255,.72)">${escReceipt(receiptNum)} · ${escReceipt(paidAt)}</p>
+    </header>
+    <section class="grid">
+      <div class="card">
+        <h2>Émetteur</h2>
+        <strong>${escReceipt(RECEIPT_ASSOCIATION.title)}</strong>
+        <p class="muted">${escReceipt(RECEIPT_ASSOCIATION.address)}</p>
+        <p class="muted">${escReceipt(RECEIPT_ASSOCIATION.registration)}</p>
+        <p class="muted">${escReceipt(RECEIPT_ASSOCIATION.email)} · ${escReceipt(RECEIPT_ASSOCIATION.phone)}</p>
+      </div>
+      <div class="card">
+        <h2>Membre</h2>
+        <strong>${escReceipt(memberName)}</strong>
+        <p class="muted">${escReceipt(member.email)}</p>
+        <p class="muted">N° membre : ${escReceipt(member.memberId)}</p>
+        ${member.reference ? `<p class="muted">Référence : ${escReceipt(member.reference)}</p>` : ''}
+      </div>
+    </section>
+    <div style="text-align:center"><span class="paid">PAYÉ</span></div>
+    <table>
+      <thead><tr><th>Facture</th><th>Désignation</th><th>Date d'émission</th><th class="right">Montant payé</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>${escReceipt(invoiceNum)}</td>
+          <td>Frais d'adhésion annuelle ${escReceipt(year)}</td>
+          <td>${escReceipt(paidAt)}</td>
+          <td class="right"><strong>${escReceipt(formatCfa(member.amount))}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    ${member.notes ? `<div class="card" style="margin-top:24px"><h2>Commentaire</h2><p class="muted">${escReceipt(member.notes)}</p></div>` : ''}
+    <div class="thanks">Merci pour votre engagement au sein de SALAM. Votre contribution soutient les actions d'orientation, de solidarité et d'insertion portées par l'association.</div>
+    <footer class="footer">${escReceipt(RECEIPT_ASSOCIATION.title)} · ${escReceipt(RECEIPT_ASSOCIATION.email)} · ${escReceipt(RECEIPT_ASSOCIATION.phone)} · ${escReceipt(RECEIPT_ASSOCIATION.registration)}</footer>
+  </div>
+  <script>window.addEventListener('load', () => setTimeout(() => window.print(), 250));</script>
+</body>
+</html>`;
+  const win = window.open('', '_blank', 'noopener,noreferrer,width=900,height=1200');
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
 }
 
 
@@ -135,12 +239,12 @@ function SettingsPanel({ year, deadline, setDeadline }: {
   return (
     <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
       <button onClick={() => setOpen(v => !v)}
-        className="flex w-full items-center justify-between px-5 py-4 transition hover:bg-neutral-50/60">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100">
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 transition hover:bg-neutral-50/60 sm:px-5 sm:py-4">
+        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-neutral-100">
             <Settings2 size={15} className="text-neutral-600" />
           </div>
-          <div className="text-left">
+          <div className="min-w-0 text-left">
             <p className="text-sm font-black text-neutral-900">Paramètres des cotisations {year}</p>
             <p className="text-[11px] text-neutral-500">Date limite · Relances automatiques</p>
           </div>
@@ -149,7 +253,7 @@ function SettingsPanel({ year, deadline, setDeadline }: {
       </button>
 
       {open && (
-        <div className="border-t border-neutral-100 px-5 pb-5 pt-4 space-y-5">
+        <div className="space-y-4 border-t border-neutral-100 px-4 pb-4 pt-4 sm:space-y-5 sm:px-5 sm:pb-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date limite de paiement</label>
@@ -171,13 +275,13 @@ function SettingsPanel({ year, deadline, setDeadline }: {
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <button onClick={handleSave}
-              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]">
+              className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98] sm:text-sm">
               {saved ? 'Enregistré ✓' : 'Enregistrer les paramètres'}
             </button>
             <button onClick={handleRelance} disabled={sendReminders.isPending}
-              className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-black text-orange-700 transition hover:bg-orange-100 active:scale-[0.98] disabled:opacity-60">
+              className="flex items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-black text-orange-700 transition hover:bg-orange-100 active:scale-[0.98] disabled:opacity-60 sm:text-sm">
               {sendReminders.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               Relancer tous maintenant
             </button>
@@ -227,8 +331,12 @@ function ReceiptModal({ member, year, onClose }: { member: MemberRow; year: numb
         </div>
         <div className="border-t border-neutral-100 px-6 py-4">
           <p className="text-center text-[10px] text-neutral-400">Reçu transmis par email à {member.email}.</p>
+          <button onClick={() => openPaymentReceiptPdf(member, year)}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700">
+            <Download size={14} /> AperÃ§u PDF A4
+          </button>
           <button onClick={onClose}
-            className="mt-3 w-full rounded-xl bg-neutral-900 py-2.5 text-sm font-black text-white transition hover:bg-neutral-800">
+            className="mt-2 w-full rounded-xl bg-neutral-900 py-2.5 text-sm font-black text-white transition hover:bg-neutral-800">
             Fermer
           </button>
         </div>
@@ -245,9 +353,9 @@ function PaymentModal({ member, onConfirm, onClose, loading }: {
   loading?: boolean;
 }) {
   const today = new Date().toISOString().slice(0, 10);
-  const [paidAt,    setPaidAt]    = useState(today);
-  const [reference, setReference] = useState('');
-  const [notes,     setNotes]     = useState('');
+  const [paidAt,    setPaidAt]    = useState(member.paidAt ? new Date(member.paidAt).toISOString().slice(0, 10) : today);
+  const [reference, setReference] = useState(member.reference ?? '');
+  const [notes,     setNotes]     = useState(member.notes ?? '');
   const [filename,  setFilename]  = useState('');
   const [error,     setError]     = useState('');
 
@@ -370,9 +478,10 @@ export default function CotisationsAdminPage() {
 
   const confirmPayment = (data: { paidAt: string; reference: string; notes: string }) => {
     if (!modal) return;
+    const paidMember: MemberRow = { ...modal, status: 'paid', paidAt: data.paidAt, reference: data.reference, notes: data.notes };
     updateStatus.mutate(
       { userId: modal.userId, year, status: 'paid', paidAt: data.paidAt, reference: data.reference, notes: data.notes },
-      { onSuccess: () => setModal(null) },
+      { onSuccess: () => { setModal(null); setReceiptFor(paidMember); setTimeout(() => openPaymentReceiptPdf(paidMember, year), 350); } },
     );
   };
 
@@ -386,12 +495,12 @@ export default function CotisationsAdminPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-4 sm:space-y-6">
 
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Frais d&apos;adhésion</h1>
+          <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">Frais d&apos;adhésion</h1>
           <p className="mt-1 text-sm text-neutral-500">Gérer les cotisations des membres actifs.</p>
         </div>
         <div className="relative">
@@ -413,9 +522,9 @@ export default function CotisationsAdminPage() {
           { label: 'Non payés',     value: stats.unpaid, color: 'text-red-700',      bg: 'bg-red-50      border-red-100'        },
           { label: 'Exemptés',      value: stats.exempt, color: 'text-emerald-900',  bg: 'bg-green-900/5 border-green-900/10'   },
         ].map(s => (
-          <div key={s.label} className={`rounded-2xl border p-4 ${s.bg}`}>
-            <p className={`text-2xl font-black leading-none ${s.color}`}>{isLoading ? '…' : s.value}</p>
-            <p className="mt-1.5 text-xs font-semibold text-neutral-500">{s.label}</p>
+          <div key={s.label} className={`rounded-2xl border p-3 sm:p-4 ${s.bg}`}>
+            <p className={`text-xl font-black leading-none sm:text-2xl ${s.color}`}>{isLoading ? '…' : s.value}</p>
+            <p className="mt-1.5 text-[11px] font-semibold leading-tight text-neutral-500 sm:text-xs">{s.label}</p>
           </div>
         ))}
       </div>
@@ -450,21 +559,21 @@ export default function CotisationsAdminPage() {
               const cfg = STATUS_CONFIG[member.status];
               const photoUrl = memberPhotoUrl(member);
               return (
-                <div key={member.userId} className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-neutral-50/60">
-                  <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${cfg.dot} shadow-sm`} />
+                <div key={member.userId} className="flex items-center gap-2 px-3 py-3 transition-colors hover:bg-neutral-50/60 sm:gap-3 sm:px-5 sm:py-4">
+                  <div className={`h-2 w-2 shrink-0 rounded-full sm:h-2.5 sm:w-2.5 ${cfg.dot} shadow-sm`} />
                   <Link href={`/admin/adherents/${member.userId}`} className="shrink-0" title="Voir la fiche membre">
                     {photoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={photoUrl} alt={formatFullName(member.firstName, member.lastName)} className={`h-9 w-9 rounded-full border-2 object-cover ${memberAvatarBorderClass(member.gender)}`} />
+                      <img src={photoUrl} alt={formatFullName(member.firstName, member.lastName)} className={`h-8 w-8 rounded-full border-2 object-cover sm:h-9 sm:w-9 ${memberAvatarBorderClass(member.gender)}`} />
                     ) : (
-                      <div className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-black text-white ${memberInitialsClass(member.gender)}`}>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-black text-white sm:h-9 sm:w-9 sm:text-xs ${memberInitialsClass(member.gender)}`}>
                         {formatInitials(member.firstName, member.lastName)}
                       </div>
                     )}
                   </Link>
                   <div className="flex-1 min-w-0">
-                    <Link href={`/admin/adherents/${member.userId}`} className="font-black text-sm text-neutral-900 transition hover:text-emerald-700">{formatFullName(member.firstName, member.lastName)}</Link>
-                    <p className="text-[11px] text-neutral-400 font-mono">{member.memberId}</p>
+                    <Link href={`/admin/adherents/${member.userId}`} className="block truncate text-[13px] font-black text-neutral-900 transition hover:text-emerald-700 sm:text-sm">{formatFullName(member.firstName, member.lastName)}</Link>
+                    <p className="truncate font-mono text-[10px] text-neutral-400 sm:text-[11px]">{member.memberId}</p>
                   </div>
                   <div className="hidden w-28 text-right sm:block">
                     {member.status === 'paid'
@@ -472,7 +581,7 @@ export default function CotisationsAdminPage() {
                       : <span className="text-xs text-neutral-300">—</span>
                     }
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex shrink-0 items-center gap-1 sm:gap-2">
                     {member.status === 'unpaid' && (
                       <button onClick={() => triggerReminder(member)} title="Envoyer une relance"
                         className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${
@@ -489,12 +598,18 @@ export default function CotisationsAdminPage() {
                         <Eye size={13} />
                       </button>
                     )}
+                    {member.status === 'paid' && (
+                      <button onClick={() => setModal(member)} title="Modifier le paiement"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600">
+                        <Edit3 size={13} />
+                      </button>
+                    )}
                   </div>
                   <div className="relative shrink-0">
                     <select value={member.status}
                       onChange={e => handleStatusChange(member, e.target.value as CotisationStatus)}
                       disabled={updateStatus.isPending}
-                      className={`h-8 appearance-none rounded-full border pl-3 pr-7 text-[11px] font-black outline-none cursor-pointer disabled:opacity-60 ${cfg.badge}`}>
+                      className={`h-7 max-w-[6.6rem] appearance-none truncate rounded-full border pl-2.5 pr-6 text-[10px] font-black outline-none cursor-pointer disabled:opacity-60 sm:h-8 sm:max-w-none sm:pl-3 sm:pr-7 sm:text-[11px] ${cfg.badge}`}>
                       <option value="unpaid">Non payé</option>
                       <option value="paid">Payé</option>
                       <option value="exempt">Exempté</option>
@@ -534,18 +649,20 @@ export default function CotisationsAdminPage() {
             )}
             {logs.map((log: AuditLogDoc) => {
               const d = fmtTime(log.createdAt);
-              const fromLabel = log.details.fromLabel as string | undefined;
-              const toLabel   = log.details.toLabel   as string | undefined;
+              const details = log.details ?? log.meta ?? {};
+              const fromLabel = details.fromLabel as string | undefined;
+              const toLabel   = details.toLabel   as string | undefined;
+              const adminName = log.adminName ?? 'Système';
               return (
                 <div key={log._id} className="flex items-start gap-4 px-5 py-4">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-[10px] font-black text-white">
-                    {log.adminName.split(' ').map(w => w[0]).join('').slice(0, 2)}
+                    {adminName.split(' ').map(w => w[0]).join('').slice(0, 2)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-neutral-700">
-                      <span className="font-black text-neutral-900">{log.adminName}</span>
+                      <span className="font-black text-neutral-900">{adminName}</span>
                       <span className="text-neutral-400 mx-1">·</span>
-                      <span className="text-[11px] text-neutral-400">{log.adminRole}</span>
+                      <span className="text-[11px] text-neutral-400">{log.adminRole ?? 'Audit'}</span>
                     </p>
                     <p className="text-xs text-neutral-600 mt-0.5">{logDetails(log)}</p>
                     {fromLabel && toLabel && (

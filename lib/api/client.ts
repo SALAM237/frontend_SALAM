@@ -13,7 +13,7 @@ function canAttemptRefresh(path: string): boolean {
   return !path.includes('/auth/');
 }
 
-async function silentRefresh(): Promise<string | null> {
+export async function refreshAuthSession(): Promise<string | null> {
   if (_refreshing) return _refreshing;
 
   _refreshing = (async (): Promise<string | null> => {
@@ -90,7 +90,7 @@ export async function apiClient<T = unknown>(
 
   // 401 → refresh silencieux + rejeu (une seule fois, jamais sur /auth/refresh lui-même)
   if (res.status === 401 && !_retry && canAttemptRefresh(path)) {
-    const newToken = await silentRefresh();
+    const newToken = await refreshAuthSession();
     if (newToken) {
       return apiClient<T>(path, { ...init, token: newToken, _retry: true });
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -50,6 +50,7 @@ export default function TresoreriePage() {
   const overview = useTreasuryOverview(false);
   const income = useTreasuryTransactions('income', false);
   const expense = useTreasuryTransactions('expense', false);
+  const donations = useTreasuryTransactions('income', false, 'don');
   const assets = useTreasuryAssets(false);
   const feeProposals = useMembershipFeeProposals(false);
   const reviewFee = useReviewMembershipFeeProposal(false);
@@ -57,7 +58,7 @@ export default function TresoreriePage() {
   const data = overview.data?.data;
   const incomeItems = income.data?.data?.items ?? [];
   const expenseItems = expense.data?.data?.items ?? [];
-  const donationItems = useMemo(() => incomeItems.filter(t => t.source === 'don'), [incomeItems]);
+  const donationItems = donations.data?.data?.items ?? [];
   const pendingProposal = (feeProposals.data?.data?.items ?? []).find(p => p.status === 'pending');
   const approvalRole = feeProposals.data?.data?.approvalRole;
   const alreadyApproved = !!pendingProposal && !!approvalRole && pendingProposal.approvals.some(a => a.role === approvalRole);
@@ -225,7 +226,7 @@ export default function TresoreriePage() {
               <CardTitle title="Taux de recouvrement adhesions" />
               <div className="flex h-[220px] flex-col items-center justify-center text-center">
                 <div className="text-5xl font-black tracking-[-0.05em] text-emerald-700">
-                  {Math.round(((data?.kpis.paidAdhesions ?? 0) / Math.max(data?.kpis.expectedAdhesions ?? 1, 1)) * 100)}
+                  {data?.kpis.recoveryRate ?? 0}
                   <span className="text-2xl">%</span>
                 </div>
                 <p className="mt-3 text-sm font-semibold text-neutral-500">des frais d'adhesion encaisses</p>

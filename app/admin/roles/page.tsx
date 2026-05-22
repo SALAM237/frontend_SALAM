@@ -48,6 +48,7 @@ const BUREAU_CATEGORIES: { id: BureauCategory; label: string; hint: string }[] =
 const EXECUTIVE_POSTES = [
   'Président', 'Vice-Président', 'Secrétaire Général', 'Secrétaire Adjoint',
   'Trésorier', 'Commissaire aux comptes', 'Trésorier Adjoint',
+  'Censeur',
   'Responsable Communication', 'Responsable Informatique IT',
   'Responsable Culture', 'Responsable Sport', 'Responsable Partenariats',
   'Responsable Emploi, Insertion et Orientation (EIO)',
@@ -85,6 +86,7 @@ const FEMININE_BUREAU_POSTES: Record<string, string> = {
   'tresorier e': 'Trésorière',
   'tresorier adjoint': 'Trésorière Adjointe',
   'tresorier e adjoint e': 'Trésorière Adjointe',
+  censeur: 'Censeure',
   responsable: 'Responsable',
   'commissaire aux comptes': 'Commissaire aux comptes',
   'membre sage': 'Membre sage',

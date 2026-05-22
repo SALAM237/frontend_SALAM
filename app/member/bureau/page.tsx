@@ -20,6 +20,7 @@ const FEMININE_BUREAU_POSTES: Record<string, string> = {
   'tresorier e': 'Trésorière',
   'tresorier adjoint': 'Trésorière Adjointe',
   'tresorier e adjoint e': 'Trésorière Adjointe',
+  censeur: 'Censeure',
   responsable: 'Responsable',
   'commissaire aux comptes': 'Commissaire aux comptes',
   'membre sage': 'Membre sage',
@@ -43,6 +44,7 @@ const COMMISSION_DESCRIPTIONS: Record<string, string> = {
 const EXECUTIVE_ORDER = [
   'Président', 'Vice-Président', 'Secrétaire Général', 'Secrétaire Adjoint',
   'Trésorier', 'Commissaire aux comptes', 'Trésorier Adjoint',
+  'Censeur',
   'Responsable Communication', 'Responsable Informatique IT',
   'Responsable Culture', 'Responsable Sport', 'Responsable Partenariats',
   'Responsable Emploi, Insertion et Orientation (EIO)',
@@ -71,6 +73,7 @@ const SLOT_ALIASES: Record<string, string> = {
   'tresoriere adjointe': 'tresorier adjoint',
   'commissaire au compte': 'commissaire aux comptes',
   'commissaire aux compte': 'commissaire aux comptes',
+  censeure: 'censeur',
   conseillere: 'conseiller',
   'sage conseillere': 'sage conseiller',
   'responsable informatique': 'responsable informatique it',

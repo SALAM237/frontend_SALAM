@@ -11,6 +11,7 @@ const ACTION_COLORS: Record<string, string> = {
   member:      'bg-amber-50  text-amber-700  border-amber-200',
   settings:    'bg-neutral-50 text-neutral-600 border-neutral-200',
   reminder:    'bg-orange-50 text-orange-700 border-orange-200',
+  treasury:    'bg-emerald-50 text-emerald-800 border-emerald-200',
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -29,12 +30,43 @@ const ACTION_LABELS: Record<string, string> = {
   'auth.register':             'Inscription',
 };
 
+const EXTRA_ACTION_LABELS: Record<string, string> = {
+  role_created: 'Rôle créé',
+  role_updated: 'Rôle modifié',
+  role_deleted: 'Rôle supprimé',
+  permission_created: 'Permission créée',
+  roles_assigned: 'Rôles assignés',
+  poste_assigned: 'Poste bureau assigné',
+  bureau_photo_updated: 'Photo bureau modifiée',
+  custom_perms_updated: 'Permissions personnalisées',
+  admin_promoted: 'Admin promu',
+  admin_revoked: 'Admin révoqué',
+  login_success: 'Connexion',
+  login_failed: 'Connexion échouée',
+  logout: 'Déconnexion',
+  register: 'Inscription',
+  verify_email: 'Email vérifié',
+  password_reset_request: 'Demande réinitialisation',
+  password_reset: 'Mot de passe réinitialisé',
+  'treasury.transaction.created': 'Écriture trésorerie créée',
+  'treasury.transaction.updated': 'Écriture trésorerie modifiée',
+  'treasury.transaction.deleted': 'Écriture trésorerie supprimée',
+  'treasury.asset.created': 'Patrimoine ajouté',
+  'treasury.asset.updated': 'Patrimoine modifié',
+  'treasury.asset.deleted': 'Patrimoine supprimé',
+  'treasury.document.uploaded': 'Document trésorerie importé',
+  'treasury.membership_fee.proposed': 'Frais d’adhésion proposés',
+  'treasury.membership_fee.approved': 'Frais d’adhésion validés',
+  'treasury.membership_fee.rejected': 'Frais d’adhésion refusés',
+};
+
 const CATEGORIES = [
   { value: 'all',        label: 'Toutes' },
   { value: 'cotisation', label: 'Cotisations' },
   { value: 'invoice',    label: 'Facturation' },
   { value: 'member',     label: 'Adhérents' },
   { value: 'reminder',   label: 'Relances' },
+  { value: 'treasury',   label: 'Trésorerie' },
   { value: 'settings',   label: 'Paramètres' },
   { value: 'auth',       label: 'Authentification' },
 ];
@@ -42,11 +74,12 @@ const CATEGORIES = [
 function actionCategory(action: string): string {
   if (!action) return 'settings';
   if (action.startsWith('cotisation.reminder')) return 'reminder';
+  if (action.startsWith('treasury.')) return 'treasury';
   return action.split('.')[0];
 }
 
 function actionLabel(action: string): string {
-  return ACTION_LABELS[action] ?? action;
+  return ACTION_LABELS[action] ?? EXTRA_ACTION_LABELS[action] ?? action;
 }
 
 function fmtLog(log: AuditLogDoc): { date: string; time: string } {
@@ -58,7 +91,7 @@ function fmtLog(log: AuditLogDoc): { date: string; time: string } {
 }
 
 function logDetailsStr(log: AuditLogDoc): string {
-  const d = log.details ?? {};
+  const d = log.details ?? log.meta ?? {};
   const parts: string[] = [];
   if (d.memberName)     parts.push(String(d.memberName));
   if (d.year)           parts.push(`Année ${d.year}`);
@@ -108,7 +141,7 @@ export default function HistoriquePage() {
     logs.filter(l => {
       const cat    = actionCategory(l.action);
       const matchCat    = category === 'all' || cat === category;
-      const matchSearch = `${l.adminName} ${actionLabel(l.action)} ${logDetailsStr(l)}`
+      const matchSearch = `${l.adminName ?? ''} ${l.adminRole ?? ''} ${actionLabel(l.action)} ${logDetailsStr(l)}`
         .toLowerCase().includes(search.toLowerCase());
       return matchCat && matchSearch;
     }),
@@ -171,8 +204,8 @@ export default function HistoriquePage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-black text-neutral-900">{log.adminName}</span>
-                    <span className="text-[10px] font-semibold text-neutral-400">{log.adminRole}</span>
+                    <span className="text-sm font-black text-neutral-900">{log.adminName ?? 'Système'}</span>
+                    <span className="text-[10px] font-semibold text-neutral-400">{log.adminRole ?? 'Audit'}</span>
                     <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-black ${colorCls}`}>
                       {actionLabel(log.action)}
                     </span>

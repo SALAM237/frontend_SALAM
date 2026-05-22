@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Users, CalendarDays,
   Images, Newspaper, Settings, LogOut, Menu, X, ChevronRight, Bell,
   Banknote, FileText, History, MessageSquare, Shield, Loader2, Globe, ShieldCheck,
+  Handshake, BriefcaseBusiness, Sparkles, Target,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
@@ -15,6 +16,8 @@ import { isSuperAdmin, hasAdminRole, hasAnyPermission } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
+import AdminAccountTabs from '@/components/admin/AdminAccountTabs';
+import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
 
 type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; permissions?: string[] };
 
@@ -27,12 +30,16 @@ const BASE_NAV: NavItem[] = [
   { label: 'Activités',         href: '/admin/activites',         icon: CalendarDays },
   { label: 'Galerie',           href: '/admin/galerie',           icon: Images },
   { label: 'Actualités',        href: '/admin/actualites',        icon: Newspaper },
+  { label: 'Networking',        href: '/admin/networking',        icon: Handshake, permissions: ['networking.publish'] },
+  { label: 'Opportunites',      href: '/admin/opportunites',      icon: BriefcaseBusiness, permissions: ['opportunities.publish', 'opportunities.create', 'opportunities.update', 'opportunities.delete'] },
   { label: 'Messages',          href: '/admin/messages',          icon: MessageSquare },
+  { label: 'Assistant IA',      href: '/admin/assistant-ia',      icon: Sparkles },
+  { label: 'IDP/ISP',           href: '/admin/idp-isp',           icon: Target },
   { label: 'Validations',       href: '/admin/validations',       icon: ShieldCheck, permissions: ['content.publish', 'gallery.publish', 'networking.publish', 'opportunities.publish'] },
   { label: 'Historique',        href: '/admin/historique',        icon: History },
   { label: 'Rôles & Accès',     href: '/admin/roles',             icon: Shield, superAdminOnly: true },
   { label: 'Bureau',            href: '/admin/bureau',            icon: Users },
-  { label: 'Paramètres',        href: '/admin/parametres',        icon: Settings },
+  { label: 'Compte',            href: '/admin/parametres',        icon: Settings },
 ];
 
 function cleanGenericBureauTitle(value?: string | null) {
@@ -65,6 +72,7 @@ const FEMININE_BUREAU_POSTES: Record<string, string> = {
   'tresorier e': 'Trésorière',
   'tresorier adjoint': 'Trésorière Adjointe',
   'tresorier e adjoint e': 'Trésorière Adjointe',
+  censeur: 'Censeure',
   responsable: 'Responsable',
   'commissaire aux comptes': 'Commissaire aux comptes',
   'membre sage': 'Membre sage',
@@ -297,6 +305,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">
+      <AuthSessionKeeper />
       <AdminSidebar
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
         initials={initials} displayName={displayName} adminRole={adminRole}
@@ -379,6 +388,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Page content */}
         <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-5 sm:px-5 md:px-6 lg:px-8">
+          {pathname.startsWith('/admin/parametres') && <AdminAccountTabs />}
           {children}
         </main>
       </div>

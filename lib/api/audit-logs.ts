@@ -4,14 +4,16 @@ import { useAuthStore } from '@/store/auth.store';
 
 export interface AuditLogDoc {
   _id: string;
-  adminId: string;
-  adminName: string;
-  adminRole: string;
+  adminId?: string;
+  adminName?: string;
+  adminRole?: string;
+  userId?: string;
   action: string;
   targetModel?: string;
   targetId?: string;
-  details: Record<string, unknown>;
-  ip: string;
+  details?: Record<string, unknown>;
+  meta?: Record<string, unknown>;
+  ip?: string;
   createdAt: string;
 }
 
