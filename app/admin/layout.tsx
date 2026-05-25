@@ -140,7 +140,7 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
           <p className="mb-2 px-2 text-[9px] font-black uppercase tracking-[0.22em] text-white/20">Navigation</p>
           <ul className="flex flex-col gap-0.5">
             {nav.map(({ label, href, icon: Icon }) => {
-              const [hrefPath, hrefQuery] = href.split('??');
+              const [hrefPath, hrefQuery] = href.split('?');
               const hrefTab = new URLSearchParams(hrefQuery ?? '').get('tab');
               const active = hrefTab
                 ? pathname === hrefPath && currentTab === hrefTab

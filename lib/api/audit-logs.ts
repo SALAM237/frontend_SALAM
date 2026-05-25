@@ -29,7 +29,7 @@ export function useAuditLogs(page = 1) {
   return useQuery({
     queryKey: ['audit-logs', page],
     queryFn: () =>
-      apiClient<AuditLogsPage>(`/api/v1/admin/audit-logs??page=${page}`, {
+      apiClient<AuditLogsPage>(`/api/v1/admin/audit-logs?page=${encodeURIComponent(String(page))}`, {
         token: token ?? '',
       }),
     enabled: !!token,

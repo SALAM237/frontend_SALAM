@@ -294,7 +294,7 @@ export default function AdminAdherentsPage() {
                             </Link>
 
                             <Link
-                              href={`/admin/adherents/nouveau??edit=${m._id}`}
+                              href={`/admin/adherents/nouveau?edit=${encodeURIComponent(m._id)}`}
                               title="Modifier"
                               className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-50 text-neutral-500 transition-all hover:bg-yellow-400 hover:text-neutral-950"
                             >
@@ -409,7 +409,7 @@ export default function AdminAdherentsPage() {
                                   <Eye size={12} />
                                 </Link>
                                 <Link
-                                  href={`/admin/adherents/nouveau??edit=${m._id}`}
+                                  href={`/admin/adherents/nouveau?edit=${encodeURIComponent(m._id)}`}
                                   title="Modifier"
                                   className="flex h-7 w-7 items-center justify-center rounded-lg bg-yellow-50 text-yellow-700 transition hover:bg-yellow-400 hover:text-neutral-950"
                                 >

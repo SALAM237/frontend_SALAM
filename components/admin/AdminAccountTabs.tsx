@@ -18,7 +18,7 @@ export default function AdminAccountTabs() {
     <AnimatedTabBar
       className="mb-5"
       value={activeTab}
-      items={tabs.map(tab => ({ value: tab.value, label: tab.label, href: `/admin/parametres??tab=${tab.value}`, icon: tab.icon }))}
+      items={tabs.map(tab => ({ value: tab.value, label: tab.label, href: `/admin/parametres?tab=${encodeURIComponent(tab.value)}`, icon: tab.icon }))}
     />
   );
 }

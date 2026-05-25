@@ -22,7 +22,7 @@ function VerifyEmailContent() {
       return;
     }
 
-    apiClient(`/api/v1/auth/verify-email??token=${encodeURIComponent(token)}`)
+    apiClient(`/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`)
       .then(res => {
         setStatus('success');
         setMessage(res.message);

@@ -114,7 +114,7 @@ async function generateCardBlob(member: MemberCardData): Promise<Blob> {
 
   /* QR code */
   try {
-    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/??size=200x200&data=${encodeURIComponent(`https://www.association-salam.org/verify/${member.id}`)}&bgcolor=07140d&color=ffffff&margin=8&qzone=1`;
+    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://www.association-salam.org/verify/${member.id}`)}&bgcolor=07140d&color=ffffff&margin=8&qzone=1`;
     const qr = await loadImg(qrSrc);
     ctx.save();
     ctx.beginPath(); rrect(ctx, W - 220, 26, 190, 190, 14); ctx.clip();

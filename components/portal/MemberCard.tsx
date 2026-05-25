@@ -18,7 +18,7 @@ function QRCode({ data, size = 72 }: { data: string; size?: number }) {
   const encoded = encodeURIComponent(data);
   return (
     <img
-      src={`https://api.qrserver.com/v1/create-qr-code/??size=${size}x${size}&data=${encoded}&bgcolor=07140d&color=ffffff&margin=4&qzone=1`}
+      src={`https://api.qrserver.com/v1/create-qr-code/?size=${encodeURIComponent(`${size}x${size}`)}&data=${encoded}&bgcolor=07140d&color=ffffff&margin=4&qzone=1`}
       alt="QR code"
       width={size}
       height={size}
@@ -102,4 +102,3 @@ export function MemberCard({ member, printable = false }: { member: MemberCardDa
     </div>
   );
 }
-

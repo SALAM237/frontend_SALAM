@@ -76,7 +76,7 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
             {isActive ? 'Actif' : 'En attente'}
           </span>
           <Link
-            href={`/admin/adherents/nouveau??edit=${id}`}
+            href={`/admin/adherents/nouveau?edit=${encodeURIComponent(id)}`}
             className="inline-flex h-9 items-center gap-2 rounded-full bg-neutral-100 px-4 text-sm font-semibold text-neutral-700 transition hover:bg-yellow-300 hover:text-neutral-950"
           >
             <Edit size={13} /> Modifier

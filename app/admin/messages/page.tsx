@@ -30,7 +30,7 @@ function RecipientPicker({
     queryKey: ['admin-msg-member-search', q],
     queryFn: async () => {
       const res = await apiClient<MembersListResponse>(
-        `/api/v1/admin/members??search=${encodeURIComponent(q)}&limit=8`,
+        `/api/v1/admin/members?search=${encodeURIComponent(q)}&limit=8`,
         { token: token ?? '' },
       );
       return res.data.data.map(m => ({
