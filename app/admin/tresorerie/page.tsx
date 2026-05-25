@@ -251,14 +251,16 @@ export default function AdminTresoreriePage() {
 
       <AnimatedTabBar items={tabs} value={tab} onChange={selectTab} />
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
-        <Kpi label="Solde disponible" value={formatFcfa(data?.kpis.balance ?? 0)} icon={WalletCards} tone={balanceTone} />
-        <Kpi label="Encaissements" value={formatFcfa(data?.kpis.income ?? 0)} icon={ArrowUpRight} tone="emerald" />
-        <Kpi label="Decaissements" value={formatFcfa(data?.kpis.expense ?? 0)} icon={ArrowDownRight} tone="red" />
-        <Kpi label="Adhesions en attente" value={formatFcfa(data?.kpis.pendingAdhesions ?? 0)} icon={Clock} tone="amber" sub={`${data?.kpis.activeMembers ?? 0} membres actifs`} />
-        <Kpi label="Frais d'adhesion" value={formatFcfa(data?.kpis.membershipFee ?? 5000)} icon={Banknote} tone="blue" />
-        <Kpi label="Patrimoine" value={formatFcfa(data?.kpis.assetsValue ?? 0)} icon={Package} tone="violet" sub={`${data?.kpis.assetsCount ?? 0} element(s)`} />
-      </div>
+      {tab === 'overview' && (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
+          <Kpi label="Solde disponible" value={formatFcfa(data?.kpis.balance ?? 0)} icon={WalletCards} tone={balanceTone} />
+          <Kpi label="Encaissements" value={formatFcfa(data?.kpis.income ?? 0)} icon={ArrowUpRight} tone="emerald" />
+          <Kpi label="Decaissements" value={formatFcfa(data?.kpis.expense ?? 0)} icon={ArrowDownRight} tone="red" />
+          <Kpi label="Adhesions en attente" value={formatFcfa(data?.kpis.pendingAdhesions ?? 0)} icon={Clock} tone="amber" sub={`${data?.kpis.activeMembers ?? 0} membres actifs`} />
+          <Kpi label="Frais d'adhesion" value={formatFcfa(data?.kpis.membershipFee ?? 5000)} icon={Banknote} tone="blue" />
+          <Kpi label="Patrimoine" value={formatFcfa(data?.kpis.assetsValue ?? 0)} icon={Package} tone="violet" sub={`${data?.kpis.assetsCount ?? 0} element(s)`} />
+        </div>
+      )}
 
       {settingsOpen && (
         <FormPanel title="Parametres tresorerie" onClose={() => setSettingsOpen(false)}>

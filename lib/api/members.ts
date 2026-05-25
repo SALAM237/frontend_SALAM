@@ -22,6 +22,35 @@ export interface MemberListItem {
   missingProfileFields?: string[];
   gender?: 'homme' | 'femme';
   promotionYear?: number;
+  city?: string;
+  country?: string;
+  residenceCity?: string;
+  antenne?: string;
+  activitySector?: string;
+  skills?: string[];
+  expertiseDomains?: string[];
+  bio?: string;
+}
+
+export interface DirectoryMember {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  avatar?: string;
+  bureauPhoto?: string;
+  gender?: 'homme' | 'femme';
+  promotionYear?: number;
+  city?: string;
+  country?: string;
+  residenceCity?: string;
+  antenne?: string;
+  activitySector?: string;
+  skills?: string[];
+  expertiseDomains?: string[];
+  bio?: string;
+  memberId: string;
 }
 
 export interface UpdateProfilePayload {
@@ -128,10 +157,27 @@ export function useAdminMembers(params: {
   return useQuery({
     queryKey: ['admin-members', params],
     queryFn: () =>
-      apiClient<MembersListResponse>(`/api/v1/admin/members??${qs}`, {
+      apiClient<MembersListResponse>(`/api/v1/admin/members?${qs}`, {
         token: token ?? '',
       }),
     enabled: !!token,
+  });
+}
+
+export function useMemberDirectorySearch(search: string, limit = 20) {
+  const token = useAuthStore(s => s.accessToken);
+  const trimmed = search.trim();
+  const qs = new URLSearchParams();
+  qs.set('search', trimmed);
+  qs.set('limit', String(limit));
+
+  return useQuery({
+    queryKey: ['member-directory', trimmed, limit],
+    queryFn: () =>
+      apiClient<{ data: DirectoryMember[]; total: number; page: number; pages: number }>(`/api/v1/member/directory?${qs}`, {
+        token: token ?? '',
+      }),
+    enabled: !!token && trimmed.length >= 2,
   });
 }
 

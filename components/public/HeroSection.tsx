@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutGrid } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { getPostLoginRedirect } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
@@ -92,9 +93,11 @@ export function HeroSection() {
   const [navScrolled, setNavScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const { user, restoreAuth } = useAuthStore();
+  const pathname = usePathname();
 
   // Restauration silencieuse de session depuis les cookies httpOnly
   useEffect(() => {
+    if (pathname !== '/') return;
     if (user) return;
     const tryRestore = async () => {
       try {
@@ -115,9 +118,10 @@ export function HeroSection() {
     };
     tryRestore();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
+    if (pathname !== '/') return;
     let lastY = window.scrollY;
     const handleScroll = () => {
       const y = window.scrollY;
@@ -148,7 +152,9 @@ export function HeroSection() {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [pathname]);
+
+  if (pathname !== '/') return null;
 
   return (
     <section className="relative h-screen min-h-svh overflow-hidden rounded-none bg-[#06130b] px-[clamp(1rem,3vw,3rem)] py-[clamp(0.8rem,2vw,1.5rem)] text-white lg:mx-3 lg:my-3 lg:h-[calc(100vh-1.5rem)] lg:min-h-[calc(100svh-1.5rem)] lg:rounded-[2.5rem]">
@@ -183,9 +189,10 @@ export function HeroSection() {
       {/* ── Fixed nav wrapper (navbar + dropdown) ── */}
       <div
         className={[
-          'fixed inset-x-0 z-50 transition-[transform,top] duration-300 ease-out lg:inset-x-3',
-          navVisible ? 'translate-y-0 top-3 md:top-4 lg:top-6' : '-translate-y-full top-0',
+          'fixed inset-x-0 z-50 transition-[transform,top,opacity] duration-300 ease-out lg:inset-x-3',
+          navVisible ? 'pointer-events-auto translate-y-0 opacity-100 top-3 md:top-4 lg:top-6' : 'pointer-events-none -translate-y-[125%] opacity-0 top-0',
         ].join(' ')}
+        aria-hidden={!navVisible}
       >
         {/* Navbar */}
         <header

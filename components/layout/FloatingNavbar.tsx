@@ -97,9 +97,10 @@ export function FloatingNavbar() {
   return (
     <div
       className={[
-        'fixed inset-x-0 z-50 transition-[transform,top] duration-300 ease-out lg:inset-x-3',
-        navVisible ? 'translate-y-0 top-3 md:top-4 lg:top-6' : '-translate-y-full top-0',
+        'fixed inset-x-0 z-50 transition-[transform,top,opacity] duration-300 ease-out lg:inset-x-3',
+        navVisible ? 'pointer-events-auto translate-y-0 opacity-100 top-3 md:top-4 lg:top-6' : 'pointer-events-none -translate-y-[125%] opacity-0 top-0',
       ].join(' ')}
+      aria-hidden={!navVisible}
     >
       <header
         className={[
