@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Newspaper, Search, Loader2, Tag, Eye, X, Plus, PlusCircle, Trash2, ImagePlus } from 'lucide-react';
-import { usePublicArticles, ARTICLE_CATEGORIES, useSubmitMemberArticle } from '@/lib/api/content';
+import { usePublicArticles, ARTICLE_CATEGORIES, useSubmitMemberArticle, useUploadMemberArticleImage } from '@/lib/api/content';
 import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
 import { articleImage } from '@/lib/article-image';
 
@@ -165,8 +165,12 @@ function SubmitArticleModal({ onClose }: { onClose: () => void }) {
     content: '',
     category: 'general',
     imageUrl: '',
+    thumbnailUrl: '',
+    mediumUrl: '',
+    largeUrl: '',
     visibility: 'public' as 'public' | 'members',
   });
+  const uploadImage = useUploadMemberArticleImage();
   const [activeDesign, setActiveDesign] = useState<string | null>(null);
   const [styles, setStyles] = useState<Record<string, DesignStyle>>({});
   const [extraBlocks, setExtraBlocks] = useState<ExtraBlock[]>([]);
@@ -186,9 +190,22 @@ function SubmitArticleModal({ onClose }: { onClose: () => void }) {
 
   const handleImageFile = (file?: File | null) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setForm(prev => ({ ...prev, imageUrl: String(reader.result ?? '') }));
-    reader.readAsDataURL(file);
+    const preview = URL.createObjectURL(file);
+    setForm(prev => ({ ...prev, imageUrl: preview }));
+    uploadImage.mutate(file, {
+      onSuccess: res => {
+        const img = res.data;
+        setForm(prev => ({
+          ...prev,
+          imageUrl: img.mediumUrl || img.imageUrl,
+          thumbnailUrl: img.thumbnailUrl || '',
+          mediumUrl: img.mediumUrl || '',
+          largeUrl: img.largeUrl || '',
+        }));
+        URL.revokeObjectURL(preview);
+      },
+      onError: () => URL.revokeObjectURL(preview),
+    });
   };
 
   return (
@@ -230,7 +247,7 @@ function SubmitArticleModal({ onClose }: { onClose: () => void }) {
             <div className="space-y-2">
               <input value={form.imageUrl} onChange={e => setForm(prev => ({ ...prev, imageUrl: e.target.value }))} placeholder="URL de l'image ou import ci-dessous" className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
               <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-neutral-200 px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
-                <ImagePlus size={13} /> Importer une image
+                {uploadImage.isPending ? <Loader2 size={13} className="animate-spin" /> : <ImagePlus size={13} />} Importer une image
                 <input type="file" accept="image/*" className="hidden" onChange={e => handleImageFile(e.target.files?.[0])} />
               </label>
             </div>

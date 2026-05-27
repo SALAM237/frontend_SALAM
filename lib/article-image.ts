@@ -1,12 +1,17 @@
 export function articleImage(article: any): string {
   const raw = (
-    article?.data?.imageUrl
+    article?.data?.thumbnailUrl
+    || article?.thumbnailUrl
+    || article?.data?.mediumUrl
+    || article?.mediumUrl
+    || article?.data?.largeUrl
+    || article?.largeUrl
+    || article?.data?.imageUrl
     || article?.imageUrl
     || article?.data?.coverImage
     || article?.coverImage
     || article?.data?.image
     || article?.image
-    || article?.thumbnailUrl
     || ''
   );
   if (!raw || /^data:|^blob:/i.test(raw)) return raw;

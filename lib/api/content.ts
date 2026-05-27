@@ -11,6 +11,9 @@ export interface ArticleDoc {
   visibility?: 'public' | 'members';
   imageUrl?: string;
   coverImage?: string;
+  thumbnailUrl?: string;
+  mediumUrl?: string;
+  largeUrl?: string;
   updatedAt?: string;
   data?: {
     excerpt?: string;
@@ -19,6 +22,9 @@ export interface ArticleDoc {
     imageUrl?: string;
     coverImage?: string;
     image?: string;
+    thumbnailUrl?: string;
+    mediumUrl?: string;
+    largeUrl?: string;
     visibility?: 'public' | 'members';
   };
   createdAt: string;
@@ -32,6 +38,14 @@ export const ARTICLE_CATEGORIES = [
   { value: 'insertion',    label: 'Insertion'       },
   { value: 'vie_asso',     label: 'Vie associative' },
 ] as const;
+
+export type ArticleImageUpload = {
+  imageUrl: string;
+  coverImage: string;
+  thumbnailUrl?: string;
+  mediumUrl?: string;
+  largeUrl?: string;
+};
 
 /* ── Public (no auth) ──────────────────────────────────────── */
 export function usePublicArticles() {
@@ -75,6 +89,41 @@ export function useSubmitMemberArticle() {
   });
 }
 
+function uploadArticleImage(file: File, token: string | null | undefined, scope: 'admin' | 'member') {
+  const form = new FormData();
+  form.append('image', file);
+  return fetch(
+    `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '')}/api/v1/${scope}/content/image`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token ?? ''}` },
+      credentials: 'include',
+      body: form,
+    },
+  ).then(async response => {
+    const text = await response.text();
+    const json = text ? JSON.parse(text) : {};
+    if (!response.ok) throw new Error(json?.message ?? 'Erreur upload image actualité');
+    return json as { success: boolean; message: string; data: ArticleImageUpload };
+  });
+}
+
+export function useUploadAdminArticleImage() {
+  const token = useAuthStore(s => s.accessToken);
+  return useMutation({
+    mutationFn: (file: File) => uploadArticleImage(file, token, 'admin'),
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useUploadMemberArticleImage() {
+  const token = useAuthStore(s => s.accessToken);
+  return useMutation({
+    mutationFn: (file: File) => uploadArticleImage(file, token, 'member'),
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 /* ── Admin ─────────────────────────────────────────────────── */
 export function useArticles() {
   const token = useAuthStore(s => s.accessToken);
@@ -89,7 +138,7 @@ export function useCreateArticle() {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { title: string; excerpt?: string; content?: string; category?: string; imageUrl?: string; status?: string; visibility?: 'public' | 'members'; data?: { excerpt?: string; content?: string; category?: string; imageUrl?: string; visibility?: 'public' | 'members' } }) =>
+    mutationFn: (payload: { title: string; excerpt?: string; content?: string; category?: string; imageUrl?: string; thumbnailUrl?: string; mediumUrl?: string; largeUrl?: string; status?: string; visibility?: 'public' | 'members'; data?: { excerpt?: string; content?: string; category?: string; imageUrl?: string; thumbnailUrl?: string; mediumUrl?: string; largeUrl?: string; visibility?: 'public' | 'members' } }) =>
       apiClient<ArticleDoc>('/api/v1/admin/content', {
         method: 'POST', body: JSON.stringify(payload), token: token ?? '',
       }),
@@ -106,7 +155,7 @@ export function useUpdateArticle(id: string) {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { title?: string; status?: string; visibility?: 'public' | 'members'; data?: { excerpt?: string; content?: string; category?: string; imageUrl?: string; visibility?: 'public' | 'members' } }) =>
+    mutationFn: (payload: { title?: string; status?: string; visibility?: 'public' | 'members'; data?: { excerpt?: string; content?: string; category?: string; imageUrl?: string; thumbnailUrl?: string; mediumUrl?: string; largeUrl?: string; visibility?: 'public' | 'members' } }) =>
       apiClient<ArticleDoc>(`/api/v1/admin/content/${id}`, {
         method: 'PUT', body: JSON.stringify(payload), token: token ?? '',
       }),

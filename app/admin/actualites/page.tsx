@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import {
   useArticles, useCreateArticle, useUpdateArticle, useDeleteArticle,
+  useUploadAdminArticleImage,
   ARTICLE_CATEGORIES, type ArticleDoc,
 } from '@/lib/api/content';
 import { applyInlineTextStyle, captureTextSelection, type StoredTextSelection } from '@/lib/rich-text';
@@ -171,9 +172,13 @@ function ArticleForm({
     content:  initial?.data?.content  ?? '',
     category: initial?.data?.category ?? 'general',
     imageUrl: articleImage(initial) || '',
+    thumbnailUrl: initial?.data?.thumbnailUrl ?? initial?.thumbnailUrl ?? '',
+    mediumUrl: initial?.data?.mediumUrl ?? initial?.mediumUrl ?? '',
+    largeUrl: initial?.data?.largeUrl ?? initial?.largeUrl ?? '',
     visibility: (initial?.visibility ?? initial?.data?.visibility ?? 'public') as 'public' | 'members',
     status:   initial?.status         ?? 'draft',
   });
+  const uploadImage = useUploadAdminArticleImage();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeDesign, setActiveDesign] = useState<string | null>(null);
   const [styles, setStyles] = useState<Record<string, DesignStyle>>({});
@@ -184,9 +189,22 @@ function ArticleForm({
 
   const handleImageFile = (file?: File | null) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setF(p => ({ ...p, imageUrl: String(reader.result ?? '') }));
-    reader.readAsDataURL(file);
+    const preview = URL.createObjectURL(file);
+    setF(p => ({ ...p, imageUrl: preview }));
+    uploadImage.mutate(file, {
+      onSuccess: res => {
+        const img = res.data;
+        setF(p => ({
+          ...p,
+          imageUrl: img.mediumUrl || img.imageUrl,
+          thumbnailUrl: img.thumbnailUrl || '',
+          mediumUrl: img.mediumUrl || '',
+          largeUrl: img.largeUrl || '',
+        }));
+        URL.revokeObjectURL(preview);
+      },
+      onError: () => URL.revokeObjectURL(preview),
+    });
   };
 
   const inp = (err?: string) =>
@@ -208,6 +226,9 @@ function ArticleForm({
         content: [f.content, extraContent].filter(Boolean).join('\n\n') || undefined,
         category: f.category,
         imageUrl: f.imageUrl || undefined,
+        thumbnailUrl: f.thumbnailUrl || undefined,
+        mediumUrl: f.mediumUrl || undefined,
+        largeUrl: f.largeUrl || undefined,
         visibility: f.visibility,
       },
     });
@@ -248,7 +269,7 @@ function ArticleForm({
               <div className="space-y-2">
                 <input value={f.imageUrl} onChange={upd('imageUrl')} placeholder="URL de l'image ou import ci-dessous" className={inp()} />
                 <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-neutral-200 px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
-                  <ImagePlus size={13} /> Importer une image
+                  {uploadImage.isPending ? <Loader2 size={13} className="animate-spin" /> : <ImagePlus size={13} />} Importer une image
                   <input type="file" accept="image/*" className="hidden" onChange={e => handleImageFile(e.target.files?.[0])} />
                 </label>
               </div>
