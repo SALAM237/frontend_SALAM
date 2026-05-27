@@ -45,6 +45,7 @@ export function RichTextEditor({
       aria-multiline={multiline}
       data-placeholder={placeholder}
       onInput={handleInput}
+      onBlur={handleInput}
       onPaste={event => {
         event.preventDefault();
         const text = event.clipboardData.getData('text/plain');
@@ -67,7 +68,7 @@ export function RichTextEditor({
         selection.removeAllRanges();
         selection.addRange(range);
 
-        ref.current?.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertLineBreak' }));
+        ref.current?.dispatchEvent(new Event('input', { bubbles: true }));
       }}
       className={`${className ?? ''} empty:before:pointer-events-none empty:before:text-neutral-300 empty:before:content-[attr(data-placeholder)]`}
       style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', ...style }}

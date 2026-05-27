@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Bold, GripVertical, Italic, Palette, X } from 'lucide-react';
 import { applyInlineTextStyle, captureTextSelection, type StoredTextSelection } from '@/lib/rich-text';
 
@@ -121,6 +121,7 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
   const [drag, setDrag] = useState<{ x: number; y: number; sx: number; sy: number } | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const selectionRef = useRef<StoredTextSelection | null>(null);
+  const selectionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [palettePosition, setPalettePosition] = useState<PalettePosition>({ x: 12, y: 42 });
   const update = (patch: Partial<DesignStyle>) => setStyles(prev => ({ ...prev, [id]: { ...(prev[id] ?? defaultDesign), ...patch } }));
   const closePalette = () => {
@@ -145,19 +146,17 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
       });
     }
   };
-  useEffect(() => {
-    const handleSelectionChange = () => {
+  const rememberSelectionAfterRelease = () => {
+    if (selectionTimer.current) clearTimeout(selectionTimer.current);
+    selectionTimer.current = setTimeout(() => {
       const root = rootRef.current;
       const selection = window.getSelection();
       if (!root || !selection || selection.rangeCount === 0 || selection.isCollapsed) return;
       const range = selection.getRangeAt(0);
       if (!root.contains(range.commonAncestorContainer)) return;
       rememberSelection(range.commonAncestorContainer instanceof HTMLElement ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement);
-    };
-
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
-  }, []);
+    }, 80);
+  };
   const inlineStyle = (patch: Partial<DesignStyle>) => {
     const selection = selectionRef.current;
     if (!selection) return false;
@@ -193,9 +192,9 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
       }}
       onPointerUp={() => setDrag(null)}
       onPointerLeave={() => setDrag(null)}
-      onMouseUpCapture={e => rememberSelection(e.target)}
+      onMouseUpCapture={rememberSelectionAfterRelease}
+      onTouchEndCapture={rememberSelectionAfterRelease}
       onKeyUpCapture={e => rememberSelection(e.target)}
-      onSelectCapture={e => rememberSelection(e.target)}
     >
       <div className="absolute -top-8 left-2 z-40 hidden items-center gap-1 rounded-xl border border-neutral-200 bg-white/95 px-1.5 py-1 shadow-lg group-hover:flex">
         <button type="button" onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setDrag({ x: style.x, y: style.y, sx: e.clientX, sy: e.clientY }); }} className="flex h-6 w-6 cursor-grab items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100" title="Déplacer"><GripVertical size={13} /></button>

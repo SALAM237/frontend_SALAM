@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   Plus, X, Send, Eye, ChevronDown, Search,
   CalendarDays, Banknote, FileText, CheckCircle2, Clock,
@@ -191,6 +191,7 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
   const [drag, setDrag] = useState<{ startX: number; startY: number; x: number; y: number } | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const selectionRef = useRef<StoredTextSelection | null>(null);
+  const selectionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [palettePosition, setPalettePosition] = useState<PalettePosition>({ x: 12, y: 44 });
   const pos = offsets[id];
   const design = designs[id] ?? defaultBlockDesign;
@@ -217,19 +218,17 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
       });
     }
   };
-  useEffect(() => {
-    const handleSelectionChange = () => {
+  const rememberSelectionAfterRelease = () => {
+    if (selectionTimer.current) clearTimeout(selectionTimer.current);
+    selectionTimer.current = setTimeout(() => {
       const root = rootRef.current;
       const selection = window.getSelection();
       if (!root || !selection || selection.rangeCount === 0 || selection.isCollapsed) return;
       const range = selection.getRangeAt(0);
       if (!root.contains(range.commonAncestorContainer)) return;
       rememberSelection(range.commonAncestorContainer instanceof HTMLElement ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement);
-    };
-
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
-  }, []);
+    }, 80);
+  };
   const inlineStyle = (patch: Partial<BlockDesign>) => {
     const selection = selectionRef.current;
     if (!selection) return false;
@@ -265,9 +264,9 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
       }}
       onPointerUp={() => setDrag(null)}
       onPointerLeave={() => setDrag(null)}
-      onMouseUpCapture={event => rememberSelection(event.target)}
+      onMouseUpCapture={rememberSelectionAfterRelease}
+      onTouchEndCapture={rememberSelectionAfterRelease}
       onKeyUpCapture={event => rememberSelection(event.target)}
-      onSelectCapture={event => rememberSelection(event.target)}
     >
       <div className="absolute -top-9 left-3 z-40 hidden items-center gap-1 rounded-2xl border border-emerald-200 bg-white/95 px-2 py-1 shadow-lg backdrop-blur group-hover:flex">
         <button type="button" onPointerDown={event => { event.preventDefault(); event.stopPropagation(); setDrag({ startX: event.clientX, startY: event.clientY, x: pos.x, y: pos.y }); }} className="flex h-7 w-7 cursor-grab items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100" title="Glisser-déposer ce bloc"><GripVertical className="h-4 w-4" /></button>

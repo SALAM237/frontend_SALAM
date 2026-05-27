@@ -88,7 +88,7 @@ export function applyInlineTextStyle(selection: StoredTextSelection | null, patc
     deepest.appendChild(fragment);
     range.insertNode(wrapper);
 
-    element.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'formatSetBlockTextDirection' }));
+    element.dispatchEvent(new Event('input', { bubbles: true }));
     element.focus();
     browserSelection?.removeAllRanges();
     return true;
