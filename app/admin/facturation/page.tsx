@@ -140,6 +140,7 @@ function InvoiceBlockPalette({ label, design, position, onMove, onChange, onInli
   };
   return (
     <div
+      data-design-palette="true"
       className="absolute z-50 w-[260px] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl"
       style={{ left: position.x, top: position.y }}
       onClick={e => e.stopPropagation()}
@@ -199,6 +200,7 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
     setActiveDesign(null);
   };
   const rememberSelection = (target: EventTarget | null) => {
+    if (target instanceof HTMLElement && target.closest('[data-design-palette="true"]')) return;
     const selection = captureTextSelection(target);
     if (!selection) {
       if (target instanceof HTMLElement && rootRef.current?.contains(target)) closePalette();
@@ -238,7 +240,7 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
       fontSize: patch.fontSize,
       fontFamily: patch.fontFamily,
     });
-    return applied || selection.kind === 'rich';
+    return applied;
   };
 
   return (

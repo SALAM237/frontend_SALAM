@@ -15,6 +15,7 @@ let _sessionUncertain = false;
 const MAX_PERIODIC_AUTH_FAILURES = 5;
 const BASE_REFRESH_BACKOFF_MS = 60_000;
 const MAX_REFRESH_BACKOFF_MS = 5 * 60 * 1000;
+const PROACTIVE_REFRESH_BEFORE_MS = 2 * 60 * 1000;
 
 type RefreshAuthOptions = {
   reason?: 'periodic' | 'api_401';
@@ -29,6 +30,26 @@ class RefreshError extends Error {
 
 function canAttemptRefresh(path: string): boolean {
   return !path.includes('/auth/');
+}
+
+function jwtExpiresInMs(token?: string | null): number | null {
+  if (!token) return null;
+  try {
+    const [, payload] = token.split('.');
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = JSON.parse(atob(normalized));
+    if (typeof decoded.exp !== 'number') return null;
+    return decoded.exp * 1000 - Date.now();
+  } catch {
+    return null;
+  }
+}
+
+async function currentAccessToken(candidate?: string | null): Promise<string | null> {
+  if (typeof window === 'undefined') return candidate ?? null;
+  const { useAuthStore } = await import('@/store/auth.store');
+  return candidate || useAuthStore.getState().accessToken;
 }
 
 async function clearLocalSessionAndRedirect() {
@@ -123,12 +144,21 @@ export async function apiClient<T = unknown>(
   init?: RequestInit & { token?: string; _retry?: boolean },
 ): Promise<ApiResponse<T>> {
   const { token, _retry, ...rest } = init ?? {};
+  let requestToken = await currentAccessToken(token);
+
+  if (!_retry && requestToken && canAttemptRefresh(path)) {
+    const expiresIn = jwtExpiresInMs(requestToken);
+    if (expiresIn !== null && expiresIn <= PROACTIVE_REFRESH_BEFORE_MS) {
+      const refreshed = await refreshAuthSession({ reason: 'periodic', logoutOnFailure: false });
+      if (refreshed) requestToken = refreshed;
+    }
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json; charset=utf-8',
     ...(rest.headers as Record<string, string> ?? {}),
   };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (requestToken) headers['Authorization'] = `Bearer ${requestToken}`;
 
   const res = await fetch(`${API}${path}`, {
     ...rest,

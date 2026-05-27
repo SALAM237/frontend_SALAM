@@ -47,6 +47,7 @@ function DesignPalette({ label, style, position, onMove, onChange, onInlineStyle
   };
   return (
     <div
+      data-design-palette="true"
       className="absolute z-40 w-[260px] rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xl"
       style={{ left: position.x, top: position.y }}
       onClick={e => e.stopPropagation()}
@@ -127,6 +128,7 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
     setActive(null);
   };
   const rememberSelection = (target: EventTarget | null) => {
+    if (target instanceof HTMLElement && target.closest('[data-design-palette="true"]')) return;
     const selection = captureTextSelection(target);
     if (!selection) {
       if (target instanceof HTMLElement && rootRef.current?.contains(target)) closePalette();
@@ -166,7 +168,7 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
       fontSize: patch.fontSize,
       fontFamily: patch.fontFamily,
     });
-    return applied || selection.kind === 'rich';
+    return applied;
   };
   const fieldStyle: React.CSSProperties = {
     fontSize: style.fontSize,
