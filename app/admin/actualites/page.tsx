@@ -14,6 +14,7 @@ import { applyInlineTextStyle, captureTextSelection, type StoredTextSelection } 
 import { articleImage } from '@/lib/article-image';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { DesignEditorField } from '@/components/admin/DesignEditorField';
+import { RichText } from '@/components/ui/RichText';
 
 type DesignStyle = {
   x: number;
@@ -453,14 +454,14 @@ export default function AdminActualitesPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-black text-sm text-neutral-900 truncate">{a.title}</p>
+                      <p className="font-black text-sm text-neutral-900 truncate"><RichText value={a.title} /></p>
                       <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${a.status === 'published' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-yellow-200 bg-yellow-50 text-yellow-700'}`}>
                         {a.status === 'published' ? 'Publié' : 'Brouillon'}
                       </span>
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-400">
                       <span className="rounded-full bg-neutral-100 px-2 py-0.5 font-semibold text-neutral-600">{catLabel}</span>
-                      {a.data?.excerpt && <span className="truncate max-w-xs">{a.data.excerpt}</span>}
+                      {a.data?.excerpt && <span className="truncate max-w-xs"><RichText value={a.data.excerpt} /></span>}
                     </div>
                     <p className="mt-0.5 text-[11px] text-neutral-300">
                       {new Date(a.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}

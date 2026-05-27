@@ -7,6 +7,7 @@ import { usePublicArticles, ARTICLE_CATEGORIES, useSubmitMemberArticle, useUploa
 import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
 import { articleImage } from '@/lib/article-image';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { RichText } from '@/components/ui/RichText';
 
 type ExtraBlock = { id: string; label: string; title: string; description: string };
 
@@ -132,7 +133,7 @@ export default function MemberActualitesPage() {
                   <Tag size={10} />
                   {ARTICLE_CATEGORIES.find(c => c.value === selected.data?.category)?.label ?? 'General'}
                 </p>
-                <h2 className="mt-3 text-lg font-black tracking-[-0.02em] text-neutral-900">{selected.title}</h2>
+                <h2 className="mt-3 text-lg font-black tracking-[-0.02em] text-neutral-900"><RichText value={selected.title} /></h2>
                 <p className="mt-1 text-xs text-neutral-400">
                   {new Date(selected.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
                 </p>
@@ -146,9 +147,9 @@ export default function MemberActualitesPage() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={articleImage(selected)} alt="" className="mb-4 max-h-72 w-full rounded-2xl object-cover" />
               )}
-              <p className="whitespace-pre-line text-sm leading-7 text-neutral-700">
-                {selected.data?.content || selected.data?.excerpt || 'Contenu indisponible.'}
-              </p>
+              <div className="whitespace-pre-wrap text-sm leading-7 text-neutral-700">
+                <RichText value={selected.data?.content || selected.data?.excerpt || 'Contenu indisponible.'} />
+              </div>
             </div>
           </div>
         </div>

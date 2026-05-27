@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Calendar, Loader2, Tag } from 'lucide-react';
 import { ARTICLE_CATEGORIES, usePublicArticle } from '@/lib/api/content';
 import { articleImage } from '@/lib/article-image';
+import { RichText } from '@/components/ui/RichText';
 
 export default function MemberArticleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -45,7 +46,7 @@ export default function MemberArticleDetailPage({ params }: { params: Promise<{ 
                 {ARTICLE_CATEGORIES.find(c => c.value === article.data?.category)?.label ?? 'General'}
               </span>
               <h1 className="mt-3 text-[clamp(1.6rem,4vw,2.4rem)] font-black leading-tight tracking-[-0.03em] text-neutral-900">
-                {article.title}
+                <RichText value={article.title} />
               </h1>
               <p className="mt-2 flex items-center gap-2 text-xs text-neutral-400">
                 <Calendar size={12} />
@@ -54,10 +55,12 @@ export default function MemberArticleDetailPage({ params }: { params: Promise<{ 
             </div>
 
             {article.data?.excerpt && (
-              <p className="border-l-4 border-emerald-400 pl-4 text-sm font-semibold leading-7 text-neutral-600">{article.data.excerpt}</p>
+              <p className="border-l-4 border-emerald-400 pl-4 text-sm font-semibold leading-7 text-neutral-600"><RichText value={article.data.excerpt} /></p>
             )}
             <div className="rounded-2xl bg-neutral-50 p-5">
-              <p className="whitespace-pre-line text-sm leading-7 text-neutral-700">{article.data?.content || article.data?.excerpt || 'Contenu indisponible.'}</p>
+              <div className="whitespace-pre-wrap text-sm leading-7 text-neutral-700">
+                <RichText value={article.data?.content || article.data?.excerpt || 'Contenu indisponible.'} />
+              </div>
             </div>
           </div>
         </article>

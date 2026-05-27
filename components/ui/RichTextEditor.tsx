@@ -22,6 +22,34 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const ref = useRef<HTMLDivElement>(null);
 
+  const emitInput = () => {
+    ref.current?.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  const insertPlainText = (text: string) => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+
+    const lines = multiline ? text.replace(/\r\n?/g, '\n').split('\n') : [text.replace(/\s+/g, ' ')];
+    const fragment = document.createDocumentFragment();
+    lines.forEach((line, index) => {
+      if (index > 0) fragment.appendChild(document.createElement('br'));
+      fragment.appendChild(document.createTextNode(line));
+    });
+
+    const lastNode = fragment.lastChild;
+    range.insertNode(fragment);
+    if (lastNode) {
+      range.setStartAfter(lastNode);
+      range.setEndAfter(lastNode);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    emitInput();
+  };
+
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
@@ -49,7 +77,7 @@ export function RichTextEditor({
       onPaste={event => {
         event.preventDefault();
         const text = event.clipboardData.getData('text/plain');
-        document.execCommand('insertText', false, text);
+        insertPlainText(text);
       }}
       onKeyDown={event => {
         if (event.key !== 'Enter') return;
@@ -68,7 +96,7 @@ export function RichTextEditor({
         selection.removeAllRanges();
         selection.addRange(range);
 
-        ref.current?.dispatchEvent(new Event('input', { bubbles: true }));
+        emitInput();
       }}
       className={`${className ?? ''} empty:before:pointer-events-none empty:before:text-neutral-300 empty:before:content-[attr(data-placeholder)]`}
       style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', ...style }}
