@@ -96,9 +96,13 @@ export function applyInlineTextStyle(selection: StoredTextSelection | null, patc
     deepest.appendChild(fragment);
     range.insertNode(wrapper);
 
+    const nextRange = document.createRange();
+    nextRange.selectNodeContents(wrapper);
+    browserSelection?.removeAllRanges();
+    browserSelection?.addRange(nextRange);
+
     notifyRichTextChange(element);
     element.focus();
-    browserSelection?.removeAllRanges();
     return true;
   }
 
@@ -120,7 +124,14 @@ export function applyInlineTextStyle(selection: StoredTextSelection | null, patc
 }
 
 export function sanitizeRichHtml(value: unknown) {
-  const html = String(value ?? '')
+  const decoded = String(value ?? '')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'");
+
+  const html = decoded
+    .replace(/&nbsp;/gi, ' ')
     .replace(/<div><br><\/div>/gi, '<br>')
     .replace(/<\/(div|p)>/gi, '<br>')
     .replace(/<(div|p)\b[^>]*>/gi, '');

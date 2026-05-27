@@ -43,7 +43,17 @@ function DesignPalette({ label, style, position, onMove, onChange, onInlineStyle
 }) {
   const [drag, setDrag] = useState<{ sx: number; sy: number; x: number; y: number } | null>(null);
   const apply = (patch: Partial<DesignStyle>) => {
-    if (!onInlineStyle(patch)) onChange(patch);
+    if (
+      patch.bold !== undefined
+      || patch.italic !== undefined
+      || patch.color !== undefined
+      || patch.fontSize !== undefined
+      || patch.fontFamily !== undefined
+    ) {
+      onInlineStyle(patch);
+      return;
+    }
+    onChange(patch);
   };
   return (
     <div
@@ -167,14 +177,12 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
       fontSize: patch.fontSize,
       fontFamily: patch.fontFamily,
     });
+    if (applied) {
+      selectionRef.current = captureTextSelection(selection.element);
+    }
     return applied;
   };
   const fieldStyle: React.CSSProperties = {
-    fontSize: style.fontSize,
-    fontFamily: style.fontFamily,
-    fontWeight: style.bold ? 800 : 400,
-    fontStyle: style.italic ? 'italic' : 'normal',
-    color: style.color,
     background: style.bg,
     borderColor: style.border,
     borderRadius: style.radius,

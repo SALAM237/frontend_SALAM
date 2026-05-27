@@ -61,7 +61,9 @@ export function RichTextEditor({
     const node = ref.current;
     if (!node) return;
     const next = sanitizeRichHtml(value ?? '').replace(/\n/g, '<br>');
-    if (node.innerHTML !== next) node.innerHTML = next;
+    if (node.innerHTML === next) return;
+    if (document.activeElement === node) return;
+    node.innerHTML = next;
   }, [value]);
 
   useEffect(() => {

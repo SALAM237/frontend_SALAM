@@ -136,7 +136,17 @@ function InvoiceBlockPalette({ label, design, position, onMove, onChange, onInli
 }) {
   const [drag, setDrag] = useState<{ sx: number; sy: number; x: number; y: number } | null>(null);
   const apply = (patch: Partial<BlockDesign>) => {
-    if (!onInlineStyle(patch)) onChange(patch);
+    if (
+      patch.bold !== undefined
+      || patch.italic !== undefined
+      || patch.color !== undefined
+      || patch.fontSize !== undefined
+      || patch.fontFamily !== undefined
+    ) {
+      onInlineStyle(patch);
+      return;
+    }
+    onChange(patch);
   };
   return (
     <div
@@ -239,6 +249,9 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
       fontSize: patch.fontSize,
       fontFamily: patch.fontFamily,
     });
+    if (applied) {
+      selectionRef.current = captureTextSelection(selection.element);
+    }
     return applied;
   };
 
@@ -252,11 +265,6 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
         background: design.bg,
         borderColor: design.border,
         borderRadius: design.radius,
-        fontSize: design.fontSize,
-        fontFamily: design.fontFamily,
-        fontWeight: design.bold ? 800 : undefined,
-        fontStyle: design.italic ? 'italic' : undefined,
-        color: design.color,
       }}
       onPointerMove={event => {
         if (!drag) return;
