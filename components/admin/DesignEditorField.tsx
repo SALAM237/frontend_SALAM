@@ -30,19 +30,41 @@ const defaultDesign: DesignStyle = {
   radius: 12,
 };
 
-function DesignPalette({ label, style, onChange, onInlineStyle, onClose }: {
+type PalettePosition = { x: number; y: number };
+
+function DesignPalette({ label, style, position, onMove, onChange, onInlineStyle, onClose }: {
   label: string;
   style: DesignStyle;
+  position: PalettePosition;
+  onMove: (position: PalettePosition) => void;
   onChange: (patch: Partial<DesignStyle>) => void;
   onInlineStyle: (patch: Partial<DesignStyle>) => boolean;
   onClose: () => void;
 }) {
+  const [drag, setDrag] = useState<{ sx: number; sy: number; x: number; y: number } | null>(null);
   const apply = (patch: Partial<DesignStyle>) => {
     if (!onInlineStyle(patch)) onChange(patch);
   };
   return (
-    <div className="absolute right-0 top-10 z-40 w-[260px] rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xl" onClick={e => e.stopPropagation()}>
-      <div className="mb-3 flex items-center justify-between">
+    <div
+      className="absolute z-40 w-[260px] rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xl"
+      style={{ left: position.x, top: position.y }}
+      onClick={e => e.stopPropagation()}
+      onPointerMove={event => {
+        if (!drag) return;
+        onMove({ x: drag.x + event.clientX - drag.sx, y: drag.y + event.clientY - drag.sy });
+      }}
+      onPointerUp={() => setDrag(null)}
+      onPointerLeave={() => setDrag(null)}
+    >
+      <div
+        className="mb-3 flex cursor-grab items-center justify-between active:cursor-grabbing"
+        onPointerDown={event => {
+          event.preventDefault();
+          event.stopPropagation();
+          setDrag({ sx: event.clientX, sy: event.clientY, x: position.x, y: position.y });
+        }}
+      >
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Palette size={15} /></span>
           <div>
@@ -68,8 +90,8 @@ function DesignPalette({ label, style, onChange, onInlineStyle, onClose }: {
           <input type="range" min="11" max="32" value={style.fontSize} onChange={e => apply({ fontSize: Number(e.target.value) })} className="mt-2 w-full accent-emerald-700" />
         </label>
         <div className="grid grid-cols-3 gap-2">
-          <button type="button" onClick={() => apply({ bold: !style.bold })} className={`h-9 rounded-lg border ${style.bold ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}><Bold size={14} className="mx-auto" /></button>
-          <button type="button" onClick={() => apply({ italic: !style.italic })} className={`h-9 rounded-lg border ${style.italic ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}><Italic size={14} className="mx-auto" /></button>
+          <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => apply({ bold: !style.bold })} className={`h-9 rounded-lg border ${style.bold ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}><Bold size={14} className="mx-auto" /></button>
+          <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => apply({ italic: !style.italic })} className={`h-9 rounded-lg border ${style.italic ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}><Italic size={14} className="mx-auto" /></button>
           <div className="h-9 rounded-lg border border-neutral-200 p-1"><input aria-label="Couleur du texte" type="color" value={style.color} onChange={e => apply({ color: e.target.value })} className="h-full w-full" /></div>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -96,19 +118,36 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
 }) {
   const style = styles[id] ?? defaultDesign;
   const [drag, setDrag] = useState<{ x: number; y: number; sx: number; sy: number } | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const selectionRef = useRef<StoredTextSelection | null>(null);
+  const [palettePosition, setPalettePosition] = useState<PalettePosition>({ x: 12, y: 42 });
   const update = (patch: Partial<DesignStyle>) => setStyles(prev => ({ ...prev, [id]: { ...(prev[id] ?? defaultDesign), ...patch } }));
   const rememberSelection = (target: EventTarget | null) => {
     const selection = captureTextSelection(target);
-    if (selection) selectionRef.current = selection;
+    if (!selection) return;
+    selectionRef.current = selection;
+    setActive(id);
+    if (selection.kind === 'rich' && rootRef.current) {
+      const rangeRect = selection.range.getBoundingClientRect();
+      const rootRect = rootRef.current.getBoundingClientRect();
+      setPalettePosition({
+        x: Math.max(8, Math.min(rangeRect.left - rootRect.left, rootRect.width - 270)),
+        y: Math.max(34, rangeRect.top - rootRect.top - 12),
+      });
+    }
   };
-  const inlineStyle = (patch: Partial<DesignStyle>) => applyInlineTextStyle(selectionRef.current, {
-    bold: patch.bold,
-    italic: patch.italic,
-    color: patch.color,
-    fontSize: patch.fontSize,
-    fontFamily: patch.fontFamily,
-  });
+  const inlineStyle = (patch: Partial<DesignStyle>) => {
+    const selection = selectionRef.current;
+    if (!selection) return false;
+    const applied = applyInlineTextStyle(selection, {
+      bold: patch.bold,
+      italic: patch.italic,
+      color: patch.color,
+      fontSize: patch.fontSize,
+      fontFamily: patch.fontFamily,
+    });
+    return applied || selection.kind === 'rich';
+  };
   const fieldStyle: React.CSSProperties = {
     fontSize: style.fontSize,
     fontFamily: style.fontFamily,
@@ -122,6 +161,7 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
 
   return (
     <div
+      ref={rootRef}
       className={`group relative ${active === id ? 'z-30' : ''}`}
       style={{ transform: `translate(${style.x}px, ${style.y}px)` }}
       onClick={e => { e.stopPropagation(); setActive(id); }}
@@ -141,7 +181,7 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
         <span className="px-1 text-[9px] font-black uppercase tracking-[0.08em] text-neutral-400">{label}</span>
       </div>
       {children(fieldStyle)}
-      {active === id && <DesignPalette label={label} style={style} onChange={update} onInlineStyle={inlineStyle} onClose={() => setActive(null)} />}
+      {active === id && <DesignPalette label={label} style={style} position={palettePosition} onMove={setPalettePosition} onChange={update} onInlineStyle={inlineStyle} onClose={() => setActive(null)} />}
     </div>
   );
 }

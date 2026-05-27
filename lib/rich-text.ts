@@ -56,6 +56,10 @@ export function applyInlineTextStyle(selection: StoredTextSelection | null, patc
     const { element, range } = selection;
     if (range.collapsed) return false;
 
+    const browserSelection = typeof window !== 'undefined' ? window.getSelection() : null;
+    browserSelection?.removeAllRanges();
+    browserSelection?.addRange(range);
+
     let wrapper: HTMLElement | null = null;
     if (patch.bold) wrapper = document.createElement('strong');
     if (patch.italic) {
@@ -86,6 +90,7 @@ export function applyInlineTextStyle(selection: StoredTextSelection | null, patc
 
     element.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'formatSetBlockTextDirection' }));
     element.focus();
+    browserSelection?.removeAllRanges();
     return true;
   }
 
@@ -107,7 +112,10 @@ export function applyInlineTextStyle(selection: StoredTextSelection | null, patc
 }
 
 export function sanitizeRichHtml(value: unknown) {
-  const html = String(value ?? '');
+  const html = String(value ?? '')
+    .replace(/<div><br><\/div>/gi, '<br>')
+    .replace(/<\/(div|p)>/gi, '<br>')
+    .replace(/<(div|p)\b[^>]*>/gi, '');
   return html
     .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
     .replace(/\son\w+="[^"]*"/gi, '')

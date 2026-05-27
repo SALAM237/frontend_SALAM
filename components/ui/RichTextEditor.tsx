@@ -54,7 +54,7 @@ export function RichTextEditor({
         if (!multiline && event.key === 'Enter') event.preventDefault();
       }}
       className={`${className ?? ''} empty:before:pointer-events-none empty:before:text-neutral-300 empty:before:content-[attr(data-placeholder)]`}
-      style={style}
+      style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', ...style }}
     />
   );
 }

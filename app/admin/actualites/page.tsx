@@ -13,6 +13,7 @@ import {
 import { applyInlineTextStyle, captureTextSelection, type StoredTextSelection } from '@/lib/rich-text';
 import { articleImage } from '@/lib/article-image';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { DesignEditorField } from '@/components/admin/DesignEditorField';
 
 type DesignStyle = {
   x: number;
@@ -245,9 +246,9 @@ function ArticleForm({
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4" onClick={() => setActiveDesign(null)}>
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Titre <span className="text-red-500">*</span></label>
-            <DesignField id="title" label="Titre" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+            <DesignEditorField id="title" label="Titre" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
               {style => <RichTextEditor value={f.title} onChange={value => setF(p => ({ ...p, title: value }))} className={inp(errors.title)} style={style} placeholder="Titre de l'article" multiline={false} />}
-            </DesignField>
+            </DesignEditorField>
             {errors.title && <p className="text-[11px] text-red-500">{errors.title}</p>}
           </div>
           <div className="space-y-1.5">
@@ -275,21 +276,21 @@ function ArticleForm({
                 </label>
               </div>
             </div>
-            <DesignField id="excerpt" label="Résumé" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+            <DesignEditorField id="excerpt" label="Résumé" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
               {style => (
                 <RichTextEditor value={f.excerpt} onChange={value => setF(p => ({ ...p, excerpt: value }))} placeholder="Courte description..."
                   className="min-h-[76px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />
               )}
-            </DesignField>
+            </DesignEditorField>
           </div>
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Contenu</label>
-            <DesignField id="content" label="Contenu" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+            <DesignEditorField id="content" label="Contenu" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
               {style => (
                 <RichTextEditor value={f.content} onChange={value => setF(p => ({ ...p, content: value }))} placeholder="Corps de l'article..."
                   className="min-h-[160px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />
               )}
-            </DesignField>
+            </DesignEditorField>
           </div>
           <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 p-3">
             <div className="mb-3 flex items-center justify-between gap-3">
@@ -304,7 +305,7 @@ function ArticleForm({
             </div>
             <div className="space-y-3">
               {extraBlocks.map(block => (
-                <DesignField key={block.id} id={block.id} label={block.label} styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
+                <DesignEditorField key={block.id} id={block.id} label={block.label} styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
                   {style => (
                     <div className="rounded-2xl border border-emerald-100 bg-white p-3 shadow-sm">
                       <div className="mb-3 flex items-center justify-between gap-3">
@@ -328,7 +329,7 @@ function ArticleForm({
                       </div>
                     </div>
                   )}
-                </DesignField>
+                </DesignEditorField>
               ))}
             </div>
           </div>

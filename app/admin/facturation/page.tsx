@@ -57,6 +57,7 @@ type BlockDesign = {
   italic: boolean;
   color: string;
 };
+type PalettePosition = { x: number; y: number };
 type InvoicePdfRecipient = { name: string; email?: string; phone?: string; address?: string; memberId?: string };
 type AssociationInvoiceInfo = {
   name: string;
@@ -124,19 +125,39 @@ function saveAssociationInfo(info: AssociationInvoiceInfo) {
   window.localStorage.setItem(ASSOCIATION_STORAGE_KEY, JSON.stringify(info));
 }
 
-function InvoiceBlockPalette({ label, design, onChange, onInlineStyle, onClose }: {
+function InvoiceBlockPalette({ label, design, position, onMove, onChange, onInlineStyle, onClose }: {
   label: string;
   design: BlockDesign;
+  position: PalettePosition;
+  onMove: (position: PalettePosition) => void;
   onChange: (patch: Partial<BlockDesign>) => void;
   onInlineStyle: (patch: Partial<BlockDesign>) => boolean;
   onClose: () => void;
 }) {
+  const [drag, setDrag] = useState<{ sx: number; sy: number; x: number; y: number } | null>(null);
   const apply = (patch: Partial<BlockDesign>) => {
     if (!onInlineStyle(patch)) onChange(patch);
   };
   return (
-    <div className="absolute right-3 top-3 z-50 w-[260px] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl" onClick={e => e.stopPropagation()}>
-      <div className="mb-4 flex items-center justify-between">
+    <div
+      className="absolute z-50 w-[260px] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl"
+      style={{ left: position.x, top: position.y }}
+      onClick={e => e.stopPropagation()}
+      onPointerMove={event => {
+        if (!drag) return;
+        onMove({ x: drag.x + event.clientX - drag.sx, y: drag.y + event.clientY - drag.sy });
+      }}
+      onPointerUp={() => setDrag(null)}
+      onPointerLeave={() => setDrag(null)}
+    >
+      <div
+        className="mb-4 flex cursor-grab items-center justify-between active:cursor-grabbing"
+        onPointerDown={event => {
+          event.preventDefault();
+          event.stopPropagation();
+          setDrag({ sx: event.clientX, sy: event.clientY, x: position.x, y: position.y });
+        }}
+      >
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Palette className="h-4 w-4" /></span>
           <div><p className="text-sm font-black text-slate-900">Design</p><p className="text-[11px] font-semibold text-slate-400">{label}</p></div>
@@ -146,7 +167,7 @@ function InvoiceBlockPalette({ label, design, onChange, onInlineStyle, onClose }
       <div className="space-y-3">
         <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Police</span><select value={design.fontFamily} onChange={e => apply({ fontFamily: e.target.value })} className="mt-1 h-9 w-full rounded-lg border border-slate-200 px-2 text-xs outline-none"><option value="Inter, system-ui, sans-serif">Inter</option><option value="Georgia, serif">Georgia</option><option value="'Times New Roman', serif">Times</option><option value="'Courier New', monospace">Mono</option></select></label>
         <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Taille : {design.fontSize}px</span><input type="range" min="10" max="26" value={design.fontSize} onChange={e => apply({ fontSize: Number(e.target.value) })} className="mt-2 w-full accent-emerald-700" /></label>
-        <div className="grid grid-cols-3 gap-2"><button type="button" onClick={() => apply({ bold: !design.bold })} className={`h-9 rounded-lg border ${design.bold ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500'}`}><Bold className="mx-auto h-4 w-4" /></button><button type="button" onClick={() => apply({ italic: !design.italic })} className={`h-9 rounded-lg border ${design.italic ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500'}`}><Italic className="mx-auto h-4 w-4" /></button><div className="h-9 rounded-lg border border-slate-200 p-1"><input aria-label="Couleur du texte" type="color" value={design.color} onChange={e => apply({ color: e.target.value })} className="h-full w-full" /></div></div>
+        <div className="grid grid-cols-3 gap-2"><button type="button" onMouseDown={e => e.preventDefault()} onClick={() => apply({ bold: !design.bold })} className={`h-9 rounded-lg border ${design.bold ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500'}`}><Bold className="mx-auto h-4 w-4" /></button><button type="button" onMouseDown={e => e.preventDefault()} onClick={() => apply({ italic: !design.italic })} className={`h-9 rounded-lg border ${design.italic ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500'}`}><Italic className="mx-auto h-4 w-4" /></button><div className="h-9 rounded-lg border border-slate-200 p-1"><input aria-label="Couleur du texte" type="color" value={design.color} onChange={e => apply({ color: e.target.value })} className="h-full w-full" /></div></div>
         <div className="grid grid-cols-2 gap-2"><label className="block"><span className="text-[10px] font-black uppercase text-slate-400">Fond</span><input type="color" value={design.bg} onChange={e => onChange({ bg: e.target.value })} className="mt-1 h-8 w-full rounded-lg" /></label><label className="block"><span className="text-[10px] font-black uppercase text-slate-400">Bordure</span><input type="color" value={design.border} onChange={e => onChange({ border: e.target.value })} className="mt-1 h-8 w-full rounded-lg" /></label></div>
         <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Arrondi : {design.radius}px</span><input type="range" min="0" max="36" value={design.radius} onChange={e => onChange({ radius: Number(e.target.value) })} className="mt-2 w-full accent-emerald-700" /></label>
       </div>
@@ -167,24 +188,42 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
   className?: string;
 }) {
   const [drag, setDrag] = useState<{ startX: number; startY: number; x: number; y: number } | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const selectionRef = useRef<StoredTextSelection | null>(null);
+  const [palettePosition, setPalettePosition] = useState<PalettePosition>({ x: 12, y: 44 });
   const pos = offsets[id];
   const design = designs[id] ?? defaultBlockDesign;
   const updateDesign = (patch: Partial<BlockDesign>) => setDesigns(prev => ({ ...prev, [id]: { ...(prev[id] ?? defaultBlockDesign), ...patch } }));
   const rememberSelection = (target: EventTarget | null) => {
     const selection = captureTextSelection(target);
-    if (selection) selectionRef.current = selection;
+    if (!selection) return;
+    selectionRef.current = selection;
+    setActiveDesign(id);
+    if (selection.kind === 'rich' && rootRef.current) {
+      const rangeRect = selection.range.getBoundingClientRect();
+      const rootRect = rootRef.current.getBoundingClientRect();
+      setPalettePosition({
+        x: Math.max(8, Math.min(rangeRect.left - rootRect.left, rootRect.width - 270)),
+        y: Math.max(36, rangeRect.top - rootRect.top - 12),
+      });
+    }
   };
-  const inlineStyle = (patch: Partial<BlockDesign>) => applyInlineTextStyle(selectionRef.current, {
-    bold: patch.bold,
-    italic: patch.italic,
-    color: patch.color,
-    fontSize: patch.fontSize,
-    fontFamily: patch.fontFamily,
-  });
+  const inlineStyle = (patch: Partial<BlockDesign>) => {
+    const selection = selectionRef.current;
+    if (!selection) return false;
+    const applied = applyInlineTextStyle(selection, {
+      bold: patch.bold,
+      italic: patch.italic,
+      color: patch.color,
+      fontSize: patch.fontSize,
+      fontFamily: patch.fontFamily,
+    });
+    return applied || selection.kind === 'rich';
+  };
 
   return (
     <div
+      ref={rootRef}
       className={`group relative border ${className}`}
       style={{
         transform: `translate(${pos.x}px, ${pos.y}px)`,
@@ -215,7 +254,7 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
         <span className="px-1 text-[9px] font-black uppercase tracking-[0.08em] text-emerald-700">{label}</span>
       </div>
       {children}
-      {activeDesign === id && <InvoiceBlockPalette label={label} design={design} onChange={updateDesign} onInlineStyle={inlineStyle} onClose={() => setActiveDesign(null)} />}
+      {activeDesign === id && <InvoiceBlockPalette label={label} design={design} position={palettePosition} onMove={setPalettePosition} onChange={updateDesign} onInlineStyle={inlineStyle} onClose={() => setActiveDesign(null)} />}
     </div>
   );
 }
