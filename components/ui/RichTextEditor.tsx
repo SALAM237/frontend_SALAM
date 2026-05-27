@@ -51,7 +51,23 @@ export function RichTextEditor({
         document.execCommand('insertText', false, text);
       }}
       onKeyDown={event => {
-        if (!multiline && event.key === 'Enter') event.preventDefault();
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        if (!multiline) return;
+
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) return;
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+
+        const br = document.createElement('br');
+        range.insertNode(br);
+        range.setStartAfter(br);
+        range.setEndAfter(br);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        ref.current?.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertLineBreak' }));
       }}
       className={`${className ?? ''} empty:before:pointer-events-none empty:before:text-neutral-300 empty:before:content-[attr(data-placeholder)]`}
       style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', ...style }}
