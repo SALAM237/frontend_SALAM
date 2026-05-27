@@ -9,11 +9,15 @@ export interface ArticleDoc {
   name?: string;
   status: 'draft' | 'pending' | 'published';
   visibility?: 'public' | 'members';
+  imageUrl?: string;
+  coverImage?: string;
   data?: {
     excerpt?: string;
     content?: string;
     category?: string;
     imageUrl?: string;
+    coverImage?: string;
+    image?: string;
     visibility?: 'public' | 'members';
   };
   createdAt: string;

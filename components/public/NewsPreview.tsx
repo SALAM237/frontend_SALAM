@@ -4,10 +4,7 @@ import Link from 'next/link';
 import { ArrowRight, Newspaper, Tag } from 'lucide-react';
 import { ARTICLE_CATEGORIES, usePublicArticles } from '@/lib/api/content';
 import { RichText } from '@/components/ui/RichText';
-
-function articleImage(article: any) {
-  return article?.data?.imageUrl || article?.imageUrl || '';
-}
+import { articleImage } from '@/lib/article-image';
 
 export function NewsPreview() {
   const { data, isLoading } = usePublicArticles();

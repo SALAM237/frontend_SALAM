@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Newspaper, Search, Loader2, Tag, Eye, X, Plus, PlusCircle, Trash2, ImagePlus } from 'lucide-react';
 import { usePublicArticles, ARTICLE_CATEGORIES, useSubmitMemberArticle } from '@/lib/api/content';
 import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
+import { articleImage } from '@/lib/article-image';
 
 type ExtraBlock = { id: string; label: string; title: string; description: string };
 
@@ -88,9 +89,9 @@ export default function MemberActualitesPage() {
             {filtered.map((n: any) => (
               <div key={n._id} className="flex items-start gap-4 px-5 py-4 hover:bg-neutral-50/60 transition-colors">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-blue-50 border border-blue-100 mt-0.5">
-                  {n.data?.imageUrl ? (
+                  {articleImage(n) ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={n.data.imageUrl} alt="" className="h-full w-full object-cover" />
+                    <img src={articleImage(n)} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <Newspaper size={16} className="text-blue-600" />
                   )}
@@ -140,9 +141,9 @@ export default function MemberActualitesPage() {
               </button>
             </div>
             <div className="max-h-[68vh] overflow-y-auto p-5">
-              {selected.data?.imageUrl && (
+              {articleImage(selected) && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={selected.data.imageUrl} alt="" className="mb-4 max-h-72 w-full rounded-2xl object-cover" />
+                <img src={articleImage(selected)} alt="" className="mb-4 max-h-72 w-full rounded-2xl object-cover" />
               )}
               <p className="whitespace-pre-line text-sm leading-7 text-neutral-700">
                 {selected.data?.content || selected.data?.excerpt || 'Contenu indisponible.'}

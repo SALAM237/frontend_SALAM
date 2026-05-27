@@ -10,6 +10,7 @@ import {
   ARTICLE_CATEGORIES, type ArticleDoc,
 } from '@/lib/api/content';
 import { applyInlineTextStyle, captureTextSelection, type StoredTextSelection } from '@/lib/rich-text';
+import { articleImage } from '@/lib/article-image';
 
 type DesignStyle = {
   x: number;
@@ -169,7 +170,7 @@ function ArticleForm({
     excerpt:  initial?.data?.excerpt  ?? '',
     content:  initial?.data?.content  ?? '',
     category: initial?.data?.category ?? 'general',
-    imageUrl: initial?.data?.imageUrl ?? '',
+    imageUrl: articleImage(initial) || '',
     visibility: (initial?.visibility ?? initial?.data?.visibility ?? 'public') as 'public' | 'members',
     status:   initial?.status         ?? 'draft',
   });
@@ -420,9 +421,9 @@ export default function AdminActualitesPage() {
               return (
                 <div key={a._id} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-neutral-50/60">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-blue-50 border border-blue-100">
-                    {a.data?.imageUrl ? (
+                    {articleImage(a) ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={a.data.imageUrl} alt="" className="h-full w-full object-cover" />
+                      <img src={articleImage(a)} alt="" className="h-full w-full object-cover" />
                     ) : (
                       <Newspaper size={16} className="text-blue-600" />
                     )}

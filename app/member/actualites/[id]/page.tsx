@@ -4,6 +4,7 @@ import { use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Calendar, Loader2, Tag } from 'lucide-react';
 import { ARTICLE_CATEGORIES, usePublicArticle } from '@/lib/api/content';
+import { articleImage } from '@/lib/article-image';
 
 export default function MemberArticleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -31,7 +32,12 @@ export default function MemberArticleDetailPage({ params }: { params: Promise<{ 
 
       {article && (
         <article className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
-          <div className="h-40 bg-gradient-to-br from-emerald-500 to-teal-700" />
+          <div className="h-40 overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-700">
+            {articleImage(article) && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={articleImage(article)} alt={article.title} className="h-full w-full object-cover" />
+            )}
+          </div>
           <div className="space-y-5 p-5 sm:p-7">
             <div>
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-emerald-700 ring-1 ring-emerald-100">

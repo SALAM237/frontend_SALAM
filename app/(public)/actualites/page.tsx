@@ -6,15 +6,12 @@ import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 import { usePublicArticles, ARTICLE_CATEGORIES } from '@/lib/api/content';
 import { RichText } from '@/components/ui/RichText';
+import { articleImage } from '@/lib/article-image';
 
 const CATS = [
   { id: 'all', label: 'Toutes' },
   ...ARTICLE_CATEGORIES.map(c => ({ id: c.value, label: c.label })),
 ];
-
-function articleImage(article: any) {
-  return article?.data?.imageUrl || article?.imageUrl || '';
-}
 
 export default function ActualitesPage() {
   const [cat, setCat]       = useState('all');

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Newspaper, ChevronRight, Calendar, Tag, Loader2 } from 'lucide-react';
 import { usePublicArticle, ARTICLE_CATEGORIES } from '@/lib/api/content';
 import { RichText } from '@/components/ui/RichText';
+import { articleImage } from '@/lib/article-image';
 
 const CAT_COLORS: Record<string, string> = {
   general:     'bg-neutral-100 text-neutral-600',
@@ -14,10 +15,6 @@ const CAT_COLORS: Record<string, string> = {
   insertion:   'bg-cyan-100 text-cyan-700',
   vie_asso:    'bg-emerald-100 text-emerald-700',
 };
-
-function articleImage(article: any) {
-  return article?.data?.imageUrl || article?.imageUrl || '';
-}
 
 export default function ActualiteDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
