@@ -11,6 +11,7 @@ export interface ArticleDoc {
   visibility?: 'public' | 'members';
   imageUrl?: string;
   coverImage?: string;
+  updatedAt?: string;
   data?: {
     excerpt?: string;
     content?: string;
@@ -36,18 +37,22 @@ export const ARTICLE_CATEGORIES = [
 export function usePublicArticles() {
   return useQuery({
     queryKey: ['public-content'],
-    queryFn:  () => apiClient<ArticleDoc[]>('/api/v1/public/content'),
+    queryFn:  () => apiClient<ArticleDoc[]>(`/api/v1/public/content?ts=${Date.now()}`, { cache: 'no-store' }),
     staleTime: 0,
     refetchInterval: 30_000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 }
 
 export function usePublicArticle(id: string) {
   return useQuery({
     queryKey: ['public-article', id],
-    queryFn:  () => apiClient<ArticleDoc>(`/api/v1/public/content/${id}`),
+    queryFn:  () => apiClient<ArticleDoc>(`/api/v1/public/content/${id}?ts=${Date.now()}`, { cache: 'no-store' }),
     enabled:  !!id,
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 }
 
