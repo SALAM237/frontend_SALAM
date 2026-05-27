@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import {
   Plus, X, Send, Eye, ChevronDown, Search,
   CalendarDays, Banknote, FileText, CheckCircle2, Clock,
@@ -162,7 +162,7 @@ function InvoiceBlockPalette({ label, design, position, onMove, onChange, onInli
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Palette className="h-4 w-4" /></span>
           <div><p className="text-sm font-black text-slate-900">Design</p><p className="text-[11px] font-semibold text-slate-400">{label}</p></div>
         </div>
-        <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+        <button type="button" onPointerDown={event => event.stopPropagation()} onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
       </div>
       <div className="space-y-3">
         <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Police</span><select value={design.fontFamily} onChange={e => apply({ fontFamily: e.target.value })} className="mt-1 h-9 w-full rounded-lg border border-slate-200 px-2 text-xs outline-none"><option value="Inter, system-ui, sans-serif">Inter</option><option value="Georgia, serif">Georgia</option><option value="'Times New Roman', serif">Times</option><option value="'Courier New', monospace">Mono</option></select></label>
@@ -194,9 +194,16 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
   const pos = offsets[id];
   const design = designs[id] ?? defaultBlockDesign;
   const updateDesign = (patch: Partial<BlockDesign>) => setDesigns(prev => ({ ...prev, [id]: { ...(prev[id] ?? defaultBlockDesign), ...patch } }));
+  const closePalette = () => {
+    selectionRef.current = null;
+    setActiveDesign(null);
+  };
   const rememberSelection = (target: EventTarget | null) => {
     const selection = captureTextSelection(target);
-    if (!selection) return;
+    if (!selection) {
+      if (target instanceof HTMLElement && rootRef.current?.contains(target)) closePalette();
+      return;
+    }
     selectionRef.current = selection;
     setActiveDesign(id);
     if (selection.kind === 'rich' && rootRef.current) {
@@ -208,6 +215,19 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
       });
     }
   };
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const root = rootRef.current;
+      const selection = window.getSelection();
+      if (!root || !selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+      const range = selection.getRangeAt(0);
+      if (!root.contains(range.commonAncestorContainer)) return;
+      rememberSelection(range.commonAncestorContainer instanceof HTMLElement ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement);
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, []);
   const inlineStyle = (patch: Partial<BlockDesign>) => {
     const selection = selectionRef.current;
     if (!selection) return false;
@@ -249,12 +269,12 @@ function DraggableBox({ id, label, offsets, setOffsets, designs, setDesigns, act
     >
       <div className="absolute -top-9 left-3 z-40 hidden items-center gap-1 rounded-2xl border border-emerald-200 bg-white/95 px-2 py-1 shadow-lg backdrop-blur group-hover:flex">
         <button type="button" onPointerDown={event => { event.preventDefault(); event.stopPropagation(); setDrag({ startX: event.clientX, startY: event.clientY, x: pos.x, y: pos.y }); }} className="flex h-7 w-7 cursor-grab items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100" title="Glisser-déposer ce bloc"><GripVertical className="h-4 w-4" /></button>
-        <button type="button" onClick={event => { event.stopPropagation(); setActiveDesign(activeDesign === id ? null : id); }} className="flex h-7 w-7 items-center justify-center rounded-xl text-emerald-700 hover:bg-emerald-50" title="Personnaliser le design"><Palette className="h-4 w-4" /></button>
+        <button type="button" onClick={event => { event.stopPropagation(); if (selectionRef.current) setActiveDesign(activeDesign === id ? null : id); }} className="flex h-7 w-7 items-center justify-center rounded-xl text-emerald-700 hover:bg-emerald-50" title="Personnaliser le design"><Palette className="h-4 w-4" /></button>
         <button type="button" className="flex h-7 w-7 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100" title="Modifier"><Pencil className="h-4 w-4" /></button>
         <span className="px-1 text-[9px] font-black uppercase tracking-[0.08em] text-emerald-700">{label}</span>
       </div>
       {children}
-      {activeDesign === id && <InvoiceBlockPalette label={label} design={design} position={palettePosition} onMove={setPalettePosition} onChange={updateDesign} onInlineStyle={inlineStyle} onClose={() => setActiveDesign(null)} />}
+      {activeDesign === id && selectionRef.current && <InvoiceBlockPalette label={label} design={design} position={palettePosition} onMove={setPalettePosition} onChange={updateDesign} onInlineStyle={inlineStyle} onClose={closePalette} />}
     </div>
   );
 }

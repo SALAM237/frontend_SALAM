@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bold, GripVertical, Italic, Palette, X } from 'lucide-react';
 import { applyInlineTextStyle, captureTextSelection, type StoredTextSelection } from '@/lib/rich-text';
 
@@ -72,7 +72,7 @@ function DesignPalette({ label, style, position, onMove, onChange, onInlineStyle
             <p className="text-[11px] font-semibold text-neutral-400">{label}</p>
           </div>
         </div>
-        <button type="button" onClick={onClose} className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100"><X size={14} /></button>
+        <button type="button" onPointerDown={event => event.stopPropagation()} onClick={onClose} className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100"><X size={14} /></button>
       </div>
 
       <div className="space-y-3">
@@ -122,9 +122,16 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
   const selectionRef = useRef<StoredTextSelection | null>(null);
   const [palettePosition, setPalettePosition] = useState<PalettePosition>({ x: 12, y: 42 });
   const update = (patch: Partial<DesignStyle>) => setStyles(prev => ({ ...prev, [id]: { ...(prev[id] ?? defaultDesign), ...patch } }));
+  const closePalette = () => {
+    selectionRef.current = null;
+    setActive(null);
+  };
   const rememberSelection = (target: EventTarget | null) => {
     const selection = captureTextSelection(target);
-    if (!selection) return;
+    if (!selection) {
+      if (target instanceof HTMLElement && rootRef.current?.contains(target)) closePalette();
+      return;
+    }
     selectionRef.current = selection;
     setActive(id);
     if (selection.kind === 'rich' && rootRef.current) {
@@ -136,6 +143,19 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
       });
     }
   };
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const root = rootRef.current;
+      const selection = window.getSelection();
+      if (!root || !selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+      const range = selection.getRangeAt(0);
+      if (!root.contains(range.commonAncestorContainer)) return;
+      rememberSelection(range.commonAncestorContainer instanceof HTMLElement ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement);
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, []);
   const inlineStyle = (patch: Partial<DesignStyle>) => {
     const selection = selectionRef.current;
     if (!selection) return false;
@@ -164,7 +184,7 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
       ref={rootRef}
       className={`group relative ${active === id ? 'z-30' : ''}`}
       style={{ transform: `translate(${style.x}px, ${style.y}px)` }}
-      onClick={e => { e.stopPropagation(); setActive(id); }}
+      onClick={e => e.stopPropagation()}
       onPointerMove={event => {
         if (!drag) return;
         update({ x: drag.x + event.clientX - drag.sx, y: drag.y + event.clientY - drag.sy });
@@ -177,11 +197,11 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
     >
       <div className="absolute -top-8 left-2 z-40 hidden items-center gap-1 rounded-xl border border-neutral-200 bg-white/95 px-1.5 py-1 shadow-lg group-hover:flex">
         <button type="button" onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setDrag({ x: style.x, y: style.y, sx: e.clientX, sy: e.clientY }); }} className="flex h-6 w-6 cursor-grab items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100" title="Déplacer"><GripVertical size={13} /></button>
-        <button type="button" onClick={e => { e.stopPropagation(); setActive(active === id ? null : id); }} className="flex h-6 w-6 items-center justify-center rounded-lg text-emerald-700 hover:bg-emerald-50" title="Design"><Palette size={13} /></button>
+        <button type="button" onClick={e => { e.stopPropagation(); if (selectionRef.current) setActive(active === id ? null : id); }} className="flex h-6 w-6 items-center justify-center rounded-lg text-emerald-700 hover:bg-emerald-50" title="Design"><Palette size={13} /></button>
         <span className="px-1 text-[9px] font-black uppercase tracking-[0.08em] text-neutral-400">{label}</span>
       </div>
       {children(fieldStyle)}
-      {active === id && <DesignPalette label={label} style={style} position={palettePosition} onMove={setPalettePosition} onChange={update} onInlineStyle={inlineStyle} onClose={() => setActive(null)} />}
+      {active === id && selectionRef.current && <DesignPalette label={label} style={style} position={palettePosition} onMove={setPalettePosition} onChange={update} onInlineStyle={inlineStyle} onClose={closePalette} />}
     </div>
   );
 }
