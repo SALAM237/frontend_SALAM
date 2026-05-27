@@ -7,6 +7,7 @@ import {
   ACTIVITY_CATEGORIES, type ActivityDoc,
 } from '@/lib/api/activities';
 import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
 type ExtraBlock = { id: string; label: string; title: string; description: string };
 
@@ -82,7 +83,7 @@ function ActivityForm({
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4" onClick={() => setActiveDesign(null)}>
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Titre <span className="text-red-500">*</span></label>
-            <DesignEditorField id="title" label="Titre" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>{style => <input value={f.title} onChange={upd('title')} className={inp(errors.title)} style={style} />}</DesignEditorField>
+            <DesignEditorField id="title" label="Titre" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>{style => <RichTextEditor value={f.title} onChange={value => setF(p => ({ ...p, title: value }))} className={inp(errors.title)} style={style} placeholder="Titre de l'activité" multiline={false} />}</DesignEditorField>
             {errors.title && <p className="text-[11px] text-red-500">{errors.title}</p>}
           </div>
           <div className="space-y-1.5">
@@ -95,7 +96,7 @@ function ActivityForm({
           </div>
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Description</label>
-            <DesignEditorField id="description" label="Description" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>{style => <textarea value={f.description} onChange={upd('description')} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />}</DesignEditorField>
+            <DesignEditorField id="description" label="Description" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>{style => <RichTextEditor value={f.description} onChange={value => setF(p => ({ ...p, description: value }))} className="min-h-[96px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} placeholder="Description" />}</DesignEditorField>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -154,11 +155,11 @@ function ActivityForm({
                       </div>
                       <div className="space-y-1.5">
                         <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">{block.label || 'Titre du bloc'}</label>
-                        <input value={block.title} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, title: e.target.value } : b))} placeholder="Titre" className={inp()} style={style} />
+                        <RichTextEditor value={block.title} onChange={value => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, title: value } : b))} placeholder="Titre" className={inp()} style={style} multiline={false} />
                       </div>
                       <div className="mt-3 space-y-1.5">
                         <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Description</label>
-                        <textarea value={block.description} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, description: e.target.value } : b))} rows={4} placeholder="Description détaillée" className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />
+                        <RichTextEditor value={block.description} onChange={value => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, description: value } : b))} placeholder="Description détaillée" className="min-h-[112px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />
                       </div>
                     </div>
                   )}

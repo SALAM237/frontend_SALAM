@@ -7,6 +7,7 @@ import { formatFullName } from '@/lib/format-name';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
 import { RichText } from '@/components/ui/RichText';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
 const statusCls: Record<string, string> = {
   published: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -123,7 +124,7 @@ export default function OpportunitesPage() {
             <div className="space-y-1.5">
               <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Titre *</span>
               <DesignEditorField id="opportunity-title" label="Titre" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
-                {style => <input value={form.title} onChange={e => set('title')(e.target.value)} className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10" style={style} />}
+                {style => <RichTextEditor value={form.title} onChange={value => set('title')(value)} className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10" style={style} placeholder="Titre" multiline={false} />}
               </DesignEditorField>
             </div>
             <label className="space-y-1.5">
@@ -147,7 +148,7 @@ export default function OpportunitesPage() {
             <label className="space-y-1.5 sm:col-span-2">
               <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Description</span>
               <DesignEditorField id="opportunity-description" label="Description" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
-                {style => <textarea value={form.description} onChange={e => set('description')(e.target.value)} rows={5} className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10" style={style} />}
+                {style => <RichTextEditor value={form.description} onChange={value => set('description')(value)} className="min-h-[140px] w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10" style={style} placeholder="Description" />}
               </DesignEditorField>
             </label>
           </div>

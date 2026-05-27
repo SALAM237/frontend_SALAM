@@ -6,6 +6,7 @@ import { Newspaper, Search, Loader2, Tag, Eye, X, Plus, PlusCircle, Trash2, Imag
 import { usePublicArticles, ARTICLE_CATEGORIES, useSubmitMemberArticle, useUploadMemberArticleImage } from '@/lib/api/content';
 import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
 import { articleImage } from '@/lib/article-image';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
 type ExtraBlock = { id: string; label: string; title: string; description: string };
 
@@ -225,12 +226,13 @@ function SubmitArticleModal({ onClose }: { onClose: () => void }) {
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Titre <span className="text-red-500">*</span></label>
             <DesignEditorField id="member-title" label="Titre" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
               {style => (
-                <input
+                <RichTextEditor
                   value={form.title}
-                  onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={value => setForm(prev => ({ ...prev, title: value }))}
                   placeholder="Titre"
-                  className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+                  className="h-10 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
                   style={style}
+                  multiline={false}
                 />
               )}
             </DesignEditorField>
@@ -266,12 +268,11 @@ function SubmitArticleModal({ onClose }: { onClose: () => void }) {
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Résumé</label>
             <DesignEditorField id="member-excerpt" label="Résumé" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
               {style => (
-                <textarea
+                <RichTextEditor
                   value={form.excerpt}
-                  onChange={e => setForm(prev => ({ ...prev, excerpt: e.target.value }))}
-                  rows={2}
+                  onChange={value => setForm(prev => ({ ...prev, excerpt: value }))}
                   placeholder="Résumé court"
-                  className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+                  className="min-h-[76px] w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
                   style={style}
                 />
               )}
@@ -281,12 +282,11 @@ function SubmitArticleModal({ onClose }: { onClose: () => void }) {
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Contenu <span className="text-red-500">*</span></label>
             <DesignEditorField id="member-content" label="Contenu" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
               {style => (
-                <textarea
+                <RichTextEditor
                   value={form.content}
-                  onChange={e => setForm(prev => ({ ...prev, content: e.target.value }))}
-                  rows={6}
+                  onChange={value => setForm(prev => ({ ...prev, content: value }))}
                   placeholder="Contenu de l'actualité"
-                  className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+                  className="min-h-[160px] w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
                   style={style}
                 />
               )}
@@ -321,11 +321,11 @@ function SubmitArticleModal({ onClose }: { onClose: () => void }) {
                       </div>
                       <div className="space-y-1.5">
                         <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">{block.label || 'Titre du bloc'}</label>
-                        <input value={block.title} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, title: e.target.value } : b))} placeholder="Titre" className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" style={style} />
+                        <RichTextEditor value={block.title} onChange={value => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, title: value } : b))} placeholder="Titre" className="h-10 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400" style={style} multiline={false} />
                       </div>
                       <div className="mt-3 space-y-1.5">
                         <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Description</label>
-                        <textarea value={block.description} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, description: e.target.value } : b))} rows={4} placeholder="Description détaillée" className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400" style={style} />
+                        <RichTextEditor value={block.description} onChange={value => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, description: value } : b))} placeholder="Description détaillée" className="min-h-[112px] w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400" style={style} />
                       </div>
                     </div>
                   )}

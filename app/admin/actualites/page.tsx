@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/content';
 import { applyInlineTextStyle, captureTextSelection, type StoredTextSelection } from '@/lib/rich-text';
 import { articleImage } from '@/lib/article-image';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
 type DesignStyle = {
   x: number;
@@ -245,7 +246,7 @@ function ArticleForm({
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Titre <span className="text-red-500">*</span></label>
             <DesignField id="title" label="Titre" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
-              {style => <input value={f.title} onChange={upd('title')} className={inp(errors.title)} style={style} />}
+              {style => <RichTextEditor value={f.title} onChange={value => setF(p => ({ ...p, title: value }))} className={inp(errors.title)} style={style} placeholder="Titre de l'article" multiline={false} />}
             </DesignField>
             {errors.title && <p className="text-[11px] text-red-500">{errors.title}</p>}
           </div>
@@ -276,8 +277,8 @@ function ArticleForm({
             </div>
             <DesignField id="excerpt" label="Résumé" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
               {style => (
-                <textarea value={f.excerpt} onChange={upd('excerpt')} rows={2} placeholder="Courte description..."
-                  className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />
+                <RichTextEditor value={f.excerpt} onChange={value => setF(p => ({ ...p, excerpt: value }))} placeholder="Courte description..."
+                  className="min-h-[76px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />
               )}
             </DesignField>
           </div>
@@ -285,8 +286,8 @@ function ArticleForm({
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Contenu</label>
             <DesignField id="content" label="Contenu" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
               {style => (
-                <textarea value={f.content} onChange={upd('content')} rows={6} placeholder="Corps de l'article..."
-                  className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />
+                <RichTextEditor value={f.content} onChange={value => setF(p => ({ ...p, content: value }))} placeholder="Corps de l'article..."
+                  className="min-h-[160px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />
               )}
             </DesignField>
           </div>
@@ -319,11 +320,11 @@ function ArticleForm({
                       </div>
                       <div className="space-y-1.5">
                         <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">{block.label || 'Titre du bloc'}</label>
-                        <input value={block.title} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, title: e.target.value } : b))} placeholder="Titre" className={inp()} style={style} />
+                        <RichTextEditor value={block.title} onChange={value => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, title: value } : b))} placeholder="Titre" className={inp()} style={style} multiline={false} />
                       </div>
                       <div className="mt-3 space-y-1.5">
                         <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Description</label>
-                        <textarea value={block.description} onChange={e => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, description: e.target.value } : b))} rows={4} placeholder="Description détaillée" className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />
+                        <RichTextEditor value={block.description} onChange={value => setExtraBlocks(prev => prev.map(b => b.id === block.id ? { ...b, description: value } : b))} placeholder="Description détaillée" className="min-h-[112px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} />
                       </div>
                     </div>
                   )}

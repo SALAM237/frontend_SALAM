@@ -1,10 +1,17 @@
 export type TextSelectionTarget = HTMLInputElement | HTMLTextAreaElement;
 
-export type StoredTextSelection = {
-  element: TextSelectionTarget;
-  start: number;
-  end: number;
-};
+export type StoredTextSelection =
+  | {
+      kind: 'plain';
+      element: TextSelectionTarget;
+      start: number;
+      end: number;
+    }
+  | {
+      kind: 'rich';
+      element: HTMLElement;
+      range: Range;
+    };
 
 export type InlineTextStylePatch = {
   bold?: boolean;
@@ -15,10 +22,23 @@ export type InlineTextStylePatch = {
 };
 
 export function captureTextSelection(target: EventTarget | null): StoredTextSelection | null {
-  if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return null;
-  const start = target.selectionStart ?? 0;
-  const end = target.selectionEnd ?? 0;
-  return { element: target, start, end };
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+    const start = target.selectionStart ?? 0;
+    const end = target.selectionEnd ?? 0;
+    return { kind: 'plain', element: target, start, end };
+  }
+
+  if (target instanceof HTMLElement) {
+    const root = target.closest<HTMLElement>('[data-rich-text-editor="true"]');
+    const selection = typeof window !== 'undefined' ? window.getSelection() : null;
+    if (!root || !selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
+
+    const range = selection.getRangeAt(0);
+    if (!root.contains(range.commonAncestorContainer)) return null;
+    return { kind: 'rich', element: root, range: range.cloneRange() };
+  }
+
+  return null;
 }
 
 function styleAttr(patch: InlineTextStylePatch) {
@@ -30,7 +50,46 @@ function styleAttr(patch: InlineTextStylePatch) {
 }
 
 export function applyInlineTextStyle(selection: StoredTextSelection | null, patch: InlineTextStylePatch) {
-  if (!selection || selection.start === selection.end) return false;
+  if (!selection) return false;
+
+  if (selection.kind === 'rich') {
+    const { element, range } = selection;
+    if (range.collapsed) return false;
+
+    let wrapper: HTMLElement | null = null;
+    if (patch.bold) wrapper = document.createElement('strong');
+    if (patch.italic) {
+      const em = document.createElement('em');
+      if (wrapper) {
+        em.appendChild(wrapper);
+      }
+      wrapper = em;
+    }
+    if (patch.color || patch.fontSize || patch.fontFamily) {
+      const span = document.createElement('span');
+      if (patch.color) span.style.color = patch.color;
+      if (patch.fontSize) span.style.fontSize = `${patch.fontSize}px`;
+      if (patch.fontFamily) span.style.fontFamily = patch.fontFamily;
+      if (wrapper) {
+        span.appendChild(wrapper);
+      }
+      wrapper = span;
+    }
+
+    if (!wrapper) return false;
+
+    const fragment = range.extractContents();
+    let deepest = wrapper;
+    while (deepest.firstElementChild) deepest = deepest.firstElementChild as HTMLElement;
+    deepest.appendChild(fragment);
+    range.insertNode(wrapper);
+
+    element.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'formatSetBlockTextDirection' }));
+    element.focus();
+    return true;
+  }
+
+  if (selection.start === selection.end) return false;
   const { element, start, end } = selection;
   const current = element.value;
   const selected = current.slice(start, end);

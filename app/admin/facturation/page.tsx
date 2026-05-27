@@ -18,7 +18,8 @@ import {
 } from '@/lib/api/invoices';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { formatFullName } from '@/lib/format-name';
-import { applyInlineTextStyle, captureTextSelection, type StoredTextSelection } from '@/lib/rich-text';
+import { applyInlineTextStyle, captureTextSelection, sanitizeRichHtml, type StoredTextSelection } from '@/lib/rich-text';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
 /* ─── Helpers ─────────────────────────────────────────── */
 type InvoiceStatus = 'draft' | 'sent' | 'closed';
@@ -233,6 +234,10 @@ function esc(value: unknown) {
     .replace(/'/g, '&#039;');
 }
 
+function rich(value: unknown) {
+  return sanitizeRichHtml(String(value ?? '').replace(/\n/g, '<br>'));
+}
+
 function openInvoicePdfPreview(params: {
   association: AssociationInvoiceInfo;
   invoiceTitle: string;
@@ -248,7 +253,7 @@ function openInvoicePdfPreview(params: {
     const ttc = Number(line.qty || 0) * Number(line.ht || 0) * (1 + Number(line.vat || 0) / 100);
     return `
       <tr>
-        <td>${esc(line.designation)}</td>
+        <td>${rich(line.designation)}</td>
         <td class="right">${esc(line.qty)}</td>
         <td class="right">${fmtCfa(Number(line.ht || 0))}</td>
         <td class="right">${esc(line.vat)}%</td>
@@ -383,7 +388,7 @@ function openInvoicePdfBatch(documents: InvoicePdfDocument[]) {
       const isLast = pageIndex === chunks.length - 1;
       const rows = chunk.map(line => {
         const ttc = Number(line.qty || 0) * Number(line.ht || 0) * (1 + Number(line.vat || 0) / 100);
-        return `<tr><td>${esc(line.designation)}</td><td class="right">${esc(line.qty)}</td><td class="right">${fmtCfa(Number(line.ht || 0))}</td><td class="right">${esc(line.vat)}%</td><td class="right strong">${fmtCfa(ttc)}</td></tr>`;
+        return `<tr><td>${rich(line.designation)}</td><td class="right">${esc(line.qty)}</td><td class="right">${fmtCfa(Number(line.ht || 0))}</td><td class="right">${esc(line.vat)}%</td><td class="right strong">${fmtCfa(ttc)}</td></tr>`;
       }).join('');
       return `
         <div class="page-wrap">
@@ -400,7 +405,7 @@ function openInvoicePdfBatch(documents: InvoicePdfDocument[]) {
             <div class="card compact"><h2>Facturé à</h2><strong>${esc(doc.recipient.name)}</strong><p class="muted">${esc(doc.recipient.email)}</p><p class="muted">${esc(doc.recipient.phone)}</p><p class="muted">${esc(doc.recipient.address)}</p>${doc.recipient.memberId ? `<p class="muted">Réf. : ${esc(doc.recipient.memberId)}</p>` : ''}</div>
           </section>
           <table><thead><tr><th>Désignation</th><th class="right">Qté</th><th class="right">HT</th><th class="right">TVA</th><th class="right">TTC</th></tr></thead><tbody>${rows}</tbody></table>
-          ${isLast ? `<section class="totals"><div class="row"><span>Total HT</span><strong>${fmtCfa(totals.ht)}</strong></div><div class="row"><span>TVA</span><strong>${fmtCfa(totals.vat)}</strong></div><div class="row total"><span>Total TTC</span><span>${fmtCfa(totals.ttc)}</span></div></section><section class="notes"><div class="card"><h2>Observations</h2><p class="muted">${esc(doc.notes)}</p></div><div class="card"><h2>Mentions légales</h2><p class="muted">${esc(doc.legal)}</p></div></section>` : '<p class="continued">Suite de la facture sur la page suivante.</p>'}
+          ${isLast ? `<section class="totals"><div class="row"><span>Total HT</span><strong>${fmtCfa(totals.ht)}</strong></div><div class="row"><span>TVA</span><strong>${fmtCfa(totals.vat)}</strong></div><div class="row total"><span>Total TTC</span><span>${fmtCfa(totals.ttc)}</span></div></section><section class="notes"><div class="card"><h2>Observations</h2><p class="muted">${rich(doc.notes)}</p></div><div class="card"><h2>Mentions légales</h2><p class="muted">${rich(doc.legal)}</p></div></section>` : '<p class="continued">Suite de la facture sur la page suivante.</p>'}
           <footer class="footer"><span>${esc(doc.association.title)} · ${esc(doc.association.email)}</span><strong>Page ${pageIndex + 1}/${chunks.length}</strong></footer>
         </article>
         </div>`;
@@ -1111,7 +1116,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                       const ttc = Number(line.qty || 0) * Number(line.ht || 0) * (1 + Number(line.vat || 0) / 100);
                       return (
                         <div key={line.id} className="grid grid-cols-[1fr_64px_95px_64px_100px_32px] items-center border-b border-neutral-100 px-3 py-2 text-sm">
-                          <input value={line.designation} onChange={event => updateLine(line.id, { designation: event.target.value })} className="min-w-0 rounded-lg px-2 py-1 outline-emerald-300" />
+                          <RichTextEditor value={String(line.designation ?? '')} onChange={value => updateLine(line.id, { designation: value })} className="min-w-0 rounded-lg px-2 py-1 outline-emerald-300" multiline={false} />
                           <input type="number" value={line.qty} onChange={event => updateLine(line.id, { qty: event.target.value })} className="w-14 rounded-lg px-2 py-1 outline-emerald-300" />
                           <input type="number" value={line.ht} onChange={event => updateLine(line.id, { ht: event.target.value })} className="w-20 rounded-lg px-2 py-1 outline-emerald-300" />
                           <input type="number" value={line.vat} onChange={event => updateLine(line.id, { vat: event.target.value })} className="w-14 rounded-lg px-2 py-1 outline-emerald-300" />
@@ -1127,7 +1132,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                     <DraggableBox id="notes" label="Observations" offsets={blockOffsets} setOffsets={setBlockOffsets} designs={blockDesigns} setDesigns={setBlockDesigns} activeDesign={activeBlockDesign} setActiveDesign={setActiveBlockDesign}>
                     <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
                       <h4 className="mb-2 font-black text-neutral-900">Observations</h4>
-                      <textarea value={notes} onChange={event => setNotes(event.target.value)} rows={4} className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-emerald-300" />
+                      <RichTextEditor value={notes} onChange={setNotes} className="min-h-[98px] w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-emerald-300" />
                     </section>
                     </DraggableBox>
                     <DraggableBox id="totals" label="Totaux" offsets={blockOffsets} setOffsets={setBlockOffsets} designs={blockDesigns} setDesigns={setBlockDesigns} activeDesign={activeBlockDesign} setActiveDesign={setActiveBlockDesign}>
@@ -1145,7 +1150,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                   <DraggableBox id="legal" label="Mentions" offsets={blockOffsets} setOffsets={setBlockOffsets} designs={blockDesigns} setDesigns={setBlockDesigns} activeDesign={activeBlockDesign} setActiveDesign={setActiveBlockDesign}>
                   <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
                     <h4 className="mb-2 font-black text-neutral-900">Mentions légales</h4>
-                    <textarea value={legal} onChange={event => setLegal(event.target.value)} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-xs outline-emerald-300" />
+                    <RichTextEditor value={legal} onChange={setLegal} className="min-h-[76px] w-full rounded-xl border border-neutral-200 px-3 py-2 text-xs outline-emerald-300" />
                   </section>
                   </DraggableBox>
                 </div>
