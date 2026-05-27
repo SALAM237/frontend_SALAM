@@ -83,6 +83,7 @@ export function useSubmitMemberArticle() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-content'] });
       qc.invalidateQueries({ queryKey: ['public-content'] });
+      qc.invalidateQueries({ queryKey: ['public-article'] });
       toast.success((res as any).message ?? 'Actualite soumise');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -163,6 +164,8 @@ export function useUpdateArticle(id: string) {
       qc.invalidateQueries({ queryKey: ['admin-content'] });
       qc.invalidateQueries({ queryKey: ['public-content'] });
       qc.invalidateQueries({ queryKey: ['public-article', id] });
+      qc.invalidateQueries({ queryKey: ['public-article'] });
+      qc.removeQueries({ queryKey: ['public-article', id] });
       toast.success((res as any).message ?? 'Article mis à jour');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -178,6 +181,7 @@ export function useDeleteArticle() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-content'] });
       qc.invalidateQueries({ queryKey: ['public-content'] });
+      qc.invalidateQueries({ queryKey: ['public-article'] });
       toast.success((res as any).message ?? 'Article supprimé');
     },
     onError: (err: Error) => toast.error(err.message),

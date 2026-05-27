@@ -23,7 +23,14 @@ export function RichTextEditor({
   const ref = useRef<HTMLDivElement>(null);
 
   const emitInput = () => {
-    ref.current?.dispatchEvent(new Event('input', { bubbles: true }));
+    const node = ref.current;
+    if (!node) return;
+    const html = sanitizeRichHtml(node.innerHTML);
+    node.dispatchEvent(new Event('input', { bubbles: true }));
+    node.dispatchEvent(new CustomEvent('rich-text-change', {
+      bubbles: true,
+      detail: html,
+    }));
   };
 
   const insertPlainText = (text: string) => {
@@ -56,6 +63,17 @@ export function RichTextEditor({
     const next = sanitizeRichHtml(value ?? '').replace(/\n/g, '<br>');
     if (node.innerHTML !== next) node.innerHTML = next;
   }, [value]);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const sync = (event: Event) => {
+      const detail = event instanceof CustomEvent ? event.detail : undefined;
+      onChange(sanitizeRichHtml(typeof detail === 'string' ? detail : node.innerHTML));
+    };
+    node.addEventListener('rich-text-change', sync);
+    return () => node.removeEventListener('rich-text-change', sync);
+  }, [onChange]);
 
   const handleInput = () => {
     const node = ref.current;

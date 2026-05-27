@@ -21,6 +21,14 @@ export type InlineTextStylePatch = {
   fontFamily?: string;
 };
 
+function notifyRichTextChange(element: HTMLElement) {
+  element.dispatchEvent(new Event('input', { bubbles: true }));
+  element.dispatchEvent(new CustomEvent('rich-text-change', {
+    bubbles: true,
+    detail: sanitizeRichHtml(element.innerHTML),
+  }));
+}
+
 export function captureTextSelection(target: EventTarget | null): StoredTextSelection | null {
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
     const start = target.selectionStart ?? 0;
@@ -88,7 +96,7 @@ export function applyInlineTextStyle(selection: StoredTextSelection | null, patc
     deepest.appendChild(fragment);
     range.insertNode(wrapper);
 
-    element.dispatchEvent(new Event('input', { bubbles: true }));
+    notifyRichTextChange(element);
     element.focus();
     browserSelection?.removeAllRanges();
     return true;
