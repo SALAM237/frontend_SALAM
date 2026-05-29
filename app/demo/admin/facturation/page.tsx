@@ -7,6 +7,7 @@ import { demoInvoices } from '@/data/demo/demo-portal';
 import { demoMembers } from '@/data/demo/demo-members';
 import { formatFullName } from '@/lib/format-name';
 import { DemoFinancialDocumentModal, type DemoFinancialDocument } from '@/components/demo/DemoFinancialDocument';
+import { DemoInvoiceEditorModal } from '@/components/demo/DemoInvoiceEditorModal';
 
 type DemoInvoice = typeof demoInvoices[number] & { _id: string; title: string; invoiceNumber: string; status: 'draft' | 'sent' | 'closed'; dueDate: string; recipients: { status: 'paid' | 'pending' }[]; description?: string; paymentLink?: string };
 
@@ -133,6 +134,7 @@ export default function DemoAdminFacturationPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [viewInvoice, setViewInvoice] = useState<DemoInvoice | null>(null);
   const [pdfDocs, setPdfDocs] = useState<DemoFinancialDocument[] | null>(null);
+  const [created, setCreated] = useState(false);
   const list = invoices();
   const filtered = useMemo(() => list.filter(inv => `${inv.title} ${inv.invoiceNumber}`.toLowerCase().includes(search.toLowerCase())), [search]);
   const stats = { total: list.length, sent: list.filter(i => i.status === 'sent').length, closed: list.filter(i => i.status === 'closed').length, draft: list.filter(i => i.status === 'draft').length };
@@ -144,6 +146,11 @@ export default function DemoAdminFacturationPage() {
           <div><h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Facturation</h1><p className="mt-1 text-sm text-neutral-500">Generer et envoyer des factures pour les evenements de l'association.</p></div>
           <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]"><Plus size={15} /> Nouvelle facture</button>
         </div>
+        {created && (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+            Facture demo preparee localement. Aucune donnee reelle n'a ete modifiee.
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[['Total', stats.total, 'text-neutral-900', 'bg-neutral-50 border-neutral-100'], ['Envoyees', stats.sent, 'text-blue-700', 'bg-blue-50 border-blue-100'], ['Cloturees', stats.closed, 'text-emerald-700', 'bg-emerald-50 border-emerald-100'], ['Brouillons', stats.draft, 'text-neutral-600', 'bg-neutral-50 border-neutral-200']].map(([label, value, color, bg]) => <div key={label as string} className={`rounded-2xl border p-4 ${bg}`}><p className={`text-2xl font-black leading-none ${color}`}>{value}</p><p className="mt-1.5 text-xs font-semibold text-neutral-500">{label}</p></div>)}
         </div>
@@ -166,7 +173,7 @@ export default function DemoAdminFacturationPage() {
             })}
           </div>
         </div>
-        {showCreate && <CreateInvoiceModal onClose={() => setShowCreate(false)} />}
+        {showCreate && <DemoInvoiceEditorModal onClose={() => setShowCreate(false)} onCreated={() => setCreated(true)} />}
         {viewInvoice && <InvoiceDetailModal invoice={viewInvoice} onClose={() => setViewInvoice(null)} onOpenPdf={() => setPdfDocs(invoiceDocuments(viewInvoice))} />}
         {pdfDocs && <DemoFinancialDocumentModal documents={pdfDocs} onClose={() => setPdfDocs(null)} />}
       </div>

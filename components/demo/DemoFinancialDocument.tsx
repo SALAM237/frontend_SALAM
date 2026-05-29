@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Download, FileText, ReceiptText, X } from 'lucide-react';
+import { Download, FileText, ReceiptText, Send, X } from 'lucide-react';
 
 export type DemoRecipient = {
   name: string;
@@ -179,6 +179,7 @@ export function DemoFinancialDocumentModal({
   onClose: () => void;
 }) {
   const [index, setIndex] = useState(0);
+  const [sent, setSent] = useState(false);
   const doc = documents[index];
   const label = doc.type === 'receipt' ? 'Reçu' : 'Facture';
   const scaleClass = 'scale-[0.43] sm:scale-[0.58] lg:scale-[0.76] xl:scale-[0.86]';
@@ -216,6 +217,9 @@ export function DemoFinancialDocumentModal({
           </div>
         )}
         <div className="flex items-center gap-2">
+          <button onClick={() => setSent(true)} className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-black text-white hover:bg-white/15">
+            <Send size={13} /> {sent ? 'Envoye demo' : 'Renvoyer'}
+          </button>
           <button onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700">
             <Download size={13} /> PDF
           </button>
