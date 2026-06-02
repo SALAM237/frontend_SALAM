@@ -1,5 +1,6 @@
 import type { Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import { ConditionalHeader } from '@/components/layout/ConditionalHeader';
 import { ConditionalFooter } from '@/components/layout/ConditionalFooter';
@@ -8,6 +9,8 @@ import SalamChatbot          from '@/components/chat/SalamChatbot';
 import BreadcrumbSchema       from '@/components/seo/BreadcrumbSchema';
 import GlobalSeoSchema        from '@/components/seo/GlobalSeoSchema';
 import { defaultMetadata }    from '@/lib/seo';
+
+const GOOGLE_ANALYTICS_ID = 'G-SZTN4DC4TE';
 
 /* ── Font ── */
 const inter = Inter({
@@ -34,6 +37,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta charSet="UTF-8" />
         {/* ── NGO Schema — GEO / MEO / IA engines ── */}
         <GlobalSeoSchema />
+        <Script
+          async
+          src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GOOGLE_ANALYTICS_ID}');
+          `}
+        </Script>
         {/* ── Organization Schema — Google Knowledge Graph / IA ── */}
         {/* ── WebSite Schema + SearchAction — IA crawlers ── */}
         {/* ── FAQ Schema — ChatGPT / Perplexity / Gemini / Bing Copilot ── */}
