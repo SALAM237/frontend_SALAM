@@ -49,8 +49,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ConditionalFooter />
           <SalamChatbot />
         </Providers>
+        <GoogleAnalytics gaId={GOOGLE_ANALYTICS_ID} />
       </body>
-      <GoogleAnalytics gaId={GOOGLE_ANALYTICS_ID} />
     </html>
   );
 }
