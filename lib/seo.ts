@@ -54,6 +54,10 @@ export const defaultMetadata: Metadata = {
   creator:   'Association SALAM Cameroun',
   publisher: 'Association SALAM Cameroun',
 
+  verification: {
+    google: 'KBxdirfo47GR2q8B8279NeZWOvYtEDPYroXNmjHw3x8',
+  },
+
   /* Open Graph */
   openGraph: {
     type:        'website',
