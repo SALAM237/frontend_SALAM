@@ -1,18 +1,27 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CreditCard, User, CalendarDays, MessageSquare, ArrowRight, Bell } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { GenderIcon } from '@/components/ui/GenderIcon';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFirstName, formatFullName } from '@/lib/format-name';
+import { trackEvent } from '@/lib/analytics';
 
 const fadeUp  = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 
 export default function MemberDashboardPage() {
   const { user } = useAuthStore();
+
+  useEffect(() => {
+    trackEvent('member_dashboard_view', {
+      roles: user?.roles?.map(role => role.slug) ?? [],
+      member_status: user?.memberStatus,
+    });
+  }, [user?.memberStatus, user?.roles]);
 
   const firstName = formatFirstName(user?.firstName ?? '');
   const lastName  = user?.lastName ?? '';

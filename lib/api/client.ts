@@ -6,13 +6,11 @@ export interface ApiResponse<T = unknown> {
   data: T;
 }
 
-// Serialise les tentatives de refresh concurrentes (plusieurs hooks en 401 en même temps)
 let _refreshing: Promise<string | null> | null = null;
 let _refreshFailures = 0;
 let _nextPeriodicRefreshAt = 0;
 let _sessionUncertain = false;
 
-const MAX_PERIODIC_AUTH_FAILURES = 5;
 const BASE_REFRESH_BACKOFF_MS = 60_000;
 const MAX_REFRESH_BACKOFF_MS = 5 * 60 * 1000;
 const PROACTIVE_REFRESH_BEFORE_MS = 2 * 60 * 1000;
@@ -84,24 +82,23 @@ export async function refreshAuthSession(options: RefreshAuthOptions = {}): Prom
       const newToken: string = json.data.accessToken;
 
       if (typeof window !== 'undefined') {
-        // Renouvelle le cookie httpOnly salam_access
-        await fetch('/api/auth/session', {
+        const sessionRes = await fetch('/api/auth/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify({ accessToken: newToken }),
-        }).catch(() => {});
-
-        // Met à jour le store Zustand (sans toucher salam_space)
-        const meRes = await fetch(`${API}/api/v1/auth/me`, {
-          headers: { Authorization: `Bearer ${newToken}` },
-          credentials: 'include',
         });
-        if (meRes.status === 401 || meRes.status === 403) throw new RefreshError('refresh_identity_expired', meRes.status);
-        if (!meRes.ok) throw new RefreshError('refresh_identity_temporarily_unavailable', meRes.status);
-        const meJson = await meRes.json();
+        if (sessionRes.status === 401 || sessionRes.status === 403) {
+          throw new RefreshError('refresh_identity_expired', sessionRes.status);
+        }
+        if (!sessionRes.ok) throw new RefreshError('refresh_identity_temporarily_unavailable', sessionRes.status);
+        const sessionJson = await sessionRes.json();
 
         const { useAuthStore } = await import('@/store/auth.store');
-        useAuthStore.getState().restoreAuth(meJson.data, newToken);
+        if (sessionJson.user) {
+          useAuthStore.getState().restoreAuth(sessionJson.user, newToken);
+        } else {
+          useAuthStore.getState().setToken(newToken);
+        }
       }
 
       _refreshFailures = 0;
@@ -120,9 +117,6 @@ export async function refreshAuthSession(options: RefreshAuthOptions = {}): Prom
         );
         _nextPeriodicRefreshAt = Date.now() + backoff;
 
-        // Un 401 périodique (Railway redémarre, réseau instable, dev local→prod) ne déconnecte
-        // pas l'utilisateur. On marque la session incertaine : le prochain appel API qui
-        // retourne 401 tentera un refresh et déconnectera si ce refresh échoue aussi.
         if (isAuthRefusal) _sessionUncertain = true;
         return null;
       }
@@ -156,9 +150,9 @@ export async function apiClient<T = unknown>(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json; charset=utf-8',
-    ...(rest.headers as Record<string, string> ?? {}),
+    ...((rest.headers as Record<string, string>) ?? {}),
   };
-  if (requestToken) headers['Authorization'] = `Bearer ${requestToken}`;
+  if (requestToken) headers.Authorization = `Bearer ${requestToken}`;
 
   const res = await fetch(`${API}${path}`, {
     ...rest,
@@ -166,13 +160,12 @@ export async function apiClient<T = unknown>(
     headers,
   });
 
-  // 401 → refresh silencieux + rejeu (une seule fois, jamais sur /auth/refresh lui-même)
   if (res.status === 401 && !_retry && canAttemptRefresh(path)) {
     const newToken = await refreshAuthSession({ reason: 'api_401', logoutOnFailure: true });
     if (newToken) {
       return apiClient<T>(path, { ...init, token: newToken, _retry: true });
     }
-    throw new Error('Session expirée — veuillez vous reconnecter');
+    throw new Error('Session expiree - veuillez vous reconnecter');
   }
 
   let json: ApiResponse<T>;

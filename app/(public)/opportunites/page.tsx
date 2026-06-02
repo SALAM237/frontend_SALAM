@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, BriefcaseBusiness, CalendarClock, Loader2, MapPin, Search } from 'lucide-react';
 import { PageHero } from '@/components/public/PageHero';
 import { OPPORTUNITY_TYPES, opportunityHref, usePublicOpportunities } from '@/lib/api/opportunities';
 import { RichText } from '@/components/ui/RichText';
+import { trackEvent } from '@/lib/analytics';
 
 const TYPES = [
   { value: 'all', label: 'Toutes' },
@@ -39,6 +40,19 @@ export default function OpportunitesPage() {
         .includes(search.toLowerCase())
     ),
   [items, search, type]);
+
+  useEffect(() => {
+    const term = search.trim();
+    if (term.length < 2) return;
+    const timeout = window.setTimeout(() => {
+      trackEvent('search', {
+        search_term: term,
+        content_type: 'opportunity',
+        opportunity_type: type,
+      });
+    }, 700);
+    return () => window.clearTimeout(timeout);
+  }, [search, type]);
 
   return (
     <main>
@@ -90,7 +104,20 @@ export default function OpportunitesPage() {
           {!isLoading && filtered.length > 0 && (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map(item => (
-                <Link key={item._id} href={opportunityHref(item)} className="group flex flex-col rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md">
+                <Link
+                  key={item._id}
+                  href={opportunityHref(item)}
+                  onClick={() => trackEvent('opportunity_click', {
+                    opportunity_id: item._id,
+                    opportunity_slug: item.slug,
+                    opportunity_title: item.title,
+                    opportunity_type: item.type,
+                    organization: item.organization,
+                    source: 'public_list',
+                    action: 'card_click',
+                  })}
+                  className="group flex flex-col rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
+                >
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
                       <BriefcaseBusiness size={19} />

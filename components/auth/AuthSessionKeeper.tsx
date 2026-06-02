@@ -20,8 +20,6 @@ export default function AuthSessionKeeper() {
       if (token) lastRefresh.current = Date.now();
     };
 
-    void refresh();
-
     const timer = window.setInterval(refresh, REFRESH_EVERY_MS);
     const onFocus = () => {
       if (document.visibilityState === 'hidden') return;

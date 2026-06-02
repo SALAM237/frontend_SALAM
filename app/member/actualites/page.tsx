@@ -8,6 +8,7 @@ import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEd
 import { articleImage } from '@/lib/article-image';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { RichText } from '@/components/ui/RichText';
+import { trackEvent } from '@/lib/analytics';
 
 type ExtraBlock = { id: string; label: string; title: string; description: string };
 
@@ -113,6 +114,14 @@ export default function MemberActualitesPage() {
                 </div>
                 <Link
                   href={articleHref(n).replace('/actualites/', '/member/actualites/')}
+                  onClick={() => trackEvent('news_click', {
+                    article_id: n._id,
+                    article_slug: n.slug,
+                    article_title: n.title,
+                    category: n.data?.category,
+                    source: 'member_list',
+                    action: 'view_button_click',
+                  })}
                   aria-label={`Voir ${n.title}`}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition-all hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
                 >

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Eye, EyeOff, ArrowRight, Loader2, ChevronDown, Mail } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
+import { trackEvent, trackFormStart, trackFormSubmit, trackGenerateLead } from '@/lib/analytics';
 
 const PAYS = [
   'Maroc', 'Cameroun', 'France', 'Belgique', 'Canada', 'Espagne',
@@ -42,6 +43,7 @@ export default function RegisterPage() {
   const [success, setSuccess]   = useState(false);
   const [errors, setErrors]     = useState<Partial<Record<keyof FormData | 'global', string>>>({});
   const [pwDismiss, setPwDismiss] = useState(false);
+  const [started, setStarted] = useState(false);
 
   const set = (k: keyof FormData, v: string | boolean) =>
     setForm(f => ({ ...f, [k]: v }));
@@ -94,12 +96,22 @@ export default function RegisterPage() {
           promotionYear: Number(form.promotionYear),
         }),
       });
+      trackFormSubmit('register', { country: form.pays, field: form.filiere });
+      trackEvent('sign_up', { method: 'email' });
+      trackEvent('member_registration', { method: 'email', country: form.pays, field: form.filiere });
+      trackGenerateLead('member_registration', { country: form.pays });
       setSuccess(true);
     } catch (err: unknown) {
       setErrors({ global: err instanceof Error ? err.message : 'Erreur lors de l\'inscription' });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFormStart = () => {
+    if (started) return;
+    setStarted(true);
+    trackFormStart('register');
   };
 
   const pwChecks = [
@@ -184,7 +196,7 @@ export default function RegisterPage() {
       </div>
 
       {step === 1 && (
-        <form onSubmit={handleNext} className="space-y-4" noValidate>
+        <form onSubmit={handleNext} onFocusCapture={handleFormStart} className="space-y-4" noValidate>
 
           {/* Civilité */}
           <div className="space-y-1.5">
@@ -281,7 +293,7 @@ export default function RegisterPage() {
       )}
 
       {step === 2 && (
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <form onSubmit={handleSubmit} onFocusCapture={handleFormStart} className="space-y-4" noValidate>
 
           <Field label="Mot de passe" error={errors.password} required>
             <div className="relative">

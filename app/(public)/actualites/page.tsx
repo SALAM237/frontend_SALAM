@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Newspaper, ArrowRight, Search, Tag, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 import { articleHref, usePublicArticles, ARTICLE_CATEGORIES } from '@/lib/api/content';
 import { RichText } from '@/components/ui/RichText';
 import { articleImage } from '@/lib/article-image';
+import { trackEvent } from '@/lib/analytics';
 
 const CATS = [
   { id: 'all', label: 'Toutes' },
@@ -26,6 +27,19 @@ export default function ActualitesPage() {
       n.title.toLowerCase().includes(search.toLowerCase())
     ),
   [articles, cat, search]);
+
+  useEffect(() => {
+    const term = search.trim();
+    if (term.length < 2) return;
+    const timeout = window.setTimeout(() => {
+      trackEvent('search', {
+        search_term: term,
+        content_type: 'news',
+        category: cat,
+      });
+    }, 700);
+    return () => window.clearTimeout(timeout);
+  }, [cat, search]);
 
   return (
     <main>
@@ -69,7 +83,19 @@ export default function ActualitesPage() {
               {filtered.map((n: any) => {
                 const image = articleImage(n);
                 return (
-                <Link key={n._id} href={articleHref(n)} className="group flex flex-col gap-3 rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md">
+                <Link
+                  key={n._id}
+                  href={articleHref(n)}
+                  onClick={() => trackEvent('news_click', {
+                    article_id: n._id,
+                    article_slug: n.slug,
+                    article_title: n.title,
+                    category: n.data?.category,
+                    source: 'public_list',
+                    action: 'card_click',
+                  })}
+                  className="group flex flex-col gap-3 rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
+                >
                   <div className="aspect-[16/9] overflow-hidden rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50">
                     {image && (
                       // eslint-disable-next-line @next/next/no-img-element

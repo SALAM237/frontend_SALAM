@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   const isAdmin = meData.roles?.some(r => ['admin', 'super_admin'].includes(r.slug)) ?? false;
   const role    = isAdmin ? 'admin' : 'member';
 
-  const res = NextResponse.json({ ok: true, role });
+  const res = NextResponse.json({ ok: true, role, user: meData });
   res.cookies.set('salam_access', accessToken, cookieOpts(SEVEN_DAYS));
   res.cookies.set('salam_role',   role,        cookieOpts(SEVEN_DAYS));
   // Supprimer l'ancien cookie JS falsifiable si présent

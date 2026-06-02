@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CheckCircle, Users, Award, MessageSquare, Calendar, Shield, Zap, Send, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 import { useAdhesionForm } from '@/lib/api/public';
+import { trackEvent, trackFormStart, trackFormSubmit, trackGenerateLead } from '@/lib/analytics';
 
 // export const revalidate = 3600; // désactivé : 'use client' — non supporté, cause une erreur Vercel build
 
@@ -28,8 +29,40 @@ export default function AdhesionPage() {
   const [form,  setForm]  = useState({ firstName: '', lastName: '', email: '', phone: '', city: '', motivation: '', type: 'etudiant' });
   const [honey, setHoney] = useState('');
   const [formErrors, setFormErrors] = useState<{ motivation?: string }>({});
+  const [started, setStarted] = useState(false);
+  const startedRef = useRef(false);
+  const submittedRef = useRef(false);
+  const abandonSentRef = useRef(false);
+  const formRef = useRef(form);
 
   const adhesion = useAdhesionForm();
+
+  formRef.current = form;
+
+  useEffect(() => {
+    const sendAbandonEvent = () => {
+      if (!startedRef.current || submittedRef.current || abandonSentRef.current) return;
+      abandonSentRef.current = true;
+      const currentForm = formRef.current;
+      trackEvent('adhesion_abandon', {
+        member_type: currentForm.type,
+        city: currentForm.city,
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') sendAbandonEvent();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', sendAbandonEvent);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', sendAbandonEvent);
+      sendAbandonEvent();
+    };
+  }, []);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
@@ -53,8 +86,24 @@ export default function AdhesionPage() {
         phone:      form.phone || undefined,
         _honey:     honey || undefined,
       },
-      { onSuccess: () => setSent(true) },
+      {
+        onSuccess: () => {
+          submittedRef.current = true;
+          trackFormSubmit('adhesion', { member_type: form.type, city: form.city });
+          trackEvent('adhesion_submit', { member_type: form.type, city: form.city });
+          trackGenerateLead('adhesion_form', { member_type: form.type });
+          setSent(true);
+        },
+      },
     );
+  };
+
+  const handleFormStart = () => {
+    if (started) return;
+    setStarted(true);
+    startedRef.current = true;
+    trackFormStart('adhesion');
+    trackEvent('adhesion_start');
   };
 
   const inputCls = "h-11 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 text-sm text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/12";
@@ -155,7 +204,7 @@ export default function AdhesionPage() {
                 </Link>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <form onSubmit={handleSubmit} onFocusCapture={handleFormStart} className="flex flex-col gap-5">
                 {/* honeypot — hidden from humans, filled by bots */}
                 <input
                   type="text"

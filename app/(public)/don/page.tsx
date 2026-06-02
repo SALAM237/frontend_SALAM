@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Heart, Shield, CheckCircle, Send, Star } from 'lucide-react';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
+import { trackEvent, trackFormStart, trackFormSubmit, trackGenerateLead } from '@/lib/analytics';
 
 // export const revalidate = 3600; // désactivé : 'use client' — non supporté, cause une erreur Vercel build
 
@@ -22,6 +23,7 @@ export default function DonPage() {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: '', email: '' });
+  const [started, setStarted] = useState(false);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
@@ -31,10 +33,33 @@ export default function DonPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!finalMontant) return;
+    trackEvent('don_click', { value: finalMontant, currency: 'XAF', placement: 'don_form_submit' });
+    trackEvent('don_submit', { value: finalMontant, currency: 'XAF' });
     setLoading(true);
     await new Promise(r => setTimeout(r, 1000));
     setLoading(false);
+    trackFormSubmit('don', { value: finalMontant, currency: 'XAF' });
+    trackGenerateLead('don_form', { value: finalMontant, currency: 'XAF' });
+    trackEvent('don_success', { value: finalMontant, currency: 'XAF', payment_status: 'simulated_intent' });
     setSent(true);
+  };
+
+  const startDonation = (value?: number) => {
+    if (started) return;
+    setStarted(true);
+    const amountParams = value ? { value, currency: 'XAF' } : {};
+    trackFormStart('don', amountParams);
+    trackEvent('don_start', amountParams);
+  };
+
+  const handleFormStart = () => {
+    startDonation(finalMontant || undefined);
+  };
+
+  const handleAmountSelect = (value: number) => {
+    setMontant(value);
+    setCustom('');
+    startDonation(value);
   };
 
   const inputCls = "h-11 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/12";
@@ -73,7 +98,7 @@ export default function DonPage() {
                   </Link>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                <form onSubmit={handleSubmit} onFocusCapture={handleFormStart} className="flex flex-col gap-6">
                   <div>
                     <h2 className="mb-2 text-xl font-black text-neutral-900">Choisissez un montant</h2>
                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
@@ -81,7 +106,7 @@ export default function DonPage() {
                         <button
                           key={m}
                           type="button"
-                          onClick={() => { setMontant(m); setCustom(''); }}
+                          onClick={() => handleAmountSelect(m)}
                           className={`h-11 rounded-xl border-2 text-sm font-black transition-all ${
                             montant === m
                               ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'

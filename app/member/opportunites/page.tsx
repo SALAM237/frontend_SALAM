@@ -8,6 +8,7 @@ import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
 import { RichText } from '@/components/ui/RichText';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { trackEvent } from '@/lib/analytics';
 
 const statusCls: Record<string, string> = {
   published: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -79,10 +80,42 @@ export default function OpportunitesPage() {
     if (!replyFor) return;
     reply.mutate({ id: replyFor._id, payload: { message: replyMessage } }, {
       onSuccess: () => {
+        trackEvent('opportunity_contact_submit', {
+          opportunity_id: replyFor._id,
+          opportunity_slug: replyFor.slug,
+          opportunity_title: replyFor.title,
+          opportunity_type: replyFor.type,
+          organization: replyFor.organization,
+        });
         setReplyFor(null);
         setReplyMessage('');
       },
     });
+  };
+
+  const openReplyModal = (item: OpportunityDoc, action: string) => {
+    trackEvent('opportunity_contact_click', {
+      opportunity_id: item._id,
+      opportunity_slug: item.slug,
+      opportunity_title: item.title,
+      opportunity_type: item.type,
+      organization: item.organization,
+      action,
+    });
+    setReplyFor(item);
+  };
+
+  const openOpportunityDetail = (item: OpportunityDoc, action: string) => {
+    trackEvent('opportunity_click', {
+      opportunity_id: item._id,
+      opportunity_slug: item.slug,
+      opportunity_title: item.title,
+      opportunity_type: item.type,
+      organization: item.organization,
+      source: 'member_list',
+      action,
+    });
+    setViewOpportunity(item);
   };
 
   return (
@@ -181,11 +214,11 @@ export default function OpportunitesPage() {
                 <p className="mt-1 text-sm leading-6 text-neutral-600"><RichText value={item.description} /></p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <button onClick={() => setViewOpportunity(item)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" title="Visualiser">
+                <button onClick={() => openOpportunityDetail(item, 'view_button_click')} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" title="Visualiser">
                   <Eye size={14} />
                 </button>
                 {tab === 'published' && (
-                  <button onClick={() => setReplyFor(item)} className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-emerald-200 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-50">
+                  <button onClick={() => openReplyModal(item, 'member_list_reply_button')} className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-emerald-200 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-50">
                     <Send size={13} /> Repondre
                   </button>
                 )}
@@ -232,7 +265,7 @@ export default function OpportunitesPage() {
           typeLabel={typeLabel}
           onClose={() => setViewOpportunity(null)}
           onReply={tab === 'published' ? () => {
-            setReplyFor(viewOpportunity);
+            openReplyModal(viewOpportunity, 'member_detail_reply_button');
             setViewOpportunity(null);
           } : undefined}
         />

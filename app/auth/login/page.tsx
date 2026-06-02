@@ -9,6 +9,7 @@ import { Eye, EyeOff, ArrowRight, Loader2, MailWarning, RefreshCw, CheckCircle2 
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { getPostLoginRedirect } from '@/lib/auth/roles';
+import { trackEvent, trackFormStart } from '@/lib/analytics';
 
 /* Refuse les redirections vers des URLs externes (open-redirect guard) */
 function safeRedirect(url: string | null, fallback: string): string {
@@ -28,12 +29,14 @@ function LoginForm() {
   const [showPwd, setShowPwd]   = useState(false);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
+  const [started, setStarted]   = useState(false);
 
   const [needsVerify, setNeedsVerify]   = useState(false);
   const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'sent'>('idle');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    trackEvent('login_click', { method: 'email' });
     setError('');
     setNeedsVerify(false);
     setResendStatus('idle');
@@ -62,6 +65,8 @@ function LoginForm() {
       });
 
       setAuth(me.data, res.data.accessToken);
+      const roleSlugs = me.data.roles?.map(role => role.slug) ?? [];
+      trackEvent('login_success', { method: 'email', roles: roleSlugs });
       const fallback   = getPostLoginRedirect(me.data);
       const redirectTo = safeRedirect(searchParams.get('redirect'), fallback);
       router.push(redirectTo);
@@ -75,6 +80,12 @@ function LoginForm() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFormStart = () => {
+    if (started) return;
+    setStarted(true);
+    trackFormStart('login', { method: 'email' });
   };
 
   const handleResend = async () => {
@@ -102,7 +113,7 @@ function LoginForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} onFocusCapture={handleFormStart} className="space-y-4">
 
         <div className="space-y-1.5">
           <label htmlFor="email" className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">

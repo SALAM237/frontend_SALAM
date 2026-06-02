@@ -40,6 +40,16 @@ export const defaultMetadata: Metadata = {
 
   applicationName: 'SALAM Cameroun',
 
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/images/logo/logo_salam_48.webp', sizes: '48x48', type: 'image/webp' },
+      { url: '/images/logo/logo_salam_96.webp', sizes: '96x96', type: 'image/webp' },
+      { url: '/images/logo/logo_salam_192.webp', sizes: '192x192', type: 'image/webp' },
+    ],
+    apple: [{ url: '/images/logo/logo_salam_192.webp', sizes: '192x192', type: 'image/webp' }],
+  },
+
   title: {
     default: 'SALAM | Solidaire Associative des Lauréats du Maroc',
     template: '%s | SALAM',

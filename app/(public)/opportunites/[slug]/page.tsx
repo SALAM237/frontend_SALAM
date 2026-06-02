@@ -1,11 +1,12 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, BriefcaseBusiness, CalendarClock, ChevronRight, ExternalLink, Loader2, Mail, MapPin, Phone, Tag } from 'lucide-react';
 import { OPPORTUNITY_TYPES, usePublicOpportunity } from '@/lib/api/opportunities';
 import { RichText } from '@/components/ui/RichText';
 import OpportunitySchema from '@/components/seo/OpportunitySchema';
+import { trackEvent } from '@/lib/analytics';
 
 const TYPE_COLORS: Record<string, string> = {
   emploi: 'bg-emerald-100 text-emerald-700',
@@ -25,6 +26,35 @@ export default function OpportuniteDetailPage({ params }: { params: Promise<{ sl
   const { data, isLoading, isError } = usePublicOpportunity(slug);
   const item = data?.data;
   const responseHref = item ? `/auth/login?redirect=${encodeURIComponent('/member/opportunites')}` : '/auth/login';
+
+  useEffect(() => {
+    if (!item) return;
+    trackEvent('opportunity_view', {
+      opportunity_slug: item.slug || slug,
+      opportunity_id: item._id,
+      opportunity_title: item.title,
+      opportunity_type: item.type,
+      organization: item.organization,
+    });
+    trackEvent('view_item', {
+      item_id: item._id,
+      item_name: item.title,
+      item_category: 'opportunity',
+      item_slug: item.slug || slug,
+    });
+  }, [item, slug]);
+
+  const trackOpportunityContactClick = (action: string) => {
+    if (!item) return;
+    trackEvent('opportunity_contact_click', {
+      opportunity_slug: item.slug || slug,
+      opportunity_id: item._id,
+      opportunity_title: item.title,
+      opportunity_type: item.type,
+      organization: item.organization,
+      action,
+    });
+  };
 
   return (
     <main className="min-h-screen bg-[#fffdf8]">
@@ -135,11 +165,11 @@ export default function OpportuniteDetailPage({ params }: { params: Promise<{ sl
                 <h3 className="font-black tracking-[-0.02em]">Repondre a cette opportunite</h3>
                 <p className="mt-1.5 text-sm text-white/75">La reponse se fait depuis l'espace membre afin de proteger les echanges et le suivi.</p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <Link href={responseHref} className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-5 text-sm font-black text-emerald-700 transition-all hover:bg-emerald-50">
+                  <Link href={responseHref} onClick={() => trackOpportunityContactClick('member_reply_cta')} className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-5 text-sm font-black text-emerald-700 transition-all hover:bg-emerald-50">
                     Repondre depuis l'espace membre
                   </Link>
                   {item.contactUrl && (
-                    <a href={item.contactUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full border border-white/30 px-5 text-sm font-semibold text-white/85 transition-all hover:border-white/60 hover:text-white">
+                    <a href={item.contactUrl} onClick={() => trackOpportunityContactClick('external_link')} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full border border-white/30 px-5 text-sm font-semibold text-white/85 transition-all hover:border-white/60 hover:text-white">
                       Lien externe <ExternalLink size={13} />
                     </a>
                   )}

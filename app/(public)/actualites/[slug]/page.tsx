@@ -1,12 +1,13 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Newspaper, ChevronRight, Calendar, Tag, Loader2 } from 'lucide-react';
 import { usePublicArticle, ARTICLE_CATEGORIES } from '@/lib/api/content';
 import { RichText } from '@/components/ui/RichText';
 import { articleImage } from '@/lib/article-image';
 import ArticleSchema from '@/components/seo/ArticleSchema';
+import { trackEvent } from '@/lib/analytics';
 
 const CAT_COLORS: Record<string, string> = {
   general:     'bg-neutral-100 text-neutral-600',
@@ -21,6 +22,33 @@ export default function ActualiteDetailPage({ params }: { params: Promise<{ slug
   const { slug } = use(params);
   const { data, isLoading, isError } = usePublicArticle(slug);
   const article = data?.data;
+
+  useEffect(() => {
+    if (!article) return;
+    trackEvent('news_view', {
+      article_slug: article.slug || slug,
+      article_id: article._id,
+      article_title: article.title,
+      category: article.data?.category,
+    });
+    trackEvent('view_item', {
+      item_id: article._id,
+      item_name: article.title,
+      item_category: 'news',
+      item_slug: article.slug || slug,
+    });
+  }, [article, slug]);
+
+  const trackNewsClick = (action: string) => {
+    if (!article) return;
+    trackEvent('news_click', {
+      article_slug: article.slug || slug,
+      article_id: article._id,
+      article_title: article.title,
+      category: article.data?.category,
+      action,
+    });
+  };
 
   return (
     <main className="min-h-screen bg-[#fffdf8]">
@@ -130,10 +158,10 @@ export default function ActualiteDetailPage({ params }: { params: Promise<{ slug
                 <h3 className="font-black tracking-[-0.02em]">Rejoindre l'association SALAM</h3>
                 <p className="mt-1.5 text-sm text-white/70">Accédez à toutes les actualités et activités en devenant membre de SALAM Cameroun.</p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <Link href="/auth/login" className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-5 text-sm font-black text-emerald-700 transition-all hover:bg-emerald-50">
+                  <Link href="/auth/login" onClick={() => trackNewsClick('login_cta')} className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-5 text-sm font-black text-emerald-700 transition-all hover:bg-emerald-50">
                     Se connecter
                   </Link>
-                  <Link href="/adhesion" className="inline-flex h-10 items-center gap-2 rounded-full border border-white/30 px-5 text-sm font-semibold text-white/80 transition-all hover:border-white/60 hover:text-white">
+                  <Link href="/adhesion" onClick={() => trackNewsClick('adhesion_cta')} className="inline-flex h-10 items-center gap-2 rounded-full border border-white/30 px-5 text-sm font-semibold text-white/80 transition-all hover:border-white/60 hover:text-white">
                     Devenir membre
                   </Link>
                 </div>

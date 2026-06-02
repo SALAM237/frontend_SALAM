@@ -1,11 +1,12 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Calendar, MapPin, Users, Tag, Clock, ChevronRight, Loader2 } from 'lucide-react';
 import { usePublicActivity, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
 import { RichText } from '@/components/ui/RichText';
 import EventSchema from '@/components/seo/EventSchema';
+import { trackEvent } from '@/lib/analytics';
 
 const CAT_COLORS: Record<string, string> = {
   sport: 'bg-blue-100 text-blue-700', culture: 'bg-purple-100 text-purple-700',
@@ -31,6 +32,35 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ slug:
   const { slug } = use(params);
   const { data, isLoading, isError } = usePublicActivity(slug);
   const activity = data?.data;
+
+  useEffect(() => {
+    if (!activity) return;
+    trackEvent('activity_view', {
+      activity_slug: activity.slug || slug,
+      activity_id: activity._id,
+      activity_title: activity.title,
+      category: activity.category,
+      status: activity.status,
+    });
+    trackEvent('view_item', {
+      item_id: activity._id,
+      item_name: activity.title,
+      item_category: 'activity',
+      item_slug: activity.slug || slug,
+    });
+  }, [activity, slug]);
+
+  const trackActivityRegistrationClick = (action: string) => {
+    if (!activity) return;
+    trackEvent('activity_registration_click', {
+      activity_slug: activity.slug || slug,
+      activity_id: activity._id,
+      activity_title: activity.title,
+      category: activity.category,
+      status: activity.status,
+      action,
+    });
+  };
 
   return (
     <main className="min-h-screen bg-[#fffdf8]">
@@ -173,10 +203,10 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ slug:
                 <h3 className="font-black tracking-[-0.02em]">Participer à cette activité</h3>
                 <p className="mt-1.5 text-sm text-white/70">Les activités SALAM sont réservées aux membres. Rejoignez-nous !</p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <Link href="/auth/login" className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-5 text-sm font-black text-emerald-700 transition-all hover:bg-emerald-50">
+                  <Link href="/auth/login" onClick={() => trackActivityRegistrationClick('login_cta')} className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-5 text-sm font-black text-emerald-700 transition-all hover:bg-emerald-50">
                     Se connecter
                   </Link>
-                  <Link href="/adhesion" className="inline-flex h-10 items-center gap-2 rounded-full border border-white/30 px-5 text-sm font-semibold text-white/80 transition-all hover:border-white/60 hover:text-white">
+                  <Link href="/adhesion" onClick={() => trackActivityRegistrationClick('adhesion_cta')} className="inline-flex h-10 items-center gap-2 rounded-full border border-white/30 px-5 text-sm font-semibold text-white/80 transition-all hover:border-white/60 hover:text-white">
                     Devenir membre
                   </Link>
                 </div>

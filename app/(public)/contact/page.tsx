@@ -5,6 +5,7 @@ import { Mail, MapPin, Clock, Send, CheckCircle, AlertCircle } from 'lucide-reac
 import { PageHero } from '@/components/public/PageHero';
 import Link from 'next/link';
 import { useContactForm } from '@/lib/api/public';
+import { trackFormStart, trackFormSubmit, trackGenerateLead, trackEvent } from '@/lib/analytics';
 
 // export const revalidate = 3600; // désactivé : 'use client' — non supporté, cause une erreur Vercel build
 
@@ -22,6 +23,7 @@ export default function ContactPage() {
   const [form,  setForm]  = useState({ name: '', email: '', subject: '', message: '', phone: '' });
   const [honey, setHoney] = useState('');
   const [formErrors, setFormErrors] = useState<{ subject?: string; message?: string }>({});
+  const [started, setStarted] = useState(false);
 
   const contact = useContactForm();
 
@@ -44,8 +46,21 @@ export default function ContactPage() {
         phone:   form.phone || undefined,
         _honey:  honey || undefined,
       },
-      { onSuccess: () => setSent(true) },
+      {
+        onSuccess: () => {
+          trackFormSubmit('contact', { subject: form.subject });
+          trackEvent('contact_submit', { subject: form.subject });
+          trackGenerateLead('contact_form', { subject: form.subject });
+          setSent(true);
+        },
+      },
     );
+  };
+
+  const handleFormStart = () => {
+    if (started) return;
+    setStarted(true);
+    trackFormStart('contact');
   };
 
   const inputCls = "h-11 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 text-sm text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/12";
@@ -96,7 +111,7 @@ export default function ContactPage() {
                     </div>
                   )}
 
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                  <form onSubmit={handleSubmit} onFocusCapture={handleFormStart} className="flex flex-col gap-5">
                     {/* honeypot — hidden from humans, filled by bots */}
                     <input
                       type="text"

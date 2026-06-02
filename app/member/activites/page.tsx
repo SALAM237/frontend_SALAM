@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { CalendarDays, Search, MapPin, Users, Loader2, Eye, X } from 'lucide-react';
 import { useMemberActivities, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
+import { trackEvent } from '@/lib/analytics';
 
 const CAT_COLORS: Record<string, string> = {
   sport: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -112,6 +113,15 @@ export default function MemberActivitesPage() {
                   </div>
                   <Link
                     href={`/member/activites/${a.slug}`}
+                    onClick={() => trackEvent('activity_click', {
+                      activity_id: a._id,
+                      activity_slug: a.slug,
+                      activity_title: a.title,
+                      category: a.category,
+                      status: a.status,
+                      source: 'member_list',
+                      action: 'view_button_click',
+                    })}
                     aria-label={`Voir ${a.title}`}
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition-all hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
                   >

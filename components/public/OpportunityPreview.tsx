@@ -6,6 +6,7 @@ import { ArrowRight, BriefcaseBusiness, CalendarClock, MapPin } from 'lucide-rea
 import { OPPORTUNITY_TYPES, opportunityHref, usePublicOpportunities } from '@/lib/api/opportunities';
 import { useAuthStore } from '@/store/auth.store';
 import { RichText } from '@/components/ui/RichText';
+import { trackEvent } from '@/lib/analytics';
 
 const typeLabel = Object.fromEntries(OPPORTUNITY_TYPES.map(t => [t.value, t.label]));
 
@@ -14,6 +15,30 @@ export function OpportunityPreview() {
   const accessToken = useAuthStore(s => s.accessToken);
   const items = data?.data?.items ?? [];
   const responseHref = accessToken ? '/member/opportunites' : '/auth/login';
+
+  const trackOpportunityClick = (item: (typeof items)[number], action: string) => {
+    trackEvent('opportunity_click', {
+      opportunity_id: item._id,
+      opportunity_slug: item.slug,
+      opportunity_title: item.title,
+      opportunity_type: item.type,
+      organization: item.organization,
+      source: 'home_preview',
+      action,
+    });
+  };
+
+  const trackOpportunityContactClick = (item: (typeof items)[number]) => {
+    trackEvent('opportunity_contact_click', {
+      opportunity_id: item._id,
+      opportunity_slug: item.slug,
+      opportunity_title: item.title,
+      opportunity_type: item.type,
+      organization: item.organization,
+      source: 'home_preview',
+      action: accessToken ? 'member_reply_cta' : 'login_reply_cta',
+    });
+  };
 
   return (
     <section id="opportunites" className="bg-neutral-50/70">
@@ -82,11 +107,11 @@ export function OpportunityPreview() {
                 {item.deadline && <p className="flex items-center gap-2"><CalendarClock size={13} className="text-amber-500" />Avant le {new Date(item.deadline).toLocaleDateString('fr-FR')}</p>}
               </div>
               <div className="mt-5 flex flex-wrap gap-2">
-                <Link href={opportunityHref(item)} className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-3.5 py-2 text-[12px] font-black text-emerald-700 transition hover:bg-emerald-50">
+                <Link href={opportunityHref(item)} onClick={() => trackOpportunityClick(item, 'card_cta_click')} className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-3.5 py-2 text-[12px] font-black text-emerald-700 transition hover:bg-emerald-50">
                   Voir opportunite
                   <ArrowRight size={12} />
                 </Link>
-                <Link href={responseHref} className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-2 text-[12px] font-black text-white transition hover:bg-emerald-700">
+                <Link href={responseHref} onClick={() => trackOpportunityContactClick(item)} className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-2 text-[12px] font-black text-white transition hover:bg-emerald-700">
                   Repondre a l'offre
                   <ArrowRight size={12} />
                 </Link>

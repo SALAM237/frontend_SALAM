@@ -5,6 +5,7 @@ import { ArrowRight, Newspaper, Tag } from 'lucide-react';
 import { ARTICLE_CATEGORIES, articleHref, usePublicArticles } from '@/lib/api/content';
 import { RichText } from '@/components/ui/RichText';
 import { articleImage } from '@/lib/article-image';
+import { trackEvent } from '@/lib/analytics';
 
 export function NewsPreview() {
   const { data, isLoading } = usePublicArticles();
@@ -37,7 +38,19 @@ export function NewsPreview() {
               const image = articleImage(article);
               const category = article.data?.category;
               return (
-                <Link key={article._id} href={articleHref(article)} className="group overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md">
+                <Link
+                  key={article._id}
+                  href={articleHref(article)}
+                  onClick={() => trackEvent('news_click', {
+                    article_id: article._id,
+                    article_slug: article.slug,
+                    article_title: article.title,
+                    category,
+                    source: 'home_preview',
+                    action: 'card_click',
+                  })}
+                  className="group overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
+                >
                   <div className="aspect-[16/10] bg-gradient-to-br from-emerald-100 to-emerald-50">
                     {image ? (
                       // eslint-disable-next-line @next/next/no-img-element

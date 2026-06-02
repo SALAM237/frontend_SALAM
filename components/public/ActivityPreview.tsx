@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Calendar, MapPin, Users, ArrowRight } from 'lucide-react';
 import { usePublicActivities } from '@/lib/api/activities';
 import { RichText } from '@/components/ui/RichText';
+import { trackEvent } from '@/lib/analytics';
 
 /* ── Category config ── */
 const CAT: Record<string, { label: string; text: string; bg: string; border: string }> = {
@@ -129,6 +130,15 @@ export function ActivityPreview() {
                   {/* CTA */}
                   <Link
                     href={`/activites/${activity.slug}`}
+                    onClick={() => trackEvent('activity_click', {
+                      activity_id: activity._id,
+                      activity_slug: activity.slug,
+                      activity_title: activity.title,
+                      category: activity.category,
+                      status: activity.status,
+                      source: 'home_preview',
+                      action: 'card_cta_click',
+                    })}
                     className="group/link mt-5 inline-flex items-center gap-1.5 text-[13px] font-bold text-salam-green"
                   >
                     Voir l'activité

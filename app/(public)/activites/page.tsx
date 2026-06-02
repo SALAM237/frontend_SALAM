@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Calendar, MapPin, Users, ArrowRight, Search, Loader2, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 import { usePublicActivities, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
 import { RichText } from '@/components/ui/RichText';
+import { trackEvent } from '@/lib/analytics';
 
 const CATS = [
   { id: 'all', label: 'Toutes' },
@@ -40,6 +41,19 @@ export default function ActivitesPage() {
        (a.description ?? '').toLowerCase().includes(search.toLowerCase()))
     ),
   [activities, cat, search]);
+
+  useEffect(() => {
+    const term = search.trim();
+    if (term.length < 2) return;
+    const timeout = window.setTimeout(() => {
+      trackEvent('search', {
+        search_term: term,
+        content_type: 'activity',
+        category: cat,
+      });
+    }, 700);
+    return () => window.clearTimeout(timeout);
+  }, [cat, search]);
 
   return (
     <main>
@@ -87,7 +101,20 @@ export default function ActivitesPage() {
           {!isLoading && filtered.length > 0 && (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((a, i) => (
-                <Link key={a._id} href={`/activites/${a.slug}`} className="group flex flex-col gap-4 rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md">
+                <Link
+                  key={a._id}
+                  href={`/activites/${a.slug}`}
+                  onClick={() => trackEvent('activity_click', {
+                    activity_id: a._id,
+                    activity_slug: a.slug,
+                    activity_title: a.title,
+                    category: a.category,
+                    status: a.status,
+                    source: 'public_list',
+                    action: 'card_click',
+                  })}
+                  className="group flex flex-col gap-4 rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
+                >
                   <div className={`aspect-[16/9] rounded-xl bg-gradient-to-br ${COVERS[i % COVERS.length]}`} />
                   <div className="flex flex-col gap-2">
                     <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[11px] font-bold ${CAT_COLORS[a.category] ?? 'bg-neutral-100 text-neutral-600'}`}>
