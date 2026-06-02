@@ -64,6 +64,13 @@ export default function AdminOpportunitesPage() {
                     <span className="rounded-full border border-neutral-100 bg-neutral-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-neutral-500">
                       {item.status}
                     </span>
+                    <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] ${
+                      item.visibility === 'public'
+                        ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
+                        : 'border-blue-100 bg-blue-50 text-blue-700'
+                    }`}>
+                      {item.visibility === 'public' ? 'Public' : 'Membres'}
+                    </span>
                   </div>
                   <h2 className="mt-2 truncate text-sm font-black text-neutral-900"><RichText value={item.title} /></h2>
                   <p className="mt-1 line-clamp-2 text-xs leading-5 text-neutral-500"><RichText value={item.description} /></p>
@@ -102,6 +109,9 @@ function OpportunityDetailModal({ item, onClose }: { item: OpportunityDoc; onClo
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">{typeLabels[item.type] ?? item.type}</p>
           <h2 className="mt-2 pr-10 text-xl font-black leading-tight"><RichText value={item.title} /></h2>
           <p className="mt-1 text-xs font-semibold text-white/55">{item.status}</p>
+          <p className="mt-1 text-xs font-semibold text-white/55">
+            Visibilite : {item.visibility === 'public' ? 'Public' : 'Membres uniquement'}
+          </p>
         </div>
         <div className="max-h-[70vh] space-y-5 overflow-y-auto px-6 py-5">
           <p className="whitespace-pre-line text-sm leading-7 text-neutral-600"><RichText value={item.description} /></p>

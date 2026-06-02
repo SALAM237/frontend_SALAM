@@ -98,6 +98,7 @@ export function useSubmitOpportunity() {
       }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['member-opportunities'] });
+      qc.invalidateQueries({ queryKey: ['public-opportunities'] });
       qc.invalidateQueries({ queryKey: ['admin-pending-validations'] });
       toast.success((res as any).message ?? 'Opportunite soumise');
     },

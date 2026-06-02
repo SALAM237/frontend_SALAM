@@ -1,13 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { BriefcaseBusiness, CalendarDays, CheckCircle2, Clock, Eye, Mail, MapPin, Phone, Plus, Send, Tag, X } from 'lucide-react';
+import { AlertCircle, BriefcaseBusiness, CalendarDays, CheckCircle2, Eye, Globe2, Lock, Mail, MapPin, Phone, Plus, Send, Tag, X } from 'lucide-react';
 import { OPPORTUNITY_TYPES, useMemberOpportunities, useReplyOpportunity, useSubmitOpportunity, type OpportunityDoc, type OpportunityPayload, type OpportunityType } from '@/lib/api/opportunities';
 import { formatFullName } from '@/lib/format-name';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
-import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
 import { RichText } from '@/components/ui/RichText';
-import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { trackEvent } from '@/lib/analytics';
 
 const statusCls: Record<string, string> = {
@@ -44,11 +42,10 @@ const emptyForm: OpportunityPayload = {
 
 export default function OpportunitesPage() {
   const [showForm, setShowForm] = useState(false);
-  const [activeDesign, setActiveDesign] = useState<string | null>(null);
-  const [styles, setStyles] = useState<Record<string, DesignStyle>>({});
   const [tab, setTab] = useState<'published' | 'mine'>('published');
   const [form, setForm] = useState<OpportunityPayload>(emptyForm);
   const [skillsText, setSkillsText] = useState('');
+  const [formError, setFormError] = useState('');
   const [replyFor, setReplyFor] = useState<OpportunityDoc | null>(null);
   const [viewOpportunity, setViewOpportunity] = useState<OpportunityDoc | null>(null);
   const [replyMessage, setReplyMessage] = useState('');
@@ -62,14 +59,28 @@ export default function OpportunitesPage() {
 
   const typeLabel = useMemo(() => new Map(OPPORTUNITY_TYPES.map(t => [t.value, t.label])), []);
 
-  const set = (key: keyof OpportunityPayload) => (value: string | boolean) => setForm(prev => ({ ...prev, [key]: value }));
+  const set = (key: keyof OpportunityPayload) => (value: string | boolean) => {
+    setFormError('');
+    setForm(prev => ({ ...prev, [key]: value }));
+  };
 
   const handleSubmit = () => {
+    const title = form.title.trim();
+    const description = form.description.trim();
+    if (!title || !description) {
+      setFormError('Le titre et la description sont obligatoires.');
+      return;
+    }
+    if (!form.contactEmail?.trim() && !form.contactPhone?.trim() && !form.contactUrl?.trim()) {
+      setFormError('Ajoutez au moins un moyen de contact : email, téléphone ou lien utile.');
+      return;
+    }
     const skills = skillsText.split(',').map(s => s.trim()).filter(Boolean);
-    submit.mutate({ ...form, skills }, {
+    submit.mutate({ ...form, title, description, skills }, {
       onSuccess: () => {
         setForm(emptyForm);
         setSkillsText('');
+        setFormError('');
         setShowForm(false);
         setTab('mine');
       },
@@ -149,16 +160,19 @@ export default function OpportunitesPage() {
           <div className="mb-4 flex items-center justify-between">
             <div>
               <p className="text-sm font-black text-neutral-900">Nouvelle opportunite</p>
-              <p className="text-xs text-neutral-500">Elle sera envoyee a validation avant publication.</p>
+              <p className="text-xs text-neutral-500">Elle sera envoyee a validation avant publication. Choisissez si elle doit rester reservee aux membres ou etre visible sur le site public.</p>
             </div>
             <button onClick={() => setShowForm(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-50"><X size={16} /></button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Titre *</span>
-              <DesignEditorField id="opportunity-title" label="Titre" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
-                {style => <RichTextEditor value={form.title} onChange={value => set('title')(value)} className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10" style={style} placeholder="Titre" multiline={false} />}
-              </DesignEditorField>
+              <input
+                value={form.title}
+                onChange={e => set('title')(e.target.value)}
+                placeholder="Ex. Stage communication digitale"
+                className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+              />
             </div>
             <label className="space-y-1.5">
               <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Type</span>
@@ -178,13 +192,58 @@ export default function OpportunitesPage() {
               <input type="checkbox" checked={!!form.remote} onChange={e => set('remote')(e.target.checked)} className="h-4 w-4 rounded border-neutral-300 text-emerald-600" />
               Possible a distance
             </label>
+            <div className="space-y-1.5 sm:col-span-2">
+              <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Visibilite *</span>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => set('visibility')('members')}
+                  className={`flex min-h-16 items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                    form.visibility === 'members'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
+                      : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-200'
+                  }`}
+                >
+                  <Lock size={16} className="shrink-0" />
+                  <span>
+                    <span className="block text-sm font-black">Membres uniquement</span>
+                    <span className="block text-xs font-semibold opacity-70">Visible dans l'espace membre apres validation.</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => set('visibility')('public')}
+                  className={`flex min-h-16 items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                    form.visibility === 'public'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
+                      : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-200'
+                  }`}
+                >
+                  <Globe2 size={16} className="shrink-0" />
+                  <span>
+                    <span className="block text-sm font-black">Public</span>
+                    <span className="block text-xs font-semibold opacity-70">Visible sur /opportunites apres validation admin.</span>
+                  </span>
+                </button>
+              </div>
+            </div>
             <label className="space-y-1.5 sm:col-span-2">
-              <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Description</span>
-              <DesignEditorField id="opportunity-description" label="Description" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
-                {style => <RichTextEditor value={form.description} onChange={value => set('description')(value)} className="min-h-[140px] w-full rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10" style={style} placeholder="Description" />}
-              </DesignEditorField>
+              <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Description *</span>
+              <textarea
+                value={form.description}
+                onChange={e => set('description')(e.target.value)}
+                rows={6}
+                placeholder="Decrivez l'opportunite, le profil recherche, les missions et les modalites de reponse."
+                className="min-h-[140px] w-full resize-y rounded-xl border border-neutral-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+              />
             </label>
           </div>
+          {formError && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              <AlertCircle size={15} className="mt-0.5 shrink-0" />
+              {formError}
+            </div>
+          )}
           <div className="mt-4 flex justify-end">
             <button onClick={handleSubmit} disabled={submit.isPending} className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50">
               <Send size={15} /> Soumettre

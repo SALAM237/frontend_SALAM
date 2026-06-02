@@ -55,6 +55,7 @@ export function useReviewPendingValidation() {
       qc.invalidateQueries({ queryKey: ['public-gallery'] });
       qc.invalidateQueries({ queryKey: ['activity-sector-proposals'] });
       qc.invalidateQueries({ queryKey: ['member-opportunities'] });
+      qc.invalidateQueries({ queryKey: ['public-opportunities'] });
       qc.invalidateQueries({ queryKey: ['admin-opportunities'] });
       toast.success((res as any).message ?? 'Validation mise à jour');
     },
