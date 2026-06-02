@@ -9,6 +9,7 @@ export type OpportunityStatus = 'draft' | 'pending' | 'published' | 'rejected' |
 export interface OpportunityDoc {
   _id: string;
   title: string;
+  slug?: string;
   type: OpportunityType;
   organization?: string;
   location?: string;
@@ -60,6 +61,19 @@ export function usePublicOpportunities() {
     queryFn: () => apiClient<{ items: OpportunityDoc[]; total: number }>('/api/v1/public/opportunities'),
     staleTime: 60_000,
   });
+}
+
+export function usePublicOpportunity(slug: string) {
+  return useQuery({
+    queryKey: ['public-opportunity', slug],
+    queryFn: () => apiClient<OpportunityDoc>(`/api/v1/public/opportunities/${slug}`),
+    enabled: !!slug,
+    staleTime: 60_000,
+  });
+}
+
+export function opportunityHref(item: Pick<OpportunityDoc, '_id' | 'slug'>) {
+  return `/opportunites/${item.slug || item._id}`;
 }
 
 export function useMemberOpportunities(status?: 'published' | 'mine') {

@@ -7,6 +7,7 @@ export interface ArticleDoc {
   _id: string;
   title: string;
   name?: string;
+  slug?: string;
   status: 'draft' | 'pending' | 'published';
   visibility?: 'public' | 'members';
   imageUrl?: string;
@@ -68,6 +69,10 @@ export function usePublicArticle(id: string) {
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
   });
+}
+
+export function articleHref(article: Pick<ArticleDoc, '_id' | 'slug'>) {
+  return `/actualites/${article.slug || article._id}`;
 }
 
 export function useSubmitMemberArticle() {

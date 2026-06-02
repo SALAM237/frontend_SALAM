@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Newspaper, Search, Loader2, Tag, Eye, X, Plus, PlusCircle, Trash2, ImagePlus } from 'lucide-react';
-import { usePublicArticles, ARTICLE_CATEGORIES, useSubmitMemberArticle, useUploadMemberArticleImage } from '@/lib/api/content';
+import { articleHref, usePublicArticles, ARTICLE_CATEGORIES, useSubmitMemberArticle, useUploadMemberArticleImage } from '@/lib/api/content';
 import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
 import { articleImage } from '@/lib/article-image';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
@@ -112,7 +112,7 @@ export default function MemberActualitesPage() {
                   </p>
                 </div>
                 <Link
-                  href={`/member/actualites/${n._id}`}
+                  href={articleHref(n).replace('/actualites/', '/member/actualites/')}
                   aria-label={`Voir ${n.title}`}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition-all hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
                 >

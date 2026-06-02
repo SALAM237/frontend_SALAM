@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, BriefcaseBusiness, CalendarClock, MapPin } from 'lucide-react';
-import { OPPORTUNITY_TYPES, usePublicOpportunities } from '@/lib/api/opportunities';
+import { OPPORTUNITY_TYPES, opportunityHref, usePublicOpportunities } from '@/lib/api/opportunities';
 import { useAuthStore } from '@/store/auth.store';
 import { RichText } from '@/components/ui/RichText';
 
@@ -28,8 +28,8 @@ export function OpportunityPreview() {
               Offres, partenariats, projets et appels a contribution partages par la communaute SALAM.
             </p>
           </div>
-          <Link href="/member/opportunites" className="group inline-flex items-center gap-2 whitespace-nowrap text-sm font-bold text-salam-green transition-all">
-            Repondre depuis l'espace membre
+          <Link href="/opportunites" className="group inline-flex items-center gap-2 whitespace-nowrap text-sm font-bold text-salam-green transition-all">
+            Voir toutes les opportunites
             <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
@@ -82,7 +82,7 @@ export function OpportunityPreview() {
                 {item.deadline && <p className="flex items-center gap-2"><CalendarClock size={13} className="text-amber-500" />Avant le {new Date(item.deadline).toLocaleDateString('fr-FR')}</p>}
               </div>
               <div className="mt-5 flex flex-wrap gap-2">
-                <Link href="/member/opportunites" className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-3.5 py-2 text-[12px] font-black text-emerald-700 transition hover:bg-emerald-50">
+                <Link href={opportunityHref(item)} className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-3.5 py-2 text-[12px] font-black text-emerald-700 transition hover:bg-emerald-50">
                   Voir opportunite
                   <ArrowRight size={12} />
                 </Link>
