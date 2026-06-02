@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AlertCircle, BriefcaseBusiness, CalendarDays, CheckCircle2, Eye, Globe2, Lock, Mail, MapPin, Phone, Plus, Send, Tag, X } from 'lucide-react';
-import { OPPORTUNITY_TYPES, useMemberOpportunities, useReplyOpportunity, useSubmitOpportunity, type OpportunityDoc, type OpportunityPayload, type OpportunityType } from '@/lib/api/opportunities';
+import { AlertCircle, BriefcaseBusiness, CalendarDays, CheckCircle2, Edit3, Eye, Globe2, Lock, Mail, MapPin, Phone, Plus, Send, Tag, X } from 'lucide-react';
+import { OPPORTUNITY_TYPES, useMemberOpportunities, useReplyOpportunity, useSubmitOpportunity, useUpdateOpportunity, type OpportunityDoc, type OpportunityPayload, type OpportunityType } from '@/lib/api/opportunities';
 import { formatFullName } from '@/lib/format-name';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { RichText } from '@/components/ui/RichText';
@@ -43,6 +43,7 @@ const emptyForm: OpportunityPayload = {
 export default function OpportunitesPage() {
   const [showForm, setShowForm] = useState(false);
   const [tab, setTab] = useState<'published' | 'mine'>('published');
+  const [editTarget, setEditTarget] = useState<OpportunityDoc | null>(null);
   const [form, setForm] = useState<OpportunityPayload>(emptyForm);
   const [skillsText, setSkillsText] = useState('');
   const [formError, setFormError] = useState('');
@@ -53,6 +54,7 @@ export default function OpportunitesPage() {
   const published = useMemberOpportunities('published');
   const mine = useMemberOpportunities('mine');
   const submit = useSubmitOpportunity();
+  const update = useUpdateOpportunity();
   const reply = useReplyOpportunity();
   const items = tab === 'mine' ? mine.data?.data?.items ?? [] : published.data?.data?.items ?? [];
   const loading = tab === 'mine' ? mine.isLoading : published.isLoading;
@@ -62,6 +64,46 @@ export default function OpportunitesPage() {
   const set = (key: keyof OpportunityPayload) => (value: string | boolean) => {
     setFormError('');
     setForm(prev => ({ ...prev, [key]: value }));
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditTarget(null);
+    setForm(emptyForm);
+    setSkillsText('');
+    setFormError('');
+  };
+
+  const openCreateForm = () => {
+    setEditTarget(null);
+    setForm(emptyForm);
+    setSkillsText('');
+    setFormError('');
+    setShowForm(true);
+  };
+
+  const openEditForm = (item: OpportunityDoc) => {
+    if (item.status === 'published') return;
+    setEditTarget(item);
+    setForm({
+      title: item.title ?? '',
+      type: item.type,
+      organization: item.organization ?? '',
+      location: item.location ?? '',
+      remote: !!item.remote,
+      description: item.description ?? '',
+      skills: item.skills ?? [],
+      deadline: item.deadline ? item.deadline.slice(0, 10) : '',
+      contactName: item.contactName ?? '',
+      contactEmail: item.contactEmail ?? '',
+      contactPhone: item.contactPhone ?? '',
+      contactUrl: item.contactUrl ?? '',
+      visibility: item.visibility ?? 'members',
+    });
+    setSkillsText((item.skills ?? []).join(', '));
+    setFormError('');
+    setShowForm(true);
+    setTab('mine');
   };
 
   const handleSubmit = () => {
@@ -76,15 +118,18 @@ export default function OpportunitesPage() {
       return;
     }
     const skills = skillsText.split(',').map(s => s.trim()).filter(Boolean);
-    submit.mutate({ ...form, title, description, skills }, {
-      onSuccess: () => {
-        setForm(emptyForm);
-        setSkillsText('');
-        setFormError('');
-        setShowForm(false);
-        setTab('mine');
-      },
-    });
+    const payload = { ...form, title, description, skills };
+    const onSuccess = () => {
+      closeForm();
+      setTab('mine');
+    };
+
+    if (editTarget) {
+      update.mutate({ id: editTarget._id, payload }, { onSuccess });
+      return;
+    }
+
+    submit.mutate(payload, { onSuccess });
   };
 
   const handleReply = () => {
@@ -138,7 +183,7 @@ export default function OpportunitesPage() {
         </div>
         <button
           type="button"
-          onClick={() => setShowForm(true)}
+          onClick={openCreateForm}
           className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]"
         >
           <Plus size={16} /> Proposer une opportunite
@@ -159,10 +204,14 @@ export default function OpportunitesPage() {
         <div className="rounded-3xl border border-emerald-100 bg-white p-4 shadow-sm sm:p-5">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <p className="text-sm font-black text-neutral-900">Nouvelle opportunite</p>
-              <p className="text-xs text-neutral-500">Elle sera envoyee a validation avant publication. Choisissez si elle doit rester reservee aux membres ou etre visible sur le site public.</p>
+              <p className="text-sm font-black text-neutral-900">{editTarget ? 'Modifier l’opportunite' : 'Nouvelle opportunite'}</p>
+              <p className="text-xs text-neutral-500">
+                {editTarget
+                  ? 'La modification renvoie l’opportunite en validation avant publication.'
+                  : 'Elle sera envoyee a validation avant publication. Choisissez si elle doit rester reservee aux membres ou etre visible sur le site public.'}
+              </p>
             </div>
-            <button onClick={() => setShowForm(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-50"><X size={16} /></button>
+            <button onClick={closeForm} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-50"><X size={16} /></button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -245,8 +294,8 @@ export default function OpportunitesPage() {
             </div>
           )}
           <div className="mt-4 flex justify-end">
-            <button onClick={handleSubmit} disabled={submit.isPending} className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50">
-              <Send size={15} /> Soumettre
+            <button onClick={handleSubmit} disabled={submit.isPending || update.isPending} className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50">
+              <Send size={15} /> {editTarget ? 'Mettre a jour' : 'Soumettre'}
             </button>
           </div>
         </div>
@@ -276,6 +325,11 @@ export default function OpportunitesPage() {
                 <button onClick={() => openOpportunityDetail(item, 'view_button_click')} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" title="Visualiser">
                   <Eye size={14} />
                 </button>
+                {tab === 'mine' && item.status !== 'published' && (
+                  <button onClick={() => openEditForm(item)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-amber-200 text-amber-600 transition hover:bg-amber-50" title="Modifier">
+                    <Edit3 size={14} />
+                  </button>
+                )}
                 {tab === 'published' && (
                   <button onClick={() => openReplyModal(item, 'member_list_reply_button')} className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-emerald-200 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-50">
                     <Send size={13} /> Repondre

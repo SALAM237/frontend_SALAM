@@ -106,6 +106,27 @@ export function useSubmitOpportunity() {
   });
 }
 
+export function useUpdateOpportunity() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: OpportunityPayload }) =>
+      apiClient<OpportunityDoc>(`/api/v1/member/opportunities/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+        token: token ?? '',
+      }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['member-opportunities'] });
+      qc.invalidateQueries({ queryKey: ['public-opportunities'] });
+      qc.invalidateQueries({ queryKey: ['admin-pending-validations'] });
+      qc.invalidateQueries({ queryKey: ['admin-opportunities'] });
+      toast.success((res as any).message ?? 'Opportunite mise a jour');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 export function useReplyOpportunity() {
   const token = useAuthStore(s => s.accessToken);
   return useMutation({
