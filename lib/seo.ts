@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
    GEO / MEO / AI Engine Optimization
    ───────────────────────────────────────── */
 
-export const SITE_URL      = 'https://www.association-salam.org';
+export const SITE_URL      = 'https://salam-cameroun.com';
 export const SITE_NAME     = 'SALAM';
 export const SITE_FULLNAME = 'Solidaire Associative des Lauréats du Maroc';
 export const SITE_EMAIL    = 'contact@salam-cameroun.com';
@@ -300,7 +300,7 @@ export const faqSchema = {
       name:    "Comment rejoindre l'association SALAM ??",
       acceptedAnswer: {
         '@type': 'Answer',
-        text:    "Pour rejoindre l'association SALAM, rendez-vous sur la page d'adhésion du site association-salam.org, remplissez le formulaire d'inscription et notre équipe vous contactera dans les 48h pour valider votre adhésion et vous accueillir dans la communauté.",
+        text:    "Pour rejoindre l'association SALAM, rendez-vous sur la page d'adhésion du site salam-cameroun.com, remplissez le formulaire d'inscription et notre équipe vous contactera dans les 48h pour valider votre adhésion et vous accueillir dans la communauté.",
       },
     },
     {

@@ -20,7 +20,7 @@ const SECURITY_HEADERS = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
-      "connect-src 'self' https://salam-cameroun.com https://www.salam-cameroun.com https://backendsalam-production.up.railway.app https://backend.salam-cameroun.com",
+      "connect-src 'self' https://salam-cameroun.com https://backendsalam-production.up.railway.app https://backend.salam-cameroun.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

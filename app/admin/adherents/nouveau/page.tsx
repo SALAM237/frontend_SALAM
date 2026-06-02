@@ -367,7 +367,7 @@ export default function NouveauAdherentPage() {
         <p className="mb-4 text-sm font-black text-neutral-900">Carte de membre générée</p>
         <div className="flex justify-center overflow-x-auto"><MemberCard member={cardData} /></div>
         <p className="mt-3 text-center text-xs text-neutral-400">
-          Le QR code renvoie vers <span className="font-mono text-emerald-600">association-salam.org/verify/{generatedId}</span>
+          Le QR code renvoie vers <span className="font-mono text-emerald-600">salam-cameroun.com/verify/{generatedId}</span>
         </p>
       </div>
       <div className="flex gap-3">

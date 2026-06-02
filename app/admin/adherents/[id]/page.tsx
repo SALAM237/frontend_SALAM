@@ -164,7 +164,7 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
               <MemberCard member={cardData} />
             </div>
             <p className="mt-3 text-center text-[10px] text-neutral-400">
-              QR → association-salam.org/verify/{member.memberId}
+              QR vers salam-cameroun.com/verify/{member.memberId}
             </p>
             <div className="mt-4 flex gap-2">
               <button className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:border-neutral-300">

@@ -106,10 +106,10 @@ export function Footer() {
             Paris, Île-de-France
           </span>
           <a
-            href="https://www.salam-cameroun.com"
+            href="https://salam-cameroun.com"
             className="ml-auto hidden items-center gap-1.5 text-white/35 hover:text-white transition-colors sm:flex"
           >
-            www.salam-cameroun.com <ExternalLink size={11} />
+            salam-cameroun.com <ExternalLink size={11} />
           </a>
         </div>
 

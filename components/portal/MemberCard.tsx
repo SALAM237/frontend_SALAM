@@ -29,7 +29,7 @@ function QRCode({ data, size = 72 }: { data: string; size?: number }) {
 }
 
 export function MemberCard({ member, printable = false }: { member: MemberCardData; printable?: boolean }) {
-  const verifyUrl = `https://www.association-salam.org/verify/${member.id}`;
+  const verifyUrl = `https://salam-cameroun.com/verify/${member.id}`;
 
   return (
     <div

@@ -67,7 +67,7 @@ export default function ParametresPage() {
             <Field label="Nom de l'association" value={assocName} onChange={e => setAssocName(e.target.value)} />
             <Field label="Email de contact"     value={email}     onChange={e => setEmail(e.target.value)}     type="email" />
           </div>
-          <Field label="URL du site" value="https://www.association-salam.org" onChange={() => {}} disabled />
+          <Field label="URL du site" value="https://salam-cameroun.com" onChange={() => {}} disabled />
         </Section>}
 
         {/* Notifications */}

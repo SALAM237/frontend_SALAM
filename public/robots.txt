@@ -1,20 +1,13 @@
 User-agent: *
 
-# Private — never index
+# Private - never index
 Disallow: /member/
 Disallow: /admin/
 Disallow: /choisir-espace
 Disallow: /auth/
 Disallow: /bureau-executif/connexion
-Disallow: /demo/admin/
+Disallow: /demo/
 Disallow: /api/
-
-# Public demo — allowed
-Allow: /demo/member/
-Allow: /demo/activites/
-Allow: /demo/actualites/
-Allow: /demo/galerie/
-Allow: /demo
 
 # Everything else is public
 Allow: /
