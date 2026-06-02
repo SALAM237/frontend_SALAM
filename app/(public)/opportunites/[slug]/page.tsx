@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, BriefcaseBusiness, CalendarClock, ChevronRight, ExternalLink, Loader2, Mail, MapPin, Phone, Tag } from 'lucide-react';
 import { OPPORTUNITY_TYPES, usePublicOpportunity } from '@/lib/api/opportunities';
 import { RichText } from '@/components/ui/RichText';
+import OpportunitySchema from '@/components/seo/OpportunitySchema';
 
 const TYPE_COLORS: Record<string, string> = {
   emploi: 'bg-emerald-100 text-emerald-700',
@@ -67,6 +68,16 @@ export default function OpportuniteDetailPage({ params }: { params: Promise<{ sl
 
           {!isLoading && item && (
             <article className="space-y-6">
+              <OpportunitySchema
+                title={item.title}
+                description={item.description}
+                slug={item.slug || slug}
+                publishedAt={item.publishedAt ?? item.createdAt}
+                validThrough={item.deadline}
+                organization={item.organization}
+                location={item.location}
+                remote={item.remote}
+              />
               <div className="aspect-[21/9] overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-emerald-500 via-teal-600 to-neutral-900" />
 
               <div className="space-y-3">

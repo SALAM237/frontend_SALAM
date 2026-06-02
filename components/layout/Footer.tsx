@@ -1,24 +1,19 @@
 ﻿import Link from 'next/link';
 import { Mail, MapPin, Globe, Share2, Video, X, ExternalLink } from 'lucide-react';
 import { SalamLogo } from '@/components/brand/SalamLogo';
+import { DON_NAV_ITEM, PUBLIC_NAV_ITEMS } from '@/lib/navigation';
 
 const NAV_COLS = [
   {
-    title: 'Association',
-    links: [
-      ['À propos',    '/a-propos'],
-      ['Nos valeurs', '/a-propos#valeurs'],
-      ["L'équipe",    '/bureau-executif'],
-      ['Contact',     '/contact'],
-    ],
+    title: 'Navigation rapide',
+    links: PUBLIC_NAV_ITEMS.map(item => [item.label, item.href] as const),
   },
   {
-    title: 'Communauté',
+    title: 'Soutenir',
     links: [
-      ['Activités',  '/activites'],
-      ['Galerie',    '/galerie'],
-      ['Actualités', '/actualites'],
-      ['Adhésion',   '/adhesion'],
+      [DON_NAV_ITEM.label, DON_NAV_ITEM.href],
+      ['Adhésion', '/adhesion'],
+      ['Mode démo', '/demo'],
     ],
   },
   {
@@ -26,7 +21,6 @@ const NAV_COLS = [
     links: [
       ['Mon espace',  '/member/dashboard'],
       ['Connexion',   '/auth/login'],
-      ['Adhésion',    '/adhesion'],
       ['Mode démo',   '/demo'],
     ],
   },

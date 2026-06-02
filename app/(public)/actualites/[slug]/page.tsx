@@ -6,6 +6,7 @@ import { ArrowLeft, Newspaper, ChevronRight, Calendar, Tag, Loader2 } from 'luci
 import { usePublicArticle, ARTICLE_CATEGORIES } from '@/lib/api/content';
 import { RichText } from '@/components/ui/RichText';
 import { articleImage } from '@/lib/article-image';
+import ArticleSchema from '@/components/seo/ArticleSchema';
 
 const CAT_COLORS: Record<string, string> = {
   general:     'bg-neutral-100 text-neutral-600',
@@ -68,6 +69,14 @@ export default function ActualiteDetailPage({ params }: { params: Promise<{ slug
 
           {!isLoading && article && (
             <article className="space-y-6">
+              <ArticleSchema
+                title={article.title}
+                description={article.data?.excerpt ?? article.data?.content ?? article.title}
+                slug={article.slug || slug}
+                image={articleImage(article) || undefined}
+                publishedAt={article.createdAt}
+                updatedAt={article.updatedAt}
+              />
               {/* Cover */}
               <div className="aspect-[21/9] overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-emerald-400 to-teal-600">
                 {articleImage(article) && (

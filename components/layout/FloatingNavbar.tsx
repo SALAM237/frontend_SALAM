@@ -9,18 +9,9 @@ import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { getPostLoginRedirect } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
 import { formatInitials, formatShortName } from '@/lib/format-name';
+import { DON_NAV_ITEM, PUBLIC_NAV_ITEMS } from '@/lib/navigation';
 
-const navItems = [
-  { label: 'Accueil', href: '/' },
-  { label: 'A propos', href: '/a-propos' },
-  { label: 'Missions', href: '/missions' },
-  { label: 'Bureau', href: '/bureau-executif' },
-  { label: 'Activites', href: '/activites' },
-  { label: 'Opportunites', href: '/opportunites' },
-  { label: 'Galerie', href: '/galerie' },
-  { label: 'Actualites', href: '/actualites' },
-  { label: 'Contact', href: '/contact' },
-];
+const navItems = PUBLIC_NAV_ITEMS;
 
 export function FloatingNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -129,10 +120,10 @@ export function FloatingNavbar() {
         </Link>
 
         <Link
-          href="/demo"
+          href={DON_NAV_ITEM.href}
           className="absolute left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[0.68rem] font-bold text-white/90 backdrop-blur-sm transition hover:bg-white/20 lg:hidden"
         >
-          <Sparkles className="h-2.5 w-2.5" /> Demo
+          {DON_NAV_ITEM.label}
         </Link>
 
         <nav className="hidden items-center gap-5 text-[0.92rem] font-semibold text-white/80 lg:flex" aria-label="Navigation principale">
@@ -151,6 +142,9 @@ export function FloatingNavbar() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
+          <Link href={DON_NAV_ITEM.href} className="hidden items-center gap-1.5 rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-xl shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-red-500 lg:inline-flex">
+            {DON_NAV_ITEM.label}
+          </Link>
           <Link href="/demo" className="hidden items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-bold text-white/90 backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/20 lg:inline-flex">
             <Sparkles className="h-3.5 w-3.5" /> Demo
           </Link>
@@ -218,6 +212,13 @@ export function FloatingNavbar() {
 
             <div className="px-4 pb-4 pt-1 flex flex-col gap-2">
               <div className="h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+              <Link
+                href={DON_NAV_ITEM.href}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-red-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-red-950/30 transition hover:bg-red-500"
+                onClick={() => setMenuOpen(false)}
+              >
+                {DON_NAV_ITEM.label}
+              </Link>
               <Link
                 href="/demo"
                 className="flex w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-bold text-white/90 backdrop-blur-sm transition hover:bg-white/20"

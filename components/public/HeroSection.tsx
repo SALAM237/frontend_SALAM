@@ -8,6 +8,7 @@ import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { getPostLoginRedirect } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
 import { formatInitials, formatShortName } from '@/lib/format-name';
+import { DON_NAV_ITEM, PUBLIC_NAV_ITEMS } from '@/lib/navigation';
 
 type IconProps = {
   className?: string;
@@ -76,16 +77,7 @@ function SparklesIcon({ className = "" }: IconProps) {
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-const navItems = [
-  { label: "Accueil",      href: "/" },
-  { label: "À propos",     href: "/a-propos" },
-  { label: "Missions",     href: "/missions" },
-  { label: "Bureau",       href: "/bureau-executif" },
-  { label: "Activités",    href: "/activites" },
-  { label: "Galerie",      href: "/galerie" },
-  { label: "Actualités",   href: "/actualites" },
-  { label: "Contact",      href: "/contact" },
-];
+const navItems = PUBLIC_NAV_ITEMS;
 
 export function HeroSection() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -220,12 +212,12 @@ export function HeroSection() {
             </div>
           </Link>
 
-          {/* Demo button — centered on mobile */}
+          {/* Donate button — centered on mobile */}
           <Link
-            href="/demo"
+            href={DON_NAV_ITEM.href}
             className="absolute left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[0.68rem] font-bold text-white/90 backdrop-blur-sm transition hover:bg-white/20 lg:hidden"
           >
-            <SparklesIcon className="h-2.5 w-2.5" /> Démo
+            {DON_NAV_ITEM.label}
           </Link>
 
           <nav className="hidden items-center gap-5 text-[0.92rem] font-semibold text-white/80 lg:flex" aria-label="Navigation principale">
@@ -241,6 +233,9 @@ export function HeroSection() {
           </nav>
 
           <div className="flex shrink-0 items-center gap-2">
+            <Link href={DON_NAV_ITEM.href} className="hidden items-center gap-1.5 rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-xl shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-red-500 lg:inline-flex">
+              {DON_NAV_ITEM.label}
+            </Link>
             {/* Desktop: Démo */}
             <Link href="/demo" className="hidden items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-bold text-white/90 backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/20 lg:inline-flex">
               <SparklesIcon className="h-3.5 w-3.5" /> Démo
@@ -311,6 +306,13 @@ export function HeroSection() {
               {/* Séparateur + CTAs */}
               <div className="px-4 pb-4 pt-1 flex flex-col gap-2">
                 <div className="h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+                <Link
+                  href={DON_NAV_ITEM.href}
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-red-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-red-950/30 transition hover:bg-red-500"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {DON_NAV_ITEM.label}
+                </Link>
                 <Link
                   href="/demo"
                   className="flex w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-bold text-white/90 backdrop-blur-sm transition hover:bg-white/20"
@@ -412,13 +414,13 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.1, delay: 3.1, ease: EASE }}
-            className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:items-stretch lg:mt-6 lg:gap-3 lg:justify-start"
+            className="mt-4 flex flex-row flex-wrap items-center justify-center gap-2 lg:mt-6 lg:justify-start lg:gap-3"
           >
-            <Link href="/adhesion" className="inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2 text-[0.75rem] font-extrabold text-white shadow-2xl shadow-emerald-950/35 transition hover:-translate-y-0.5 hover:from-red-400 hover:to-red-400 lg:gap-2 lg:px-5 lg:py-2.5 lg:text-[0.92rem]">
-              Devenir membre <ArrowUpRightIcon className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
+            <Link href="/don" className="inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2 text-[0.75rem] font-extrabold text-white shadow-2xl shadow-emerald-950/35 transition hover:-translate-y-0.5 hover:from-red-400 hover:to-red-400 lg:gap-2 lg:px-5 lg:py-2.5 lg:text-[0.92rem]">
+              Faire un don <HeartHandshakeIcon className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
             </Link>
-            <Link href="/activites" className="inline-flex items-center justify-center gap-1.5 rounded-full border border-white/25 bg-white/[0.14] px-4 py-2 text-[0.75rem] font-extrabold text-white shadow-xl shadow-black/20 backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-red-400 hover:border-red-400 lg:gap-2 lg:px-5 lg:py-2.5 lg:text-[0.92rem]">
-              Voir les activités <CalendarIcon className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
+            <Link href="#opportunites" className="inline-flex items-center justify-center gap-1.5 rounded-full border border-white/25 bg-white/[0.14] px-4 py-2 text-[0.75rem] font-extrabold text-white shadow-xl shadow-black/20 backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-red-400 hover:border-red-400 lg:gap-2 lg:px-5 lg:py-2.5 lg:text-[0.92rem]">
+              Opportunités <ArrowUpRightIcon className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
             </Link>
           </motion.div>
 

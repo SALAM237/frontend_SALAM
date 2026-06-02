@@ -8,17 +8,9 @@ import { SalamLogo } from '@/components/brand/SalamLogo';
 import { useAuthStore } from '@/store/auth.store';
 import { getPostLoginRedirect } from '@/lib/auth/roles';
 import { formatInitials, formatShortName } from '@/lib/format-name';
+import { DON_NAV_ITEM, PUBLIC_NAV_ITEMS } from '@/lib/navigation';
 
-const NAV = [
-  { label: 'Missions',   href: '/missions' },
-  { label: 'Bureau',     href: '/bureau-executif' },
-  { label: 'À propos',   href: '/a-propos' },
-  { label: 'Activités',  href: '/activites' },
-  { label: 'Galerie',    href: '/galerie' },
-  { label: 'Actualités', href: '/actualites' },
-  { label: 'Adhésion',   href: '/adhesion' },
-  { label: 'Contact',    href: '/contact' },
-];
+const NAV = PUBLIC_NAV_ITEMS;
 
 export function Header() {
   const [open,     setOpen]     = useState(false);
@@ -90,6 +82,12 @@ export function Header() {
 
           {/* ── Desktop CTAs ── */}
           <div className="hidden items-center gap-2 lg:flex">
+            <Link
+              href={DON_NAV_ITEM.href}
+              className="rounded-full bg-red-600 px-4 py-2.5 text-[13px] font-bold text-white shadow-sm shadow-red-900/15 transition-colors hover:bg-red-700"
+            >
+              {DON_NAV_ITEM.label}
+            </Link>
             <Link
               href="/demo"
               className="rounded-full border border-neutral-200 px-4 py-2 text-[13px] font-semibold text-neutral-600 transition-colors hover:border-salam-green hover:text-salam-green"
@@ -171,14 +169,17 @@ export function Header() {
                     </motion.div>
                   );
                 })}
-                <div className="mt-3 flex gap-2 border-t border-neutral-100 pt-4">
-                  <Link href="/demo" className="flex-1 rounded-xl border border-neutral-200 py-3 text-center text-sm font-semibold text-neutral-600">Démo</Link>
+                <div className="mt-3 grid gap-2 border-t border-neutral-100 pt-4 sm:grid-cols-3">
+                  <Link href={DON_NAV_ITEM.href} className="rounded-xl bg-red-600 py-3 text-center text-sm font-bold text-white">
+                    {DON_NAV_ITEM.label}
+                  </Link>
+                  <Link href="/demo" className="rounded-xl border border-neutral-200 py-3 text-center text-sm font-semibold text-neutral-600">Démo</Link>
                   {user ? (
-                    <Link href={userSpace} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-salam-green py-3 text-sm font-bold text-white">
+                    <Link href={userSpace} className="flex items-center justify-center gap-1.5 rounded-xl bg-salam-green py-3 text-sm font-bold text-white">
                       <LayoutGrid size={14} /> Mon espace
                     </Link>
                   ) : (
-                    <Link href="/auth/login" className="flex-1 rounded-xl bg-salam-green py-3 text-center text-sm font-bold text-white">Connexion</Link>
+                    <Link href="/auth/login" className="rounded-xl bg-salam-green py-3 text-center text-sm font-bold text-white">Connexion</Link>
                   )}
                 </div>
               </nav>

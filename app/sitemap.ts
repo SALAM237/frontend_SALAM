@@ -1,29 +1,7 @@
 import type { MetadataRoute } from 'next';
-import { SITE_URL } from '@/lib/seo';
+import { SEO_SITEMAP_ROUTES, SITE_URL } from '@/lib/seo';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-
-const publicRoutes = [
-  '',
-  '/a-propos',
-  '/activites',
-  '/actualites',
-  '/adhesion',
-  '/antennes',
-  '/bureau-executif',
-  '/commissions',
-  '/conditions',
-  '/confidentialite',
-  '/conseil-des-sages',
-  '/contact',
-  '/cookies',
-  '/don',
-  '/galerie',
-  '/mentions-legales',
-  '/missions',
-  '/mot-du-president',
-  '/opportunites',
-];
 
 type ApiResponse<T> = {
   success: boolean;
@@ -71,11 +49,11 @@ function dateOrNow(value: string | undefined, now: Date) {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const staticUrls: MetadataRoute.Sitemap = publicRoutes.map(route => ({
-    url: `${SITE_URL}${route}`,
+  const staticUrls: MetadataRoute.Sitemap = SEO_SITEMAP_ROUTES.map(route => ({
+    url: `${SITE_URL}${route.path}`,
     lastModified: now,
-    changeFrequency: route === '' ? 'weekly' as const : 'monthly' as const,
-    priority: route === '' ? 1 : route === '/adhesion' || route === '/don' || route === '/contact' ? 0.9 : 0.7,
+    changeFrequency: route.changeFrequency,
+    priority: route.priority,
   }));
 
   const [articlesRes, activitiesRes, opportunitiesRes] = await Promise.all([
@@ -84,26 +62,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     fetchJson<ApiResponse<{ items: OpportunityItem[] }>>('/api/v1/public/opportunities'),
   ]);
 
-  const articleUrls = (articlesRes?.data ?? []).map(item => ({
-    url: `${SITE_URL}/actualites/${item.slug || item._id}`,
-    lastModified: dateOrNow(item.updatedAt ?? item.createdAt, now),
-    changeFrequency: 'monthly' as const,
-    priority: 0.75,
-  }));
+  const articleUrls: MetadataRoute.Sitemap = (articlesRes?.data ?? [])
+    .filter(item => item.slug || item._id)
+    .map(item => ({
+      url: `${SITE_URL}/actualites/${item.slug || item._id}`,
+      lastModified: dateOrNow(item.updatedAt ?? item.createdAt, now),
+      changeFrequency: 'daily',
+      priority: 0.85,
+    }));
 
-  const activityUrls = (activitiesRes?.data?.activities ?? []).map(item => ({
-    url: `${SITE_URL}/activites/${item.slug}`,
-    lastModified: dateOrNow(item.updatedAt ?? item.startDate ?? item.createdAt, now),
-    changeFrequency: 'monthly' as const,
-    priority: 0.75,
-  }));
+  const activityUrls: MetadataRoute.Sitemap = (activitiesRes?.data?.activities ?? [])
+    .filter(item => item.slug)
+    .map(item => ({
+      url: `${SITE_URL}/activites/${item.slug}`,
+      lastModified: dateOrNow(item.updatedAt ?? item.startDate ?? item.createdAt, now),
+      changeFrequency: 'daily',
+      priority: 0.85,
+    }));
 
-  const opportunityUrls = (opportunitiesRes?.data?.items ?? []).map(item => ({
-    url: `${SITE_URL}/opportunites/${item.slug || item._id}`,
-    lastModified: dateOrNow(item.updatedAt ?? item.publishedAt ?? item.createdAt, now),
-    changeFrequency: 'weekly' as const,
-    priority: 0.75,
-  }));
+  const opportunityUrls: MetadataRoute.Sitemap = (opportunitiesRes?.data?.items ?? [])
+    .filter(item => item.slug || item._id)
+    .map(item => ({
+      url: `${SITE_URL}/opportunites/${item.slug || item._id}`,
+      lastModified: dateOrNow(item.updatedAt ?? item.publishedAt ?? item.createdAt, now),
+      changeFrequency: 'daily',
+      priority: 0.85,
+    }));
 
   return [...staticUrls, ...articleUrls, ...activityUrls, ...opportunityUrls];
 }

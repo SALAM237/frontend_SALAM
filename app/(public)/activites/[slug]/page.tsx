@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Calendar, MapPin, Users, Tag, Clock, ChevronRight, Loader2 } from 'lucide-react';
 import { usePublicActivity, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
 import { RichText } from '@/components/ui/RichText';
+import EventSchema from '@/components/seo/EventSchema';
 
 const CAT_COLORS: Record<string, string> = {
   sport: 'bg-blue-100 text-blue-700', culture: 'bg-purple-100 text-purple-700',
@@ -78,6 +79,16 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ slug:
 
           {!isLoading && activity && (
             <article className="space-y-6">
+              {activity.startDate && (
+                <EventSchema
+                  title={activity.title}
+                  description={activity.description}
+                  slug={activity.slug}
+                  startDate={activity.startDate}
+                  endDate={activity.endDate}
+                  locationName={activity.location}
+                />
+              )}
               {/* Cover gradient */}
               <div className="aspect-[21/9] overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-emerald-400 to-teal-600" />
 

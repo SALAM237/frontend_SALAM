@@ -374,3 +374,37 @@ export const MEO_ENTITIES = [
   'réseau Alumni',
   'communauté camerounaise internationale',
 ] as const;
+
+export const SEO_PUBLIC_ROUTES = [
+  { path: '', label: 'Accueil', changeFrequency: 'weekly', priority: 1 },
+  { path: '/missions', label: 'Nos Missions', changeFrequency: 'monthly', priority: 0.9 },
+  { path: '/activites', label: 'Activités', changeFrequency: 'daily', priority: 0.95 },
+  { path: '/opportunites', label: 'Opportunités', changeFrequency: 'daily', priority: 0.95 },
+  { path: '/actualites', label: 'Actualités', changeFrequency: 'daily', priority: 0.95 },
+  { path: '/don', label: 'Faire un don', changeFrequency: 'monthly', priority: 0.9 },
+  { path: '/adhesion', label: 'Adhésion', changeFrequency: 'monthly', priority: 0.9 },
+  { path: '/a-propos', label: 'À propos', changeFrequency: 'monthly', priority: 0.8 },
+  { path: '/contact', label: 'Contact', changeFrequency: 'monthly', priority: 0.8 },
+  { path: '/antennes', label: 'Antennes', changeFrequency: 'monthly', priority: 0.7 },
+  { path: '/bureau-executif', label: 'Bureau exécutif', changeFrequency: 'monthly', priority: 0.7 },
+  { path: '/commissions', label: 'Commissions', changeFrequency: 'monthly', priority: 0.7 },
+  { path: '/conseil-des-sages', label: 'Conseil des sages', changeFrequency: 'monthly', priority: 0.7 },
+  { path: '/galerie', label: 'Galerie', changeFrequency: 'monthly', priority: 0.7 },
+  { path: '/mot-du-president', label: 'Mot du président', changeFrequency: 'monthly', priority: 0.7 },
+] as const;
+
+export const SEO_LEGAL_ROUTES = [
+  { path: '/conditions', label: 'Conditions générales', changeFrequency: 'yearly', priority: 0.3 },
+  { path: '/confidentialite', label: 'Politique de confidentialité', changeFrequency: 'yearly', priority: 0.3 },
+  { path: '/cookies', label: 'Politique cookies', changeFrequency: 'yearly', priority: 0.3 },
+  { path: '/mentions-legales', label: 'Mentions légales', changeFrequency: 'yearly', priority: 0.3 },
+] as const;
+
+export const SEO_SITEMAP_ROUTES = [
+  ...SEO_PUBLIC_ROUTES,
+  ...SEO_LEGAL_ROUTES,
+] as const;
+
+export const SEO_ROUTE_LABELS = Object.fromEntries(
+  SEO_SITEMAP_ROUTES.map(route => [route.path.replace(/^\//, ''), route.label]),
+) as Record<string, string>;

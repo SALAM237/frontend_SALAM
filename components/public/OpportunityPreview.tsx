@@ -16,7 +16,7 @@ export function OpportunityPreview() {
   const responseHref = accessToken ? '/member/opportunites' : '/auth/login';
 
   return (
-    <section className="bg-neutral-50/70">
+    <section id="opportunites" className="bg-neutral-50/70">
       <div className="container-salam section-salam">
         <div className="mb-[clamp(2rem,5vw,4rem)] flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-xl">
