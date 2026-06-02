@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "latest",
+    "@next/third-parties": "^16.2.7",
     "@sentry/nextjs": "^10.53.1",
     "@tanstack/react-query": "latest",
     "@tanstack/react-table": "latest",
