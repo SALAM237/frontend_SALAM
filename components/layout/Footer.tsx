@@ -115,15 +115,18 @@ export function Footer() {
           <p className="text-[12px] text-white/28">
             © {new Date().getFullYear()} Association SALAM Cameroun. Tous droits réservés.
           </p>
-          <nav className="flex gap-5 text-[12px]" aria-label="Liens légaux">
+          <nav className="flex flex-wrap gap-x-5 gap-y-2 text-[12px]" aria-label="Liens légaux">
             <Link href="/mentions-legales" className="text-white/28 hover:text-white/60 transition-colors">
               Mentions légales
             </Link>
+            <Link href="/cookies" className="text-white/28 hover:text-white/60 transition-colors">
+              Politique cookies
+            </Link>
             <Link href="/confidentialite" className="text-white/28 hover:text-white/60 transition-colors">
-              Confidentialité
+              Politique de confidentialité
             </Link>
             <Link href="/conditions" className="text-white/28 hover:text-white/60 transition-colors">
-              CGU
+              Conditions d'utilisation
             </Link>
           </nav>
         </div>

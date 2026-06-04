@@ -214,10 +214,10 @@ export function HeroSection() {
 
           {/* Donate button — centered on mobile */}
           <Link
-            href={DON_NAV_ITEM.href}
+            href="/demo"
             className="absolute left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[0.68rem] font-bold text-white/90 backdrop-blur-sm transition hover:bg-white/20 lg:hidden"
           >
-            {DON_NAV_ITEM.label}
+            <SparklesIcon className="h-3 w-3" /> Demo
           </Link>
 
           <nav className="hidden items-center gap-5 text-[0.92rem] font-semibold text-white/80 lg:flex" aria-label="Navigation principale">
