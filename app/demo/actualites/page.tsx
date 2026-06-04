@@ -9,7 +9,7 @@ const NEWS = [
   { id: 'n2', slug: 'forum-emploi-2026', title: 'Forum Emploi SALAM 2026 : 200 participants réunis', excerpt: 'La 5e édition du Forum Emploi a réuni employeurs et jeunes professionnels de la diaspora camerounaise.', category: 'reseau', date: '10 mai 2026', author: 'Commission Réseau' },
   { id: 'n3', slug: 'partenariat-minsup', title: 'Partenariat officiel avec le MINSUP', excerpt: 'SALAM renforce ses liens avec le Ministère de l\'Enseignement Supérieur pour accompagner les étudiants.', category: 'partenariat', date: '2 mai 2026', author: 'Présidente SALAM' },
   { id: 'n4', slug: 'bourse-excellence-2026', title: 'Bourse d\'excellence SALAM 2026 — Candidatures ouvertes', excerpt: 'Les dossiers de candidature pour la bourse d\'excellence SALAM sont disponibles jusqu\'au 30 juin.', category: 'etude', date: '25 avr 2026', author: 'Commission Études' },
-  { id: 'n5', slug: 'tournoi-sport-printemps', title: 'Tournoi sportif du printemps : résultats', excerpt: 'Le tournoi inter-antennes de football a rassemblé 8 équipes et plus de 120 joueurs à Paris.', category: 'sport', date: '18 avr 2026', author: 'Commission Sport' },
+  { id: 'n5', slug: 'tournoi-sport-printemps', title: 'Tournoi sportif du printemps : résultats', excerpt: 'Le tournoi inter-antennes de football a rassemblé 8 équipes et plus de 120 joueurs à Yaoundé.', category: 'sport', date: '18 avr 2026', author: 'Commission Sport' },
   { id: 'n6', slug: 'journee-integration', title: 'Journée d\'intégration des nouveaux membres', excerpt: 'Accueil chaleureux pour les 24 nouveaux membres ayant rejoint l\'association en avril 2026.', category: 'association', date: '12 avr 2026', author: 'Bureau SALAM' },
 ];
 

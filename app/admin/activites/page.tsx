@@ -116,7 +116,7 @@ function ActivityForm({
             <div className="space-y-1.5">
               <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Lieu</label>
               <DesignEditorField id="location" label="Lieu" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
-                {style => <input value={f.location} onChange={upd('location')} placeholder="Paris 12e" className={inp()} style={style} />}
+                {style => <input value={f.location} onChange={upd('location')} placeholder="Yaoundé" className={inp()} style={style} />}
               </DesignEditorField>
             </div>
             <div className="space-y-1.5">

@@ -242,14 +242,14 @@ export default function AdhesionPage() {
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-black uppercase tracking-widest text-neutral-400">Téléphone</label>
-                    <input value={form.phone} onChange={set('phone')} placeholder="+33 6 XX XX XX XX" className={inputCls} />
+                    <input value={form.phone} onChange={set('phone')} placeholder="+237 6 XX XX XX XX" className={inputCls} />
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-black uppercase tracking-widest text-neutral-400">Ville de résidence *</label>
-                    <input required value={form.city} onChange={set('city')} placeholder="Paris" className={inputCls} />
+                    <input required value={form.city} onChange={set('city')} placeholder="Yaoundé" className={inputCls} />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-black uppercase tracking-widest text-neutral-400">Profil *</label>

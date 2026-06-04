@@ -34,7 +34,7 @@ const SLIDES: Slide[] = [
     eyebrow:  'Association officielle',
     heading1: 'RÉSEAU',
     heading2: 'SOLIDAIRE',
-    body:     'Unir, accompagner et faire grandir la communauté camerounaise et marocaine en France.',
+    body:     'Unir, accompagner et faire grandir la communauté camerounaise et marocaine depuis Yaoundé - Cameroun.',
     glow:     '#0B8F3A',
     stroke:   '#0B8F3A',
     panel:    'stats',

@@ -195,7 +195,7 @@ export default function ContactPage() {
                 <div className="flex flex-col gap-4">
                   {[
                     { Icon: Mail,  label: 'Email officiel',   value: 'contact@salam-cameroun.com', href: 'mailto:contact@salam-cameroun.com' },
-                    { Icon: MapPin, label: 'Localisation',    value: 'Paris, Île-de-France',       href: undefined },
+                    { Icon: MapPin, label: 'Localisation',    value: 'Yaoundé - Cameroun',       href: undefined },
                     { Icon: Clock,  label: 'Délai de réponse', value: 'Sous 48h ouvrées',          href: undefined },
                   ].map(({ Icon, label, value, href }) => (
                     <div key={label} className="flex items-start gap-3">

@@ -7,11 +7,11 @@ import { PageHero } from '@/components/public/PageHero';
 
 export const metadata: Metadata = {
   title: 'Antennes SALAM',
-  description: "Les antennes locales de l'association SALAM Cameroun en France et au Maroc.",
+  description: "Les antennes locales de l'association SALAM Cameroun au Cameroun et au Maroc.",
 };
 
 const ANTENNES_PREVUES = [
-  { ville: 'Paris', region: 'Île-de-France', statut: 'Siège social', color: 'border-emerald-500 bg-emerald-50', badge: 'bg-emerald-600 text-white' },
+  { ville: 'Yaoundé', region: 'Cameroun', statut: 'Siège social', color: 'border-emerald-500 bg-emerald-50', badge: 'bg-emerald-600 text-white' },
   { ville: 'Casablanca', region: 'Maroc', statut: 'Antenne principale', color: 'border-red-400 bg-red-50', badge: 'bg-red-500 text-white' },
   { ville: 'Rabat', region: 'Maroc', statut: 'Antenne', color: 'border-neutral-300 bg-neutral-50', badge: 'bg-neutral-600 text-white' },
   { ville: 'Lyon', region: 'Auvergne-Rhône-Alpes', statut: 'Antenne', color: 'border-neutral-300 bg-neutral-50', badge: 'bg-neutral-600 text-white' },
@@ -26,7 +26,7 @@ export default function AntennesPage() {
         title="locales SALAM"
         accentWord="Antennes"
         accentPosition="start"
-        subtitle="SALAM est présente dans plusieurs villes en France et au Maroc pour accompagner les étudiants camerounais au plus près."
+        subtitle="SALAM est présente dans plusieurs villes au Cameroun et au Maroc pour accompagner les étudiants camerounais au plus près."
         breadcrumbs={[{ label: 'Antennes' }]}
       />
 

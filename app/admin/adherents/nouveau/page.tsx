@@ -38,7 +38,7 @@ type MappedRow = {
 
 /* ─── Constants ─────────────────────────────────────────── */
 const ROLES    = ['Membre actif', 'Étudiant', 'Alumni', 'Bureau', 'Conseil des sages'];
-const ANTENNES = ['Paris', 'Lyon', 'Bordeaux', 'Yaoundé', 'Douala', 'Casablanca', 'Rabat', 'Autre'];
+const ANTENNES = ['Yaoundé', 'Douala', 'Bafoussam', 'Garoua', 'Maroua', 'Casablanca', 'Rabat', 'Autre'];
 
 /* ─── Helpers ───────────────────────────────────────────── */
 function generateId() {
@@ -136,7 +136,7 @@ export default function NouveauAdherentPage() {
   const [generatedId]       = useState(generateId);
   const [form, setForm] = useState<FormState>({
     gender: '', firstName: '', lastName: '', email: '', phone: '',
-    city: '', country: 'Cameroun', role: 'Membre actif', antenne: 'Paris', motivation: '',
+    city: '', country: 'Cameroun', role: 'Membre actif', antenne: 'Yaoundé', motivation: '',
     promotionYear: '',
   });
   const createMember = useCreateMember();
@@ -506,9 +506,9 @@ export default function NouveauAdherentPage() {
               <Field label="Prénom *"         value={form.firstName}    onChange={set('firstName')}    placeholder="Jean"              required />
               <Field label="Nom *"            value={form.lastName}     onChange={set('lastName')}     placeholder="Kamga"             required />
               <Field label="Email *"          value={form.email}        onChange={set('email')}        placeholder="jean@email.com"    type="email" required />
-              <Field label="Téléphone"        value={form.phone}        onChange={set('phone')}        placeholder="+33 6 00 00 00 00" />
+              <Field label="Téléphone"        value={form.phone}        onChange={set('phone')}        placeholder="+237 6 00 00 00 00" />
               <Field label="Promotionnaire *" value={form.promotionYear} onChange={set('promotionYear')} placeholder={String(new Date().getFullYear())} type="number" required />
-              <Field label="Ville"            value={form.city}         onChange={set('city')}         placeholder="Paris" />
+              <Field label="Ville"            value={form.city}         onChange={set('city')}         placeholder="Yaoundé" />
               <Field label="Pays"             value={form.country}      onChange={set('country')}      placeholder="Cameroun" />
             </div>
           </div>

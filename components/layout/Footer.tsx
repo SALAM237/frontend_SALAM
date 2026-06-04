@@ -6,7 +6,10 @@ import { DON_NAV_ITEM, PUBLIC_NAV_ITEMS } from '@/lib/navigation';
 const NAV_COLS = [
   {
     title: 'Navigation rapide',
-    links: PUBLIC_NAV_ITEMS.map(item => [item.label, item.href] as const),
+    links: [
+      ...PUBLIC_NAV_ITEMS.map(item => [item.label, item.href] as const),
+      ['Bureau exécutif', '/bureau-executif'] as const,
+    ],
   },
   {
     title: 'Soutenir',
@@ -97,7 +100,7 @@ export function Footer() {
           </span>
           <span className="flex items-center gap-2">
             <MapPin size={13} className="shrink-0" />
-            Paris, Île-de-France
+            Yaoundé - Cameroun
           </span>
           <a
             href="https://salam-cameroun.com"

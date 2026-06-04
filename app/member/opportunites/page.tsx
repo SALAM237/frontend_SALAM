@@ -321,13 +321,13 @@ export default function OpportunitesPage() {
                 <h2 className="mt-2 text-lg font-black leading-tight text-neutral-900"><RichText value={item.title} /></h2>
                 <p className="mt-1 text-sm leading-6 text-neutral-600"><RichText value={item.description} /></p>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <button onClick={() => openOpportunityDetail(item, 'view_button_click')} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" title="Visualiser">
                   <Eye size={14} />
                 </button>
                 {tab === 'mine' && item.status !== 'published' && (
-                  <button onClick={() => openEditForm(item)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-amber-200 text-amber-600 transition hover:bg-amber-50" title="Modifier">
-                    <Edit3 size={14} />
+                  <button onClick={() => openEditForm(item)} className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 text-xs font-black text-amber-700 transition hover:border-amber-300 hover:bg-amber-100" title="Modifier">
+                    <Edit3 size={14} /> Modifier
                   </button>
                 )}
                 {tab === 'published' && (
@@ -344,6 +344,7 @@ export default function OpportunitesPage() {
               {item.contactEmail && <Meta icon={Mail}>{item.contactEmail}</Meta>}
               {item.contactPhone && <Meta icon={Phone}>{item.contactPhone}</Meta>}
               {item.submittedBy && <Meta icon={CheckCircle2}>{formatFullName(item.submittedBy.firstName, item.submittedBy.lastName)}</Meta>}
+              {tab === 'mine' && item.status !== 'published' && <Meta icon={Edit3}>Modifiable avant publication</Meta>}
             </div>
             {!!item.skills?.length && (
               <div className="mt-3 flex flex-wrap gap-1.5">

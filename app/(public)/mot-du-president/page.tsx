@@ -48,7 +48,7 @@ export default function MotDuPresidentPage() {
                   Chers amis, chers membres, chers sympathisants,
                 </p>
                 <p className="text-[clamp(0.9rem,1.2vw,1rem)] leading-[1.9] text-neutral-600">
-                  C'est avec une immense fierté et une profonde gratitude que je prends la parole en tant que présidente de l'association SALAM Cameroun. Notre association est bien plus qu'un simple réseau : c'est une famille, un foyer pour chaque étudiant camerounais qui choisit de construire son avenir au Maroc ou en France.
+                  C'est avec une immense fierté et une profonde gratitude que je prends la parole en tant que présidente de l'association SALAM Cameroun. Notre association est bien plus qu'un simple réseau : c'est une famille, un foyer pour chaque étudiant camerounais qui choisit de construire son avenir au Maroc ou au Cameroun.
                 </p>
                 <p className="text-[clamp(0.9rem,1.2vw,1rem)] leading-[1.9] text-neutral-600">
                   Depuis notre création, nous avons accompagné des centaines d'étudiants dans leur parcours : de la préparation de leurs dossiers d'admission jusqu'à leur insertion socioprofessionnelle au Cameroun. Chaque réussite est la nôtre. Chaque étudiant qui trouve sa voie est la preuve que notre mission a du sens.

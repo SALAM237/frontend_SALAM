@@ -27,13 +27,13 @@ export function NewsPreview() {
         </div>
 
         {isLoading && (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map(i => <div key={i} className="h-72 animate-pulse rounded-[1.5rem] bg-white shadow-sm" />)}
+          <div className="flex snap-x gap-5 overflow-x-auto scroll-smooth pb-3 [-ms-overflow-style:none] [scrollbar-width:none] lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
+            {[1, 2, 3].map(i => <div key={i} className="h-72 min-w-[84%] snap-start animate-pulse rounded-[1.5rem] bg-white shadow-sm sm:min-w-[48%] lg:min-w-0" />)}
           </div>
         )}
 
         {!isLoading && articles.length > 0 && (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex snap-x gap-5 overflow-x-auto scroll-smooth pb-3 [-ms-overflow-style:none] [scrollbar-width:none] lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
             {articles.map((article: any) => {
               const image = articleImage(article);
               const category = article.data?.category;
@@ -49,7 +49,7 @@ export function NewsPreview() {
                     source: 'home_preview',
                     action: 'card_click',
                   })}
-                  className="group overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
+                  className="group min-w-[84%] snap-start overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md sm:min-w-[48%] lg:min-w-0"
                 >
                   <div className="aspect-[16/10] bg-gradient-to-br from-emerald-100 to-emerald-50">
                     {image ? (
