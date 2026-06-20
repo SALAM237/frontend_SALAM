@@ -74,7 +74,7 @@ export default function AdminAdherentsPage() {
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
 
   const { data, isLoading }  = useAdminMembers({ status: filter, search, limit: 100 });
-  const { data: cardRequestsData } = useMemberCardChangeRequests('pending');
+  const { data: cardRequestsData, isError: cardRequestsError } = useMemberCardChangeRequests('pending');
   const hardDelete           = useHardDeleteMember();
   const resendInvitation     = useResendInvitation();
   const pendingCardRequests = cardRequestsData?.data?.pending ?? 0;
@@ -156,7 +156,7 @@ export default function AdminAdherentsPage() {
           >
             <ShieldCheck size={14} /> Modifications carte
             <span className="absolute -right-1.5 -top-2 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-black text-white ring-2 ring-white">
-              {pendingCardRequests}
+              {cardRequestsError ? '!' : pendingCardRequests}
             </span>
           </button>
           <Link href="/admin/cartes" className="inline-flex h-9 items-center gap-2 rounded-full border border-yellow-300 bg-yellow-200 px-4 text-sm font-semibold text-yellow-800 transition-all hover:bg-yellow-300">
@@ -494,7 +494,7 @@ export default function AdminAdherentsPage() {
 }
 
 function CardChangeRequestsModal({ onClose }: { onClose: () => void }) {
-  const { data, isLoading } = useMemberCardChangeRequests('pending');
+  const { data, isLoading, isError, error } = useMemberCardChangeRequests('pending');
   const review = useReviewMemberCardChangeRequest();
   const requests = data?.data?.data ?? [];
 
@@ -508,7 +508,7 @@ function CardChangeRequestsModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Validation admin</p>
-            <h2 className="text-lg font-black text-neutral-900">Modifications de carte membre</h2>
+            <h2 className="text-lg font-black text-neutral-900">Valider carte modifié</h2>
           </div>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
             <XCircle size={16} />
@@ -521,13 +521,18 @@ function CardChangeRequestsModal({ onClose }: { onClose: () => void }) {
               <Loader2 size={22} className="animate-spin text-emerald-600" />
             </div>
           )}
-          {!isLoading && requests.length === 0 && (
+          {!isLoading && isError && (
+            <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {error instanceof Error ? error.message : 'Impossible de charger les demandes.'}
+            </div>
+          )}
+          {!isLoading && !isError && requests.length === 0 && (
             <div className="py-12 text-center">
               <ShieldCheck size={32} className="mx-auto mb-3 text-neutral-200" />
               <p className="text-sm font-semibold text-neutral-400">Aucune modification en attente.</p>
             </div>
           )}
-          {!isLoading && requests.length > 0 && (
+          {!isLoading && !isError && requests.length > 0 && (
             <div className="space-y-3">
               {requests.map(request => {
                 const member = request.userId;

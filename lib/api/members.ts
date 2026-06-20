@@ -372,6 +372,23 @@ export function useResendInvitation() {
 
 /* ── Member self-service ──────────────────────────────────── */
 
+export function useSubmitMemberCardChangeRequest() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { gender: 'homme' | 'femme'; promotionYear: number }) =>
+      apiClient('/api/v1/member/profile/card-change-request', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        token: token ?? '',
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['member-card-change-requests'] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 export function useUpdateProfile() {
   const token = useAuthStore(s => s.accessToken);
   const qc = useQueryClient();
@@ -382,9 +399,8 @@ export function useUpdateProfile() {
         body: JSON.stringify(payload),
         token: token ?? '',
       }),
-    onSuccess: res => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['member-profile'] });
-      toast.success((res as any).message ?? 'Profil mis à jour');
     },
     onError: (err: Error) => toast.error(err.message),
   });

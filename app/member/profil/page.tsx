@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import {
   Briefcase,
   Calendar,
@@ -18,7 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
-import { useChangeMemberPassword, useSubmitActivitySectorProposal, useUpdateProfile } from '@/lib/api/members';
+import { useChangeMemberPassword, useSubmitActivitySectorProposal, useSubmitMemberCardChangeRequest, useUpdateProfile } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { assetUrl } from '@/lib/assets';
@@ -113,6 +114,7 @@ export default function ProfilPage() {
   const [saved, setSaved] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const updateProfile = useUpdateProfile();
+  const cardChangeRequest = useSubmitMemberCardChangeRequest();
   const sectorProposal = useSubmitActivitySectorProposal();
 
   useEffect(() => {
@@ -144,10 +146,19 @@ export default function ProfilPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => setForm(prev => ({ ...prev, [key]: e.target.value }));
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile.mutate(
-      {
+    const sensitiveChanged =
+      form.gender !== (user?.gender ?? '')
+      || Number(form.promotionYear || 0) !== Number(user?.promotionYear || 0);
+
+    if (sensitiveChanged && !['homme', 'femme'].includes(form.gender)) {
+      toast.error('Sélectionnez une civilité valide');
+      return;
+    }
+
+    try {
+      const res: any = await updateProfile.mutateAsync({
         firstName: form.firstName,
         lastName: form.lastName,
         phone: form.phone || undefined,
@@ -156,7 +167,6 @@ export default function ProfilPage() {
         residenceCity: form.residenceCity || undefined,
         antenne: form.antenne || undefined,
         birthDate: form.birthDate || undefined,
-        promotionYear: form.promotionYear ? Number(form.promotionYear) : undefined,
         activitySector: form.activitySector || undefined,
         activitySectorProposal: form.activitySector === 'Autre' ? form.activitySectorProposal || undefined : undefined,
         recoveryContact: form.recoveryContact || undefined,
@@ -164,22 +174,39 @@ export default function ProfilPage() {
         expertiseDomains: form.expertiseDomains,
         bio: form.bio || undefined,
         motivation: form.motivation || undefined,
-      },
-      {
-        onSuccess: (res: any) => {
-          patchUser(res?.data ?? {
-            firstName: form.firstName,
-            lastName: form.lastName,
-            phone: form.phone,
-          });
-          setSaved(true);
-          if (form.activitySector === 'Autre' && form.activitySectorProposal.trim()) {
-            sectorProposal.mutate({ label: form.activitySectorProposal.trim() });
-          }
-          setTimeout(() => setSaved(false), 2500);
-        },
-      },
-    );
+      });
+
+      patchUser(res?.data ?? {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phone: form.phone,
+      });
+
+      if (sensitiveChanged) {
+        await cardChangeRequest.mutateAsync({
+          gender: form.gender as 'homme' | 'femme',
+          promotionYear: Number(form.promotionYear),
+        });
+        toast.custom(() => (
+          <div className="w-full max-w-sm rounded-xl border border-amber-200 bg-white px-4 py-3 shadow-lg">
+            <p className="font-black text-neutral-900">Information sensible</p>
+            <p className="mt-1 text-sm leading-5 text-neutral-600">
+              La mise à jour sera faite après validation par un administrateur.
+            </p>
+          </div>
+        ));
+      } else {
+        toast.success('Profil mis à jour');
+      }
+
+      setSaved(true);
+      if (form.activitySector === 'Autre' && form.activitySectorProposal.trim()) {
+        sectorProposal.mutate({ label: form.activitySectorProposal.trim() });
+      }
+      setTimeout(() => setSaved(false), 2500);
+    } catch {
+      // Les mutations affichent le message d'erreur de l'API.
+    }
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -270,7 +297,7 @@ export default function ProfilPage() {
       <form onSubmit={handleSave} className="space-y-4">
         <Section title="Informations personnelles">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Select label="Civilite" value={form.gender} onChange={set('gender')} readOnly options={[['', 'Non renseignee'], ['homme', 'Monsieur'], ['femme', 'Madame']]} />
+            <Select label="Civilite" value={form.gender} onChange={set('gender')} options={[['', 'Non renseignee'], ['homme', 'Monsieur'], ['femme', 'Madame']]} />
             <div className="hidden sm:block" />
             <F icon={User} label="Prenom" value={form.firstName} onChange={set('firstName')} required />
             <F icon={User} label="Nom" value={form.lastName} onChange={set('lastName')} required />
@@ -326,7 +353,7 @@ export default function ProfilPage() {
 
         <button
           type="submit"
-          disabled={updateProfile.isPending}
+          disabled={updateProfile.isPending || cardChangeRequest.isPending}
           className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-black transition-all disabled:opacity-60 ${saved ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20'}`}
         >
           {saved ? <><CheckCircle2 size={15} /> Enregistre !</> : <><Save size={15} /> Enregistrer les modifications</>}

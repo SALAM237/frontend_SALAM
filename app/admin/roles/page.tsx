@@ -161,6 +161,7 @@ const MODULE_LABELS: Record<string, string> = {
   gallery: 'Galerie', content: 'Actualités', messages: 'Messages',
   adhesions: 'Adhésions', partners: 'Partenaires',
   opportunities: 'Opportunités', solidarity: 'Solidarité', settings: 'Paramètres',
+  chatbot: 'Chatbot', validations: 'Validations', cotisations: 'Cotisations', invoices: 'Facturation',
 };
 
 /* ─── Create role modal ───────────────────────────────────── */
