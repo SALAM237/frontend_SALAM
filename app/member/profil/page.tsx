@@ -22,6 +22,7 @@ import { useChangeMemberPassword, useSubmitActivitySectorProposal, useUpdateProf
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { assetUrl } from '@/lib/assets';
+import { displayMemberNumber } from '@/lib/member-number';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
@@ -250,7 +251,7 @@ export default function ProfilPage() {
           <p className="text-sm text-neutral-500">{form.activitySector || 'Membre SALAM'}</p>
           {user?._id && (
             <p className="mt-1 font-mono text-xs text-emerald-600">
-              SALAM-{new Date().getFullYear()}-{user._id.slice(-4).toUpperCase()}
+              {displayMemberNumber(user)}
             </p>
           )}
         </div>

@@ -17,6 +17,7 @@ export interface MemberListItem {
   createdAt: string;
   lastLoginAt?: string;
   memberId: string;
+  memberNumber?: string;
   cotisationStatus: 'paid' | 'unpaid' | 'exempt';
   profileComplete?: boolean;
   missingProfileFields?: string[];
@@ -51,6 +52,7 @@ export interface DirectoryMember {
   expertiseDomains?: string[];
   bio?: string;
   memberId: string;
+  memberNumber?: string;
 }
 
 export interface UpdateProfilePayload {

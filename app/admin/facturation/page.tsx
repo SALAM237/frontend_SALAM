@@ -532,7 +532,7 @@ function openSavedInvoicePdf(invoice: InvoiceDoc) {
           email: client?.email || member?.email || '',
           phone: client?.phone || member?.phone || '',
           address: client?.address || [member?.residenceCity || member?.city, member?.country].filter(Boolean).join(', '),
-          memberId: member?._id ? `SALAM-${String(member._id).slice(-6).toUpperCase()}` : client?.registration,
+          memberId: (member as { memberId?: string } | undefined)?.memberId ?? client?.registration,
         },
         lines,
         notes: 'Document genere depuis la facture enregistree.',
@@ -576,7 +576,7 @@ function invoiceRecipientIdentity(recipient: RecipientDoc, index: number) {
     email: client?.email || member?.email || '',
     phone: client?.phone || member?.phone || '',
     address: client?.address || [member?.residenceCity || member?.city, member?.country].filter(Boolean).join(', '),
-    memberId: member?._id ? `SALAM-${String(member._id).slice(-6).toUpperCase()}` : client?.registration,
+    memberId: (member as { memberId?: string } | undefined)?.memberId ?? client?.registration,
     isClient: Boolean(client || recipient.recipientType === 'client'),
   };
 }

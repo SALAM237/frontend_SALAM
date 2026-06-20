@@ -8,6 +8,7 @@ export interface AuthUser {
   gender?: 'homme' | 'femme';
   phone?: string | null;
   promotionYear?: number | null;
+  memberNumber?: string | null;
   city?: string | null;
   country?: string | null;
   residenceCity?: string | null;

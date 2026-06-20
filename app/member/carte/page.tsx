@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName } from '@/lib/format-name';
+import { displayMemberNumber } from '@/lib/member-number';
 
 /* Canvas helpers */
 
@@ -141,7 +142,7 @@ export default function MembreCartePage() {
   const user = useAuthStore(s => s.user);
 
   const year     = new Date().getFullYear();
-  const memberId = user?._id ? `SALAM-${year}-${user._id.slice(-4).toUpperCase()}` : '-';
+  const memberId = displayMemberNumber(user);
 
   const memberData: MemberCardData = {
     id:        memberId,

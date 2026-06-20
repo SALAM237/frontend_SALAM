@@ -24,6 +24,8 @@ export interface AdminCotisationRow {
     lastName: string;
     email: string;
     gender?: 'homme' | 'femme';
+    promotionYear?: number;
+    memberNumber?: string;
     avatar?: string | null;
     bureauPhoto?: string | null;
   };

@@ -43,11 +43,11 @@ function Skeleton() {
 /* ─── Receipt Modal ──────────────────────────────────────── */
 function ReceiptModal({ cot, user, onClose }: {
   cot: CotisationDoc;
-  user: { firstName: string; lastName: string; _id: string };
+  user: { firstName: string; lastName: string; memberNumber?: string | null };
   onClose: () => void;
 }) {
   const receiptNum = `SALAM-RECU-${cot.year}-${cot._id.slice(-6).toUpperCase()}`;
-  const memberId   = `SALAM-${cot.year}-${cot.userId.slice(-4).toUpperCase()}`;
+  const memberId   = user.memberNumber ?? '-';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -230,7 +230,7 @@ export default function MemberCotisationsPage() {
       {openReceipt && user && (
         <ReceiptModal
           cot={openReceipt}
-          user={{ firstName: user.firstName, lastName: user.lastName, _id: user._id }}
+          user={{ firstName: user.firstName, lastName: user.lastName, memberNumber: user.memberNumber }}
           onClose={() => setOpenReceipt(null)}
         />
       )}

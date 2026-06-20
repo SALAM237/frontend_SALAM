@@ -78,7 +78,7 @@ function mapRows(data: AdminCotisationRow[], year: number): MemberRow[] {
   return data.map(r => ({
     userId:       String(r.user._id),
     cotisationId: r.cotisation._id,
-    memberId:     `SALAM-${year}-${String(r.user._id).slice(-4).toUpperCase()}`,
+    memberId:     r.user.memberNumber ?? `SALAM-${year}-${String(r.user._id).slice(-4).toUpperCase()}`,
     firstName:    r.user.firstName,
     lastName:     r.user.lastName,
     email:        r.user.email,

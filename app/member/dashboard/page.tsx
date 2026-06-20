@@ -20,6 +20,7 @@ import { formatFirstName, formatFullName } from '@/lib/format-name';
 import { trackEvent } from '@/lib/analytics';
 import { useMemberDashboardKpis } from '@/lib/api/member-dashboard';
 import { useMemberActivities } from '@/lib/api/activities';
+import { displayMemberNumber } from '@/lib/member-number';
 
 const fadeUp = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
@@ -41,7 +42,7 @@ export default function MemberDashboardPage() {
   const lastName = user?.lastName ?? '';
   const gender = user?.gender;
   const civility = gender === 'femme' ? 'Madame' : gender === 'homme' ? 'Monsieur' : null;
-  const memberId = user?._id ? `SALAM-${new Date().getFullYear()}-${user._id.slice(-4).toUpperCase()}` : '-';
+  const memberId = displayMemberNumber(user);
 
   const memberCardData: MemberCardData = {
     id: memberId,

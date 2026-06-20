@@ -14,6 +14,7 @@ import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard'
 import { useAdminMember, useCreateMember, useImportMembersCSV, useUpdateMember, type CsvImportMember, type ImportResult } from '@/lib/api/members';
 import { formatFirstName, formatFullName, formatLastName } from '@/lib/format-name';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
+import { previewMemberNumber } from '@/lib/member-number';
 
 /* ─── Types ─────────────────────────────────────────────── */
 type Mode      = 'single' | 'csv';
@@ -42,9 +43,7 @@ const ANTENNES = ['Yaoundé', 'Douala', 'Bafoussam', 'Garoua', 'Maroua', 'Casabl
 
 /* ─── Helpers ───────────────────────────────────────────── */
 function generateId() {
-  const year = new Date().getFullYear();
-  const num  = String(Math.floor(Math.random() * 900) + 100).padStart(4, '0');
-  return `SALAM-${year}-${num}`;
+  return previewMemberNumber('homme', new Date().getFullYear());
 }
 
 /** Normalise un header CSV : minuscules, sans accents, sans ponctuation */
@@ -190,7 +189,7 @@ export default function NouveauAdherentPage() {
       setForm(prev => ({ ...prev, [k]: e.target.value }));
 
   const cardData: MemberCardData = {
-    id: editingMember?.memberId ?? generatedId,
+    id: editingMember?.memberId ?? previewMemberNumber(form.gender, form.promotionYear) ?? generatedId,
     firstName: form.firstName || 'Prénom',
     lastName:  form.lastName  || 'Nom',
     gender:    (form.gender as 'homme' | 'femme') || undefined,
@@ -320,7 +319,7 @@ export default function NouveauAdherentPage() {
       <h2 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Membre créé avec succès !</h2>
       <p className="mt-2 text-sm text-neutral-500">
         La fiche de <strong>{formatFullName(form.firstName, form.lastName)}</strong> a été enregistrée.<br />
-        Numéro d&apos;adhérent : <span className="font-mono font-bold text-emerald-700">{generatedId}</span>
+        Numéro d&apos;adhérent : <span className="font-mono font-bold text-emerald-700">{cardData.id}</span>
       </p>
       <div className="mt-8 flex flex-col items-center gap-3">
         <div className="mx-auto w-full max-w-[400px]"><MemberCard member={cardData} /></div>
@@ -354,7 +353,7 @@ export default function NouveauAdherentPage() {
             ['Promotionnaire', form.promotionYear || '—'],
             ['Ville',          form.city || '—'], ['Pays', form.country],
             ['Rôle',           form.role], ['Antenne', form.antenne],
-            ['N° membre',      generatedId],
+            ['N° membre',      cardData.id],
           ].map(([label, value]) => (
             <div key={label}>
               <p className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">{label}</p>
@@ -367,7 +366,7 @@ export default function NouveauAdherentPage() {
         <p className="mb-4 text-sm font-black text-neutral-900">Carte de membre générée</p>
         <div className="flex justify-center overflow-x-auto"><MemberCard member={cardData} /></div>
         <p className="mt-3 text-center text-xs text-neutral-400">
-          Le QR code renvoie vers <span className="font-mono text-emerald-600">salam-cameroun.com/verify/{generatedId}</span>
+          Le QR code renvoie vers <span className="font-mono text-emerald-600">salam-cameroun.com/verify/{cardData.id}</span>
         </p>
       </div>
       <div className="flex gap-3">
