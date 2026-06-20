@@ -9,6 +9,7 @@ export interface AuthUser {
   phone?: string | null;
   promotionYear?: number | null;
   memberNumber?: string | null;
+  coriBalance?: number;
   city?: string | null;
   country?: string | null;
   residenceCity?: string | null;

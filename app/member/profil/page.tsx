@@ -25,6 +25,7 @@ import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/
 import { assetUrl } from '@/lib/assets';
 import { displayMemberNumber } from '@/lib/member-number';
 import { AvatarLightbox } from '@/components/portal/AvatarLightbox';
+import { CoriBadge, CoriWalletPanel } from '@/components/member/CoriWallet';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
@@ -288,7 +289,7 @@ export default function ProfilPage() {
               {form.gender === 'femme' ? 'Madame' : 'Monsieur'}
             </p>
           )}
-          <p className="font-black text-neutral-900">{formatFullName(form.firstName, form.lastName)}</p>
+          <div className="flex flex-wrap items-center gap-2"><p className="font-black text-neutral-900">{formatFullName(form.firstName, form.lastName)}</p><CoriBadge compact /></div>
           <p className="text-sm text-neutral-500">{form.activitySector || 'Membre SALAM'}</p>
           {user?._id && (
             <p className="mt-1 font-mono text-xs text-emerald-600">
@@ -307,6 +308,8 @@ export default function ProfilPage() {
           <Camera size={13} /> {uploadingAvatar ? 'Envoi...' : 'Changer la photo'}
         </button>
       </div>
+
+      <CoriWalletPanel />
 
       <form onSubmit={handleSave} className="space-y-4">
         <Section title="Informations personnelles">
