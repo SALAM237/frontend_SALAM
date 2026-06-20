@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
                     : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'
             }`}
           />
-          {error && <p className="text-[11px] text-red-500">{error}</p>}
+          {error && <p role="alert" className="text-[11px] text-red-500">{error}</p>}
         </div>
 
         <button type="submit" disabled={loading}

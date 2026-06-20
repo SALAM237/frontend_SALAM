@@ -162,7 +162,7 @@ export default function MemberCotisationsPage() {
         {isLoading && <Skeleton />}
 
         {isError && (
-          <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-center text-sm text-red-600">
+          <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 p-6 text-center text-sm text-red-600">
             Erreur de chargement. Vérifiez votre connexion.
           </div>
         )}

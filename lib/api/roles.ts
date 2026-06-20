@@ -227,12 +227,12 @@ export function useUploadBureauPhoto() {
   });
 }
 
-export function usePublicBureau() {
+export function usePublicBureau(category: 'executive' | 'council' = 'executive') {
   return useQuery({
-    queryKey: ['public-bureau'],
+    queryKey: ['public-bureau', category],
     queryFn: async (): Promise<{ data: BureauMember[] }> => {
       try {
-        const res = await fetch(`${API}/api/v1/public/bureau`, {
+        const res = await fetch(API + '/api/v1/public/bureau?category=' + category, {
           headers: { 'Content-Type': 'application/json; charset=utf-8' },
         });
         if (!res.ok) return { data: [] };

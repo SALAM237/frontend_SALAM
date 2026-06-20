@@ -218,7 +218,7 @@ export default function AdhesionPage() {
                 />
 
                 {adhesion.isError && (
-                  <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                     <AlertCircle size={15} className="shrink-0" />
                     {adhesion.error instanceof Error ? adhesion.error.message : 'Une erreur est survenue. Veuillez réessayer.'}
                   </div>
@@ -270,7 +270,7 @@ export default function AdhesionPage() {
                     className={`w-full resize-none rounded-xl border bg-neutral-50 p-4 text-sm text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:bg-white focus:ring-2 ${formErrors.motivation ? 'border-red-400 focus:border-red-500 focus:ring-red-500/10' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/12'}`}
                   />
                   {formErrors.motivation && (
-                    <p className="flex items-center gap-1 text-xs text-red-600">
+                    <p role="alert" className="flex items-center gap-1 text-xs text-red-600">
                       <AlertCircle size={12} className="shrink-0" /> {formErrors.motivation}
                     </p>
                   )}

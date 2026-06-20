@@ -426,7 +426,7 @@ function Field({ label, error, required, children }: { label: string; error?: st
         {label}{required && <span className="ml-0.5 text-red-500">*</span>}
       </label>
       {children}
-      {error && <p className="text-[11px] text-red-500">{error}</p>}
+      {error && <p role="alert" className="text-[11px] text-red-500">{error}</p>}
     </div>
   );
 }

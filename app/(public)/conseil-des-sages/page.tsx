@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Star, Users } from 'lucide-react';
 
 export const revalidate = 86400;
 import { PageHero } from '@/components/public/PageHero';
+import { CouncilMembers } from '@/components/public/CouncilMembers';
 
 export const metadata: Metadata = {
   title: 'Conseil des sages',
@@ -37,22 +37,8 @@ export default function ConseilDesSagesPage() {
             </p>
           </div>
 
-          {/* Members placeholder */}
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="flex flex-col items-center gap-4 rounded-[1.5rem] border border-neutral-200 bg-white p-6 shadow-sm">
-                <div className="relative h-20 w-20 overflow-hidden rounded-2xl bg-gradient-to-br from-neutral-200 to-neutral-300 shadow-sm">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Star size={24} className="text-neutral-400" />
-                  </div>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-bold text-neutral-400 italic">Membre sage</p>
-                  <span className="mt-2 inline-flex rounded-full bg-yellow-100 px-3 py-1 text-[11px] font-black text-yellow-700">Conseil des sages</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <CouncilMembers />
+
 
           <div className="mt-8 rounded-[1.5rem] border border-dashed border-yellow-300 bg-yellow-50 p-6 text-center">
             <p className="text-sm font-bold text-yellow-800">

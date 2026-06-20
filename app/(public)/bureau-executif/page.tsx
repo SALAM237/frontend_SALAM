@@ -136,35 +136,6 @@ function MemberCard({ member }: { member: BureauMember }) {
   );
 }
 
-function PlaceholderCard({ poste }: { poste: string }) {
-  return (
-    <article className="group relative aspect-[4/5] min-h-[340px] w-[clamp(18.55rem,88vw,22.25rem)] overflow-hidden rounded-[1.65rem] border border-white/70 bg-neutral-950 shadow-[0_18px_50px_rgba(15,23,42,0.14)] ring-1 ring-black/5 sm:w-full">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={PLACEHOLDER_PHOTO}
-        alt={poste}
-        className="absolute inset-0 h-full w-full object-cover opacity-25"
-      />
-
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/20" />
-
-      <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
-        <p className="text-xl font-black leading-tight tracking-[-0.03em] text-white/40">À annoncer</p>
-        <h3 className="mt-1 text-sm font-black uppercase leading-tight tracking-[0.12em] text-emerald-300/50">
-          {poste}
-        </h3>
-        <div className="mt-3 flex items-center gap-2">
-          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-black text-white/35">
-            Poste à pourvoir
-          </span>
-        </div>
-      </div>
-
-      <div className="pointer-events-none absolute inset-0 rounded-[1.65rem] ring-1 ring-inset ring-white/10" />
-    </article>
-  );
-}
-
 export default function BureauExecutifPage() {
   const { data, isLoading } = usePublicBureau();
   const members: BureauMember[] = data?.data ?? [];
@@ -176,7 +147,6 @@ export default function BureauExecutifPage() {
   const matchedIds = new Set(matchedCards.map(card => card.member?._id).filter(Boolean));
   const extraMembers = members.filter(member => !matchedIds.has(member._id));
   const announcedCards = matchedCards.filter(card => card.member);
-  const pendingCards = matchedCards.filter(card => !card.member);
 
   return (
     <main>
@@ -217,9 +187,6 @@ export default function BureauExecutifPage() {
               ))}
               {extraMembers.map(member => (
                 <MemberCard key={member._id} member={member} />
-              ))}
-              {pendingCards.map(({ key, label }) => (
-                <PlaceholderCard key={key} poste={label} />
               ))}
             </div>
           )}

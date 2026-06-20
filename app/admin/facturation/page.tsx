@@ -1734,7 +1734,7 @@ export default function FacturationAdminPage() {
         </div>
         <div className="divide-y divide-neutral-50">
           {isLoading && <Skeleton />}
-          {isError && <div className="px-5 py-10 text-center text-sm text-red-500">Erreur de chargement.</div>}
+          {isError && <div role="alert" className="px-5 py-10 text-center text-sm text-red-500">Erreur de chargement.</div>}
           {!isLoading && !isError && filtered.length === 0 && (
             <div className="px-5 py-10 text-center text-sm text-neutral-400">Aucune facture trouvée.</div>
           )}

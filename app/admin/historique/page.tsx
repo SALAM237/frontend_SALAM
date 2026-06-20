@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useMemo } from 'react';
 import { Search, ChevronDown, Filter, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -196,7 +196,7 @@ export default function HistoriquePage() {
           {isLoading && <Skeleton />}
 
           {isError && (
-            <div className="px-5 py-10 text-center text-sm text-red-500">
+            <div role="alert" className="px-5 py-10 text-center text-sm text-red-500">
               Erreur de chargement. Vérifiez la connexion au serveur.
             </div>
           )}

@@ -153,7 +153,7 @@ function LoginForm() {
 
         {/* Erreur générique */}
         {error && (
-          <div className="flex items-start gap-2.5 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+          <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
             <div className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
             <p className="text-xs leading-relaxed text-red-700">{error}</p>
           </div>
@@ -162,7 +162,7 @@ function LoginForm() {
         {/* Erreur email non vérifié + option de renvoi */}
         {needsVerify && (
           <div className="space-y-2">
-            <div className="flex items-start gap-2.5 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+            <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
               <div className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
               <p className="text-xs leading-relaxed text-red-700">{PENDING_MSG}</p>
             </div>

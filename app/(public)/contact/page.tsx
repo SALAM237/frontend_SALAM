@@ -105,7 +105,7 @@ export default function ContactPage() {
                   <h2 className="mb-6 text-xl font-black text-neutral-900">Envoyez-nous un message</h2>
 
                   {contact.isError && (
-                    <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <div role="alert" className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                       <AlertCircle size={15} className="shrink-0" />
                       {contact.error instanceof Error ? contact.error.message : 'Une erreur est survenue. Veuillez réessayer.'}
                     </div>
@@ -146,7 +146,7 @@ export default function ContactPage() {
                         {SUBJECTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
                       {formErrors.subject && (
-                        <p className="flex items-center gap-1 text-xs text-red-600">
+                        <p role="alert" className="flex items-center gap-1 text-xs text-red-600">
                           <AlertCircle size={12} className="shrink-0" /> {formErrors.subject}
                         </p>
                       )}
@@ -161,7 +161,7 @@ export default function ContactPage() {
                         className={`w-full resize-none rounded-xl border bg-neutral-50 p-4 text-sm text-neutral-900 outline-none transition-all placeholder:text-neutral-400 focus:bg-white focus:ring-2 ${formErrors.message ? 'border-red-400 focus:border-red-500 focus:ring-red-500/10' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/12'}`}
                       />
                       {formErrors.message && (
-                        <p className="flex items-center gap-1 text-xs text-red-600">
+                        <p role="alert" className="flex items-center gap-1 text-xs text-red-600">
                           <AlertCircle size={12} className="shrink-0" /> {formErrors.message}
                         </p>
                       )}

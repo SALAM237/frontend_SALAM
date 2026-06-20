@@ -40,7 +40,7 @@ export default function MemberDocumentsPage() {
           {isLoading ? 'Chargement...' : documents.length + ' document(s)'}
         </div>
         {isLoading && <div className="flex justify-center py-12"><Loader2 size={20} className="animate-spin text-emerald-600" /></div>}
-        {isError && <div className="px-5 py-10 text-center text-sm text-red-600">Impossible de charger vos documents.</div>}
+        {isError && <div role="alert" className="px-5 py-10 text-center text-sm text-red-600">Impossible de charger vos documents.</div>}
         {!isLoading && !isError && documents.length === 0 && (
           <div className="flex flex-col items-center px-5 py-12 text-center">
             <FolderOpen size={32} className="mb-3 text-neutral-200" />

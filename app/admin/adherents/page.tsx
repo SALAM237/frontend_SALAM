@@ -537,7 +537,7 @@ function CardChangeRequestsModal({ onClose }: { onClose: () => void }) {
             <>
               {isLoading && <div className="flex justify-center py-12"><Loader2 size={22} className="animate-spin text-emerald-600" /></div>}
               {!isLoading && isError && (
-                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                <div role="alert" className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                   {error instanceof Error ? error.message : 'Impossible de charger les demandes.'}
                 </div>
               )}
@@ -637,7 +637,7 @@ function ValidationFieldsConfigurator() {
   };
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 size={22} className="animate-spin text-emerald-600" /></div>;
-  if (isError) return <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">{error instanceof Error ? error.message : 'Configuration indisponible.'}</div>;
+  if (isError) return <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">{error instanceof Error ? error.message : 'Configuration indisponible.'}</div>;
 
   return (
     <div className="space-y-5">

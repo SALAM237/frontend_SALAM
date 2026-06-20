@@ -397,7 +397,7 @@ function PaymentModal({ member, onConfirm, onClose, loading }: {
                 className={`w-full rounded-xl border bg-white py-3 pl-9 pr-4 text-sm outline-none transition-all focus:ring-2 ${error ? 'border-red-300 focus:ring-red-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`}
               />
             </div>
-            {error && <p className="text-[11px] text-red-500">{error}</p>}
+            {error && <p role="alert" className="text-[11px] text-red-500">{error}</p>}
           </div>
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">
@@ -569,7 +569,7 @@ export default function CotisationsAdminPage() {
 
         {isLoading && <Skeleton />}
         {isError && (
-          <div className="px-5 py-10 text-center text-sm text-red-500">Erreur de chargement. Vérifiez la connexion au serveur.</div>
+          <div role="alert" className="px-5 py-10 text-center text-sm text-red-500">Erreur de chargement. Vérifiez la connexion au serveur.</div>
         )}
         {!isLoading && !isError && (
           <div className="divide-y divide-neutral-50">
