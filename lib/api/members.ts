@@ -56,6 +56,7 @@ export interface DirectoryMember {
 }
 
 export interface UpdateProfilePayload {
+  gender?: 'homme' | 'femme';
   firstName?: string;
   lastName?: string;
   phone?: string;
@@ -292,8 +293,53 @@ export interface MemberCardChangeRequest {
   reviewNote?: string;
   createdAt: string;
   reviewedAt?: string | null;
+  changes?: { field: string; previousValue: unknown; requestedValue: unknown }[];
 }
 
+export interface MemberProfileValidationField {
+  key: string;
+  label: string;
+  group: string;
+  required?: boolean;
+}
+
+export interface MemberProfileValidationPolicy {
+  fields: string[];
+  availableFields: MemberProfileValidationField[];
+  requiredFields: string[];
+}
+
+export function useMemberProfileValidationPolicy() {
+  const token = useAuthStore(s => s.accessToken);
+  return useQuery({
+    queryKey: ['member-profile-validation-policy'],
+    queryFn: () =>
+      apiClient<MemberProfileValidationPolicy>('/api/v1/admin/member-profile-validation-policy', {
+        token: token ?? '',
+      }),
+    enabled: !!token,
+    refetchInterval: 5000,
+  });
+}
+
+export function useUpdateMemberProfileValidationPolicy() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (fields: string[]) =>
+      apiClient<MemberProfileValidationPolicy>('/api/v1/admin/member-profile-validation-policy', {
+        method: 'PUT',
+        body: JSON.stringify({ fields }),
+        token: token ?? '',
+      }),
+    onSuccess: res => {
+      qc.setQueryData(['member-profile-validation-policy'], res);
+      qc.invalidateQueries({ queryKey: ['member-profile-validation-policy'] });
+      toast.success((res as any).message ?? 'Validations mises à jour');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
 export function useMemberCardChangeRequests(status = 'pending') {
   const token = useAuthStore(s => s.accessToken);
   return useQuery({

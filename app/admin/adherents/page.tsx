@@ -1,19 +1,22 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   UserPlus, CreditCard, Search, Eye, CheckCircle2, Clock, XCircle,
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
-  ShieldCheck,
+  ShieldCheck, Plus,
 } from 'lucide-react';
 import {
   useAdminMembers,
   useHardDeleteMember,
   useMemberCardChangeRequests,
+  useMemberProfileValidationPolicy,
+  useUpdateMemberProfileValidationPolicy,
   useResendInvitation,
   useReviewMemberCardChangeRequest,
   type MemberCardChangeRequest,
+  type MemberProfileValidationField,
   type MemberListItem,
 } from '@/lib/api/members';
 import { useAuthStore } from '@/store/auth.store';
@@ -154,7 +157,7 @@ export default function AdminAdherentsPage() {
             onClick={() => setShowCardRequests(true)}
             className="relative inline-flex h-9 items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 text-sm font-semibold text-emerald-700 transition-all hover:border-emerald-400 hover:bg-emerald-50"
           >
-            <ShieldCheck size={14} /> Modifications carte
+            <ShieldCheck size={14} /> Valider cartes modifiées
             <span className="absolute -right-1.5 -top-2 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-black text-white ring-2 ring-white">
               {cardRequestsError ? '!' : pendingCardRequests}
             </span>
@@ -494,9 +497,15 @@ export default function AdminAdherentsPage() {
 }
 
 function CardChangeRequestsModal({ onClose }: { onClose: () => void }) {
+  const user = useAuthStore(s => s.user);
+  const canConfigureValidation = user?.effectivePermissions?.includes('*') || user?.effectivePermissions?.includes('members.configureValidation');
+  const [showConfig, setShowConfig] = useState(false);
   const { data, isLoading, isError, error } = useMemberCardChangeRequests('pending');
+  const { data: policyData } = useMemberProfileValidationPolicy();
   const review = useReviewMemberCardChangeRequest();
   const requests = data?.data?.data ?? [];
+  const availableFields = policyData?.data?.availableFields ?? [];
+  const labels = new Map(availableFields.map(field => [field.key, field.label]));
 
   const submit = (request: MemberCardChangeRequest, action: 'approve' | 'reject') => {
     review.mutate({ id: request._id, action });
@@ -505,77 +514,102 @@ function CardChangeRequestsModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 backdrop-blur-sm sm:items-center">
       <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
-        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Validation admin</p>
-            <h2 className="text-lg font-black text-neutral-900">Valider carte modifié</h2>
+            <h2 className="text-lg font-black text-neutral-900">
+              {showConfig ? 'Champs soumis à validation' : 'Modifications sensibles à valider'}
+            </h2>
           </div>
-          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
-            <XCircle size={16} />
-          </button>
+          <div className="flex items-center gap-2">
+            {canConfigureValidation && (
+              <button
+                type="button"
+                onClick={() => setShowConfig(value => !value)}
+                className="inline-flex min-h-9 max-w-full items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 transition hover:bg-emerald-100"
+              >
+                <Plus size={13} className="shrink-0" />
+                <span className="leading-tight">{showConfig ? 'Voir les demandes' : 'Ajouter des validations'}</span>
+              </button>
+            )}
+            <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
+              <XCircle size={16} />
+            </button>
+          </div>
         </div>
 
         <div className="max-h-[70vh] overflow-y-auto p-5">
-          {isLoading && (
-            <div className="flex justify-center py-12">
-              <Loader2 size={22} className="animate-spin text-emerald-600" />
-            </div>
-          )}
-          {!isLoading && isError && (
-            <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-              {error instanceof Error ? error.message : 'Impossible de charger les demandes.'}
-            </div>
-          )}
-          {!isLoading && !isError && requests.length === 0 && (
-            <div className="py-12 text-center">
-              <ShieldCheck size={32} className="mx-auto mb-3 text-neutral-200" />
-              <p className="text-sm font-semibold text-neutral-400">Aucune modification en attente.</p>
-            </div>
-          )}
-          {!isLoading && !isError && requests.length > 0 && (
-            <div className="space-y-3">
-              {requests.map(request => {
-                const member = request.userId;
-                return (
-                  <div key={request._id} className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-black text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
-                        <p className="font-mono text-[11px] text-neutral-400">{member.memberNumber ?? '-'}</p>
-                        <p className="mt-0.5 text-xs text-neutral-500">{member.email}</p>
+          {showConfig ? (
+            <ValidationFieldsConfigurator />
+          ) : (
+            <>
+              {isLoading && <div className="flex justify-center py-12"><Loader2 size={22} className="animate-spin text-emerald-600" /></div>}
+              {!isLoading && isError && (
+                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  {error instanceof Error ? error.message : 'Impossible de charger les demandes.'}
+                </div>
+              )}
+              {!isLoading && !isError && requests.length === 0 && (
+                <div className="py-12 text-center">
+                  <ShieldCheck size={32} className="mx-auto mb-3 text-neutral-200" />
+                  <p className="text-sm font-semibold text-neutral-400">Aucune modification en attente.</p>
+                </div>
+              )}
+              {!isLoading && !isError && requests.length > 0 && (
+                <div className="space-y-3">
+                  {requests.map(request => {
+                    const member = request.userId;
+                    const changes = request.changes?.length
+                      ? request.changes
+                      : [
+                          ...(request.currentGender !== request.requestedGender
+                            ? [{ field: 'gender', previousValue: request.currentGender, requestedValue: request.requestedGender }]
+                            : []),
+                          ...(request.currentPromotionYear !== request.requestedPromotionYear
+                            ? [{ field: 'promotionYear', previousValue: request.currentPromotionYear, requestedValue: request.requestedPromotionYear }]
+                            : []),
+                        ];
+                    return (
+                      <div key={request._id} className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-black text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
+                            <p className="font-mono text-[11px] text-neutral-400">{member.memberNumber ?? '-'}</p>
+                            <p className="mt-0.5 text-xs text-neutral-500">{member.email}</p>
+                          </div>
+                          <p className="text-[11px] font-semibold text-neutral-400">
+                            {new Date(request.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          {changes.map(change => (
+                            <ChangeBox
+                              key={change.field}
+                              label={labels.get(change.field) ?? change.field}
+                              field={change.field}
+                              before={change.previousValue}
+                              after={change.requestedValue}
+                            />
+                          ))}
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap justify-end gap-2">
+                          <button type="button" onClick={() => submit(request, 'reject')} disabled={review.isPending}
+                            className="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 px-4 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:opacity-60">
+                            Refuser
+                          </button>
+                          <button type="button" onClick={() => submit(request, 'approve')} disabled={review.isPending}
+                            className="inline-flex h-9 items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-60">
+                            Valider les modifications
+                          </button>
+                        </div>
                       </div>
-                      <p className="text-[11px] font-semibold text-neutral-400">
-                        {new Date(request.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </p>
-                    </div>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <ChangeBox label="Civilité" before={request.currentGender === 'femme' ? 'Madame' : 'Monsieur'} after={request.requestedGender === 'femme' ? 'Madame' : 'Monsieur'} />
-                      <ChangeBox label="Promotionnaire" before={String(request.currentPromotionYear ?? '-')} after={String(request.requestedPromotionYear ?? '-')} />
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => submit(request, 'reject')}
-                        disabled={review.isPending}
-                        className="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 px-4 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:opacity-60"
-                      >
-                        Refuser
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => submit(request, 'approve')}
-                        disabled={review.isPending}
-                        className="inline-flex h-9 items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-60"
-                      >
-                        Valider et mettre à jour la carte
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -583,15 +617,101 @@ function CardChangeRequestsModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ChangeBox({ label, before, after }: { label: string; before: string; after: string }) {
-  const changed = before !== after;
+function ValidationFieldsConfigurator() {
+  const { data, isLoading, isError, error } = useMemberProfileValidationPolicy();
+  const update = useUpdateMemberProfileValidationPolicy();
+  const policy = data?.data;
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (policy?.fields) setSelected(new Set(policy.fields));
+  }, [policy?.fields]);
+
+  const grouped = useMemo(() => {
+    const groups = new Map<string, MemberProfileValidationField[]>();
+    for (const field of policy?.availableFields ?? []) {
+      groups.set(field.group, [...(groups.get(field.group) ?? []), field]);
+    }
+    return [...groups.entries()];
+  }, [policy?.availableFields]);
+
+  const toggle = (field: MemberProfileValidationField) => {
+    if (field.required || policy?.requiredFields.includes(field.key)) return;
+    setSelected(previous => {
+      const next = new Set(previous);
+      next.has(field.key) ? next.delete(field.key) : next.add(field.key);
+      return next;
+    });
+  };
+
+  if (isLoading) return <div className="flex justify-center py-12"><Loader2 size={22} className="animate-spin text-emerald-600" /></div>;
+  if (isError) return <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">{error instanceof Error ? error.message : 'Configuration indisponible.'}</div>;
+
   return (
-    <div className={`rounded-xl border p-3 ${changed ? 'border-amber-100 bg-amber-50/60' : 'border-neutral-100 bg-neutral-50'}`}>
+    <div className="space-y-5">
+      <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+        <p className="text-sm font-black text-amber-900">Validation avant mise à jour</p>
+        <p className="mt-1 text-xs leading-5 text-amber-700">
+          Toute modification d’un champ sélectionné sera stockée en attente et ne modifiera le profil qu’après approbation d’un administrateur.
+        </p>
+      </div>
+
+      {grouped.map(([group, fields]) => (
+        <section key={group}>
+          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">{group}</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {fields.map(field => {
+              const checked = selected.has(field.key);
+              const required = field.required || policy?.requiredFields.includes(field.key);
+              const buttonClass = 'flex min-h-12 items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition '
+                + (checked ? 'border-emerald-300 bg-emerald-50' : 'border-neutral-200 bg-white hover:border-emerald-200');
+              const checkboxClass = 'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border '
+                + (checked ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-neutral-300 bg-white');
+              return (
+                <button key={field.key} type="button" onClick={() => toggle(field)} className={buttonClass}>
+                  <div>
+                    <p className={checked ? 'text-xs font-black text-emerald-800' : 'text-xs font-black text-neutral-700'}>{field.label}</p>
+                    {required && <p className="mt-0.5 text-[10px] font-semibold text-amber-600">Validation obligatoire</p>}
+                  </div>
+                  <span className={checkboxClass}>{checked && <CheckCircle2 size={12} />}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+
+      <div className="sticky bottom-0 flex justify-end border-t border-neutral-100 bg-white pt-4">
+        <button type="button" onClick={() => update.mutate([...selected])} disabled={update.isPending}
+          className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-60">
+          {update.isPending && <Loader2 size={14} className="animate-spin" />}
+          Enregistrer les validations
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function displayChangeValue(field: string, value: unknown) {
+  if (value === null || value === undefined || value === '') return '-';
+  if (field === 'gender') return value === 'femme' ? 'Madame' : 'Monsieur';
+  if (field === 'birthDate') {
+    const date = new Date(String(value));
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('fr-FR');
+  }
+  if (Array.isArray(value)) return value.length ? value.join(', ') : '-';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
+function ChangeBox({ label, field, before, after }: { label: string; field: string; before: unknown; after: unknown }) {
+  return (
+    <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3">
       <p className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">{label}</p>
-      <div className="mt-2 flex items-center justify-between gap-3 text-xs">
-        <span className="font-semibold text-neutral-500">{before}</span>
+      <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-xs">
+        <span className="break-words font-semibold text-neutral-500">{displayChangeValue(field, before)}</span>
         <ChevronDown size={13} className="-rotate-90 text-neutral-300" />
-        <span className="font-black text-neutral-900">{after}</span>
+        <span className="break-words text-right font-black text-neutral-900">{displayChangeValue(field, after)}</span>
       </div>
     </div>
   );

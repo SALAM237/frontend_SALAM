@@ -19,7 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
-import { useChangeMemberPassword, useSubmitActivitySectorProposal, useSubmitMemberCardChangeRequest, useUpdateProfile } from '@/lib/api/members';
+import { useChangeMemberPassword, useSubmitActivitySectorProposal, useUpdateProfile } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { assetUrl } from '@/lib/assets';
@@ -114,7 +114,6 @@ export default function ProfilPage() {
   const [saved, setSaved] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const updateProfile = useUpdateProfile();
-  const cardChangeRequest = useSubmitMemberCardChangeRequest();
   const sectorProposal = useSubmitActivitySectorProposal();
 
   useEffect(() => {
@@ -159,6 +158,8 @@ export default function ProfilPage() {
 
     try {
       const res: any = await updateProfile.mutateAsync({
+        gender: form.gender as 'homme' | 'femme',
+        promotionYear: form.promotionYear ? Number(form.promotionYear) : undefined,
         firstName: form.firstName,
         lastName: form.lastName,
         phone: form.phone || undefined,
@@ -177,24 +178,31 @@ export default function ProfilPage() {
       });
 
       patchUser(res?.data ?? {
+        gender: form.gender as 'homme' | 'femme',
+        promotionYear: form.promotionYear ? Number(form.promotionYear) : undefined,
         firstName: form.firstName,
         lastName: form.lastName,
         phone: form.phone,
       });
 
-      if (sensitiveChanged) {
-        await cardChangeRequest.mutateAsync({
-          gender: form.gender as 'homme' | 'femme',
-          promotionYear: Number(form.promotionYear),
-        });
-        toast.custom(() => (
-          <div className="w-full max-w-sm rounded-xl border border-amber-200 bg-white px-4 py-3 shadow-lg">
-            <p className="font-black text-neutral-900">Information sensible</p>
-            <p className="mt-1 text-sm leading-5 text-neutral-600">
+      const validationSubmitted = Boolean(res?.data?.cardChangeRequest);
+      if (validationSubmitted) {
+        toast.custom((toastId) => (
+          <div className="relative w-[calc(100vw-2rem)] max-w-sm rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 pr-11 shadow-lg">
+            <button
+              type="button"
+              onClick={() => toast.dismiss(toastId)}
+              aria-label="Fermer"
+              className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-lg text-orange-500 transition hover:bg-orange-100 hover:text-orange-700"
+            >
+              <X size={15} />
+            </button>
+            <p className="font-black text-orange-950">Information sensible</p>
+            <p className="mt-1 text-sm leading-5 text-orange-800">
               La mise à jour sera faite après validation par un administrateur.
             </p>
           </div>
-        ));
+        ), { duration: 15_000 });
       } else {
         toast.success('Profil mis à jour');
       }
@@ -353,7 +361,7 @@ export default function ProfilPage() {
 
         <button
           type="submit"
-          disabled={updateProfile.isPending || cardChangeRequest.isPending}
+          disabled={updateProfile.isPending}
           className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-black transition-all disabled:opacity-60 ${saved ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20'}`}
         >
           {saved ? <><CheckCircle2 size={15} /> Enregistre !</> : <><Save size={15} /> Enregistrer les modifications</>}
