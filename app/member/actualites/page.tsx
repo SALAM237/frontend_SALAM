@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Newspaper, Search, Loader2, Tag, Eye, X, Plus, PlusCircle, Trash2, ImagePlus } from 'lucide-react';
 import { articleHref, usePublicArticles, ARTICLE_CATEGORIES, useSubmitMemberArticle, useUploadMemberArticleImage } from '@/lib/api/content';
@@ -9,6 +9,7 @@ import { articleImage } from '@/lib/article-image';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { RichText } from '@/components/ui/RichText';
 import { trackEvent } from '@/lib/analytics';
+import { useMarkMemberDashboardSectionRead } from '@/lib/api/member-dashboard';
 
 type ExtraBlock = { id: string; label: string; title: string; description: string };
 
@@ -17,9 +18,15 @@ export default function MemberActualitesPage() {
   const [cat, setCat]       = useState('all');
   const [selected, setSelected] = useState<any | null>(null);
   const [submitOpen, setSubmitOpen] = useState(false);
+  const markRead = useMarkMemberDashboardSectionRead();
 
   const { data, isLoading } = usePublicArticles();
   const articles = data?.data ?? [];
+
+  useEffect(() => {
+    markRead.mutate('news');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = useMemo(() =>
     articles.filter((n: any) =>

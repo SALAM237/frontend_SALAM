@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Send, MessageSquare, Search, ArrowLeft, Pencil, Paperclip, X, Loader2, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api/client';
+import { useMarkMemberDashboardSectionRead } from '@/lib/api/member-dashboard';
 import { useAuthStore } from '@/store/auth.store';
 import type { MembersListResponse } from '@/lib/api/members';
 import { formatFullName } from '@/lib/format-name';
@@ -243,6 +244,12 @@ export default function MessagesPage() {
   const [replySent, setReplySent]   = useState(false);
   const [attachName, setAttachName] = useState('');
   const [compose, setCompose]       = useState(false);
+  const markRead = useMarkMemberDashboardSectionRead();
+
+  useEffect(() => {
+    markRead.mutate('messages');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = messages.filter(m =>
     `${m.from} ${m.subject} ${m.preview}`.toLowerCase().includes(search.toLowerCase())

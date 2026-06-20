@@ -1,5 +1,5 @@
 ﻿import Link from 'next/link';
-import { Mail, MapPin, Globe, Share2, Video, X, ExternalLink } from 'lucide-react';
+import { Mail, MapPin, ExternalLink, Facebook, Linkedin, MessageCircle } from 'lucide-react';
 import { SalamLogo } from '@/components/brand/SalamLogo';
 import { DON_NAV_ITEM, PUBLIC_NAV_ITEMS } from '@/lib/navigation';
 
@@ -30,10 +30,9 @@ const NAV_COLS = [
 ];
 
 const SOCIALS = [
-  { Icon: Share2,  label: 'Facebook',  href: '#' },
-  { Icon: Globe,   label: 'Instagram', href: '#' },
-  { Icon: X,       label: 'Twitter/X', href: '#' },
-  { Icon: Video,   label: 'YouTube',   href: '#' },
+  { Icon: Facebook,       label: 'Facebook',  href: 'https://www.facebook.com/salam.cameroun' },
+  { Icon: MessageCircle,  label: 'WhatsApp',  href: 'https://wa.me/237697791021' },
+  { Icon: Linkedin,       label: 'LinkedIn',  href: 'https://www.linkedin.com/company/salam-cameroun' },
 ];
 
 export function Footer() {
@@ -62,6 +61,8 @@ export function Footer() {
                   key={label}
                   href={href}
                   aria-label={label}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="grid size-9 place-items-center rounded-full border border-white/10 text-white/45 transition-all duration-200 hover:border-salam-green hover:text-salam-green hover:bg-green-950"
                 >
                   <Icon size={15} />

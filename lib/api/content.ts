@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
+import { MEMBER_DASHBOARD_KPIS_QUERY_KEY } from './member-dashboard';
 
 export interface ArticleDoc {
   _id: string;
@@ -89,6 +90,7 @@ export function useSubmitMemberArticle() {
       qc.invalidateQueries({ queryKey: ['admin-content'] });
       qc.invalidateQueries({ queryKey: ['public-content'] });
       qc.invalidateQueries({ queryKey: ['public-article'] });
+      qc.invalidateQueries({ queryKey: MEMBER_DASHBOARD_KPIS_QUERY_KEY });
       toast.success((res as any).message ?? 'Actualite soumise');
     },
     onError: (err: Error) => toast.error(err.message),

@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, BriefcaseBusiness, CalendarDays, CheckCircle2, Edit3, Eye, Globe2, Lock, Mail, MapPin, Phone, Plus, Send, Tag, X } from 'lucide-react';
 import { OPPORTUNITY_TYPES, useMemberOpportunities, useReplyOpportunity, useSubmitOpportunity, useUpdateOpportunity, type OpportunityDoc, type OpportunityPayload, type OpportunityType } from '@/lib/api/opportunities';
 import { formatFullName } from '@/lib/format-name';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { RichText } from '@/components/ui/RichText';
 import { trackEvent } from '@/lib/analytics';
+import { useMarkMemberDashboardSectionRead } from '@/lib/api/member-dashboard';
 
 const statusCls: Record<string, string> = {
   published: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -56,10 +57,16 @@ export default function OpportunitesPage() {
   const submit = useSubmitOpportunity();
   const update = useUpdateOpportunity();
   const reply = useReplyOpportunity();
+  const markRead = useMarkMemberDashboardSectionRead();
   const items = tab === 'mine' ? mine.data?.data?.items ?? [] : published.data?.data?.items ?? [];
   const loading = tab === 'mine' ? mine.isLoading : published.isLoading;
 
   const typeLabel = useMemo(() => new Map(OPPORTUNITY_TYPES.map(t => [t.value, t.label])), []);
+
+  useEffect(() => {
+    markRead.mutate('opportunities');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const set = (key: keyof OpportunityPayload) => (value: string | boolean) => {
     setFormError('');

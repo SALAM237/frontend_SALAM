@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
+import { MEMBER_DASHBOARD_KPIS_QUERY_KEY } from './member-dashboard';
 
 export type OpportunityType = 'emploi' | 'stage' | 'partenariat' | 'associe' | 'appel_projet' | 'business' | 'benevolat' | 'autre';
 export type OpportunityStatus = 'draft' | 'pending' | 'published' | 'rejected' | 'archived';
@@ -100,6 +101,7 @@ export function useSubmitOpportunity() {
       qc.invalidateQueries({ queryKey: ['member-opportunities'] });
       qc.invalidateQueries({ queryKey: ['public-opportunities'] });
       qc.invalidateQueries({ queryKey: ['admin-pending-validations'] });
+      qc.invalidateQueries({ queryKey: MEMBER_DASHBOARD_KPIS_QUERY_KEY });
       toast.success((res as any).message ?? 'Opportunite soumise');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -121,6 +123,7 @@ export function useUpdateOpportunity() {
       qc.invalidateQueries({ queryKey: ['public-opportunities'] });
       qc.invalidateQueries({ queryKey: ['admin-pending-validations'] });
       qc.invalidateQueries({ queryKey: ['admin-opportunities'] });
+      qc.invalidateQueries({ queryKey: MEMBER_DASHBOARD_KPIS_QUERY_KEY });
       toast.success((res as any).message ?? 'Opportunite mise a jour');
     },
     onError: (err: Error) => toast.error(err.message),

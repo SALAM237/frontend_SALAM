@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiClient } from './client';
+import { MEMBER_DASHBOARD_KPIS_QUERY_KEY } from './member-dashboard';
 import { useAuthStore } from '@/store/auth.store';
 
 export type PendingValidationType = 'content' | 'gallery' | 'sector' | 'opportunity';
@@ -57,7 +58,8 @@ export function useReviewPendingValidation() {
       qc.invalidateQueries({ queryKey: ['member-opportunities'] });
       qc.invalidateQueries({ queryKey: ['public-opportunities'] });
       qc.invalidateQueries({ queryKey: ['admin-opportunities'] });
-      toast.success((res as any).message ?? 'Validation mise à jour');
+      qc.invalidateQueries({ queryKey: MEMBER_DASHBOARD_KPIS_QUERY_KEY });
+      toast.success((res as any).message ?? 'Validation mise a jour');
     },
     onError: (err: Error) => toast.error(err.message),
   });
