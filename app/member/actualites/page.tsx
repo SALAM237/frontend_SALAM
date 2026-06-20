@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Newspaper, Search, Loader2, Tag, Eye, X, Plus, PlusCircle, Trash2, ImagePlus } from 'lucide-react';
 import { articleHref, usePublicArticles, ARTICLE_CATEGORIES, useSubmitMemberArticle, useUploadMemberArticleImage } from '@/lib/api/content';
@@ -9,7 +9,7 @@ import { articleImage } from '@/lib/article-image';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { RichText } from '@/components/ui/RichText';
 import { trackEvent } from '@/lib/analytics';
-import { useMarkMemberDashboardSectionRead } from '@/lib/api/member-dashboard';
+import { useMarkMemberDashboardItemRead } from '@/lib/api/member-dashboard';
 
 type ExtraBlock = { id: string; label: string; title: string; description: string };
 
@@ -18,15 +18,10 @@ export default function MemberActualitesPage() {
   const [cat, setCat]       = useState('all');
   const [selected, setSelected] = useState<any | null>(null);
   const [submitOpen, setSubmitOpen] = useState(false);
-  const markRead = useMarkMemberDashboardSectionRead();
+  const markItemRead = useMarkMemberDashboardItemRead();
 
   const { data, isLoading } = usePublicArticles();
   const articles = data?.data ?? [];
-
-  useEffect(() => {
-    markRead.mutate('news');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const filtered = useMemo(() =>
     articles.filter((n: any) =>
@@ -121,14 +116,17 @@ export default function MemberActualitesPage() {
                 </div>
                 <Link
                   href={articleHref(n).replace('/actualites/', '/member/actualites/')}
-                  onClick={() => trackEvent('news_click', {
-                    article_id: n._id,
-                    article_slug: n.slug,
-                    article_title: n.title,
-                    category: n.data?.category,
-                    source: 'member_list',
-                    action: 'view_button_click',
-                  })}
+                  onClick={() => {
+                    trackEvent('news_click', {
+                      article_id: n._id,
+                      article_slug: n.slug,
+                      article_title: n.title,
+                      category: n.data?.category,
+                      source: 'member_list',
+                      action: 'view_button_click',
+                    });
+                    markItemRead.mutate({ type: 'news', id: n._id });
+                  }}
                   aria-label={`Voir ${n.title}`}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition-all hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
                 >

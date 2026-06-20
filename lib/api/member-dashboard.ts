@@ -16,7 +16,7 @@ export type MemberDashboardKpis = {
       activities: { pending: number; accepted: number; rejected: number };
     };
   };
-  readMarkers: {
+  readMarkers?: {
     opportunitiesAt: string | null;
     newsAt: string | null;
   };
@@ -37,12 +37,12 @@ export function useMemberDashboardKpis() {
   });
 }
 
-export function useMarkMemberDashboardSectionRead() {
+export function useMarkMemberDashboardItemRead() {
   const token = useAuthStore(s => s.accessToken);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (section: 'opportunities' | 'news' | 'messages') =>
-      apiClient<null>(`/api/v1/member/dashboard-kpis/read/${section}`, {
+    mutationFn: ({ type, id }: { type: 'opportunity' | 'news' | 'message'; id: string }) =>
+      apiClient<null>(`/api/v1/member/dashboard-kpis/read/${type}/${id}`, {
         method: 'POST',
         token: token ?? '',
       }),
