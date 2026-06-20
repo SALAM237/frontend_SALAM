@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Plus, X, Send, Eye, ChevronDown, Search,
   CalendarDays, Banknote, FileText, CheckCircle2, Clock,
@@ -1645,6 +1646,8 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
 
 /* ─── Page principale ─────────────────────────────────── */
 export default function FacturationAdminPage() {
+  const searchParams = useSearchParams();
+  const paymentFilter = searchParams.get('payment');
   const [search,      setSearch]      = useState('');
   const [showCreate,  setShowCreate]  = useState(false);
   const [showClients, setShowClients] = useState(false);
@@ -1652,6 +1655,7 @@ export default function FacturationAdminPage() {
   const [viewRecipientInvoice, setViewRecipientInvoice] = useState<InvoiceRecipientRow | null>(null);
   const [editInvoice, setEditInvoice] = useState<InvoiceDoc | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useAdminInvoices();
   const resendInvoiceRecipient = useResendInvoiceRecipient();
@@ -1661,11 +1665,15 @@ export default function FacturationAdminPage() {
   const invoiceRows = useMemo(() => makeInvoiceRecipientRows(invoices), [invoices]);
 
   const filtered = useMemo(() =>
-    invoiceRows.filter(row =>
-      `${row.invoice.title} ${row.invoice.invoiceNumber} ${row.invoiceNumber} ${row.name} ${row.email}`.toLowerCase().includes(search.toLowerCase())
-    ),
-  [invoiceRows, search]);
-
+    invoiceRows.filter(row => {
+      const searchable = [row.invoice.title, row.invoice.invoiceNumber, row.invoiceNumber, row.name, row.email].join(' ').toLowerCase();
+      const matchesSearch = searchable.includes(search.toLowerCase());
+      const open = row.status === 'pending' || row.status === 'sent';
+      const overdue = new Date(row.invoice.dueDate).getTime() < Date.now();
+      const matchesPayment = paymentFilter === 'overdue' ? open && overdue : paymentFilter === 'pending' ? open && !overdue : true;
+      return matchesSearch && matchesPayment;
+    }),
+  [invoiceRows, search, paymentFilter]);
   const stats = useMemo(() => ({
     total:  invoiceRows.length,
     sent:   invoiceRows.filter(r => r.status === 'sent').length,
@@ -1737,7 +1745,7 @@ export default function FacturationAdminPage() {
             const isDeleting = confirmDeleteId === inv._id;
             const isSending = resendInvoiceRecipient.isPending;
             return (
-              <div key={row.key} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-neutral-50/60">
+              <div key={row.key} className="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50/60 sm:flex-nowrap sm:gap-4 sm:px-5 sm:py-4">
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${row.isClient ? 'border-amber-100 bg-amber-50' : 'border-violet-100 bg-violet-50'}`}>
                   <FileText size={16} className="text-violet-600" />
                 </div>
@@ -1762,7 +1770,26 @@ export default function FacturationAdminPage() {
                   <p className="text-xs font-black text-neutral-700">{fmtCfa(inv.amount)}</p>
                   <p className="text-[10px] text-neutral-400">Échéance {fmt(inv.dueDate)}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                                <button type="button" onClick={() => setExpandedInvoice(expandedInvoice === row.key ? null : row.key)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 sm:hidden"
+                  aria-label="Afficher les details">
+                  <ChevronDown size={15} className={expandedInvoice === row.key ? 'rotate-180 transition' : 'transition'} />
+                </button>
+                {expandedInvoice === row.key && (
+                  <div className="order-last mt-3 w-full rounded-lg border border-neutral-100 bg-neutral-50 p-3 sm:hidden">
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div><p className="text-neutral-400">Montant</p><p className="mt-1 font-black">{fmtCfa(inv.amount)}</p></div>
+                      <div><p className="text-neutral-400">Echeance</p><p className="mt-1 font-black">{fmt(inv.dueDate)}</p></div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button type="button" onClick={() => setViewRecipientInvoice(row)} className="h-9 rounded-lg border border-violet-200 bg-white text-xs font-black text-violet-700">Voir</button>
+                      <button type="button" onClick={() => resendInvoiceRecipient.mutate({ id: inv._id, invoiceNumber: row.invoiceNumber })} disabled={isSending || !row.email} className="h-9 rounded-lg border border-blue-200 bg-blue-50 text-xs font-black text-blue-700 disabled:opacity-50">Envoyer</button>
+                      {inv.status === 'draft' && <button type="button" onClick={() => setEditInvoice(inv)} className="h-9 rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-black text-emerald-700">Modifier</button>}
+                      <button type="button" onClick={() => isDeleting ? deleteInvoice.mutate(inv._id, { onSuccess: () => setConfirmDeleteId(null) }) : setConfirmDeleteId(inv._id)} className="h-9 rounded-lg border border-red-100 bg-red-50 text-xs font-black text-red-600">{isDeleting ? 'Confirmer' : 'Supprimer'}</button>
+                    </div>
+                  </div>
+                )}
+<div className="hidden items-center gap-2 shrink-0 sm:flex">
                   <button onClick={() => setViewRecipientInvoice(row)} title="Voir la facture"
                     className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600">
                     <Eye size={13} />

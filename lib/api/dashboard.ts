@@ -9,11 +9,17 @@ export interface AdminStats {
     suspended: number;
     total: number;
   };
+  requests: { pending: number };
   cotisations: {
     year: number;
     paid: number;
     unpaid: number;
+    pendingInvoices: number;
+    overdueInvoices: number;
   };
+  messages: { unread: number };
+  activities: { upcoming: number };
+  recommendations: { unread: number };
   recentMembers: {
     _id: string;
     firstName: string;

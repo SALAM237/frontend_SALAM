@@ -497,8 +497,6 @@ export default function AdminAdherentsPage() {
 }
 
 function CardChangeRequestsModal({ onClose }: { onClose: () => void }) {
-  const user = useAuthStore(s => s.user);
-  const canConfigureValidation = user?.effectivePermissions?.includes('*') || user?.effectivePermissions?.includes('members.configureValidation');
   const [showConfig, setShowConfig] = useState(false);
   const { data, isLoading, isError, error } = useMemberCardChangeRequests('pending');
   const { data: policyData } = useMemberProfileValidationPolicy();
@@ -522,16 +520,14 @@ function CardChangeRequestsModal({ onClose }: { onClose: () => void }) {
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            {canConfigureValidation && (
-              <button
-                type="button"
-                onClick={() => setShowConfig(value => !value)}
-                className="inline-flex min-h-9 max-w-full items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 transition hover:bg-emerald-100"
-              >
-                <Plus size={13} className="shrink-0" />
-                <span className="leading-tight">{showConfig ? 'Voir les demandes' : 'Ajouter des validations'}</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setShowConfig(value => !value)}
+              className="inline-flex h-9 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-100"
+            >
+              <Plus size={13} />
+              {showConfig ? 'Voir les demandes' : 'Ajouter des validations'}
+            </button>
             <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
               <XCircle size={16} />
             </button>

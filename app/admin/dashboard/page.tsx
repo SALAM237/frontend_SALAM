@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   Users, UserPlus, CreditCard, CalendarDays, TrendingUp, Activity,
-  ArrowRight, MoreHorizontal, CheckCircle2, Clock, XCircle, ShieldCheck,
+  ArrowRight, CheckCircle2, Clock, XCircle, ShieldCheck, MessageSquare, Sparkles, AlertTriangle,
 } from 'lucide-react';
 import { useAdminStats } from '@/lib/api/dashboard';
 import { usePendingValidations } from '@/lib/api/validations';
@@ -41,40 +41,19 @@ export default function AdminDashboardPage() {
   const pendingTotal = pendingRes?.data?.total ?? 0;
 
   const statCards = [
-    {
-      label: 'Adhérents actifs',
-      value: isLoading ? '…' : String(stats?.members.active ?? 0),
-      delta: stats ? `${stats.members.total} au total` : '—',
-      icon: Users,
-      color: 'bg-emerald-100 text-emerald-700',
-    },
-    {
-      label: 'Nouvelles demandes',
-      value: isLoading ? '…' : String(stats?.members.pending ?? 0),
-      delta: 'En attente de validation',
-      icon: UserPlus,
-      color: 'bg-blue-100 text-blue-700',
-    },
-    {
-      label: 'Cotisations payées',
-      value: isLoading ? '…' : String(stats?.cotisations.paid ?? 0),
-      delta: stats ? `${stats.cotisations.year}` : '—',
-      icon: CreditCard,
-      color: 'bg-yellow-100 text-yellow-700',
-    },
-    {
-      label: 'Activités à venir',
-      value: '—',
-      delta: 'Bientôt disponible',
-      icon: CalendarDays,
-      color: 'bg-red-100 text-red-700',
-    },
+    { label: 'Adherents actifs', value: stats?.members.active ?? 0, detail: stats ? stats.members.total + ' au total' : '-', icon: Users, color: 'bg-emerald-100 text-emerald-700', href: '/admin/adherents?status=active' },
+    { label: 'Nouvelles demandes', value: stats?.requests.pending ?? 0, detail: 'A valider', icon: UserPlus, color: 'bg-blue-100 text-blue-700', href: '/admin/validations' },
+    { label: 'Cotisations en attente', value: stats?.cotisations.pendingInvoices ?? 0, detail: 'Echeance a venir', icon: Clock, color: 'bg-amber-100 text-amber-700', href: '/admin/facturation?payment=pending' },
+    { label: 'Cotisations impayees', value: stats?.cotisations.overdueInvoices ?? 0, detail: 'Echeance depassee', icon: AlertTriangle, color: 'bg-red-100 text-red-700', href: '/admin/facturation?payment=overdue' },
+    { label: 'Cotisations payees', value: stats?.cotisations.paid ?? 0, detail: String(stats?.cotisations.year ?? ''), icon: CreditCard, color: 'bg-yellow-100 text-yellow-700', href: '/admin/cotisations?status=paid' },
+    { label: 'Messages non lus', value: stats?.messages.unread ?? 0, detail: 'A consulter', icon: MessageSquare, color: 'bg-cyan-100 text-cyan-700', href: '/admin/messages?unread=1' },
+    { label: 'Activites a venir', value: stats?.activities.upcoming ?? 0, detail: 'Programmees', icon: CalendarDays, color: 'bg-violet-100 text-violet-700', href: '/admin/activites?period=upcoming' },
+    { label: 'Recommandations IA', value: stats?.recommendations.unread ?? 0, detail: 'Non consultees', icon: Sparkles, color: 'bg-fuchsia-100 text-fuchsia-700', href: '/admin/assistant-ia' },
   ];
-
   const recentMembers = stats?.recentMembers ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-[1600px] space-y-6">
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -99,30 +78,22 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Stats */}
-      <motion.div
-        variants={container} initial="hidden" animate="show"
-        className="grid grid-cols-2 gap-4 lg:grid-cols-4"
-      >
-        {statCards.map(({ label, value, delta, icon: Icon, color }) => (
-          <motion.div key={label} variants={fadeUp} className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-            <div className="flex items-center justify-between">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
-                <Icon size={18} />
+      <motion.div variants={container} initial="hidden" animate="show"
+        className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-8">
+        {statCards.map(({ label, value, detail, icon: Icon, color, href }) => (
+          <motion.div key={label} variants={fadeUp}>
+            <Link href={href}
+              className="flex h-[112px] min-w-0 flex-col justify-between rounded-lg border border-neutral-100 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md sm:h-[122px] lg:h-[136px] lg:p-3">
+              <div className={'flex h-8 w-8 items-center justify-center rounded-lg ' + color}><Icon size={15} /></div>
+              <div className="min-w-0">
+                <p className="text-2xl font-black leading-none text-neutral-900 lg:text-[1.75rem]">{isLoading ? '...' : value}</p>
+                <p className="mt-1 line-clamp-2 min-h-7 text-[10px] font-bold leading-3.5 text-neutral-600">{label}</p>
+                <p className="mt-0.5 truncate text-[9px] text-neutral-400">{detail}</p>
               </div>
-              <MoreHorizontal size={16} className="text-neutral-300" />
-            </div>
-            <div>
-              <p className="text-[2rem] font-black leading-none tracking-[-0.05em] text-neutral-900">{value}</p>
-              <p className="mt-1 text-xs font-semibold text-neutral-500">{label}</p>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <TrendingUp size={12} className="text-emerald-500" />
-              <span className="text-[11px] font-semibold text-emerald-600">{delta}</span>
-            </div>
+            </Link>
           </motion.div>
         ))}
       </motion.div>
-
       {/* Main grid */}
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
 

@@ -15,6 +15,7 @@ import { articleImage } from '@/lib/article-image';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { DesignEditorField } from '@/components/admin/DesignEditorField';
 import { RichText } from '@/components/ui/RichText';
+import { FeaturedManager } from '@/components/admin/FeaturedManager';
 
 type DesignStyle = {
   x: number;
@@ -424,6 +425,8 @@ export default function AdminActualitesPage() {
           <p className="mt-1 text-xs font-semibold text-neutral-500">Brouillons</p>
         </div>
       </div>
+
+      <FeaturedManager />
 
       <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
         {isLoading && (

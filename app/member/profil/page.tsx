@@ -146,6 +146,11 @@ export default function ProfilPage() {
   ) => setForm(prev => ({ ...prev, [key]: e.target.value }));
 
   const handleSave = async (e: React.FormEvent) => {
+    if (!['homme', 'femme'].includes(form.gender)) {
+      e.preventDefault();
+      toast.error('La civilite est obligatoire.');
+      return;
+    }
     e.preventDefault();
     const sensitiveChanged =
       form.gender !== (user?.gender ?? '')
@@ -305,7 +310,7 @@ export default function ProfilPage() {
       <form onSubmit={handleSave} className="space-y-4">
         <Section title="Informations personnelles">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Select label="Civilite" value={form.gender} onChange={set('gender')} options={[['', 'Non renseignee'], ['homme', 'Monsieur'], ['femme', 'Madame']]} />
+            <Select label="Civilite" required value={form.gender} onChange={set('gender')} options={[['', 'Non renseignee'], ['homme', 'Monsieur'], ['femme', 'Madame']]} />
             <div className="hidden sm:block" />
             <F icon={User} label="Prenom" value={form.firstName} onChange={set('firstName')} required />
             <F icon={User} label="Nom" value={form.lastName} onChange={set('lastName')} required />
@@ -411,20 +416,22 @@ function F({ icon: Icon, label, value, onChange, type = 'text', readOnly, placeh
   );
 }
 
-function Select({ label, value, onChange, options, readOnly }: {
+function Select({ label, value, onChange, options, readOnly, required }: {
   label: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   options: [string, string][];
   readOnly?: boolean;
+  required?: boolean;
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label}</label>
+      <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label}{required && <span className="ml-0.5 text-red-500">*</span>}</label>
       <select
         value={value}
         onChange={onChange}
         disabled={readOnly}
+        required={required}
         className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 disabled:bg-neutral-50 disabled:text-neutral-500"
       >
         {options.map(([optionValue, optionLabel]) => (

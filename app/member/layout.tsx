@@ -10,6 +10,8 @@ import { formatFirstName, formatFullName, formatInitials } from '@/lib/format-na
 import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import MemberAccountTabs, { isMemberAccountPath } from '@/components/member/MemberAccountTabs';
 import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
+import { NotificationCenter } from '@/components/portal/NotificationCenter';
+import { AvatarLightbox } from '@/components/portal/AvatarLightbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, User, CalendarDays,
@@ -134,8 +136,7 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl
         <div className="border-t border-white/[0.06] p-4">
           <div className="flex items-center gap-3">
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt={formatFullName(firstName, lastName)} className={`h-9 w-9 shrink-0 rounded-full border-2 object-cover ${memberAvatarBorderClass(gender)}`} />
+              <AvatarLightbox src={avatarUrl} alt={formatFullName(firstName, lastName)} className={'h-9 w-9 shrink-0 rounded-full border-2 object-cover ' + memberAvatarBorderClass(gender)} />
             ) : (
               <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${initialsClass}`}>
                 {initials}
@@ -281,34 +282,9 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
               <Globe size={13} />
               <span className="hidden sm:inline">Voir le site</span>
             </Link>
-            <div className="relative">
-              <button
-                onClick={() => setNotifOpen(v => !v)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-emerald-300 hover:text-emerald-700"
-              >
-                <Bell size={15} />
-              </button>
-              {notifOpen && (
-                <>
-                  <div className="fixed inset-0 z-[99]" onClick={() => setNotifOpen(false)} />
-                  <div className="absolute right-0 top-full z-[100] mt-2 w-72 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-xl">
-                    <div className="border-b border-neutral-100 px-4 py-3">
-                      <p className="text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Notifications</p>
-                    </div>
-                    <div className="flex flex-col items-center py-10 text-center">
-                      <Bell size={28} className="mb-3 text-neutral-200" />
-                      <p className="text-sm font-semibold text-neutral-400">Aucune notification</p>
-                      <p className="mt-1 text-xs text-neutral-300">Vous êtes à jour !</p>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <NotificationCenter space="member" />
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <Link href="/member/profil" title="Mon compte">
-                <img src={avatarUrl} alt={user ? formatFullName(user.firstName, user.lastName) : 'Profil'} className={`h-8 w-8 rounded-full border-2 object-cover ring-1 ${memberAvatarBorderClass(user?.gender)} ${memberAvatarRingClass(user?.gender)}`} />
-              </Link>
+              <AvatarLightbox src={avatarUrl} alt={user ? formatFullName(user.firstName, user.lastName) : 'Profil'} className={'h-8 w-8 rounded-full border-2 object-cover ring-1 ' + memberAvatarBorderClass(user?.gender) + ' ' + memberAvatarRingClass(user?.gender)} />
             ) : (
               <Link href="/member/profil" title="Mon compte" className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${initialsClass}`}>
                 {initials}
