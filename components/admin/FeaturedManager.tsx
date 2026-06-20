@@ -7,8 +7,9 @@ import {
   useAdminFeatured, useDeleteFeatured, useFeaturedTargets, useSaveFeatured, useUploadFeaturedMedia,
 } from '@/lib/api/featured';
 
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const VIDEO_TYPES = ['video/mp4', 'video/webm'];
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'heic', 'heif', 'gif', 'tif', 'tiff'];
+const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'm4v', 'mkv', 'avi', 'mpeg', 'mpg', '3gp'];
+const fileExtension = (file: File) => file.name.split('.').pop()?.toLowerCase() ?? '';
 const IMAGE_MAX = 15 * 1024 * 1024;
 const VIDEO_MAX = 80 * 1024 * 1024;
 const emptyDestination = (): FeaturedDestination => ({ type: 'none', href: '' });
@@ -62,13 +63,13 @@ function FeaturedEditor({ initial, onClose }: { initial?: FeaturedItem; onClose:
   const selectFiles = (files: FileList | null) => {
     if (!files?.length) return;
     const selected = Array.from(files);
-    const allowed = form.mediaType === 'image' ? IMAGE_TYPES : VIDEO_TYPES;
+    const allowed = form.mediaType === 'image' ? IMAGE_EXTENSIONS : VIDEO_EXTENSIONS;
     const maxSize = form.mediaType === 'image' ? IMAGE_MAX : VIDEO_MAX;
-    const invalidType = selected.find(file => !allowed.includes(file.type));
+    const invalidType = selected.find(file => !allowed.includes(fileExtension(file)));
     if (invalidType) {
       setError(form.mediaType === 'image'
-        ? 'Format non accepte. Utilisez une image JPG, PNG ou WEBP.'
-        : 'Format non accepte. Utilisez une video MP4 ou WEBM.');
+        ? 'Format non accepte. Images : JPG, PNG, WEBP, AVIF, HEIC/HEIF, GIF ou TIFF.'
+        : 'Format non accepte. Videos : MP4, WEBM, MOV, M4V, MKV, AVI, MPEG/MPG ou 3GP.');
       return;
     }
     const tooLarge = selected.find(file => file.size > maxSize);
@@ -166,8 +167,8 @@ function FeaturedEditor({ initial, onClose }: { initial?: FeaturedItem; onClose:
             <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-emerald-300 bg-emerald-50/40 px-4 text-center transition hover:bg-emerald-50">
               <Upload size={20} className="mb-2 text-emerald-700" />
               <span className="text-xs font-black text-emerald-800">Choisir {form.mediaType === 'image' ? 'des images' : 'une video'}</span>
-              <span className="mt-1 text-[11px] text-neutral-500">{form.mediaType === 'image' ? 'JPG, PNG ou WEBP - 15 Mo maximum par image - 10 images maximum' : 'MP4 ou WEBM - 80 Mo maximum - 1 video'}</span>
-              <input type="file" multiple={form.mediaType === 'image'} accept={form.mediaType === 'image' ? '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp' : '.mp4,.webm,video/mp4,video/webm'} className="hidden" disabled={busy} onChange={event => { selectFiles(event.target.files); event.target.value = ''; }} />
+              <span className="mt-1 text-[11px] text-neutral-500">{form.mediaType === 'image' ? 'JPG, PNG, WEBP, AVIF, HEIC, GIF ou TIFF - 15 Mo maximum - 10 images' : 'MP4, WEBM, MOV, M4V, MKV, AVI, MPEG ou 3GP - 80 Mo maximum'}</span>
+              <input type="file" multiple={form.mediaType === 'image'} accept={form.mediaType === 'image' ? '.jpg,.jpeg,.png,.webp,.avif,.heic,.heif,.gif,.tif,.tiff,image/*' : '.mp4,.webm,.mov,.m4v,.mkv,.avi,.mpeg,.mpg,.3gp,video/*'} className="hidden" disabled={busy} onChange={event => { selectFiles(event.target.files); event.target.value = ''; }} />
             </label>
             <div className="flex gap-2">
               <input value={urlInput} onChange={event => setUrlInput(event.target.value)} placeholder={form.mediaType === 'video' ? 'URL YouTube ou video : https://...' : 'URL d image : https://...'} className={input} />
