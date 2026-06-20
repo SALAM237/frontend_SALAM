@@ -19,7 +19,7 @@ import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, me
 import AdminAccountTabs from '@/components/admin/AdminAccountTabs';
 import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
 import { NotificationCenter } from '@/components/portal/NotificationCenter';
-import { AvatarLightbox } from '@/components/portal/AvatarLightbox';
+import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
 
 type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; permissions?: string[] };
 
@@ -321,6 +321,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">
       <AuthSessionKeeper />
+      <GlobalProfilePhotoLightbox />
       <AdminSidebar
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
         initials={initials} displayName={displayName} adminRole={adminRole}

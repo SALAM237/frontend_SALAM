@@ -5,6 +5,7 @@ import { Briefcase, Handshake, Loader2, Mail, MapPin, Search, Tag, Users } from 
 import { useMemberDirectorySearch, type DirectoryMember } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
+import { AvatarLightbox } from '@/components/portal/AvatarLightbox';
 
 function MemberNetworkingCard({ member }: { member: DirectoryMember }) {
   const name = formatFullName(member.firstName, member.lastName);
@@ -18,7 +19,7 @@ function MemberNetworkingCard({ member }: { member: DirectoryMember }) {
       <div className="flex items-start gap-3">
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={photo} alt={name} className={`h-12 w-12 shrink-0 rounded-full border-2 object-cover ${memberAvatarBorderClass(member.gender)}`} />
+          <AvatarLightbox src={photo} alt={name} className={'h-12 w-12 shrink-0 rounded-full border-2 object-cover ' + memberAvatarBorderClass(member.gender)} />
         ) : (
           <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${memberInitialsClass(member.gender)}`}>
             {formatInitials(member.firstName, member.lastName, 'M')}

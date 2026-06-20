@@ -85,7 +85,7 @@ export default function AdminDashboardPage() {
             <Link href={href}
               className="flex h-[112px] min-w-0 flex-col justify-between rounded-lg border border-neutral-100 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md sm:h-[122px] lg:h-[136px] lg:p-3">
               <div className={'flex h-8 w-8 items-center justify-center rounded-lg ' + color}><Icon size={15} /></div>
-              <div className="min-w-0">
+              <div className="min-w-0 text-right">
                 <p className="text-2xl font-black leading-none text-neutral-900 lg:text-[1.75rem]">{isLoading ? '...' : value}</p>
                 <p className="mt-1 line-clamp-2 min-h-7 text-[10px] font-bold leading-3.5 text-neutral-600">{label}</p>
                 <p className="mt-0.5 truncate text-[9px] text-neutral-400">{detail}</p>

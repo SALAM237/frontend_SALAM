@@ -6,6 +6,7 @@ import { Briefcase, Handshake, Loader2, Mail, MapPin, Search, ShieldCheck, Tags,
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
+import { AvatarLightbox } from '@/components/portal/AvatarLightbox';
 
 function countValues(members: MemberListItem[], getter: (member: MemberListItem) => string[] | string | undefined) {
   const map = new Map<string, number>();
@@ -29,7 +30,7 @@ function AdminNetworkingCard({ member }: { member: MemberListItem }) {
       <div className="flex items-start gap-3">
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={photo} alt={name} className={`h-11 w-11 shrink-0 rounded-full border-2 object-cover ${memberAvatarBorderClass(member.gender)}`} />
+          <AvatarLightbox src={photo} alt={name} className={'h-11 w-11 shrink-0 rounded-full border-2 object-cover ' + memberAvatarBorderClass(member.gender)} />
         ) : (
           <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xs font-black text-white ${memberInitialsClass(member.gender)}`}>
             {formatInitials(member.firstName, member.lastName, 'M')}

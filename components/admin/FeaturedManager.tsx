@@ -1,9 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Edit3, ImagePlus, Loader2, Plus, Sparkles, Trash2, Upload, X } from 'lucide-react';
-import { type FeaturedDestination, type FeaturedItem, type FeaturedPayload, useAdminFeatured, useDeleteFeatured, useFeaturedTargets, useSaveFeatured, useUploadFeaturedMedia } from '@/lib/api/featured';
+import {
+  type FeaturedDestination, type FeaturedItem, type FeaturedPayload,
+  useAdminFeatured, useDeleteFeatured, useFeaturedTargets, useSaveFeatured, useUploadFeaturedMedia,
+} from '@/lib/api/featured';
 
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const VIDEO_TYPES = ['video/mp4', 'video/webm'];
+const IMAGE_MAX = 15 * 1024 * 1024;
+const VIDEO_MAX = 80 * 1024 * 1024;
 const emptyDestination = (): FeaturedDestination => ({ type: 'none', href: '' });
 const emptyForm = (): FeaturedPayload => ({
   title: '', description: '', mediaType: 'image', mediaUrls: [], videoProvider: 'external', autoplay: false,
@@ -24,11 +31,11 @@ function DestinationField({ label, value, onChange }: { label: string; value: Fe
         </select>
         {value.type === 'internal' && (
           <select value={value.href} onChange={event => onChange({ ...value, href: event.target.value })} className={input}>
-            <option value="">Choisir un contenu</option>
+            <option value="">Choisir une actualite, opportunite ou activite</option>
             {targets.map(target => <option key={target.type + target.id} value={target.href}>{target.type} - {target.label}</option>)}
           </select>
         )}
-        {value.type === 'external' && <input type="url" value={value.href} onChange={event => onChange({ ...value, href: event.target.value })} placeholder="https://..." className={input} />}
+        {value.type === 'external' && <input type="url" value={value.href} onChange={event => onChange({ ...value, href: event.target.value })} placeholder="https://exemple.com/page" className={input} />}
       </div>
     </div>
   );
@@ -36,61 +43,151 @@ function DestinationField({ label, value, onChange }: { label: string; value: Fe
 
 function FeaturedEditor({ initial, onClose }: { initial?: FeaturedItem; onClose: () => void }) {
   const [form, setForm] = useState<FeaturedPayload>(() => initial ? { ...initial } : emptyForm());
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [urlInput, setUrlInput] = useState('');
+  const [error, setError] = useState('');
+  const [processing, setProcessing] = useState(false);
+  const [progress, setProgress] = useState('');
   const save = useSaveFeatured();
   const upload = useUploadFeaturedMedia();
   const set = <K extends keyof FeaturedPayload>(key: K, value: FeaturedPayload[K]) => setForm(previous => ({ ...previous, [key]: value }));
-  const submit = () => save.mutate({ id: initial?._id, payload: form }, { onSuccess: onClose });
-  const uploadFile = (file?: File) => {
-    if (!file) return;
-    upload.mutate(file, { onSuccess: response => {
-      setForm(previous => ({ ...previous, mediaType: response.data.mediaType, mediaUrls: [...previous.mediaUrls, response.data.url].slice(0, 10), videoProvider: response.data.mediaType === 'video' ? 'upload' : previous.videoProvider }));
-    } });
-  };
   const input = 'h-10 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-emerald-500';
 
+  const changeMediaType = (mediaType: 'image' | 'video') => {
+    setForm(previous => ({ ...previous, mediaType, mediaUrls: [], videoProvider: mediaType === 'video' ? 'upload' : 'external' }));
+    setPendingFiles([]);
+    setError('');
+  };
+
+  const selectFiles = (files: FileList | null) => {
+    if (!files?.length) return;
+    const selected = Array.from(files);
+    const allowed = form.mediaType === 'image' ? IMAGE_TYPES : VIDEO_TYPES;
+    const maxSize = form.mediaType === 'image' ? IMAGE_MAX : VIDEO_MAX;
+    const invalidType = selected.find(file => !allowed.includes(file.type));
+    if (invalidType) {
+      setError(form.mediaType === 'image'
+        ? 'Format non accepte. Utilisez une image JPG, PNG ou WEBP.'
+        : 'Format non accepte. Utilisez une video MP4 ou WEBM.');
+      return;
+    }
+    const tooLarge = selected.find(file => file.size > maxSize);
+    if (tooLarge) {
+      setError((form.mediaType === 'image' ? 'Image' : 'Video') + ' trop lourde : ' + tooLarge.name + '. Taille maximale : ' + (form.mediaType === 'image' ? '15 Mo.' : '80 Mo.'));
+      return;
+    }
+    if (form.mediaType === 'video' && selected.length > 1) {
+      setError('Ajoutez une seule video par publication.');
+      return;
+    }
+    if (form.mediaType === 'image' && form.mediaUrls.length + pendingFiles.length + selected.length > 10) {
+      setError('Maximum 10 images par publication.');
+      return;
+    }
+    setError('');
+    setPendingFiles(previous => form.mediaType === 'video' ? selected.slice(0, 1) : [...previous, ...selected]);
+  };
+
+  const addUrl = () => {
+    const value = urlInput.trim();
+    if (!value) return;
+    try {
+      const parsed = new URL(value);
+      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error();
+      if (form.mediaType === 'video' && form.mediaUrls.length >= 1) {
+        setError('Une seule URL video est autorisee par publication.');
+        return;
+      }
+      set('mediaUrls', [...form.mediaUrls, parsed.toString()].slice(0, 10));
+      setUrlInput('');
+      setError('');
+    } catch {
+      setError('Lien invalide. Saisissez une URL complete commencant par https://');
+    }
+  };
+
+  const validate = () => {
+    if (!form.title.trim()) return 'Le grand titre est obligatoire.';
+    if (!form.description.trim()) return 'Le texte de presentation est obligatoire.';
+    if (!form.mediaUrls.length && !pendingFiles.length) return 'Ajoutez au moins une image, une video ou une URL.';
+    const destinations = [form.mediaDestination, form.titleDestination, form.textDestination, form.buttonDestination];
+    if (destinations.some(destination => destination.type !== 'none' && !destination.href)) return 'Choisissez une destination pour chaque lien active.';
+    return '';
+  };
+
+  const submit = async () => {
+    const validationError = validate();
+    if (validationError) { setError(validationError); return; }
+    setProcessing(true);
+    setError('');
+    try {
+      const uploadedUrls: string[] = [];
+      for (let index = 0; index < pendingFiles.length; index += 1) {
+        setProgress('Compression et import du fichier ' + (index + 1) + '/' + pendingFiles.length + '...');
+        const response = await upload.mutateAsync(pendingFiles[index]);
+        uploadedUrls.push(response.data.url);
+      }
+      setProgress('Enregistrement de la publication...');
+      await save.mutateAsync({
+        id: initial?._id,
+        payload: {
+          ...form,
+          mediaUrls: [...form.mediaUrls, ...uploadedUrls],
+          videoProvider: form.mediaType === 'video' && pendingFiles.length ? 'upload' : form.videoProvider,
+        },
+      });
+      onClose();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Impossible d enregistrer la publication.');
+    } finally {
+      setProcessing(false);
+      setProgress('');
+    }
+  };
+
+  const busy = processing || upload.isPending || save.isPending;
   return (
     <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm">
       <div className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
         <header className="flex items-center justify-between border-b border-neutral-100 px-4 py-3 sm:px-6">
-          <div><p className="font-black text-neutral-900">{initial ? 'Modifier' : 'Ajouter'} une info a la une</p><p className="text-xs text-neutral-400">Composez le media, le texte et chaque destination.</p></div>
-          <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-neutral-100"><X size={17} /></button>
+          <div><p className="font-black text-neutral-900">{initial ? 'Modifier' : 'Ajouter'} une info a la une</p><p className="text-xs text-neutral-400">Les fichiers sont compresses sans forte perte de qualite lors de l enregistrement.</p></div>
+          <button type="button" onClick={onClose} disabled={busy} className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-neutral-100 disabled:opacity-40"><X size={17} /></button>
         </header>
         <div className="flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-6">
+          {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div>}
+          {progress && <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700"><Loader2 size={15} className="animate-spin" />{progress}</div>}
           <section>
             <p className="mb-2 text-xs font-black uppercase text-neutral-500">1. Type de media</p>
             <div className="grid grid-cols-2 gap-2">
-              {(['image', 'video'] as const).map(type => <button key={type} type="button" onClick={() => set('mediaType', type)} className={'h-11 rounded-lg border text-sm font-black ' + (form.mediaType === type ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500')}>{type === 'image' ? 'Image(s)' : 'Video'}</button>)}
+              {(['image', 'video'] as const).map(type => <button key={type} type="button" disabled={busy} onClick={() => changeMediaType(type)} className={'h-11 rounded-lg border text-sm font-black ' + (form.mediaType === type ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500')}>{type === 'image' ? 'Image(s)' : 'Video'}</button>)}
             </div>
           </section>
           <section className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-emerald-700 px-4 text-xs font-black text-white">
-                {upload.isPending ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} Importer
-                <input type="file" accept={form.mediaType === 'image' ? 'image/jpeg,image/png,image/webp' : 'video/mp4,video/webm'} className="hidden" onChange={event => uploadFile(event.target.files?.[0])} />
-              </label>
-              <span className="text-xs text-neutral-400">ou ajoutez une URL {form.mediaType === 'video' ? 'YouTube / video' : 'image'}</span>
-            </div>
+            <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-emerald-300 bg-emerald-50/40 px-4 text-center transition hover:bg-emerald-50">
+              <Upload size={20} className="mb-2 text-emerald-700" />
+              <span className="text-xs font-black text-emerald-800">Choisir {form.mediaType === 'image' ? 'des images' : 'une video'}</span>
+              <span className="mt-1 text-[11px] text-neutral-500">{form.mediaType === 'image' ? 'JPG, PNG ou WEBP - 15 Mo maximum par image - 10 images maximum' : 'MP4 ou WEBM - 80 Mo maximum - 1 video'}</span>
+              <input type="file" multiple={form.mediaType === 'image'} accept={form.mediaType === 'image' ? '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp' : '.mp4,.webm,video/mp4,video/webm'} className="hidden" disabled={busy} onChange={event => { selectFiles(event.target.files); event.target.value = ''; }} />
+            </label>
             <div className="flex gap-2">
-              <input id="featured-url" placeholder="https://..." className={input} />
-              <button type="button" onClick={() => {
-                const element = document.getElementById('featured-url') as HTMLInputElement | null;
-                if (element?.value.trim()) { set('mediaUrls', [...form.mediaUrls, element.value.trim()].slice(0, 10)); element.value = ''; }
-              }} className="h-10 shrink-0 rounded-lg border border-neutral-200 px-3 text-xs font-black">Ajouter</button>
+              <input value={urlInput} onChange={event => setUrlInput(event.target.value)} placeholder={form.mediaType === 'video' ? 'URL YouTube ou video : https://...' : 'URL d image : https://...'} className={input} />
+              <button type="button" onClick={addUrl} disabled={busy} className="h-10 shrink-0 rounded-lg border border-neutral-200 px-3 text-xs font-black">Ajouter</button>
             </div>
             {form.mediaType === 'video' && (
               <div className="grid gap-2 sm:grid-cols-2">
-                <select value={form.videoProvider} onChange={event => set('videoProvider', event.target.value as FeaturedPayload['videoProvider'])} className={input}><option value="youtube">YouTube</option><option value="upload">Video importee</option><option value="external">URL video</option></select>
+                <select value={form.videoProvider} onChange={event => set('videoProvider', event.target.value as FeaturedPayload['videoProvider'])} className={input}><option value="youtube">Lien YouTube</option><option value="upload">Video MP4/WEBM importee</option><option value="external">URL video externe</option></select>
                 <label className="flex h-10 items-center gap-2 rounded-lg border border-neutral-200 px-3 text-xs font-semibold"><input type="checkbox" checked={form.autoplay} onChange={event => set('autoplay', event.target.checked)} /> Lecture automatique muette</label>
               </div>
             )}
             <div className="grid gap-2 sm:grid-cols-2">
-              {form.mediaUrls.map((url, index) => <div key={url + index} className="flex min-w-0 items-center gap-2 rounded-lg border border-neutral-100 bg-neutral-50 p-2"><span className="min-w-0 flex-1 truncate text-[11px]">{url}</span><button type="button" onClick={() => set('mediaUrls', form.mediaUrls.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={13} className="text-red-500" /></button></div>)}
+              {pendingFiles.map((file, index) => <div key={file.name + file.lastModified} className="flex min-w-0 items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 p-2"><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-bold">{file.name}</p><p className="text-[10px] text-blue-600">A compresser - {(file.size / 1024 / 1024).toFixed(1)} Mo</p></div><button type="button" disabled={busy} onClick={() => setPendingFiles(files => files.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={13} className="text-red-500" /></button></div>)}
+              {form.mediaUrls.map((url, index) => <div key={url + index} className="flex min-w-0 items-center gap-2 rounded-lg border border-neutral-100 bg-neutral-50 p-2"><span className="min-w-0 flex-1 truncate text-[11px]">{url}</span><button type="button" disabled={busy} onClick={() => set('mediaUrls', form.mediaUrls.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={13} className="text-red-500" /></button></div>)}
             </div>
           </section>
           <section className="grid gap-3 sm:grid-cols-2">
-            <label className="sm:col-span-2"><span className="mb-1 block text-xs font-black text-neutral-600">Grand titre</span><input value={form.title} onChange={event => set('title', event.target.value)} maxLength={180} className={input} /></label>
-            <label className="sm:col-span-2"><span className="mb-1 block text-xs font-black text-neutral-600">Texte</span><textarea value={form.description} onChange={event => set('description', event.target.value)} maxLength={3000} rows={5} className="w-full rounded-lg border border-neutral-200 p-3 text-sm outline-none focus:border-emerald-500" /></label>
-            <label><span className="mb-1 block text-xs font-black text-neutral-600">Texte du bouton</span><input value={form.buttonLabel} onChange={event => set('buttonLabel', event.target.value)} className={input} /></label>
+            <label className="sm:col-span-2"><span className="mb-1 block text-xs font-black text-neutral-600">Grand titre</span><input value={form.title} onChange={event => set('title', event.target.value)} maxLength={180} placeholder="Titre principal de la publication" className={input} /></label>
+            <label className="sm:col-span-2"><span className="mb-1 block text-xs font-black text-neutral-600">Texte</span><textarea value={form.description} onChange={event => set('description', event.target.value)} maxLength={3000} rows={5} placeholder="Presentez clairement l information mise a la une..." className="w-full rounded-lg border border-neutral-200 p-3 text-sm outline-none focus:border-emerald-500" /></label>
+            <label><span className="mb-1 block text-xs font-black text-neutral-600">Texte du bouton</span><input value={form.buttonLabel} onChange={event => set('buttonLabel', event.target.value)} placeholder="En savoir plus" className={input} /></label>
             <label><span className="mb-1 block text-xs font-black text-neutral-600">Ordre</span><input type="number" min={0} value={form.order} onChange={event => set('order', Number(event.target.value))} className={input} /></label>
           </section>
           <section className="space-y-2">
@@ -106,33 +203,33 @@ function FeaturedEditor({ initial, onClose }: { initial?: FeaturedItem; onClose:
           </section>
         </div>
         <footer className="grid grid-cols-2 gap-2 border-t border-neutral-100 p-4 sm:flex sm:justify-end">
-          <button type="button" onClick={onClose} className="h-10 rounded-lg border border-neutral-200 px-5 text-sm font-bold">Annuler</button>
-          <button type="button" onClick={submit} disabled={save.isPending || !form.title.trim() || !form.description.trim() || !form.mediaUrls.length} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-5 text-sm font-black text-white disabled:opacity-50">{save.isPending && <Loader2 size={14} className="animate-spin" />} Enregistrer</button>
+          <button type="button" onClick={onClose} disabled={busy} className="h-10 rounded-lg border border-neutral-200 px-5 text-sm font-bold disabled:opacity-40">Annuler</button>
+          <button type="button" onClick={submit} disabled={busy} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-5 text-sm font-black text-white disabled:opacity-50">{busy && <Loader2 size={14} className="animate-spin" />} Enregistrer</button>
         </footer>
       </div>
     </div>
   );
 }
 
-export function FeaturedManager() {
+export function FeaturedManager({ showButton = true, showList = true }: { showButton?: boolean; showList?: boolean }) {
   const [editor, setEditor] = useState<FeaturedItem | 'new' | null>(null);
   const { data, isLoading } = useAdminFeatured();
   const remove = useDeleteFeatured();
   const items = data?.data ?? [];
   return (
     <>
-      <button type="button" onClick={() => setEditor('new')} className="inline-flex h-9 items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 text-sm font-black text-emerald-800 hover:bg-emerald-100"><Sparkles size={14} /> <span className="hidden sm:inline">Infos a la une</span><Plus size={13} /></button>
-      <div className="mt-4 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-sm">
+      {showButton && <button type="button" onClick={() => setEditor('new')} className="inline-flex h-9 items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 text-sm font-black text-emerald-800 hover:bg-emerald-100"><Sparkles size={14} /><span>Infos a la une</span><Plus size={13} /></button>}
+      {showList && <div className="overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3"><p className="text-sm font-black">A la une</p><span className="text-xs text-neutral-400">{items.length} element(s)</span></div>
         {isLoading ? <div className="flex justify-center py-8"><Loader2 size={18} className="animate-spin" /></div> : items.map(item => (
           <div key={item._id} className="flex items-center gap-3 border-b border-neutral-50 px-4 py-3">
             <div className="flex h-10 w-12 items-center justify-center overflow-hidden rounded-lg bg-neutral-100">{item.mediaType === 'image' && item.mediaUrls[0] ? <img src={item.mediaUrls[0]} alt="" className="h-full w-full object-cover" /> : <ImagePlus size={16} />}</div>
             <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">{item.title}</p><p className="text-[11px] text-neutral-400">{item.status} - {item.visibility}</p></div>
-            <button type="button" onClick={() => setEditor(item)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200"><Edit3 size={13} /></button>
-            <button type="button" onClick={() => confirm('Supprimer cet element ?') && remove.mutate(item._id)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 text-red-500"><Trash2 size={13} /></button>
+            <button type="button" onClick={() => setEditor(item)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200" title="Modifier"><Edit3 size={13} /></button>
+            <button type="button" onClick={() => confirm('Supprimer cet element ?') && remove.mutate(item._id)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 text-red-500" title="Supprimer"><Trash2 size={13} /></button>
           </div>
         ))}
-      </div>
+      </div>}
       {editor && <FeaturedEditor initial={editor === 'new' ? undefined : editor} onClose={() => setEditor(null)} />}
     </>
   );

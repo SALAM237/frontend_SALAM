@@ -4,6 +4,7 @@ import { Loader2, Users } from 'lucide-react';
 import { useMemberBureau, type BureauMember } from '@/lib/api/roles';
 import { assetUrl } from '@/lib/assets';
 import { formatFullName } from '@/lib/format-name';
+import { AvatarLightbox } from '@/components/portal/AvatarLightbox';
 
 const PLACEHOLDER_PHOTO = '/images/gallery/image_parallax_SALAM_1200.webp';
 
@@ -164,11 +165,7 @@ function TeamCard({ member, badge }: { member: BureauMember; badge: string }) {
   return (
     <article tabIndex={0} className="team-touch-card group relative aspect-[4/5] min-h-[330px] w-full max-w-[clamp(18.55rem,88vw,22.25rem)] overflow-hidden rounded-[1.65rem] border border-white/70 bg-neutral-950 shadow-[0_18px_50px_rgba(15,23,42,0.12)] ring-1 ring-black/5 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_26px_70px_rgba(6,78,59,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={photo}
-        alt={`${name} - ${title}`}
-        className="team-touch-card__image absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-active:scale-110 group-focus-visible:scale-110"
-      />
+      <AvatarLightbox src={photo} alt={name} className="team-touch-card__image absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-active:scale-110 group-focus-visible:scale-110" />
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-black/0 opacity-90 transition-opacity duration-500 group-hover:opacity-95 group-active:opacity-95" />
 
       <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">

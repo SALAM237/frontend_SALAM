@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Banknote, FileText, Eye, X, CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react';
-import { useMemberInvoices, type MemberInvoiceDoc } from '@/lib/api/invoices';
+import { Banknote, FileText, Eye, X, CheckCircle2, Clock, XCircle, Loader2, Download } from 'lucide-react';
+import { downloadMemberInvoicePdf, useMemberInvoices, type MemberInvoiceDoc } from '@/lib/api/invoices';
+import { toast } from 'sonner';
 
 /* ─── Helpers ─────────────────────────────────────────── */
 type RecipientStatus = 'pending' | 'sent' | 'paid' | 'cancelled';
@@ -118,6 +119,10 @@ function InvoiceModal({ invoice, onClose }: { invoice: MemberInvoiceDoc; onClose
               <Banknote size={14} /> Payer maintenant
             </a>
           )}
+          <button onClick={() => downloadMemberInvoicePdf(invoice._id, invoice.myRecipient?.invoiceNumber ?? invoice.invoiceNumber).catch(error => toast.error(error.message))}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 py-2.5 text-sm font-black text-violet-700 transition hover:bg-violet-100">
+            <Download size={14} /> Telecharger la facture PDF
+          </button>
           <button onClick={onClose} className="mt-3 w-full rounded-xl border border-neutral-200 bg-white py-2.5 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300">
             Fermer
           </button>
@@ -154,11 +159,18 @@ function InvoiceRow({ invoice, onView }: { invoice: MemberInvoiceDoc; onView: ()
       <div className="shrink-0 text-right hidden sm:block">
         <p className="text-sm font-black text-neutral-900">{fmtCfa(invoice.amount)}</p>
       </div>
-      <button onClick={onView}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600"
-        title="Voir la facture">
-        <Eye size={13} />
-      </button>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <button onClick={() => downloadMemberInvoicePdf(invoice._id, invoice.myRecipient?.invoiceNumber ?? invoice.invoiceNumber).catch(error => toast.error(error.message))}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"
+          title="Telecharger la facture PDF">
+          <Download size={13} />
+        </button>
+        <button onClick={onView}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600"
+          title="Voir la facture">
+          <Eye size={13} />
+        </button>
+      </div>
     </div>
   );
 }

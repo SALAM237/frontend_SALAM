@@ -24,6 +24,7 @@ import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { assetUrl } from '@/lib/assets';
 import { displayMemberNumber } from '@/lib/member-number';
+import { AvatarLightbox } from '@/components/portal/AvatarLightbox';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
@@ -268,7 +269,7 @@ export default function ProfilPage() {
         <div className="relative shrink-0">
           {avatarPreview ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarPreview} alt="Avatar" className={`h-16 w-16 rounded-full border-2 object-cover ${memberAvatarBorderClass(user?.gender)}`} />
+            <AvatarLightbox src={avatarPreview} alt={user ? formatFullName(user.firstName, user.lastName) : 'Profil'} className={'h-16 w-16 rounded-full border-2 object-cover ' + memberAvatarBorderClass(user?.gender)} />
           ) : (
             <div className={`flex h-16 w-16 items-center justify-center rounded-full text-2xl font-black text-white ${memberInitialsClass(user?.gender)}`}>
               {initials}

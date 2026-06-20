@@ -148,10 +148,12 @@ export async function apiClient<T = unknown>(
     }
   }
 
+  const isFormData = typeof FormData !== 'undefined' && rest.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json; charset=utf-8',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json; charset=utf-8' }),
     ...((rest.headers as Record<string, string>) ?? {}),
   };
+  if (isFormData) delete headers['Content-Type'];
   if (requestToken) headers.Authorization = `Bearer ${requestToken}`;
 
   const res = await fetch(`${API}${path}`, {
@@ -169,11 +171,13 @@ export async function apiClient<T = unknown>(
   }
 
   let json: ApiResponse<T>;
+  const responseText = await res.text();
   try {
-    json = await res.json();
+    json = responseText ? JSON.parse(responseText) : { success: res.ok, message: '', data: undefined as T };
   } catch {
-    throw new Error(`Erreur serveur (${res.status})`);
-  }
-  if (!res.ok) throw new Error((json as any)?.message ?? 'Erreur serveur');
+    throw new Error(res.ok
+      ? 'Le serveur a renvoye une reponse illisible'
+      : 'Erreur serveur (' + res.status + '). Verifiez le format et la taille du fichier.');
+  }  if (!res.ok) throw new Error((json as any)?.message ?? 'Erreur serveur');
   return json;
 }

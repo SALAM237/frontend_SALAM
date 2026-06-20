@@ -262,3 +262,30 @@ export function useMemberInvoices() {
     enabled: !!token,
   });
 }
+
+export async function downloadMemberInvoicePdf(id: string, invoiceNumber: string) {
+  const token = useAuthStore.getState().accessToken;
+  if (!token) throw new Error('Session expiree');
+  const api = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+  const response = await fetch(api + '/api/v1/member/invoices/' + encodeURIComponent(id) + '/pdf', {
+    headers: { Authorization: 'Bearer ' + token },
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    try { throw new Error(JSON.parse(text)?.message ?? 'Telechargement impossible'); }
+    catch (error) {
+      if (error instanceof SyntaxError) throw new Error('Telechargement impossible');
+      throw error;
+    }
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = (invoiceNumber || 'facture-salam').replace(/[^a-zA-Z0-9_-]/g, '_') + '.pdf';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

@@ -22,6 +22,7 @@ import {
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
+import { ControlledAvatarDialog } from '@/components/portal/AvatarLightbox';
 
 type MemberStatus = 'active' | 'pending' | 'suspended';
 
@@ -368,12 +369,18 @@ export default function AdminAdherentsPage() {
                   <div key={m._id} className="px-3 py-3 transition-colors hover:bg-neutral-50/60 sm:px-4">
                     <button
                       type="button"
-                      onClick={() => setExpandedId(isExpanded ? null : m._id)}
+                      onClick={event => {
+                        if ((event.target as HTMLElement).closest('[data-profile-photo]') && photoUrl) {
+                          setPhotoPreview({ src: photoUrl, name: formatFullName(m.firstName, m.lastName) });
+                          return;
+                        }
+                        setExpandedId(isExpanded ? null : m._id);
+                      }}
                       className="flex w-full items-center gap-3 rounded-2xl text-left transition active:scale-[0.995]"
                     >
                       {photoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={photoUrl} alt={formatFullName(m.firstName, m.lastName)} className={`h-10 w-10 shrink-0 rounded-2xl border-2 object-cover shadow-sm ${memberAvatarBorderClass(m.gender)}`} />
+                        <img data-profile-photo src={photoUrl} alt={formatFullName(m.firstName, m.lastName)} className={`h-10 w-10 shrink-0 rounded-2xl border-2 object-cover shadow-sm ${memberAvatarBorderClass(m.gender)}`} />
                       ) : (
                         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-xs font-black text-white shadow-sm ${memberInitialsClass(m.gender)}`}>
                           {formatInitials(m.firstName, m.lastName)}
@@ -479,18 +486,7 @@ export default function AdminAdherentsPage() {
         )}
       </div>
     </div>
-      {photoPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm" onClick={() => setPhotoPreview(null)}>
-          <div className="relative max-w-lg overflow-hidden rounded-3xl bg-white p-3 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setPhotoPreview(null)} className="absolute right-4 top-4 z-10 rounded-full bg-black/45 p-2 text-white hover:bg-black/70">
-              <XCircle size={18} />
-            </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photoPreview.src} alt={photoPreview.name} className="max-h-[75vh] w-full rounded-2xl object-contain" />
-            <p className="px-2 py-3 text-center text-sm font-black text-neutral-800">{photoPreview.name}</p>
-          </div>
-        </div>
-      )}
+      {photoPreview && <ControlledAvatarDialog src={photoPreview.src} alt={photoPreview.name} onClose={() => setPhotoPreview(null)} />}
       {showCardRequests && <CardChangeRequestsModal onClose={() => setShowCardRequests(false)} />}
     </>
   );

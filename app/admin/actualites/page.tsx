@@ -409,10 +409,13 @@ export default function AdminActualitesPage() {
           <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">Actualités</h1>
           <p className="mt-0.5 text-sm text-neutral-500">{isLoading ? '…' : `${articles.length} article${articles.length > 1 ? 's' : ''}`}</p>
         </div>
-        <button onClick={() => setShowCreate(true)}
-          className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white hover:bg-emerald-700 transition-colors shadow-sm">
-          <Plus size={14} /><span className="hidden sm:inline">Nouvel article</span>
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <FeaturedManager showList={false} />
+          <button onClick={() => setShowCreate(true)}
+            className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white hover:bg-emerald-700 transition-colors shadow-sm">
+            <Plus size={14} /><span>Nouvel article</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -426,7 +429,7 @@ export default function AdminActualitesPage() {
         </div>
       </div>
 
-      <FeaturedManager />
+      <FeaturedManager showButton={false} />
 
       <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
         {isLoading && (

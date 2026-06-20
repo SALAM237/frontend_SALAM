@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUpRight, ChevronLeft, ChevronRight, Pause, Play, X } from 'lucide-react';
+import { ArrowUpRight, ChevronLeft, ChevronRight, Pause, Play, X, Megaphone } from 'lucide-react';
 import { useMemberFeatured, usePublicFeatured, type FeaturedDestination, type FeaturedItem } from '@/lib/api/featured';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -39,7 +39,23 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
     return () => window.clearInterval(timer);
   }, [items.length, paused]);
   useEffect(() => { if (index >= items.length) setIndex(0); }, [index, items.length]);
-  if (isLoading || !items.length) return null;
+  if (!items.length) {
+    return (
+      <section className="bg-white py-12 sm:py-16" aria-labelledby="featured-heading">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mb-7">
+            <p className="text-xs font-black uppercase text-emerald-700">Selection SALAM</p>
+            <h2 id="featured-heading" className="mt-1 text-3xl font-black text-neutral-950 sm:text-4xl">A la une</h2>
+          </div>
+          <div className="flex min-h-[260px] w-full flex-col items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 px-6 text-center">
+            {isLoading ? <span className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" /> : <Megaphone size={30} className="text-emerald-700" />}
+            <p className="mt-4 text-base font-black text-neutral-800">{isLoading ? 'Chargement des informations...' : 'Les prochaines informations a la une seront publiees ici.'}</p>
+            {!isLoading && <p className="mt-1 max-w-lg text-sm leading-6 text-neutral-500">Actualites importantes, annonces et initiatives mises en avant par SALAM.</p>}
+          </div>
+        </div>
+      </section>
+    );
+  }
   const item = items[index];
 
   return (

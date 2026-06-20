@@ -11,7 +11,7 @@ import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, me
 import MemberAccountTabs, { isMemberAccountPath } from '@/components/member/MemberAccountTabs';
 import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
 import { NotificationCenter } from '@/components/portal/NotificationCenter';
-import { AvatarLightbox } from '@/components/portal/AvatarLightbox';
+import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, User, CalendarDays,
@@ -245,6 +245,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">
       <AuthSessionKeeper />
+      <GlobalProfilePhotoLightbox />
       <MemberSidebar
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
         firstName={firstName} lastName={lastName} initials={initials}

@@ -72,7 +72,7 @@ export function useUploadFeaturedMedia() {
     mutationFn: async (file: File) => {
       const form = new FormData();
       form.append('media', file);
-      return apiClient<{ url: string; mediaType: 'image' | 'video' }>('/api/v1/admin/featured-media', { method: 'POST', body: form, token: token ?? '' });
+      return apiClient<{ url: string; mediaType: 'image' | 'video'; originalSize: number; compressedSize: number }>('/api/v1/admin/featured-media', { method: 'POST', body: form, token: token ?? '' });
     },
     onError: (error: Error) => toast.error(error.message),
   });
