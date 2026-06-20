@@ -1,5 +1,5 @@
 ﻿import Link from 'next/link';
-import { Mail, MapPin, ExternalLink, Facebook, Linkedin, MessageCircle } from 'lucide-react';
+import { Mail, MapPin, ExternalLink, MessageCircle } from 'lucide-react';
 import { SalamLogo } from '@/components/brand/SalamLogo';
 import { DON_NAV_ITEM, PUBLIC_NAV_ITEMS } from '@/lib/navigation';
 
@@ -30,9 +30,9 @@ const NAV_COLS = [
 ];
 
 const SOCIALS = [
-  { Icon: Facebook,       label: 'Facebook',  href: 'https://www.facebook.com/salam.cameroun' },
-  { Icon: MessageCircle,  label: 'WhatsApp',  href: 'https://wa.me/237697791021' },
-  { Icon: Linkedin,       label: 'LinkedIn',  href: 'https://www.linkedin.com/company/salam-cameroun' },
+  { label: 'Facebook', href: 'https://www.facebook.com/salam.cameroun', text: 'f' },
+  { Icon: MessageCircle, label: 'WhatsApp', href: 'https://wa.me/237697791021' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/salam-cameroun', text: 'in' },
 ];
 
 export function Footer() {
@@ -56,7 +56,7 @@ export function Footer() {
 
             {/* Socials */}
             <div className="mt-6 flex gap-2">
-              {SOCIALS.map(({ Icon, label, href }) => (
+              {SOCIALS.map(({ Icon, label, href, text }) => (
                 <a
                   key={label}
                   href={href}
@@ -65,7 +65,7 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="grid size-9 place-items-center rounded-full border border-white/10 text-white/45 transition-all duration-200 hover:border-salam-green hover:text-salam-green hover:bg-green-950"
                 >
-                  <Icon size={15} />
+                  {Icon ? <Icon size={15} /> : <span className="text-[13px] font-black leading-none">{text}</span>}
                 </a>
               ))}
             </div>
