@@ -5,8 +5,17 @@ import Link from 'next/link';
 import {
   UserPlus, CreditCard, Search, Eye, CheckCircle2, Clock, XCircle,
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
+  ShieldCheck,
 } from 'lucide-react';
-import { useAdminMembers, useHardDeleteMember, useResendInvitation, type MemberListItem } from '@/lib/api/members';
+import {
+  useAdminMembers,
+  useHardDeleteMember,
+  useMemberCardChangeRequests,
+  useResendInvitation,
+  useReviewMemberCardChangeRequest,
+  type MemberCardChangeRequest,
+  type MemberListItem,
+} from '@/lib/api/members';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
@@ -59,13 +68,16 @@ export default function AdminAdherentsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<{ src: string; name: string } | null>(null);
+  const [showCardRequests, setShowCardRequests] = useState(false);
 
   const user        = useAuthStore(s => s.user);
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
 
   const { data, isLoading }  = useAdminMembers({ status: filter, search, limit: 100 });
+  const { data: cardRequestsData } = useMemberCardChangeRequests('pending');
   const hardDelete           = useHardDeleteMember();
   const resendInvitation     = useResendInvitation();
+  const pendingCardRequests = cardRequestsData?.data?.pending ?? 0;
 
   const members = useMemo<MemberListItem[]>(() => data?.data?.data ?? [], [data]);
 
@@ -137,6 +149,16 @@ export default function AdminAdherentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowCardRequests(true)}
+            className="relative inline-flex h-9 items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 text-sm font-semibold text-emerald-700 transition-all hover:border-emerald-400 hover:bg-emerald-50"
+          >
+            <ShieldCheck size={14} /> Modifications carte
+            <span className="absolute -right-1.5 -top-2 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-black text-white ring-2 ring-white">
+              {pendingCardRequests}
+            </span>
+          </button>
           <Link href="/admin/cartes" className="inline-flex h-9 items-center gap-2 rounded-full border border-yellow-300 bg-yellow-200 px-4 text-sm font-semibold text-yellow-800 transition-all hover:bg-yellow-300">
             <CreditCard size={14} /> Cartes membres
           </Link>
@@ -466,6 +488,106 @@ export default function AdminAdherentsPage() {
           </div>
         </div>
       )}
+      {showCardRequests && <CardChangeRequestsModal onClose={() => setShowCardRequests(false)} />}
     </>
+  );
+}
+
+function CardChangeRequestsModal({ onClose }: { onClose: () => void }) {
+  const { data, isLoading } = useMemberCardChangeRequests('pending');
+  const review = useReviewMemberCardChangeRequest();
+  const requests = data?.data?.data ?? [];
+
+  const submit = (request: MemberCardChangeRequest, action: 'approve' | 'reject') => {
+    review.mutate({ id: request._id, action });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 backdrop-blur-sm sm:items-center">
+      <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Validation admin</p>
+            <h2 className="text-lg font-black text-neutral-900">Modifications de carte membre</h2>
+          </div>
+          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
+            <XCircle size={16} />
+          </button>
+        </div>
+
+        <div className="max-h-[70vh] overflow-y-auto p-5">
+          {isLoading && (
+            <div className="flex justify-center py-12">
+              <Loader2 size={22} className="animate-spin text-emerald-600" />
+            </div>
+          )}
+          {!isLoading && requests.length === 0 && (
+            <div className="py-12 text-center">
+              <ShieldCheck size={32} className="mx-auto mb-3 text-neutral-200" />
+              <p className="text-sm font-semibold text-neutral-400">Aucune modification en attente.</p>
+            </div>
+          )}
+          {!isLoading && requests.length > 0 && (
+            <div className="space-y-3">
+              {requests.map(request => {
+                const member = request.userId;
+                return (
+                  <div key={request._id} className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
+                        <p className="font-mono text-[11px] text-neutral-400">{member.memberNumber ?? '-'}</p>
+                        <p className="mt-0.5 text-xs text-neutral-500">{member.email}</p>
+                      </div>
+                      <p className="text-[11px] font-semibold text-neutral-400">
+                        {new Date(request.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <ChangeBox label="Civilité" before={request.currentGender === 'femme' ? 'Madame' : 'Monsieur'} after={request.requestedGender === 'femme' ? 'Madame' : 'Monsieur'} />
+                      <ChangeBox label="Promotionnaire" before={String(request.currentPromotionYear ?? '-')} after={String(request.requestedPromotionYear ?? '-')} />
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => submit(request, 'reject')}
+                        disabled={review.isPending}
+                        className="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 px-4 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                      >
+                        Refuser
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => submit(request, 'approve')}
+                        disabled={review.isPending}
+                        className="inline-flex h-9 items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                      >
+                        Valider et mettre à jour la carte
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChangeBox({ label, before, after }: { label: string; before: string; after: string }) {
+  const changed = before !== after;
+  return (
+    <div className={`rounded-xl border p-3 ${changed ? 'border-amber-100 bg-amber-50/60' : 'border-neutral-100 bg-neutral-50'}`}>
+      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">{label}</p>
+      <div className="mt-2 flex items-center justify-between gap-3 text-xs">
+        <span className="font-semibold text-neutral-500">{before}</span>
+        <ChevronDown size={13} className="-rotate-90 text-neutral-300" />
+        <span className="font-black text-neutral-900">{after}</span>
+      </div>
+    </div>
   );
 }

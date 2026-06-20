@@ -270,6 +270,63 @@ export interface ImportResult {
   errors:  { row: number; reason: string }[];
 }
 
+export interface MemberCardChangeRequest {
+  _id: string;
+  userId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    gender?: 'homme' | 'femme';
+    promotionYear?: number;
+    memberNumber?: string;
+    avatar?: string | null;
+    bureauPhoto?: string | null;
+  };
+  requestedBy?: { _id: string; firstName: string; lastName: string; email: string };
+  currentGender?: 'homme' | 'femme' | null;
+  requestedGender?: 'homme' | 'femme' | null;
+  currentPromotionYear?: number | null;
+  requestedPromotionYear?: number | null;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewNote?: string;
+  createdAt: string;
+  reviewedAt?: string | null;
+}
+
+export function useMemberCardChangeRequests(status = 'pending') {
+  const token = useAuthStore(s => s.accessToken);
+  return useQuery({
+    queryKey: ['member-card-change-requests', status],
+    queryFn: () =>
+      apiClient<{ data: MemberCardChangeRequest[]; pending: number }>(`/api/v1/admin/member-card-change-requests?status=${encodeURIComponent(status)}`, {
+        token: token ?? '',
+      }),
+    enabled: !!token,
+    refetchInterval: 5000,
+  });
+}
+
+export function useReviewMemberCardChangeRequest() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, action, note }: { id: string; action: 'approve' | 'reject'; note?: string }) =>
+      apiClient(`/api/v1/admin/member-card-change-requests/${id}/review`, {
+        method: 'POST',
+        body: JSON.stringify({ action, note }),
+        token: token ?? '',
+      }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['member-card-change-requests'] });
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
+      qc.invalidateQueries({ queryKey: ['admin-member'] });
+      toast.success((res as any).message ?? 'Demande traitée');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 export function useImportMembersCSV() {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
