@@ -19,6 +19,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { formatFirstName, formatFullName } from '@/lib/format-name';
 import { trackEvent } from '@/lib/analytics';
 import { useMemberDashboardKpis } from '@/lib/api/member-dashboard';
+import { useMemberActivities } from '@/lib/api/activities';
 
 const fadeUp = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
@@ -26,6 +27,7 @@ const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 export default function MemberDashboardPage() {
   const { user } = useAuthStore();
   const { data: kpiResponse } = useMemberDashboardKpis();
+  const { data: activitiesResponse, isLoading: activitiesLoading } = useMemberActivities();
   const kpis = kpiResponse?.data;
 
   useEffect(() => {
@@ -52,28 +54,28 @@ export default function MemberDashboardPage() {
 
   const stats = [
     {
-      label: 'Opportunites',
+      label: 'Opportunites non lues',
       value: kpis?.unreadOpportunities ?? 0,
       icon: BriefcaseBusiness,
       href: '/member/opportunites',
       color: 'bg-blue-50 text-blue-700',
     },
     {
-      label: 'Actualites',
+      label: 'Actualites non lues',
       value: kpis?.unreadNews ?? 0,
       icon: Newspaper,
       href: '/member/actualites',
       color: 'bg-amber-50 text-amber-700',
     },
     {
-      label: 'Messages',
+      label: 'Messages non lus',
       value: kpis?.unreadMessages ?? 0,
       icon: MessageSquare,
       href: '/member/messages',
       color: 'bg-red-50 text-red-700',
     },
     {
-      label: 'Publications',
+      label: 'Publication en attente',
       value: kpis?.submissions.pending ?? 0,
       icon: ShieldCheck,
       href: '/member/opportunites',
@@ -84,6 +86,11 @@ export default function MemberDashboardPage() {
       },
     },
   ];
+  const now = Date.now();
+  const upcomingActivities = (activitiesResponse?.data?.activities ?? [])
+    .filter(activity => activity.startDate && new Date(activity.startDate).getTime() >= now)
+    .sort((a, b) => new Date(a.startDate ?? 0).getTime() - new Date(b.startDate ?? 0).getTime())
+    .slice(0, 3);
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
@@ -118,15 +125,15 @@ export default function MemberDashboardPage() {
       <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {stats.map(({ label, value, icon: Icon, href, color, detail }) => (
           <motion.div key={label} variants={fadeUp}>
-            <Link href={href} className="flex min-h-[148px] flex-col justify-between gap-3 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+            <Link href={href} className="flex h-[168px] w-full flex-col justify-between rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
               <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
                 <Icon size={18} />
               </div>
               <div className="min-w-0 text-right">
-                <p className="text-2xl font-black leading-none tracking-[-0.05em] text-neutral-900">{value}</p>
-                <p className="mt-1 text-xs font-medium text-neutral-500">{label}</p>
+                <p className="text-[2.35rem] font-black leading-[0.9] tracking-[-0.05em] text-neutral-900">{value}</p>
+                <p className="mt-3 min-h-[2rem] text-xs font-medium leading-tight text-neutral-500">{label}</p>
                 {detail && (
-                  <p className="mt-2 flex flex-wrap justify-end gap-x-2 gap-y-1 text-[11px] font-normal leading-snug">
+                  <p className="mt-1 flex flex-wrap justify-end gap-x-2 gap-y-1 text-[11px] font-normal leading-snug">
                     <span className="text-red-600">{detail.rejected} refusee{detail.rejected > 1 ? 's' : ''}</span>
                     <span className="text-emerald-700">{detail.accepted} acceptee{detail.accepted > 1 ? 's' : ''}</span>
                   </p>
@@ -145,11 +152,38 @@ export default function MemberDashboardPage() {
               Toutes <ArrowRight size={11} />
             </Link>
           </div>
-          <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
-            <CalendarDays size={28} className="mb-3 opacity-30" />
-            <p className="text-sm font-semibold">Aucune activite a venir</p>
-            <p className="mt-1 text-xs">Les activites publiees apparaitront ici.</p>
-          </div>
+          {activitiesLoading && (
+            <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
+              <CalendarDays size={28} className="mb-3 opacity-30" />
+              <p className="text-sm font-semibold">Chargement des activites...</p>
+            </div>
+          )}
+          {!activitiesLoading && upcomingActivities.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
+              <CalendarDays size={28} className="mb-3 opacity-30" />
+              <p className="text-sm font-semibold">Aucune activite a venir</p>
+              <p className="mt-1 text-xs">Les activites publiees apparaitront ici.</p>
+            </div>
+          )}
+          {!activitiesLoading && upcomingActivities.length > 0 && (
+            <div className="divide-y divide-neutral-100">
+              {upcomingActivities.map(activity => (
+                <Link key={activity._id} href={`/member/activites/${activity.slug}`} className="flex items-start gap-3 px-5 py-4 transition hover:bg-neutral-50">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                    <CalendarDays size={16} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-black text-neutral-900">{activity.title}</p>
+                    <p className="mt-1 text-xs font-semibold text-neutral-500">
+                      {activity.startDate ? new Date(activity.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Date a confirmer'}
+                      {activity.location ? ` - ${activity.location}` : ''}
+                    </p>
+                  </div>
+                  <ArrowRight size={13} className="mt-1 shrink-0 text-neutral-300" />
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
