@@ -52,28 +52,28 @@ export default function MemberDashboardPage() {
 
   const stats = [
     {
-      label: 'Opportunites non lues',
+      label: 'Opportunites',
       value: kpis?.unreadOpportunities ?? 0,
       icon: BriefcaseBusiness,
       href: '/member/opportunites',
       color: 'bg-blue-50 text-blue-700',
     },
     {
-      label: 'Actualites non lues',
+      label: 'Actualites',
       value: kpis?.unreadNews ?? 0,
       icon: Newspaper,
       href: '/member/actualites',
       color: 'bg-amber-50 text-amber-700',
     },
     {
-      label: 'Messages non lus',
+      label: 'Messages',
       value: kpis?.unreadMessages ?? 0,
       icon: MessageSquare,
       href: '/member/messages',
       color: 'bg-red-50 text-red-700',
     },
     {
-      label: 'Publications en attente',
+      label: 'Publications',
       value: kpis?.submissions.pending ?? 0,
       icon: ShieldCheck,
       href: '/member/opportunites',
@@ -118,15 +118,15 @@ export default function MemberDashboardPage() {
       <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {stats.map(({ label, value, icon: Icon, href, color, detail }) => (
           <motion.div key={label} variants={fadeUp}>
-            <Link href={href} className="flex min-h-[148px] flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+            <Link href={href} className="flex min-h-[148px] flex-col justify-between gap-3 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
               <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
                 <Icon size={18} />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 text-right">
                 <p className="text-2xl font-black leading-none tracking-[-0.05em] text-neutral-900">{value}</p>
-                <p className="mt-1 text-xs font-semibold text-neutral-500">{label}</p>
+                <p className="mt-1 text-xs font-medium text-neutral-500">{label}</p>
                 {detail && (
-                  <p className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] font-black">
+                  <p className="mt-2 flex flex-wrap justify-end gap-x-2 gap-y-1 text-[11px] font-normal leading-snug">
                     <span className="text-red-600">{detail.rejected} refusee{detail.rejected > 1 ? 's' : ''}</span>
                     <span className="text-emerald-700">{detail.accepted} acceptee{detail.accepted > 1 ? 's' : ''}</span>
                   </p>
