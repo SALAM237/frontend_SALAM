@@ -18,7 +18,15 @@ function destinationProps(destination?: FeaturedDestination) {
   return destination.type === 'external' ? { href: destination.href, target: '_blank', rel: 'noopener noreferrer' } : { href: destination.href };
 }
 function Media({ item, active }: { item: FeaturedItem; active: boolean }) {
-  const source = item.mediaUrls[0];
+  const source = item.mediaUrls[0]?.trim() ?? '';
+  const validSource = source.startsWith('/') || source.startsWith('https://') || source.startsWith('http://');
+  if (!validSource) {
+    return (
+      <div className="flex h-full min-h-[280px] w-full items-center justify-center bg-neutral-900 px-6 text-center text-sm font-bold text-white/70">
+        Media indisponible. Reimportez le fichier depuis l editeur.
+      </div>
+    );
+  }
   if (item.mediaType === 'image') return <img src={source} alt={item.title} loading="lazy" className="h-full w-full object-cover" />;
   const youtube = item.videoProvider === 'youtube' ? youtubeEmbed(source) : '';
   if (youtube) return <iframe src={youtube + '?autoplay=' + (item.autoplay && active ? '1' : '0') + '&mute=1'} title={item.title} loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" className="h-full w-full" />;

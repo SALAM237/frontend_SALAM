@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { apiClient } from '@/lib/api/client';
+import { hasAdminRole } from '@/lib/auth/roles';
 import { formatFirstName, formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import MemberAccountTabs, { isMemberAccountPath } from '@/components/member/MemberAccountTabs';
@@ -49,10 +50,10 @@ function missingProfileFields(user: AuthUser | null) {
 }
 
 
-function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl, initialsClass, gender, onLogout }: {
+function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl, initialsClass, gender, canSwitchAdmin, onLogout }: {
   open: boolean; onClose: () => void;
   firstName: string; lastName: string; initials: string;
-  avatarUrl: string; initialsClass: string; gender?: string | null;
+  avatarUrl: string; initialsClass: string; gender?: string | null; canSwitchAdmin: boolean;
   onLogout: () => void;
 }) {
   const pathname = usePathname();
@@ -152,6 +153,14 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl
               <LogOut size={15} />
             </button>
           </div>
+          {canSwitchAdmin && (
+            <Link href="/admin/dashboard" onClick={() => {
+              document.cookie = 'salam_space=admin; path=/; SameSite=Lax; max-age=86400';
+              onClose();
+            }} className="mt-3 block border-t border-white/[0.06] pt-3 text-center text-[11px] font-bold text-emerald-400 transition hover:text-emerald-300">
+              Aller au portail administrateur
+            </Link>
+          )}
         </div>
       </aside>
     </>
@@ -249,7 +258,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
       <MemberSidebar
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
         firstName={firstName} lastName={lastName} initials={initials}
-        avatarUrl={avatarUrl} initialsClass={initialsClass} gender={user?.gender}
+        avatarUrl={avatarUrl} initialsClass={initialsClass} gender={user?.gender} canSwitchAdmin={hasAdminRole(user)}
         onLogout={handleLogout}
       />
 

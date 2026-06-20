@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
-import { isSuperAdmin, hasAdminRole, hasAnyPermission } from '@/lib/auth/roles';
+import { isSuperAdmin, hasAdminRole, hasMemberAccess, hasAnyPermission } from '@/lib/auth/roles';
 import { apiClient } from '@/lib/api/client';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
@@ -90,10 +90,10 @@ function formatBureauPosteForGender(poste?: string | null, gender?: string | nul
   return FEMININE_BUREAU_POSTES[normalizeBureauPoste(cleanPoste)] ?? cleanPoste;
 }
 
-function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauPoste, avatarUrl, initialsClass, gender, onLogout, nav }: {
+function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauPoste, avatarUrl, initialsClass, gender, canSwitchMember, onLogout, nav }: {
   open: boolean; onClose: () => void;
   initials: string; displayName: string; adminRole: string; bureauPoste?: string | null;
-  avatarUrl: string; initialsClass: string; gender?: string | null;
+  avatarUrl: string; initialsClass: string; gender?: string | null; canSwitchMember: boolean;
   onLogout: () => void;
   nav: NavItem[];
 }) {
@@ -188,6 +188,14 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
               <LogOut size={15} />
             </button>
           </div>
+          {canSwitchMember && (
+            <Link href="/member/dashboard" onClick={() => {
+              document.cookie = 'salam_space=member; path=/; SameSite=Lax; max-age=86400';
+              onClose();
+            }} className="mt-3 block border-t border-white/[0.06] pt-3 text-center text-[11px] font-bold text-emerald-400 transition hover:text-emerald-300">
+              Aller au portail membre
+            </Link>
+          )}
         </div>
       </aside>
     </>
@@ -326,7 +334,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
         initials={initials} displayName={displayName} adminRole={adminRole}
         bureauPoste={bureauPoste}
-        avatarUrl={avatarUrl} initialsClass={initialsClass} gender={user?.gender}
+        avatarUrl={avatarUrl} initialsClass={initialsClass} gender={user?.gender} canSwitchMember={hasMemberAccess(user)}
         onLogout={handleLogout}
         nav={nav}
       />

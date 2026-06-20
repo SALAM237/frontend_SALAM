@@ -15,7 +15,7 @@ const VIDEO_MAX = 80 * 1024 * 1024;
 const emptyDestination = (): FeaturedDestination => ({ type: 'none', href: '' });
 const emptyForm = (): FeaturedPayload => ({
   title: '', description: '', mediaType: 'image', mediaUrls: [], videoProvider: 'external', autoplay: false,
-  visibility: 'public', status: 'draft', buttonLabel: 'En savoir plus',
+  visibility: 'public', status: 'published', buttonLabel: 'En savoir plus',
   mediaDestination: emptyDestination(), titleDestination: emptyDestination(), textDestination: emptyDestination(), buttonDestination: emptyDestination(), order: 0,
 });
 
@@ -126,7 +126,11 @@ function FeaturedEditor({ initial, onClose }: { initial?: FeaturedItem; onClose:
       for (let index = 0; index < pendingFiles.length; index += 1) {
         setProgress('Compression et import du fichier ' + (index + 1) + '/' + pendingFiles.length + '...');
         const response = await upload.mutateAsync(pendingFiles[index]);
-        uploadedUrls.push(response.data.url);
+        const uploadedUrl = response.data.url?.trim();
+        if (!uploadedUrl || (!uploadedUrl.startsWith('/') && !uploadedUrl.startsWith('https://') && !uploadedUrl.startsWith('http://'))) {
+          throw new Error('Le serveur a renvoye une adresse de media invalide. Reimportez le fichier.');
+        }
+        uploadedUrls.push(uploadedUrl);
       }
       setProgress('Enregistrement de la publication...');
       await save.mutateAsync({
@@ -189,7 +193,7 @@ function FeaturedEditor({ initial, onClose }: { initial?: FeaturedItem; onClose:
             <label className="sm:col-span-2"><span className="mb-1 block text-xs font-black text-neutral-600">Grand titre</span><input value={form.title} onChange={event => set('title', event.target.value)} maxLength={180} placeholder="Titre principal de la publication" className={input} /></label>
             <label className="sm:col-span-2"><span className="mb-1 block text-xs font-black text-neutral-600">Texte</span><textarea value={form.description} onChange={event => set('description', event.target.value)} maxLength={3000} rows={5} placeholder="Presentez clairement l information mise a la une..." className="w-full rounded-lg border border-neutral-200 p-3 text-sm outline-none focus:border-emerald-500" /></label>
             <label><span className="mb-1 block text-xs font-black text-neutral-600">Texte du bouton</span><input value={form.buttonLabel} onChange={event => set('buttonLabel', event.target.value)} placeholder="En savoir plus" className={input} /></label>
-            <label><span className="mb-1 block text-xs font-black text-neutral-600">Ordre</span><input type="number" min={0} value={form.order} onChange={event => set('order', Number(event.target.value))} className={input} /></label>
+            <label><span className="mb-1 block text-xs font-black text-neutral-600">Position dans le carrousel</span><input type="number" min={0} value={form.order} onChange={event => set('order', Number(event.target.value))} className={input} /></label>
           </section>
           <section className="space-y-2">
             <p className="text-xs font-black uppercase text-neutral-500">Destinations au clic</p>
@@ -200,7 +204,7 @@ function FeaturedEditor({ initial, onClose }: { initial?: FeaturedItem; onClose:
           </section>
           <section className="grid gap-3 sm:grid-cols-2">
             <label><span className="mb-1 block text-xs font-black text-neutral-600">Visibilite</span><select value={form.visibility} onChange={event => set('visibility', event.target.value as FeaturedPayload['visibility'])} className={input}><option value="public">Public et indexable</option><option value="members">Membres uniquement</option></select></label>
-            <label><span className="mb-1 block text-xs font-black text-neutral-600">Statut</span><select value={form.status} onChange={event => set('status', event.target.value as FeaturedPayload['status'])} className={input}><option value="draft">Brouillon</option><option value="published">Publie</option></select></label>
+            <label><span className="mb-1 block text-xs font-black text-neutral-600">Statut</span><select value={form.status} onChange={event => set('status', event.target.value as FeaturedPayload['status'])} className={input}><option value="published">Publie sur le site</option><option value="draft">Brouillon non visible</option></select></label>
           </section>
         </div>
         <footer className="grid grid-cols-2 gap-2 border-t border-neutral-100 p-4 sm:flex sm:justify-end">
