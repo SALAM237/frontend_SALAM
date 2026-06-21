@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, CalendarDays,
-  Images, Newspaper, Settings, LogOut, Menu, X, ChevronRight, Bell,
+  Images, Newspaper, Settings, Menu, X, ChevronRight, Bell,
   Banknote, FileText, History, MessageSquare, Shield, Loader2, Globe, ShieldCheck,
   Handshake, BriefcaseBusiness, Sparkles, Target,
 } from 'lucide-react';
@@ -184,8 +184,8 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
                 {bureauPoste ?? adminRole}
               </p>
             </div>
-            <button onClick={onLogout} className="text-white/25 transition-colors hover:text-red-400" title="Déconnexion">
-              <LogOut size={15} />
+            <button type="button" onClick={onLogout} className="shrink-0 text-[11px] font-semibold text-red-300/70 transition-colors hover:text-red-300">
+              Déconnexion
             </button>
           </div>
           {canSwitchMember && (

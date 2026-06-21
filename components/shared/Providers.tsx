@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ErrorAutoScroller } from './ErrorAutoScroller';
+import { ExclusiveMediaPlayback } from './ExclusiveMediaPlayback';
 
 function makeQueryClient() {
   return new QueryClient({
@@ -25,6 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <ErrorAutoScroller />
+      <ExclusiveMediaPlayback />
       {children}
       <Toaster richColors position="top-right" />
     </QueryClientProvider>

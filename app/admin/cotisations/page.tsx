@@ -130,7 +130,7 @@ function openPaymentReceiptPdf(member: MemberRow, year: number) {
   <title>${escReceipt(receiptNum)}</title>
   <style>
     @page { size: A4 portrait; margin: 0; }
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body { margin: 0; background: #e5e7eb; font-family: Arial, sans-serif; color: #0f172a; font-size: clamp(10px, 1.45vw, 13px); }
     .page { width: min(100vw, 794px); min-height: min(1123px, calc(100vw * 1.414)); margin: 0 auto; background: white; padding: clamp(22px, 4.8vw, 42px); position: relative; overflow: hidden; }
     .flag { position: absolute; left: 0; right: 0; top: 0; height: clamp(4px, .8vw, 7px); background: linear-gradient(90deg,#0B8F3A 0 33%,#C8102E 33% 66%,#F7C600 66%); }
@@ -148,7 +148,7 @@ function openPaymentReceiptPdf(member: MemberRow, year: number) {
     .paid { display: inline-flex; align-items:center; justify-content:center; border: 2px solid #059669; color: #047857; border-radius: 999px; padding: 10px 28px; font-weight: 900; letter-spacing: .18em; margin: 26px auto; }
     .thanks { margin-top: 24px; border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 18px; padding: 20px; color: #047857; font-weight: 700; line-height: 1.6; }
     .footer { position: absolute; left: 48px; right: 48px; bottom: 30px; border-top: 1px solid #e5e7eb; padding-top: 14px; text-align: center; color: #64748b; font-size: 11px; }
-    @media print { body { background: white; font-size: 12px; } .page { width: 794px; min-height: 1123px; margin: 0; padding: 38px; } .header { margin: -38px -38px 26px; padding: 40px 38px 24px; } }
+    @media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } body { background: white; font-size: 12px; } .page { width: 794px; min-height: 1123px; margin: 0; padding: 38px; } .header { margin: -38px -38px 26px; padding: 40px 38px 24px; } }
   </style>
 </head>
 <body>

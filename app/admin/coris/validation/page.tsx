@@ -43,7 +43,7 @@ function ValidationContent() {
     <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
       <div className="bg-emerald-950 p-6 text-white">
         <ShieldCheck size={28} className="text-emerald-300" />
-        <h1 className="mt-3 text-xl font-black">Validation des Coris</h1>
+        <h1 className="mt-3 text-xl font-black">Validation des cauris</h1>
         <p className="mt-1 text-sm text-white/60">Controle administratif avant consommation.</p>
       </div>
       <div className="space-y-5 p-6">
@@ -54,7 +54,7 @@ function ValidationContent() {
         <div className="rounded-lg bg-amber-50 p-5 text-center">
           <Coins size={24} className="mx-auto text-amber-600" />
           <p className="mt-2 text-3xl font-black text-amber-900">{redemption.amount}</p>
-          <p className="text-xs font-bold uppercase text-amber-700">Coris a utiliser</p>
+          <p className="text-xs font-bold uppercase text-amber-700">cauris a utiliser</p>
         </div>
         <div className="rounded-lg border border-neutral-100 p-4">
           <p className="text-xs font-bold uppercase text-neutral-400">Evenement</p>
@@ -62,7 +62,7 @@ function ValidationContent() {
           {activity?.location && <p className="mt-1 text-sm text-neutral-500">{activity.location}</p>}
         </div>
         {redeem.isSuccess ? (
-          <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 p-4 font-bold text-emerald-700"><CheckCircle2 size={20} /> Coris valides</div>
+          <div className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 p-4 font-bold text-emerald-700"><CheckCircle2 size={20} /> cauris valides</div>
         ) : (
           <button type="button" disabled={!usable || redeem.isPending} onClick={() => redeem.mutate(token)} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-700 text-sm font-black text-white disabled:opacity-40">
             {redeem.isPending ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Valider l utilisation

@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Briefcase, Handshake, Loader2, Mail, MapPin, Search, Tag, Users } from 'lucide-react';
+import Link from 'next/link';
+import { Briefcase, Handshake, Loader2, Mail, MapPin, MessageSquare, Search, Tag, Users } from 'lucide-react';
 import { useMemberDirectorySearch, type DirectoryMember } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
@@ -13,6 +14,8 @@ function MemberNetworkingCard({ member }: { member: DirectoryMember }) {
   const location = [member.residenceCity || member.city, member.country].filter(Boolean).join(', ');
   const skills = member.skills ?? [];
   const expertiseDomains = member.expertiseDomains ?? [];
+  const whatsapp = member.phone?.replace(/\D/g, '').replace(/^0/, '237');
+  const messageHref = `/member/messages?to=${encodeURIComponent(member._id)}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(member.email)}`;
 
   return (
     <article className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-100 hover:shadow-md">
@@ -60,9 +63,11 @@ function MemberNetworkingCard({ member }: { member: DirectoryMember }) {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-neutral-100 pt-3">
-        <a href={`mailto:${member.email}`} className="inline-flex h-8 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700">
-          <Mail size={12} /> Contacter
+        <a href={`mailto:${member.email}`} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700">
+          <Mail size={12} /> Email
         </a>
+        {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-2.5 text-xs font-black text-green-700 transition hover:bg-green-100">WhatsApp</a>}
+        <Link href={messageHref} className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-emerald-600 px-2.5 text-xs font-black text-white transition hover:bg-emerald-700"><MessageSquare size={12} /> Message</Link>
         {member.antenne && <span className="text-[11px] font-bold text-neutral-400">Antenne {member.antenne}</span>}
       </div>
     </article>

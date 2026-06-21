@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, CheckCheck, Loader2 } from 'lucide-react';
+import { Bell, CheckCheck, Loader2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { type PortalSpace, useNotifications, useReadAllNotifications, useReadNotification } from '@/lib/api/notifications';
 
@@ -18,11 +18,30 @@ function relativeDate(value: string) {
 
 export function NotificationCenter({ space }: { space: PortalSpace }) {
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { data, isLoading } = useNotifications(space);
   const readOne = useReadNotification(space);
   const readAll = useReadAllNotifications(space);
   const feed = data?.data;
+
+  useEffect(() => {
+    if (!open) return;
+
+    const closeOutside = (event: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
+    };
+    const closeWithKeyboard = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeWithKeyboard);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeWithKeyboard);
+    };
+  }, [open]);
 
   const openItem = (id: string, href: string) => {
     readOne.mutate(id);
@@ -31,8 +50,8 @@ export function NotificationCenter({ space }: { space: PortalSpace }) {
   };
 
   return (
-    <div className="relative">
-      <button type="button" aria-label="Notifications" onClick={() => setOpen(value => !value)}
+    <div ref={rootRef} className="relative">
+      <button type="button" aria-label="Notifications" aria-expanded={open} aria-controls={space + '-notifications-panel'} onClick={() => setOpen(value => !value)}
         className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition hover:border-emerald-300 hover:text-emerald-700">
         <Bell size={15} />
         {(feed?.unread ?? 0) > 0 && (
@@ -45,19 +64,25 @@ export function NotificationCenter({ space }: { space: PortalSpace }) {
         {open && (
           <>
             <button type="button" aria-label="Fermer les notifications" className="fixed inset-0 z-[90] cursor-default" onClick={() => setOpen(false)} />
-            <motion.section initial={{ opacity: 0, y: -8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            <motion.section id={space + '-notifications-panel'} initial={{ opacity: 0, y: -8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, scale: 0.98 }}
               className="fixed left-3 right-3 top-16 z-[100] overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[360px]">
               <header className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
                 <div>
                   <p className="text-sm font-black text-neutral-900">Notifications</p>
                   <p className="text-[11px] text-neutral-400">{feed?.unread ?? 0} non lue(s)</p>
                 </div>
-                {(feed?.unread ?? 0) > 0 && (
-                  <button type="button" onClick={() => readAll.mutate()} disabled={readAll.isPending}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 hover:text-emerald-800">
-                    <CheckCheck size={13} /> Tout marquer comme lu
+                <div className="flex items-center gap-3">
+                  {(feed?.unread ?? 0) > 0 && (
+                    <button type="button" onClick={() => readAll.mutate()} disabled={readAll.isPending}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 hover:text-emerald-800">
+                      <CheckCheck size={13} /> Tout marquer comme lu
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setOpen(false)} aria-label="Fermer les notifications"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700">
+                    <X size={16} />
                   </button>
-                )}
+                </div>
               </header>
               <div className="max-h-[min(70vh,480px)] overflow-y-auto">
                 {isLoading && <div className="flex justify-center py-12"><Loader2 className="animate-spin text-emerald-600" size={20} /></div>}

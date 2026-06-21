@@ -16,7 +16,7 @@ import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, User, CalendarDays,
-  MessageSquare, LogOut, Menu, X, ChevronRight, Bell,
+  MessageSquare, Menu, X, ChevronRight, Bell,
   Images, Newspaper, Loader2, Globe, Users,
   Handshake, BriefcaseBusiness, WalletCards,
 } from 'lucide-react';
@@ -149,8 +149,8 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl
               </p>
               <p className="truncate text-[10px] text-white/30">Membre actif</p>
             </div>
-            <button onClick={onLogout} className="text-white/25 transition-colors hover:text-red-400" title="Déconnexion">
-              <LogOut size={15} />
+            <button type="button" onClick={onLogout} className="shrink-0 text-[11px] font-semibold text-red-300/70 transition-colors hover:text-red-300">
+              Déconnexion
             </button>
           </div>
           {canSwitchAdmin && (

@@ -1,4 +1,4 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { Mail, MapPin, ExternalLink, MessageCircle } from 'lucide-react';
 import { SalamLogo } from '@/components/brand/SalamLogo';
 import { DON_NAV_ITEM, PUBLIC_NAV_ITEMS } from '@/lib/navigation';
@@ -30,9 +30,9 @@ const NAV_COLS = [
 ];
 
 const SOCIALS = [
-  { label: 'Facebook', href: 'https://www.facebook.com/salam.cameroun', text: 'f' },
-  { Icon: MessageCircle, label: 'WhatsApp', href: 'https://wa.me/237697791021' },
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/salam-cameroun', text: 'in' },
+  { label: 'Facebook', href: 'https://www.facebook.com/salam.cameroun', text: 'f', hoverClass: 'hover:border-[#1877F2] hover:bg-[#1877F2] hover:text-white' },
+  { Icon: MessageCircle, label: 'WhatsApp', href: 'https://wa.me/237697791021', hoverClass: 'hover:border-[#25D366] hover:bg-[#25D366] hover:text-white' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/salam-cameroun', text: 'in', hoverClass: 'hover:border-[#0A66C2] hover:bg-[#0A66C2] hover:text-white' },
 ];
 
 export function Footer() {
@@ -56,14 +56,14 @@ export function Footer() {
 
             {/* Socials */}
             <div className="mt-6 flex gap-2">
-              {SOCIALS.map(({ Icon, label, href, text }) => (
+              {SOCIALS.map(({ Icon, label, href, text, hoverClass }) => (
                 <a
                   key={label}
                   href={href}
                   aria-label={label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="grid size-9 place-items-center rounded-full border border-white/10 text-white/45 transition-all duration-200 hover:border-salam-green hover:text-salam-green hover:bg-green-950"
+                  className={'grid size-9 place-items-center rounded-full border border-white/10 text-white/45 transition-all duration-200 ' + hoverClass}
                 >
                   {Icon ? <Icon size={15} /> : <span className="text-[13px] font-black leading-none">{text}</span>}
                 </a>

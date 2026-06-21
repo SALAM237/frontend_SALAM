@@ -68,3 +68,20 @@ export function useUpdateChatLeadStatus() {
     onError: (err: Error) => toast.error(err.message),
   });
 }
+export function useDeleteChatLead() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient<{ id: string }>('/api/v1/admin/chat-leads/' + id, {
+        method: 'DELETE',
+        token: token ?? '',
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-chat-leads'] });
+      toast.success('Lead supprime');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}

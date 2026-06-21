@@ -13,7 +13,7 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
-import { useAdminChatLeads, useUpdateChatLeadStatus, type ChatLeadStatus, type SalamChatLead } from '@/lib/api/chat-leads';
+import { useAdminChatLeads, useDeleteChatLead, useUpdateChatLeadStatus, type ChatLeadStatus, type SalamChatLead } from '@/lib/api/chat-leads';
 
 const temperatureStyle: Record<string, { label: string; className: string }> = {
   chaud: { label: 'Chaud', className: 'border-red-200 bg-red-50 text-red-700' },
@@ -54,7 +54,7 @@ function whatsappHref(lead: SalamChatLead) {
   return `https://wa.me/23795859445?text=${text}`;
 }
 
-function LeadRow({ lead, onStatusChange }: { lead: SalamChatLead; onStatusChange: (id: string, status: ChatLeadStatus) => void }) {
+function LeadRow({ lead, onStatusChange, onDelete, deleting }: { lead: SalamChatLead; onStatusChange: (id: string, status: ChatLeadStatus) => void; onDelete: (lead: SalamChatLead) => void; deleting: boolean }) {
   const [open, setOpen] = useState(false);
   const temp = temperatureStyle[lead.temperature] ?? temperatureStyle.froid;
   const identity = lead.fullName || lead.email || lead.phone || 'Contact anonyme';
@@ -146,8 +146,9 @@ function LeadRow({ lead, onStatusChange }: { lead: SalamChatLead; onStatusChange
             >
               {Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
-            <button className="ml-auto inline-flex h-9 items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-xs font-black text-red-600 opacity-60" disabled title="Suppression désactivée">
-              <Trash2 size={14} /> Supprimer
+            <button type="button" onClick={() => onDelete(lead)} disabled={deleting}
+              className="ml-auto inline-flex h-9 items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-xs font-black text-red-600 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-wait disabled:opacity-50">
+              <Trash2 size={14} /> {deleting ? 'Suppression...' : 'Supprimer'}
             </button>
           </div>
         </div>
@@ -163,6 +164,7 @@ export default function AdminIdpIspPage() {
   const filters = { q, temperature: temperature as any, requestType: requestType as any };
   const leadsQuery = useAdminChatLeads(filters);
   const updateStatus = useUpdateChatLeadStatus();
+  const deleteLead = useDeleteChatLead();
   const leads = leadsQuery.data?.data.items ?? [];
 
   const stats = useMemo(() => {
@@ -262,7 +264,12 @@ export default function AdminIdpIspPage() {
             <LeadRow
               key={lead._id}
               lead={lead}
+              deleting={deleteLead.isPending && deleteLead.variables === lead._id}
               onStatusChange={(id, status) => updateStatus.mutate({ id, status })}
+              onDelete={(item) => {
+                const identity = item.fullName || item.email || item.phone || 'ce lead';
+                if (window.confirm('Supprimer definitivement ' + identity + ' ?')) deleteLead.mutate(item._id);
+              }}
             />
           ))}
         </section>

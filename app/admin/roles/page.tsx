@@ -428,6 +428,10 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
               </button>
 
               {/* Permissions */}
+              <div className="grid grid-cols-[1fr_auto] gap-3 border-b border-neutral-100 bg-neutral-50/70 px-4 py-2 text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400">
+                <span>Permission</span>
+                <span>Criticité</span>
+              </div>
               <div className="divide-y divide-neutral-50">
                 {perms.map(p => (
                   <label key={p.key} htmlFor={`perm-${p.key}`}
