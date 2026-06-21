@@ -12,6 +12,7 @@ import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, me
 import MemberAccountTabs, { isMemberAccountPath } from '@/components/member/MemberAccountTabs';
 import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
 import { NotificationCenter } from '@/components/portal/NotificationCenter';
+import { CauriBadge } from '@/components/member/CoriWallet';
 import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -300,6 +301,8 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
                 {initials}
               </Link>
             )}
+            <CauriBadge compact />
+
           </div>
         </header>
 

@@ -29,11 +29,11 @@ export interface CoriWallet {
   redemptions: CoriRedemption[];
 }
 
-export function useCoriWallet() {
+export function useCoriWallet(space: 'member' | 'admin' = 'member') {
   const token = useAuthStore(state => state.accessToken);
   return useQuery({
-    queryKey: ['member-coris'],
-    queryFn: () => apiClient<CoriWallet>('/api/v1/member/coris', { token: token ?? '' }),
+    queryKey: ['member-coris', space],
+    queryFn: () => apiClient<CoriWallet>(space === 'admin' ? '/api/v1/admin/coris/me' : '/api/v1/member/coris', { token: token ?? '' }),
     enabled: Boolean(token),
     staleTime: 0,
   });

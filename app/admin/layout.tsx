@@ -19,6 +19,7 @@ import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, me
 import AdminAccountTabs from '@/components/admin/AdminAccountTabs';
 import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
 import { NotificationCenter } from '@/components/portal/NotificationCenter';
+import { CauriBadge } from '@/components/member/CoriWallet';
 import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
 
 type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; permissions?: string[] };
@@ -178,15 +179,13 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
                 {initials}
               </div>
             )}
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-black text-white/80">{displayName}</p>
-              <p className="truncate text-[10px] text-white/30">
-                {bureauPoste ?? adminRole}
-              </p>
+              <p className="truncate text-[10px] text-white/30">{bureauPoste ?? adminRole}</p>
+              <button type="button" onClick={onLogout} className="mt-1 block text-[11px] font-semibold text-red-300/70 transition-colors hover:text-red-300">
+                Déconnexion
+              </button>
             </div>
-            <button type="button" onClick={onLogout} className="shrink-0 text-[11px] font-semibold text-red-300/70 transition-colors hover:text-red-300">
-              Déconnexion
-            </button>
           </div>
           {canSwitchMember && (
             <Link href="/member/dashboard" onClick={() => {
@@ -381,6 +380,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {initials}
               </Link>
             )}
+            <CauriBadge compact space="admin" />
           </div>
         </header>
 
