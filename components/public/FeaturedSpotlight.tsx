@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUpRight, ChevronLeft, ChevronRight, Pause, Play, X, Megaphone } from 'lucide-react';
 import { useMemberFeatured, usePublicFeatured, type FeaturedDestination, type FeaturedItem } from '@/lib/api/featured';
@@ -22,14 +22,42 @@ const slideVariants = {
   center: { x: 0 },
   exit: (direction: number) => ({ x: direction > 0 ? '-100%' : '100%' }),
 };
-function Media({ item, active }: { item: FeaturedItem; active: boolean }) {
+function Media({ item, active, playbackId, onPlaybackChange }: {
+  item: FeaturedItem;
+  active: boolean;
+  playbackId: string;
+  onPlaybackChange: (id: string, playing: boolean) => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
   useEffect(() => {
     if (active) return;
     videoRef.current?.pause();
     iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
-  }, [active]);
+    onPlaybackChange(playbackId, false);
+  }, [active, onPlaybackChange, playbackId]);
+
+  useEffect(() => {
+    const receiveYoutubeState = (event: MessageEvent) => {
+      if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
+      let payload: unknown = event.data;
+      if (typeof payload === 'string') {
+        try { payload = JSON.parse(payload); } catch { return; }
+      }
+      if (!payload || typeof payload !== 'object') return;
+      const data = payload as { event?: string; info?: number };
+      if (data.event !== 'onStateChange') return;
+      if (data.info === 1) onPlaybackChange(playbackId, true);
+      if (data.info === 0 || data.info === 2 || data.info === 5) onPlaybackChange(playbackId, false);
+    };
+    window.addEventListener('message', receiveYoutubeState);
+    return () => {
+      window.removeEventListener('message', receiveYoutubeState);
+      onPlaybackChange(playbackId, false);
+    };
+  }, [onPlaybackChange, playbackId]);
+
   const source = item.mediaUrls[0]?.trim() ?? '';
   const validSource = source.startsWith('/') || source.startsWith('https://') || source.startsWith('http://');
   if (!validSource) {
@@ -41,10 +69,11 @@ function Media({ item, active }: { item: FeaturedItem; active: boolean }) {
   }
   if (item.mediaType === 'image') return <img src={source} alt={item.title} loading="lazy" className="h-full w-full object-cover" />;
   const youtube = item.videoProvider === 'youtube' ? youtubeEmbed(source) : '';
-  if (youtube) return <iframe ref={iframeRef} data-exclusive-media="youtube" src={youtube + '?enablejsapi=1&playsinline=1&autoplay=' + (item.autoplay && active ? '1' : '0') + '&mute=1'} onLoad={event => event.currentTarget.contentWindow?.postMessage(JSON.stringify({ event: 'listening' }), '*')} title={item.title} loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" className="h-full w-full" />;
-  return <video ref={videoRef} src={source} controls preload="metadata" autoPlay={item.autoplay && active} muted={item.autoplay} playsInline className="h-full w-full object-cover" />;
+  if (youtube) return <iframe ref={iframeRef} data-exclusive-media="youtube" src={youtube + '?enablejsapi=1&playsinline=1&autoplay=' + (item.autoplay && active ? '1' : '0') + '&mute=1'} onLoad={event => event.currentTarget.contentWindow?.postMessage(JSON.stringify({ event: 'listening' }), '*')} title={item.title} loading="lazy" allow="accelerometer; autoplay; encrypted-media; picture-in-picture" className="h-full w-full" />;
+  return <video ref={videoRef} src={source} controls preload="metadata" autoPlay={item.autoplay && active} muted={item.autoplay} playsInline
+    onPlay={() => onPlaybackChange(playbackId, true)} onPause={() => onPlaybackChange(playbackId, false)} onEnded={() => onPlaybackChange(playbackId, false)}
+    className="h-full w-full object-cover" />;
 }
-
 export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?: FeaturedItem[] }) {
   const token = useAuthStore(state => state.accessToken);
   const { data, isLoading } = usePublicFeatured();
@@ -54,15 +83,25 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   const [paused, setPaused] = useState(false);
   const [preview, setPreview] = useState<FeaturedItem | null>(null);
   const [direction, setDirection] = useState(1);
+  const [playingMediaIds, setPlayingMediaIds] = useState<Set<string>>(() => new Set());
+  const handlePlaybackChange = useCallback((id: string, playing: boolean) => {
+    setPlayingMediaIds(current => {
+      const next = new Set(current);
+      if (playing) next.add(id); else next.delete(id);
+      if (next.size === current.size && [...next].every(value => current.has(value))) return current;
+      return next;
+    });
+  }, []);
+  const mediaPlaying = playingMediaIds.size > 0;
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   useEffect(() => {
-    if (items.length < 2 || paused) return;
+    if (items.length < 2 || paused || mediaPlaying) return;
     const timer = window.setInterval(() => {
       setDirection(1);
       setIndex(value => (value + 1) % items.length);
     }, 7000);
     return () => window.clearInterval(timer);
-  }, [items.length, paused]);
+  }, [items.length, mediaPlaying, paused]);
   useEffect(() => { if (index >= items.length) setIndex(0); }, [index, items.length]);
 const onTouchStart = (event: React.TouchEvent) => {
     const touch = event.touches[0];
@@ -119,7 +158,7 @@ const onTouchStart = (event: React.TouchEvent) => {
               className="grid min-h-[540px] w-full bg-neutral-950 lg:min-h-[460px] lg:grid-cols-[1.35fr_1fr]">
               <button type="button" onClick={() => setPreview(item)}
                 className="relative min-h-[280px] overflow-hidden bg-black text-left lg:min-h-[460px]">
-                <Media item={item} active={!preview} />
+                <Media item={item} active={!preview} playbackId={"slide-" + item._id} onPlaybackChange={handlePlaybackChange} />
                 <span className="absolute bottom-4 left-4 rounded-full bg-black/65 px-3 py-1.5 text-[10px] font-black uppercase text-white backdrop-blur">Agrandir</span>
               </button>
               <article className="flex min-h-[260px] flex-col justify-center bg-white p-5 sm:p-7 lg:p-8">
@@ -145,7 +184,7 @@ const onTouchStart = (event: React.TouchEvent) => {
           <motion.div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/85 p-4 backdrop-blur" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setPreview(null)}>
             <div className="relative h-auto max-h-[88vh] w-full max-w-5xl overflow-hidden rounded-lg bg-black" onClick={event => event.stopPropagation()}>
               <button type="button" onClick={() => setPreview(null)} className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white"><X size={18} /></button>
-              <div className="aspect-video"><Media item={preview} active /></div>
+              <div className="aspect-video"><Media item={preview} active playbackId={"preview-" + preview._id} onPlaybackChange={handlePlaybackChange} /></div>
             </div>
           </motion.div>
         )}
