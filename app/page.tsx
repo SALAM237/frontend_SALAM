@@ -8,6 +8,7 @@ import { ParallaxBanner }   from '@/components/public/ParallaxBanner';
 import MissionsSection      from '@/components/public/MissionsSection';
 import { EngagementSection } from '@/components/public/EngagementStection';
 import { CTABanner }        from '@/components/public/CTABanner';
+import { HomeScrollExperience } from '@/components/public/HomeScrollExperience';
 
 import FeaturedSpotlight from '@/components/public/FeaturedSpotlight';
 import type { FeaturedItem } from '@/lib/api/featured';
@@ -31,17 +32,19 @@ export default async function HomePage() {
   return (
     <main className="overflow-x-clip">
       <HeroSection />
-      <FeaturedSpotlight initialItems={featured} />
-      <MarqueeSection />
-      <SalamStatsSection />
-      <ParallaxBanner />
-      <MissionsSection />
-      <EngagementSection />
-      <ActivityPreview />
-      <OpportunityPreview />
-      <NewsPreview />
-      <GalleryPreview />
-      <CTABanner />
+      <HomeScrollExperience>
+        <div data-scroll-scene><div data-scroll-content><FeaturedSpotlight initialItems={featured} /></div></div>
+        <div data-scroll-scene><div data-scroll-content><MarqueeSection /></div></div>
+        <div data-scroll-scene data-scroll-drift="true"><div data-scroll-content><SalamStatsSection /></div></div>
+        <div data-scroll-scene><div data-scroll-content><ParallaxBanner /></div></div>
+        <div data-scroll-scene data-scroll-drift="true"><div data-scroll-content><MissionsSection /></div></div>
+        <div data-scroll-scene><div data-scroll-content><EngagementSection /></div></div>
+        <div data-scroll-scene data-scroll-drift="true"><div data-scroll-content><ActivityPreview /></div></div>
+        <div data-scroll-scene><div data-scroll-content><OpportunityPreview /></div></div>
+        <div data-scroll-scene data-scroll-drift="true"><div data-scroll-content><NewsPreview /></div></div>
+        <div data-scroll-scene><div data-scroll-content><GalleryPreview /></div></div>
+        <div data-scroll-scene><div data-scroll-content><CTABanner /></div></div>
+      </HomeScrollExperience>
     </main>
   );
 }

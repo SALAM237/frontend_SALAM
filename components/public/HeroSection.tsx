@@ -349,7 +349,7 @@ export function HeroSection() {
 
       {/* ── Hero content ── */}
       <div className="relative z-20 mx-auto flex h-[calc(100svh-5rem)] max-w-7xl items-center pt-14">
-        <div className="max-w-[680px] pt-[clamp(0.4rem,1.5vw,1rem)] text-center lg:text-left">
+        <div className="max-w-[680px] pt-[clamp(0.4rem,1.5vw,1rem)] text-center lg:max-w-[900px] lg:text-left">
 
           {/* Pills badge */}
           <motion.div
@@ -396,7 +396,7 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.0, delay: 2.3, ease: EASE }}
-            className="mx-auto mt-4 max-w-xl text-[0.75rem] leading-6 text-white/[0.82] drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] lg:mx-0 lg:mt-5 lg:max-w-2xl lg:text-[clamp(0.92rem,1.15vw,1rem)] lg:leading-7"
+            className="mx-auto mt-4 max-w-xl text-[0.75rem] leading-6 text-white/[0.82] drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] lg:mx-0 lg:mt-5 lg:max-w-none lg:whitespace-nowrap lg:text-[clamp(0.92rem,1.15vw,1rem)] lg:leading-7"
           >
             Un réseau dynamique des anciens étudiants camerounais formés au Royaume du Maroc.
           </motion.p>
@@ -404,9 +404,9 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.0, delay: 2.8, ease: EASE }}
-            className="mx-auto mt-2 max-w-xl text-[0.75rem] leading-6 text-white/[0.82] drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] lg:mx-0 lg:max-w-2xl lg:text-[clamp(0.92rem,1.15vw,1rem)] lg:leading-7"
+            className="mx-auto mt-2 max-w-xl text-[0.75rem] leading-6 text-white/[0.82] drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] lg:mx-0 lg:max-w-[900px] lg:text-[clamp(0.92rem,1.15vw,1rem)] lg:leading-7"
           >
-            La SALAM œuvre à construire une communauté forte, engagée et tournée vers l’avenir, à travers la solidarité, le réseautage, le partage d’expériences et la valorisation des compétences.
+            La SALAM construit une communauté forte, engagée et tournée vers l’avenir, à travers <br /> la solidarité, le réseautage, le partage d’expériences et la valorisation des compétences.
           </motion.p>
 
           {/* CTAs */}

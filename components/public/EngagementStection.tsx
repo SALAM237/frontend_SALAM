@@ -1,9 +1,27 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-const engagementAnimations = `
-@keyframes eng-slide-left {
+gsap.registerPlugin(ScrollTrigger);
+
+const engagementAnimations = `.eng-stroke-letter {
+  display: inline-block;
+  color: transparent;
+  -webkit-text-stroke: 0.8px rgba(7, 20, 13, 0.78);
+  paint-order: stroke fill;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}
+.eng-stroke-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+.eng-stroke-space {
+  display: inline-block;
+  width: 0.28em;
+}@keyframes eng-slide-left {
   0%   { opacity: 0; transform: translateX(-60px); }
   100% { opacity: 1; transform: translateX(0); }
 }
@@ -27,9 +45,11 @@ const engagementAnimations = `
   0%   { opacity: 0; transform: translateX(50px); }
   100% { opacity: 1; transform: translateX(0); }
 }
-.eng-title-cascade { animation: eng-title-in 0.7s cubic-bezier(.39,.575,.565,1.000) both; }
-.eng-line-cascade  { animation: eng-line-in  0.7s cubic-bezier(.39,.575,.565,1.000) both; }
+.eng-title-cascade { animation: none; opacity: 1; }
+.eng-line-cascade  { animation: none; opacity: 1; }
 `;
+
+const ENGAGEMENT_TITLE = 'Révéler le potentiel d’une jeunesse engagée';
 
 const cards = [
   {
@@ -82,7 +102,50 @@ const cards = [
 export function EngagementSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [visible, setVisible] = useState(false);
+  const sectionRootRef = useRef<HTMLElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    const title = titleRef.current;
+    const section = sectionRootRef.current;
+    if (!title || !section || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const letters = gsap.utils.toArray<HTMLElement>('.eng-stroke-letter', title);
+    const media = gsap.matchMedia();
+    const fillVars = {
+      color: (_index: number, target: HTMLElement) => target.dataset.fillColor ?? '#07140d',
+      WebkitTextStrokeColor: (_index: number, target: HTMLElement) => target.dataset.fillColor ?? '#07140d',
+      duration: 0.18,
+      stagger: 0.09,
+      ease: 'none',
+    };
+
+    media.add('(min-width: 1024px)', () => {
+      gsap.to(letters, {
+        ...fillVars,
+        scrollTrigger: {
+          trigger: section,
+          start: 'top 85%',
+          end: 'top 10px',
+          invalidateOnRefresh: true,
+          scrub: 0.8,
+        },
+      });
+    });
+
+    media.add('(max-width: 1023px)', () => {
+      gsap.to(letters, {
+        ...fillVars,
+        scrollTrigger: {
+          trigger: title,
+          start: 'top 88%',
+          end: 'bottom 32%',
+          scrub: 0.8,
+        },
+      });
+    });
+
+    return () => media.revert();
+  }, []);
 
   useEffect(() => {
     const el = sectionRef.current;
@@ -98,7 +161,7 @@ export function EngagementSection() {
   return (
     <>
       <style>{engagementAnimations}</style>
-      <section className="relative min-h-screen overflow-hidden bg-[#fffdf8] px-5 pt-[clamp(3rem,6vw,5rem)] pb-1.5 md:px-8 lg:px-3">
+      <section ref={sectionRootRef} className="relative min-h-screen overflow-hidden bg-[#fffdf8] px-5 pt-[clamp(3rem,6vw,5rem)] pb-1.5 md:px-8 lg:px-3">
         <div className="absolute left-[-120px] top-20 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl" />
         <div className="absolute right-[-120px] top-32 h-96 w-96 rounded-full bg-yellow-200/40 blur-3xl" />
         <div className="absolute bottom-10 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-red-200/20 blur-3xl" />
@@ -114,13 +177,20 @@ export function EngagementSection() {
               Nos engagements
             </span>
 
-            <h1 className="mt-6 text-[clamp(2rem,6vw,2.8rem)] lg:text-[clamp(1.6rem,3.2vw,2.8rem)] font-black leading-[0.92] tracking-[-0.07em] text-white">
-              <span className={'inline-block ' + (visible ? 'eng-slide-left' : 'opacity-0')}>
-                <span className="text-emerald-700">Révéler</span>
-              </span>{' '}
-              <span className={'inline-block ' + (visible ? 'eng-slide-right' : 'opacity-0')}>
-                <span className="text-black">le potentiel d&apos;une jeunesse engagée</span>
-              </span>
+            <h1 ref={titleRef} aria-label={ENGAGEMENT_TITLE} className="mt-6 text-[clamp(2rem,6vw,4.8rem)] font-black leading-[0.96] tracking-normal">
+              {ENGAGEMENT_TITLE.split(' ').map((word, wordIndex, words) => (
+                <span key={word + wordIndex} aria-hidden="true">
+                  <span className="eng-stroke-word">
+                    {Array.from(word).map((letter, letterIndex) => (
+                      <span key={letter + letterIndex} className="eng-stroke-letter"
+                        data-fill-color={wordIndex === 0 || wordIndex === words.length - 1 ? '#0B8F3A' : '#07140d'}>
+                        {letter}
+                      </span>
+                    ))}
+                  </span>
+                  {wordIndex < words.length - 1 && <span className="eng-stroke-space">&nbsp;</span>}
+                </span>
+              ))}
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-[clamp(1rem,1.3vw,1.15rem)] leading-8 text-neutral-600">
@@ -159,14 +229,14 @@ export function EngagementSection() {
 
                     <div className="relative z-10 flex items-center justify-between gap-4 w-full">
                       <div className="pl-8">
-                        <h3
-                          className={'text-[1.5rem] md:text-[1.8rem] lg:text-[clamp(1.65rem,2.8vw,2.3rem)] font-black leading-[0.95] tracking-[-0.05em] text-white ' + (visible ? 'eng-title-cascade' : 'opacity-0')}
+                        <h3 data-engagement-title="mobile"
+                          className={'text-[1.5rem] md:text-[1.8rem] lg:text-[clamp(1.65rem,2.8vw,2.3rem)] font-black leading-[0.95] tracking-[-0.05em] text-white '}
                           style={visible ? { animationDelay: `${titleDelay}s` } : undefined}
                         >
                           {card.title}
                         </h3>
-                        <div
-                          className={'mt-3 h-[4px] w-16 rounded-[6px] ' + card.lineColor + ' ' + (visible ? 'eng-line-cascade' : 'opacity-0')}
+                        <div data-engagement-line="mobile"
+                          className={'mt-3 h-[4px] w-16 rounded-[6px] ' + card.lineColor + ' '}
                           style={visible ? { animationDelay: `${lineDelay}s` } : undefined}
                         />
                       </div>
@@ -200,14 +270,14 @@ export function EngagementSection() {
                       </span>
 
                       <div className="relative z-10">
-                        <h3
-                          className={'mt-3 text-[clamp(1.1rem,1.8vw,1.5rem)] font-black leading-[0.94] tracking-[-0.05em] text-white ' + (visible ? 'eng-title-cascade' : 'opacity-0')}
+                        <h3 data-engagement-title="desktop"
+                          className={'mt-3 text-[clamp(1.1rem,1.8vw,1.5rem)] font-black leading-[0.94] tracking-[-0.05em] text-white '}
                           style={visible ? { animationDelay: `${titleDelay}s` } : undefined}
                         >
                           {card.title}
                         </h3>
-                        <div
-                          className={'mt-4 h-[4px] w-20 rounded-full ' + card.lineColor + ' transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:w-28 ' + (visible ? 'eng-line-cascade' : 'opacity-0')}
+                        <div data-engagement-line="desktop"
+                          className={'mt-4 h-[4px] w-20 rounded-full ' + card.lineColor + ' transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:w-28 '}
                           style={visible ? { animationDelay: `${lineDelay}s` } : undefined}
                         />
                       </div>
