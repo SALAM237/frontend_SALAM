@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
 
-export interface CoriTransaction {
+export interface CauriTransaction {
   _id: string;
   amount: number;
   type: 'earn' | 'spend' | 'refund' | 'adjustment';
@@ -12,7 +12,7 @@ export interface CoriTransaction {
   createdAt: string;
 }
 
-export interface CoriRedemption {
+export interface CauriRedemption {
   _id: string;
   activityId: string;
   activityTitle: string;
@@ -21,70 +21,70 @@ export interface CoriRedemption {
   expiresAt: string;
 }
 
-export interface CoriWallet {
+export interface CauriWallet {
   balance: number;
   rules: Record<string, number>;
   redemption: { minimum: number; maximum: number; expiresInMinutes: number };
-  transactions: CoriTransaction[];
-  redemptions: CoriRedemption[];
+  transactions: CauriTransaction[];
+  redemptions: CauriRedemption[];
 }
 
-export function useCoriWallet(space: 'member' | 'admin' = 'member') {
+export function useCauriWallet(space: 'member' | 'admin' = 'member') {
   const token = useAuthStore(state => state.accessToken);
   return useQuery({
-    queryKey: ['member-coris', space],
-    queryFn: () => apiClient<CoriWallet>(space === 'admin' ? '/api/v1/admin/coris/me' : '/api/v1/member/coris', { token: token ?? '' }),
+    queryKey: ['member-cauris', space],
+    queryFn: () => apiClient<CauriWallet>(space === 'admin' ? '/api/v1/admin/cauris/me' : '/api/v1/member/cauris', { token: token ?? '' }),
     enabled: Boolean(token),
     staleTime: 0,
   });
 }
 
-export function useCreateCoriRedemption() {
+export function useCreateCauriRedemption() {
   const token = useAuthStore(state => state.accessToken);
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: { activityId: string; amount: number }) =>
-      apiClient<{ redemption: CoriRedemption; qrDataUrl: string; validationUrl: string; balance: number }>('/api/v1/member/coris/redemptions', {
+      apiClient<{ redemption: CauriRedemption; qrDataUrl: string; validationUrl: string; balance: number }>('/api/v1/member/cauris/redemptions', {
         method: 'POST',
         body: JSON.stringify(payload),
         token: token ?? '',
       }),
     onSuccess: response => {
-      queryClient.invalidateQueries({ queryKey: ['member-coris'] });
+      queryClient.invalidateQueries({ queryKey: ['member-cauris'] });
       toast.success(response.message);
     },
     onError: (error: Error) => toast.error(error.message),
   });
 }
 
-export function useCancelCoriRedemption() {
+export function useCancelCauriRedemption() {
   const token = useAuthStore(state => state.accessToken);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient('/api/v1/member/coris/redemptions/' + id, { method: 'DELETE', token: token ?? '' }),
+    mutationFn: (id: string) => apiClient('/api/v1/member/cauris/redemptions/' + id, { method: 'DELETE', token: token ?? '' }),
     onSuccess: response => {
-      queryClient.invalidateQueries({ queryKey: ['member-coris'] });
+      queryClient.invalidateQueries({ queryKey: ['member-cauris'] });
       toast.success(response.message);
     },
     onError: (error: Error) => toast.error(error.message),
   });
 }
 
-export function useInspectCoriRedemption(tokenValue: string) {
+export function useInspectCauriRedemption(tokenValue: string) {
   const token = useAuthStore(state => state.accessToken);
   return useQuery({
     queryKey: ['admin-cori-redemption', tokenValue],
-    queryFn: () => apiClient<any>('/api/v1/admin/coris/redemptions/inspect', { method: 'POST', body: JSON.stringify({ token: tokenValue }), token: token ?? '' }),
+    queryFn: () => apiClient<any>('/api/v1/admin/cauris/redemptions/inspect', { method: 'POST', body: JSON.stringify({ token: tokenValue }), token: token ?? '' }),
     enabled: Boolean(token && tokenValue),
     retry: false,
   });
 }
 
-export function useRedeemCoris() {
+export function useRedeemCauris() {
   const token = useAuthStore(state => state.accessToken);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (tokenValue: string) => apiClient('/api/v1/admin/coris/redemptions/redeem', {
+    mutationFn: (tokenValue: string) => apiClient('/api/v1/admin/cauris/redemptions/redeem', {
       method: 'POST',
       body: JSON.stringify({ token: tokenValue }),
       token: token ?? '',

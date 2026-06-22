@@ -19,7 +19,7 @@ import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, me
 import AdminAccountTabs from '@/components/admin/AdminAccountTabs';
 import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
 import { NotificationCenter } from '@/components/portal/NotificationCenter';
-import { CauriBadge } from '@/components/member/CoriWallet';
+import { CauriBadge } from '@/components/member/CauriWallet';
 import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
 
 type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; permissions?: string[] };

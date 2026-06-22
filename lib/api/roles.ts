@@ -46,6 +46,31 @@ export interface PermissionsResponse {
   permissions: PermissionDoc[];
   grouped: Record<string, PermissionDoc[]>;
 }
+const LEGACY_CAURI_PERMISSIONS: Record<string, string> = {
+  'coris.read': 'cauris.read',
+  'coris.redeem': 'cauris.redeem',
+  'coris.adjust': 'cauris.adjust',
+};
+
+function normalizePermissionsResponse(response: Awaited<ReturnType<typeof apiClient<PermissionsResponse>>>) {
+  const unique = new Map<string, PermissionDoc>();
+  for (const permission of response.data.permissions) {
+    const key = LEGACY_CAURI_PERMISSIONS[permission.key] ?? permission.key;
+    const normalized = {
+      ...permission,
+      key,
+      module: permission.module === 'coris' ? 'cauris' : permission.module,
+      label: permission.label.replace(/caurris|coris/gi, 'cauris'),
+    };
+    if (!unique.has(key) || permission.key === key) unique.set(key, normalized);
+  }
+  const permissions = [...unique.values()];
+  const grouped = permissions.reduce<Record<string, PermissionDoc[]>>((result, permission) => {
+    (result[permission.module] ??= []).push(permission);
+    return result;
+  }, {});
+  return { ...response, data: { permissions, grouped } };
+}
 
 /* ── Roles ─────────────────────────────────────────────────── */
 
@@ -124,7 +149,7 @@ export function usePermissionsList() {
   const token = useAuthStore(s => s.accessToken);
   return useQuery({
     queryKey: ['admin-permissions'],
-    queryFn: () => apiClient<PermissionsResponse>('/api/v1/admin/permissions', { token: token ?? '' }),
+    queryFn: async () => normalizePermissionsResponse(await apiClient<PermissionsResponse>('/api/v1/admin/permissions', { token: token ?? '' })),
     enabled: !!token,
   });
 }

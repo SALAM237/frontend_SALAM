@@ -63,6 +63,13 @@ const nextConfig: NextConfig = {
 
   turbopack: { root: path.resolve(__dirname) },
 
+  async redirects() {
+    return [{
+      source: '/admin/coris/validation',
+      destination: '/admin/cauris/validation',
+      permanent: false,
+    }];
+  },
   async headers() {
     return [
       {

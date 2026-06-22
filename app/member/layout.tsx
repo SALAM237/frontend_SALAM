@@ -12,7 +12,7 @@ import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, me
 import MemberAccountTabs, { isMemberAccountPath } from '@/components/member/MemberAccountTabs';
 import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
 import { NotificationCenter } from '@/components/portal/NotificationCenter';
-import { CauriBadge } from '@/components/member/CoriWallet';
+import { CauriBadge } from '@/components/member/CauriWallet';
 import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import {

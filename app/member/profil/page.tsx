@@ -12,7 +12,8 @@ import {
   Mail,
   MapPin,
   Phone,
-  Save,
+  Save,
+
   Shield,
   Tag,
   User,
@@ -25,7 +26,7 @@ import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/
 import { assetUrl } from '@/lib/assets';
 import { displayMemberNumber } from '@/lib/member-number';
 import { AvatarLightbox } from '@/components/portal/AvatarLightbox';
-import { CauriBadge, CauriWalletPanel } from '@/components/member/CoriWallet';
+import { CauriBadge, CauriWalletPanel } from '@/components/member/CauriWallet';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
