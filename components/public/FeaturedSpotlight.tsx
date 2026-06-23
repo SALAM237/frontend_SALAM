@@ -123,8 +123,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   if (!items.length) {
     return (
       <section
-        className="relative overflow-hidden rounded-none py-12 sm:py-16 lg:mx-3 lg:my-3 lg:rounded-[2.5rem]"
-        style={{ background: 'linear-gradient(to right, #ffffff 0%, #ffffff 28%, #052e16 62%, #021a0d 80%, #010f07 100%)' }}
+        className="featured-gradient relative overflow-hidden rounded-none py-12 sm:py-16 lg:mx-3 lg:my-3 lg:rounded-[2.5rem]"
         aria-labelledby="featured-heading"
       >
         {/* Motif ndop */}
@@ -156,8 +155,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
 
   return (
     <section
-      className="relative overflow-hidden rounded-none py-10 sm:py-14 lg:mx-3 lg:my-3 lg:rounded-[2.5rem]"
-      style={{ background: 'linear-gradient(to right, #ffffff 0%, #ffffff 28%, #052e16 62%, #021a0d 80%, #010f07 100%)' }}
+      className="featured-gradient relative overflow-hidden rounded-none py-10 sm:py-14 lg:mx-3 lg:my-3 lg:rounded-[2.5rem]"
       aria-labelledby="featured-heading"
     >
       {/* Motif ndop */}
@@ -225,16 +223,16 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
         <div className="relative h-[90vh] min-h-[560px] max-h-[860px] overflow-hidden">
           <Swiper
             modules={[Autoplay, A11y]}
-            className="h-full !overflow-visible"
-            slidesPerView={1.1}
-            centeredSlides
-            spaceBetween={12}
+            className="h-full"
+            slidesPerView={1.065}
+            centeredSlides={false}
+            spaceBetween={8}
             rewind={items.length > 1}
             speed={500}
             autoplay={items.length > 1 ? { delay: SLIDE_DELAY, disableOnInteraction: false, waitForTransition: true } : false}
             breakpoints={{
-              768:  { slidesPerView: 1.1, centeredSlides: true, spaceBetween: 18 },
-              1024: { slidesPerView: 1.1, centeredSlides: true, spaceBetween: 22 },
+              768:  { slidesPerView: 1.06, spaceBetween: 12 },
+              1024: { slidesPerView: 1.055, spaceBetween: 16 },
             }}
             onSwiper={swiper => { swiperRef.current = swiper; setActiveIndex(swiper.realIndex); }}
             onSlideChange={swiper => setActiveIndex(swiper.realIndex)}
@@ -283,7 +281,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                   </article>
 
                   {/* Média */}
-                  <button type="button" onClick={() => setPreview(item)} className="relative order-1 h-full min-h-0 overflow-hidden bg-black text-left md:order-2" style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 10px 50px' }}>
+                  <button type="button" onClick={() => setPreview(item)} className="relative order-1 h-full min-h-0 overflow-hidden rounded-2xl bg-black text-left md:order-2" style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 10px 50px' }}>
                     {/* Barre de progression */}
                     <span className="absolute left-0 right-0 top-0 z-20 h-1.5 bg-black/20">
                       <span className="block h-full origin-left transition-[width] duration-100 ease-linear" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#0B8F3A 0%,#C8102E 50%,#F7C600 100%)' }} />

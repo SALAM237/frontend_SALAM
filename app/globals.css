@@ -234,6 +234,16 @@ select {
   background: linear-gradient(135deg, #0B8F3A 0%, #1aaf55 38%, #C8102E 68%, #F7C600 100%);
 }
 
+/* Section "À la une" — haut→bas sur mobile, gauche→droite sur desktop */
+.featured-gradient {
+  background: linear-gradient(to bottom, #ffffff 0%, #ffffff 28%, #052e16 62%, #021a0d 80%, #010f07 100%);
+}
+@media (min-width: 1024px) {
+  .featured-gradient {
+    background: linear-gradient(to right, #ffffff 0%, #ffffff 28%, #052e16 62%, #021a0d 80%, #010f07 100%);
+  }
+}
+
 /* ── Card ── */
 .card-salam {
   background: #fff;
