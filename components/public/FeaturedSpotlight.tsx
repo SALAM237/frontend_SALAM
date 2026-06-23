@@ -122,13 +122,29 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
 
   if (!items.length) {
     return (
-      <section className="bg-white py-12 sm:py-16" aria-labelledby="featured-heading">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <section
+        className="relative overflow-hidden py-12 sm:py-16"
+        style={{ background: 'linear-gradient(to right, #ffffff 0%, #ffffff 30%, #0b1f15 72%, #07140d 100%)' }}
+        aria-labelledby="featured-heading"
+      >
+        {/* Motif ndop */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.15] md:opacity-[0.12]"
+          style={{
+            backgroundImage: "url('/images/placeholders/ndop motif WBG.png')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            mixBlendMode: 'soft-light',
+          }}
+        />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mb-5">
-            <p className="text-xs font-black uppercase text-emerald-700">Selection SALAM</p>
+            <p className="text-xs font-black uppercase text-emerald-400">Selection SALAM</p>
             <h2 id="featured-heading" className="text-3xl font-black text-neutral-950 sm:text-4xl">A la une</h2>
           </div>
-          <div className="flex min-h-[260px] w-full flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 px-6 text-center">
+          <div className="flex min-h-[260px] w-full flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-white/90 px-6 text-center backdrop-blur-sm">
             {isLoading ? <span className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" /> : <Megaphone size={30} className="text-emerald-700" />}
             <p className="mt-4 text-base font-black text-neutral-800">{isLoading ? 'Chargement des informations...' : 'Les prochaines informations a la une seront publiees ici.'}</p>
             {!isLoading && <p className="mt-1 max-w-lg text-sm leading-6 text-neutral-500">Actualites importantes, annonces et initiatives mises en avant par SALAM.</p>}
