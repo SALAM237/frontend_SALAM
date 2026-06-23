@@ -122,16 +122,11 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
     const horizontal = window.matchMedia('(min-width: 768px)').matches;
     gsap.killTweensOf(curtain);
     gsap.set(curtain, horizontal
-      ? { scaleX: 0, scaleY: 1, transformOrigin: 'right center' }
-      : { scaleY: 0, scaleX: 1, transformOrigin: 'center top' });
-    const timeline = gsap.timeline();
-    timeline.to(curtain, horizontal
-      ? { scaleX: 1, duration: 0.48, ease: 'power3.inOut' }
-      : { scaleY: 1, duration: 0.48, ease: 'power3.inOut' });
-    timeline.set(curtain, horizontal ? { transformOrigin: 'left center' } : { transformOrigin: 'center bottom' });
-    timeline.to(curtain, horizontal
-      ? { scaleX: 0, duration: 0.58, ease: 'power3.inOut', delay: 0.08 }
-      : { scaleY: 0, duration: 0.58, ease: 'power3.inOut', delay: 0.08 });
+      ? { scaleX: 1, scaleY: 1, transformOrigin: 'left center' }
+      : { scaleY: 1, scaleX: 1, transformOrigin: 'center bottom' });
+    gsap.to(curtain, horizontal
+      ? { scaleX: 0, duration: 0.82, ease: 'power3.inOut' }
+      : { scaleY: 0, duration: 0.82, ease: 'power3.inOut' });
   }, []);
 
   const selectSlide = (index: number) => {
@@ -173,8 +168,8 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
             onAutoplayTimeLeft={(_swiper, _timeLeft, percentage) => setProgress(Math.max(0, Math.min(100, (1 - percentage) * 100)))}
           >
             {items.map((item, itemIndex) => (
-              <SwiperSlide key={item._id} className="h-full overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl">
-                <div className="grid h-full min-h-0 grid-rows-[58%_42%] md:grid-cols-[1fr_1.35fr] md:grid-rows-1">
+              <SwiperSlide key={item._id} className="!flex h-full items-center justify-center">
+                <div className="grid h-[70%] w-[80%] min-h-0 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl grid-rows-[58%_42%] md:h-[400px] md:grid-cols-[1fr_1.35fr] md:grid-rows-1">
                   <article className="relative order-2 flex min-h-0 flex-col bg-white p-4 text-neutral-950 md:order-1 md:p-6 lg:p-7">
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                       <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl lg:text-3xl">{item.title}</a>
@@ -182,11 +177,11 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                       {item.buttonDestination?.type !== 'none' && <a {...destinationProps(item.buttonDestination)} className="mt-4 inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-emerald-600/45 bg-emerald-100/75 px-3.5 text-[11px] font-black text-emerald-800 backdrop-blur transition hover:border-emerald-700/70 hover:bg-emerald-100">{item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={12} /></a>}
                     </div>
                     <div className="mt-3 flex shrink-0 items-center justify-center gap-2">
-                      <button type="button" onClick={() => swiperRef.current?.slidePrev()} aria-label="Element precedent" className="grid h-7 w-7 place-items-center rounded-full border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700"><ChevronLeft size={13} /></button>
+                      <button type="button" onClick={() => swiperRef.current?.slidePrev()} aria-label="Element precedent" className="hidden h-7 w-7 place-items-center rounded-full border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700 md:grid"><ChevronLeft size={13} /></button>
                       <div className="flex items-center justify-center gap-2">
-                        {items.map((entry, dotIndex) => <button key={entry._id} type="button" onClick={() => selectSlide(dotIndex)} aria-label={'Afficher ' + entry.title} className={'h-1.5 rounded-full transition-all ' + (dotIndex === activeIndex ? 'w-7 bg-emerald-700' : 'w-1.5 bg-neutral-300')} />)}
+                        {items.map((entry, dotIndex) => <button key={entry._id} type="button" onClick={() => selectSlide(dotIndex)} aria-label={'Afficher ' + entry.title} className={'h-1 rounded-full transition-all md:h-1.5 ' + (dotIndex === activeIndex ? 'w-5 bg-emerald-700 md:w-7' : 'w-1 bg-neutral-300 md:w-1.5')} />)}
                       </div>
-                      <button type="button" onClick={() => swiperRef.current?.slideNext()} aria-label="Element suivant" className="grid h-7 w-7 place-items-center rounded-full border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700"><ChevronRight size={13} /></button>
+                      <button type="button" onClick={() => swiperRef.current?.slideNext()} aria-label="Element suivant" className="hidden h-7 w-7 place-items-center rounded-full border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700 md:grid"><ChevronRight size={13} /></button>
                     </div>
                   </article>
 
@@ -201,7 +196,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
               </SwiperSlide>
             ))}
           </Swiper>
-          <div ref={curtainRef} aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-40 w-full origin-right scale-x-0 bg-white md:w-[43%]" />
+          <div ref={curtainRef} aria-hidden="true" className="pointer-events-none absolute left-[10%] top-[15%] z-40 h-[40.6%] w-[80%] origin-bottom bg-white md:left-[44.04%] md:top-1/2 md:h-[400px] md:w-[45.96%] md:-translate-y-1/2 md:origin-left" />
         </div>
       </div>
 
