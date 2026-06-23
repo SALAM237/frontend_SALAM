@@ -240,10 +240,10 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
           >
             {items.map((item, itemIndex) => (
               <SwiperSlide key={item._id} className="!flex h-full items-center justify-center">
-                <div className="grid h-[78%] w-full min-h-0 overflow-hidden rounded-none border-0 bg-transparent grid-rows-[58%_42%] md:h-[440px] md:grid-cols-[1fr_1.2fr] md:grid-rows-1 md:pr-6 lg:h-[480px] lg:pr-10">
+                <div className="grid h-[68%] w-[86%] min-h-0 overflow-hidden rounded-none border-0 bg-transparent grid-rows-[56%_44%] md:h-[360px] md:w-[84%] md:grid-cols-[0.92fr_1.08fr] md:grid-rows-1 md:pr-4 lg:h-[400px] lg:w-[82%] lg:pr-7 xl:h-[430px]">
 
                   {/* Texte */}
-                  <article className="relative order-2 flex min-h-0 flex-col justify-center bg-transparent p-4 text-left text-neutral-950 md:order-1 md:p-6 lg:p-7">
+                  <article className="relative order-2 flex min-h-0 flex-col justify-center bg-transparent p-4 text-left text-neutral-950 md:order-1 md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6">
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                       <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl lg:text-3xl">{item.title}</a>
                       <a {...destinationProps(item.textDestination)} className="mt-2.5 block whitespace-pre-line text-sm leading-6 text-neutral-600 hover:text-neutral-900">{item.description}</a>

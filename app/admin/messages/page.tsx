@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Send, MessageSquare, Search, ArrowLeft, Pencil, Paperclip, X, Loader2, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -124,8 +124,8 @@ function RecipientPicker({
 
 /* ── ComposeModal ────────────────────────────────────────── */
 
-function ComposeModal({ onClose }: { onClose: () => void }) {
-  const [to,        setTo]         = useState<Recipient[]>([]);
+function ComposeModal({ onClose, initialRecipient }: { onClose: () => void; initialRecipient?: Recipient }) {
+  const [to,        setTo]         = useState<Recipient[]>(initialRecipient ? [initialRecipient] : []);
   const [cc,        setCc]         = useState<Recipient[]>([]);
   const [bcc,       setBcc]        = useState<Recipient[]>([]);
   const [showCcBcc, setShowCcBcc]  = useState(false);
@@ -242,7 +242,20 @@ export default function AdminMessagesPage() {
   const [replySent, setReplySent]   = useState(false);
   const [attachName, setAttachName] = useState('');
   const [compose, setCompose]       = useState(false);
+  const [initialRecipient, setInitialRecipient] = useState<Recipient | undefined>(undefined);
 
+
+  // prefill-recipient-from-url
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('to');
+    const name = params.get('name');
+    if (!id || !name) return;
+
+    setInitialRecipient({ id, name, email: params.get('email') ?? '' });
+    setCompose(true);
+    window.history.replaceState({}, '', window.location.pathname);
+  }, []);
   const filtered = messages.filter(m =>
     `${m.from} ${m.subject} ${m.preview}`.toLowerCase().includes(search.toLowerCase())
   );
@@ -264,7 +277,7 @@ export default function AdminMessagesPage() {
           <p className="mt-0.5 text-sm text-neutral-500">Communications avec les membres</p>
         </div>
         <button
-          onClick={() => setCompose(true)}
+          onClick={() => { setInitialRecipient(undefined); setCompose(true); }}
           className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20"
         >
           <Pencil size={13} /> Nouveau message
@@ -306,7 +319,7 @@ export default function AdminMessagesPage() {
                 <MessageSquare size={32} className="mb-3 text-neutral-200" />
                 <p className="text-sm font-semibold text-neutral-400">Aucun message</p>
                 <p className="mt-1 text-xs text-neutral-300">Les messages reçus apparaîtront ici.</p>
-                <button onClick={() => setCompose(true)}
+                <button onClick={() => { setInitialRecipient(undefined); setCompose(true); }}
                   className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700"
                 >
                   <Pencil size={11} /> Écrire un message
@@ -371,7 +384,7 @@ export default function AdminMessagesPage() {
         )}
       </div>
 
-      {compose && <ComposeModal onClose={() => setCompose(false)} />}
+      {compose && <ComposeModal initialRecipient={initialRecipient} onClose={() => setCompose(false)} />}
     </div>
   );
 }
