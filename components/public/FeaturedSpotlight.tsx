@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { gsap } from 'gsap';
 import { ArrowUpRight, ChevronLeft, ChevronRight, Expand, Pause, Play, X, Megaphone } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { A11y, Autoplay } from 'swiper/modules';
@@ -83,8 +82,6 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   const { data: memberData } = useMemberFeatured();
   const items = (token ? memberData?.data : undefined) ?? data?.data ?? initialItems;
   const swiperRef = useRef<SwiperInstance | null>(null);
-  const curtainRef = useRef<HTMLDivElement>(null);
-  const firstSlideEvent = useRef(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [manualPaused, setManualPaused] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -116,18 +113,6 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
     }
   }, [activeIndex, items.length]);
 
-  const revealCurtain = useCallback(() => {
-    const curtain = curtainRef.current;
-    if (!curtain || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const horizontal = window.matchMedia('(min-width: 768px)').matches;
-    gsap.killTweensOf(curtain);
-    gsap.set(curtain, horizontal
-      ? { scaleX: 1, scaleY: 1, transformOrigin: 'left center' }
-      : { scaleY: 1, scaleX: 1, transformOrigin: 'center bottom' });
-    gsap.to(curtain, horizontal
-      ? { scaleX: 0, duration: 0.82, ease: 'power3.inOut' }
-      : { scaleY: 0, duration: 0.82, ease: 'power3.inOut' });
-  }, []);
 
   const selectSlide = (index: number) => {
     if (index === activeIndex) return;
@@ -150,26 +135,23 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
           <Swiper
             modules={[Autoplay, A11y]}
             className="h-full !overflow-visible"
-            slidesPerView={1.08}
-            spaceBetween={12}
+            slidesPerView={1.1}
+            spaceBetween={14}
             centeredSlides={false}
             rewind={items.length > 1}
             speed={650}
             autoplay={items.length > 1 ? { delay: SLIDE_DELAY, disableOnInteraction: false, waitForTransition: true } : false}
             breakpoints={{
-              768: { slidesPerView: 1.16, centeredSlides: true, spaceBetween: 20 },
-              1024: { slidesPerView: 1.12, centeredSlides: true, spaceBetween: 24 },
+              768: { slidesPerView: 1.25, centeredSlides: true, spaceBetween: 24 },
+              1024: { slidesPerView: 1.25, centeredSlides: true, spaceBetween: 28 },
             }}
             onSwiper={swiper => { swiperRef.current = swiper; setActiveIndex(swiper.realIndex); }}
-            onSlideChange={swiper => {
-              setActiveIndex(swiper.realIndex);
-              if (firstSlideEvent.current) firstSlideEvent.current = false; else revealCurtain();
-            }}
+            onSlideChange={swiper => setActiveIndex(swiper.realIndex)}
             onAutoplayTimeLeft={(_swiper, _timeLeft, percentage) => setProgress(Math.max(0, Math.min(100, (1 - percentage) * 100)))}
           >
             {items.map((item, itemIndex) => (
               <SwiperSlide key={item._id} className="!flex h-full items-center justify-center">
-                <div className="grid h-[70%] w-[80%] min-h-0 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl grid-rows-[58%_42%] md:h-[400px] md:grid-cols-[1fr_1.35fr] md:grid-rows-1">
+                <div className="grid h-[78%] w-full min-h-0 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl grid-rows-[58%_42%] md:h-[520px] md:grid-cols-[1fr_1.35fr] md:grid-rows-1 lg:h-[560px]">
                   <article className="relative order-2 flex min-h-0 flex-col bg-white p-4 text-neutral-950 md:order-1 md:p-6 lg:p-7">
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                       <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl lg:text-3xl">{item.title}</a>
@@ -196,7 +178,6 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
               </SwiperSlide>
             ))}
           </Swiper>
-          <div ref={curtainRef} aria-hidden="true" className="pointer-events-none absolute left-[10%] top-[15%] z-40 h-[40.6%] w-[80%] origin-bottom bg-white md:left-[44.04%] md:top-1/2 md:h-[400px] md:w-[45.96%] md:-translate-y-1/2 md:origin-left" />
         </div>
       </div>
 
