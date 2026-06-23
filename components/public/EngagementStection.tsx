@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -105,6 +105,7 @@ export function EngagementSection() {
   const sectionRootRef = useRef<HTMLElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const panelRefs = useRef<(HTMLDivElement | null)[]>([]);
   useEffect(() => {
     const title = titleRef.current;
     const section = sectionRootRef.current;
@@ -146,6 +147,96 @@ export function EngagementSection() {
 
     return () => media.revert();
   }, []);
+
+  useEffect(() => {
+    const section = sectionRootRef.current;
+    if (!section || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const media = gsap.matchMedia();
+    const animateTitles = (layout: 'mobile' | 'desktop', start: string) => {
+      const titles = gsap.utils.toArray<HTMLElement>(
+        '[data-engagement-title="' + layout + '"]',
+        section,
+      );
+
+      titles.forEach((title) => {
+        const card = title.closest('article') ?? title;
+        const line = card.querySelector<HTMLElement>('[data-engagement-line="' + layout + '"]');
+        const timeline = gsap.timeline({
+          scrollTrigger: {
+            trigger: card,
+            start,
+            toggleActions: 'play none none reverse',
+            invalidateOnRefresh: true,
+          },
+        });
+
+        if (layout === 'mobile') {
+          // Pas de filter ni y sur mobile : évite le clipping button + surcharge GPU composite
+          timeline.fromTo(
+            title,
+            { autoAlpha: 0, x: -28 },
+            { autoAlpha: 1, x: 0, duration: 0.72, ease: 'power3.out' },
+          );
+        } else {
+          timeline.fromTo(
+            title,
+            { autoAlpha: 0, y: 30, filter: 'blur(6px)' },
+            { autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.72, ease: 'power3.out' },
+          );
+        }
+
+        if (line) {
+          timeline.fromTo(
+            line,
+            { scaleX: 0, transformOrigin: 'left center' },
+            { scaleX: 1, duration: 0.48, ease: 'power3.out' },
+            '-=0.3',
+          );
+        }
+      });
+    };
+
+    media.add('(min-width: 1024px)', () => animateTitles('desktop', 'top 84%'));
+    media.add('(max-width: 1023px)', () => animateTitles('mobile', 'top 90%'));
+
+    return () => media.revert();
+  }, []);
+  // Initialise les panneaux à height 0 sur mobile avant le premier paint
+  useLayoutEffect(() => {
+    const mm = gsap.matchMedia();
+    mm.add('(max-width: 1023px)', () => {
+      panelRefs.current.forEach((panel) => {
+        if (panel) gsap.set(panel, { height: 0 });
+      });
+      return () => {
+        panelRefs.current.forEach((panel) => {
+          if (panel) gsap.set(panel, { clearProps: 'height' });
+        });
+      };
+    });
+    return () => mm.revert();
+  }, []);
+
+  // Recalcule les positions ScrollTrigger après l'init accordion
+  useEffect(() => {
+    ScrollTrigger.refresh();
+  }, []);
+
+  // Anime l'ouverture / fermeture sur mobile (GPU via height)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!window.matchMedia('(max-width: 1023px)').matches) return;
+    panelRefs.current.forEach((panel, i) => {
+      if (!panel) return;
+      gsap.to(panel, {
+        height: i === openIndex ? 'auto' : 0,
+        duration: i === openIndex ? 0.5 : 0.3,
+        ease: 'power3.out',
+        overwrite: true,
+      });
+    });
+  }, [openIndex]);
 
   useEffect(() => {
     const el = sectionRef.current;
@@ -200,9 +291,6 @@ export function EngagementSection() {
 
           <div className="mt-8 mb-14 flex flex-col gap-[6px] md:mb-20 md:gap-2 lg:mt-8 lg:mb-16 lg:gap-3">
             {cards.map((card, index) => {
-              // Cascade : chaque carte attend que la précédente finisse (titre 0.7s + trait 0.2s = 0.9s par carte)
-              const titleDelay = index * 0.9;
-              const lineDelay  = titleDelay + 0.2;
               return (
               <article
                 key={card.title}
@@ -230,14 +318,12 @@ export function EngagementSection() {
                     <div className="relative z-10 flex items-center justify-between gap-4 w-full">
                       <div className="pl-8">
                         <h3 data-engagement-title="mobile"
-                          className={'text-[1.5rem] md:text-[1.8rem] lg:text-[clamp(1.65rem,2.8vw,2.3rem)] font-black leading-[0.95] tracking-[-0.05em] text-white '}
-                          style={visible ? { animationDelay: `${titleDelay}s` } : undefined}
+                          className="text-[1.5rem] font-black leading-[0.95] tracking-normal text-white md:text-[1.8rem] lg:text-[clamp(1.65rem,2.8vw,2.3rem)]"
                         >
                           {card.title}
                         </h3>
                         <div data-engagement-line="mobile"
                           className={'mt-3 h-[4px] w-16 rounded-[6px] ' + card.lineColor + ' '}
-                          style={visible ? { animationDelay: `${lineDelay}s` } : undefined}
                         />
                       </div>
 
@@ -253,14 +339,10 @@ export function EngagementSection() {
                   </button>
 
                   <div
-                    className={
-                      'grid transition-[grid-template-rows] ease-[cubic-bezier(.22,1,.36,1)] lg:[grid-template-rows:1fr] ' +
-                      (openIndex === index
-                        ? 'grid-rows-[1fr] duration-500'
-                        : 'grid-rows-[0fr] duration-300')
-                    }
+                    ref={(el) => { panelRefs.current[index] = el; }}
+                    className="overflow-hidden"
                   >
-                  <div className="min-h-0 overflow-hidden lg:grid lg:grid-cols-[240px_0.82fr]">
+                  <div className="lg:grid lg:grid-cols-[240px_0.82fr]">
                     {/* Left block — desktop only */}
                     <div className="relative hidden flex-col justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-[#07140d] via-[#0b1f15] to-[#10261a] p-6 shadow-[inset_-1px_0_0_rgba(255,255,255,0.6)] transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.015] lg:flex lg:border-b-0 lg:border-r lg:p-3">
                       <div className={'absolute inset-0 bg-gradient-to-br ' + card.color + ' opacity-[0.08]'} />
@@ -271,14 +353,12 @@ export function EngagementSection() {
 
                       <div className="relative z-10">
                         <h3 data-engagement-title="desktop"
-                          className={'mt-3 text-[clamp(1.1rem,1.8vw,1.5rem)] font-black leading-[0.94] tracking-[-0.05em] text-white '}
-                          style={visible ? { animationDelay: `${titleDelay}s` } : undefined}
+                          className="mt-3 text-[clamp(1.1rem,1.8vw,1.5rem)] font-black leading-[0.94] tracking-normal text-white"
                         >
                           {card.title}
                         </h3>
                         <div data-engagement-line="desktop"
                           className={'mt-4 h-[4px] w-20 rounded-full ' + card.lineColor + ' transition-all duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:w-28 '}
-                          style={visible ? { animationDelay: `${lineDelay}s` } : undefined}
                         />
                       </div>
                     </div>

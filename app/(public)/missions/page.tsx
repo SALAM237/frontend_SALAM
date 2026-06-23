@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap, Briefcase, HandHeart, TrendingUp,
   AlertCircle, CheckCircle2, ArrowRight, Building2,
-  ChevronRight, ListChecks,
+  ChevronLeft, ChevronRight, ListChecks,
 } from 'lucide-react';
 import { PageHero } from '@/components/public/PageHero';
 
@@ -33,34 +33,39 @@ interface MissionData {
 
 // ── Accent map ─────────────────────────────────────────────────────────────
 const ACCENT: Record<AccentKey, {
-  badge: string; badgeBg: string; badgeText: string;
+  badge: string; badgeBg: string; badgeBgFaded: string; badgeText: string;
   iconBg: string; iconText: string;
   numText: string; numBg: string;
   bar: string; dot: string;
+  arrowStroke: string;
 }> = {
   emerald: {
-    badge: 'ring-emerald-500/30 bg-emerald-500/10', badgeBg: 'bg-emerald-600', badgeText: 'text-emerald-400',
+    badge: 'ring-emerald-500/30 bg-emerald-500/10', badgeBg: 'bg-emerald-600', badgeBgFaded: 'bg-emerald-600/70', badgeText: 'text-emerald-400',
     iconBg: 'bg-emerald-100', iconText: 'text-emerald-700',
     numText: 'text-emerald-700', numBg: 'bg-emerald-600',
     bar: 'bg-emerald-500', dot: 'bg-emerald-500',
+    arrowStroke: 'border-emerald-600 text-emerald-700',
   },
   blue: {
-    badge: 'ring-blue-500/30 bg-blue-500/10', badgeBg: 'bg-blue-600', badgeText: 'text-blue-400',
+    badge: 'ring-blue-500/30 bg-blue-500/10', badgeBg: 'bg-blue-600', badgeBgFaded: 'bg-blue-600/70', badgeText: 'text-blue-400',
     iconBg: 'bg-blue-100', iconText: 'text-blue-700',
     numText: 'text-blue-700', numBg: 'bg-blue-600',
     bar: 'bg-blue-500', dot: 'bg-blue-500',
+    arrowStroke: 'border-blue-600 text-blue-700',
   },
   orange: {
-    badge: 'ring-orange-500/30 bg-orange-500/10', badgeBg: 'bg-orange-600', badgeText: 'text-orange-400',
+    badge: 'ring-orange-500/30 bg-orange-500/10', badgeBg: 'bg-orange-600', badgeBgFaded: 'bg-orange-600/70', badgeText: 'text-orange-400',
     iconBg: 'bg-orange-100', iconText: 'text-orange-700',
     numText: 'text-orange-700', numBg: 'bg-orange-600',
     bar: 'bg-orange-500', dot: 'bg-orange-500',
+    arrowStroke: 'border-orange-600 text-orange-700',
   },
   yellow: {
-    badge: 'ring-yellow-500/30 bg-yellow-500/10', badgeBg: 'bg-yellow-500', badgeText: 'text-yellow-600',
+    badge: 'ring-yellow-500/30 bg-yellow-500/10', badgeBg: 'bg-yellow-500', badgeBgFaded: 'bg-yellow-500/70', badgeText: 'text-yellow-600',
     iconBg: 'bg-yellow-100', iconText: 'text-yellow-700',
     numText: 'text-yellow-700', numBg: 'bg-yellow-500',
     bar: 'bg-yellow-400', dot: 'bg-yellow-400',
+    arrowStroke: 'border-yellow-500 text-yellow-600',
   },
 };
 
@@ -223,6 +228,8 @@ const VALID_IDS = ['preparer', 'insertion', 'solidarite', 'developpement'];
 
 export default function MissionsPage() {
   const [activeId, setActiveId] = useState<string>('preparer');
+  const [lastDirection, setLastDirection] = useState<'prev' | 'next' | null>(null);
+  const [headerVisible, setHeaderVisible] = useState(true);
   const tabsRef      = useRef<HTMLDivElement>(null);
   const navScrollRef = useRef<HTMLDivElement>(null);
   const rafRef       = useRef<number | null>(null);
@@ -232,6 +239,15 @@ export default function MissionsPage() {
   useEffect(() => {
     const m = new URLSearchParams(window.location.search).get('m');
     if (m && VALID_IDS.includes(m)) setActiveId(m);
+  }, []);
+
+  // Écoute la visibilité du Header pour ajuster le top du sticky nav
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setHeaderVisible((e as CustomEvent<{ visible: boolean }>).detail.visible);
+    };
+    window.addEventListener('salam:header', handler);
+    return () => window.removeEventListener('salam:header', handler);
   }, []);
 
   // Easing cubic ease-in-out
@@ -280,6 +296,8 @@ export default function MissionsPage() {
   const selectMission = (id: string) => {
     const prevIndex    = MISSIONS.findIndex(m => m.id === activeId);
     const clickedIndex = MISSIONS.findIndex(m => m.id === id);
+    if (clickedIndex > prevIndex) setLastDirection('next');
+    else if (clickedIndex < prevIndex) setLastDirection('prev');
     setActiveId(id);
     slideNav(clickedIndex, prevIndex);
     // Sentinel is in normal flow (never sticky) → getBoundingClientRect gives true document position
@@ -296,7 +314,7 @@ export default function MissionsPage() {
       {/* ── Hero ── */}
       <PageHero
         badge="Nos missions"
-        title="stratégiques de SALAM"
+        title="stratégiques de la SALAM"
         accentWord="Les missions"
         accentPosition="start"
         subtitle="Un pont entre les étudiants, la diaspora et le développement du Cameroun — la SALAM agit comme une structure stratégique d'orientation, d'accompagnement, d'intégration et de valorisation des compétences camerounaises acquises à l'international."
@@ -330,9 +348,10 @@ export default function MissionsPage() {
       {/* ── Sticky Tab Nav ── */}
       <div
         ref={tabsRef}
-        className="sticky top-16 z-30 scroll-mt-16 border-b border-neutral-200 bg-white/95 shadow-sm backdrop-blur-sm"
+        className="sticky z-30 border-b border-neutral-200 bg-white/95 shadow-sm backdrop-blur-sm"
+        style={{ top: headerVisible ? '68px' : '0px', transition: 'top 300ms ease-out' }}
       >
-        <div ref={navScrollRef} className="mx-auto max-w-5xl overflow-x-auto px-4 md:px-8 lg:px-0" style={{ scrollbarWidth: 'none' }}>
+        <div ref={navScrollRef} className="mx-auto max-w-6xl overflow-x-auto px-4 md:px-8 lg:px-0" style={{ scrollbarWidth: 'none' }}>
           <div className="flex min-w-max gap-1 py-2">
             {MISSIONS.map(m => {
               const a = ACCENT[m.accentKey];
@@ -342,15 +361,22 @@ export default function MissionsPage() {
                 <button
                   key={m.id}
                   onClick={() => selectMission(m.id)}
-                  className={`mission-nav-item flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black transition-all duration-200 ${
-                    active
-                      ? `${a.badgeBg} text-white shadow-md`
-                      : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800'
+                  className={`mission-nav-item relative flex items-center gap-2 overflow-hidden rounded-xl px-4 py-2 text-xs font-black transition-colors duration-200 ${
+                    active ? 'text-white shadow-md' : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800'
                   }`}
                 >
-                  <Icon size={13} />
-                  <span className="hidden sm:inline">{m.num} —</span>
-                  {m.shortTitle}
+                  {active && (
+                    <motion.span
+                      layoutId="mission-tab-bg"
+                      className={`absolute inset-0 ${a.badgeBgFaded} rounded-xl`}
+                      transition={{ type: 'spring', bounce: 0.18, duration: 0.42 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Icon size={13} />
+                    <span className="hidden sm:inline">{m.num} —</span>
+                    {m.shortTitle}
+                  </span>
                 </button>
               );
             })}
@@ -380,18 +406,68 @@ export default function MissionsPage() {
                 initial={{ opacity: 0, x: 72 }}
                 animate={{ opacity: 1, x: 0, transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] } }}
                 exit={{ opacity: 0, x: -72, transition: { duration: 0.22, ease: [0.55, 0, 1, 0.45] } }}
-                className={`${m.bg} px-5 py-[clamp(4rem,8vw,6rem)] md:px-8 lg:px-0`}
+                className={`relative ${m.bg} px-5 pt-[clamp(1.5rem,3vw,2.5rem)] pb-[clamp(4rem,8vw,6rem)] md:px-8 lg:px-0`}
               >
+                {/* Motif ndop — overlay subtil sur le bg clair */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 mix-blend-multiply opacity-[0.02]"
+                  style={{
+                    backgroundImage: "url('/images/placeholders/ndop motif WBG.png')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    filter: 'sepia(1) saturate(3) hue-rotate(80deg)',
+                  }}
+                />
             <div className="mx-auto max-w-6xl space-y-10">
 
               {/* Mission header */}
               <div className={`flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-12 ${isEven ? 'lg:flex-row-reverse' : ''}`}>
                 <div className="flex-1">
-                  <div className="flex items-center gap-3">
+                  <div className="flex w-full items-center gap-3">
                     <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${a.iconBg}`}>
                       <Icon size={22} className={a.iconText} />
                     </div>
                     <span className={`text-[10px] font-black uppercase tracking-[0.28em] ${a.numText}`}>Mission {m.num}</span>
+
+                    {/* Flèches navigation */}
+                    {(() => {
+                      const isFirst = mi === 0;
+                      const isLast  = mi === MISSIONS.length - 1;
+                      // Fill la flèche de la direction encore disponible quand on est au bout,
+                      // sinon fill la dernière direction cliquée
+                      const leftFilled  = isLast  || (!isFirst && lastDirection === 'prev');
+                      const rightFilled = isFirst || (!isLast  && lastDirection === 'next');
+                      return (
+                        <div className="ml-auto flex items-center gap-1.5">
+                          <button
+                            onClick={() => { selectMission(MISSIONS[mi - 1].id); setLastDirection('prev'); }}
+                            disabled={isFirst}
+                            aria-label="Mission précédente"
+                            className={`flex h-7 w-7 items-center justify-center rounded-full border transition-all duration-200 disabled:opacity-20 disabled:cursor-not-allowed ${
+                              leftFilled
+                                ? `${a.numBg} border-transparent text-white`
+                                : `bg-transparent ${a.arrowStroke}`
+                            }`}
+                          >
+                            <ChevronLeft size={14} strokeWidth={1.5} />
+                          </button>
+                          <button
+                            onClick={() => { selectMission(MISSIONS[mi + 1].id); setLastDirection('next'); }}
+                            disabled={isLast}
+                            aria-label="Mission suivante"
+                            className={`flex h-7 w-7 items-center justify-center rounded-full border transition-all duration-200 disabled:opacity-20 disabled:cursor-not-allowed ${
+                              rightFilled
+                                ? `${a.numBg} border-transparent text-white`
+                                : `bg-transparent ${a.arrowStroke}`
+                            }`}
+                          >
+                            <ChevronRight size={14} strokeWidth={1.5} />
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <h2 className="mt-4 text-[clamp(1.6rem,3.5vw,2.6rem)] font-black leading-[0.95] tracking-[-0.04em] text-neutral-900">
                     {m.title}
@@ -404,6 +480,24 @@ export default function MissionsPage() {
 
               {/* Problèmes + Actions + Impacts */}
               <div className="grid gap-5 lg:grid-cols-3">
+
+              {/* Problématiques — rouge bouton hero */}
+              <div className="rounded-2xl bg-red-400 p-5 sm:p-6">
+                <div className="mb-6 flex items-center gap-2.5">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
+                    <AlertCircle size={14} className="text-white" />
+                  </div>
+                  <span className="text-xs font-black uppercase tracking-[0.2em] text-white">Problématiques traitées</span>
+                </div>
+                <ul className="space-y-3">
+                  {m.problematiques.map((p, i) => (
+                    <li key={i} className="flex gap-2.5">
+                      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-white/60" />
+                      <span className="text-sm leading-relaxed text-white">{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
               {/* Impacts — vert bouton hero */}
               <div className="rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 p-5 sm:p-6">
@@ -422,24 +516,6 @@ export default function MissionsPage() {
                   ))}
                 </div>
               </div>
-              
-                {/* Problématiques — rouge bouton hero */}
-                <div className="rounded-2xl bg-red-400 p-5 sm:p-6">
-                  <div className="mb-6 flex items-center gap-2.5">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
-                      <AlertCircle size={14} className="text-white" />
-                    </div>
-                    <span className="text-xs font-black uppercase tracking-[0.2em] text-white">Problématiques traitées</span>
-                  </div>
-                  <ul className="space-y-3">
-                    {m.problematiques.map((p, i) => (
-                      <li key={i} className="flex gap-2.5">
-                        <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-white/60" />
-                        <span className="text-sm leading-relaxed text-white">{p}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
 
               
 

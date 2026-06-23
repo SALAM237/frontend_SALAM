@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { gsap } from 'gsap';
-import { ArrowUpRight, ChevronLeft, ChevronRight, Pause, Play, X, Megaphone } from 'lucide-react';
+import { ArrowUpRight, ChevronLeft, ChevronRight, Expand, Pause, Play, X, Megaphone } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { A11y, Autoplay } from 'swiper/modules';
 import type { Swiper as SwiperInstance } from 'swiper';
@@ -104,9 +104,9 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   useEffect(() => {
     const autoplay = swiperRef.current?.autoplay;
     if (!autoplay) return;
-    if (manualPaused || mediaPlaying) autoplay.pause();
+    if (manualPaused || mediaPlaying || preview) autoplay.pause();
     else autoplay.resume();
-  }, [manualPaused, mediaPlaying]);
+  }, [manualPaused, mediaPlaying, preview]);
 
   useEffect(() => {
     swiperRef.current?.update();
@@ -126,12 +126,12 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
       : { scaleY: 0, scaleX: 1, transformOrigin: 'center top' });
     const timeline = gsap.timeline();
     timeline.to(curtain, horizontal
-      ? { scaleX: 1, duration: 0.32, ease: 'power3.inOut' }
-      : { scaleY: 1, duration: 0.32, ease: 'power3.inOut' });
+      ? { scaleX: 1, duration: 0.48, ease: 'power3.inOut' }
+      : { scaleY: 1, duration: 0.48, ease: 'power3.inOut' });
     timeline.set(curtain, horizontal ? { transformOrigin: 'left center' } : { transformOrigin: 'center bottom' });
     timeline.to(curtain, horizontal
-      ? { scaleX: 0, duration: 0.42, ease: 'power3.inOut', delay: 0.06 }
-      : { scaleY: 0, duration: 0.42, ease: 'power3.inOut', delay: 0.06 });
+      ? { scaleX: 0, duration: 0.58, ease: 'power3.inOut', delay: 0.08 }
+      : { scaleY: 0, duration: 0.58, ease: 'power3.inOut', delay: 0.08 });
   }, []);
 
   const selectSlide = (index: number) => {
@@ -151,11 +151,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
           <button type="button" onClick={() => setManualPaused(value => !value)} aria-label={manualPaused ? 'Relancer le carrousel' : 'Mettre le carrousel en pause'} className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 text-neutral-600 hover:border-emerald-300 hover:text-emerald-700">{manualPaused ? <Play size={15} /> : <Pause size={15} />}</button>
         </div>
 
-        <div className="mx-auto mb-3 h-1.5 max-w-7xl overflow-hidden bg-emerald-100 sm:rounded-full">
-          <div className="h-full origin-left bg-[#0B8F3A] transition-[width] duration-100 ease-linear" style={{ width: `${progress}%` }} />
-        </div>
-
-        <div className="relative h-[90svh] min-h-[600px] max-h-[920px] overflow-hidden">
+        <div className="relative h-[90vh] min-h-[560px] max-h-[860px] overflow-hidden">
           <Swiper
             modules={[Autoplay, A11y]}
             className="h-full !overflow-visible"
@@ -177,32 +173,35 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
             onAutoplayTimeLeft={(_swiper, _timeLeft, percentage) => setProgress(Math.max(0, Math.min(100, (1 - percentage) * 100)))}
           >
             {items.map((item, itemIndex) => (
-              <SwiperSlide key={item._id} className="h-full overflow-hidden rounded-lg border border-neutral-200 bg-[#0a3040] shadow-xl">
-                <div className="grid h-full min-h-0 grid-rows-[55%_45%] md:grid-cols-[1fr_1.35fr] md:grid-rows-1">
-                  <article className="relative order-2 flex min-h-0 flex-col bg-[#0a3040] p-5 text-white md:order-1 md:p-7 lg:p-9">
+              <SwiperSlide key={item._id} className="h-full overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl">
+                <div className="grid h-full min-h-0 grid-rows-[58%_42%] md:grid-cols-[1fr_1.35fr] md:grid-rows-1">
+                  <article className="relative order-2 flex min-h-0 flex-col bg-white p-4 text-neutral-950 md:order-1 md:p-6 lg:p-7">
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-                      <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug hover:text-emerald-200 sm:text-2xl lg:text-3xl">{item.title}</a>
-                      <a {...destinationProps(item.textDestination)} className="mt-3 block whitespace-pre-line text-sm leading-6 text-white/75 hover:text-white">{item.description}</a>
-                      {item.buttonDestination?.type !== 'none' && <a {...destinationProps(item.buttonDestination)} className="mt-4 inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-emerald-300/60 bg-emerald-200/15 px-3.5 text-[11px] font-black text-emerald-50 backdrop-blur transition hover:border-emerald-200 hover:bg-emerald-200/25">{item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={12} /></a>}
+                      <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl lg:text-3xl">{item.title}</a>
+                      <a {...destinationProps(item.textDestination)} className="mt-2.5 block whitespace-pre-line text-sm leading-6 text-neutral-600 hover:text-neutral-900">{item.description}</a>
+                      {item.buttonDestination?.type !== 'none' && <a {...destinationProps(item.buttonDestination)} className="mt-4 inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-emerald-600/45 bg-emerald-100/75 px-3.5 text-[11px] font-black text-emerald-800 backdrop-blur transition hover:border-emerald-700/70 hover:bg-emerald-100">{item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={12} /></a>}
                     </div>
-                    <div className="mt-4 flex shrink-0 items-center gap-2">
-                      <button type="button" onClick={() => swiperRef.current?.slidePrev()} aria-label="Element precedent" className="grid h-7 w-7 place-items-center rounded-full border border-white/20 text-white/70 hover:border-white/50 hover:text-white"><ChevronLeft size={13} /></button>
-                      <div className="flex flex-1 items-center justify-center gap-2">
-                        {items.map((entry, dotIndex) => <button key={entry._id} type="button" onClick={() => selectSlide(dotIndex)} aria-label={'Afficher ' + entry.title} className={'h-1.5 rounded-full transition-all ' + (dotIndex === activeIndex ? 'w-7 bg-emerald-300' : 'w-1.5 bg-white/35')} />)}
+                    <div className="mt-3 flex shrink-0 items-center justify-center gap-2">
+                      <button type="button" onClick={() => swiperRef.current?.slidePrev()} aria-label="Element precedent" className="grid h-7 w-7 place-items-center rounded-full border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700"><ChevronLeft size={13} /></button>
+                      <div className="flex items-center justify-center gap-2">
+                        {items.map((entry, dotIndex) => <button key={entry._id} type="button" onClick={() => selectSlide(dotIndex)} aria-label={'Afficher ' + entry.title} className={'h-1.5 rounded-full transition-all ' + (dotIndex === activeIndex ? 'w-7 bg-emerald-700' : 'w-1.5 bg-neutral-300')} />)}
                       </div>
-                      <button type="button" onClick={() => swiperRef.current?.slideNext()} aria-label="Element suivant" className="grid h-7 w-7 place-items-center rounded-full border border-white/20 text-white/70 hover:border-white/50 hover:text-white"><ChevronRight size={13} /></button>
+                      <button type="button" onClick={() => swiperRef.current?.slideNext()} aria-label="Element suivant" className="grid h-7 w-7 place-items-center rounded-full border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700"><ChevronRight size={13} /></button>
                     </div>
                   </article>
 
                   <button type="button" onClick={() => setPreview(item)} className="relative order-1 h-full min-h-0 overflow-hidden bg-black text-left md:order-2">
+                    <span className="absolute left-0 right-0 top-0 z-20 h-[3px] bg-white/10">
+                      <span className="block h-full origin-left transition-[width] duration-100 ease-linear" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#0B8F3A 0%,#C8102E 50%,#F7C600 100%)' }} />
+                    </span>
                     <Media item={item} active={itemIndex === activeIndex && !preview} playbackId={'slide-' + item._id} onPlaybackChange={handlePlaybackChange} />
-                    <span className="absolute bottom-4 left-4 rounded-full bg-black/65 px-3 py-1.5 text-[10px] font-black uppercase text-white backdrop-blur">Agrandir</span>
+                    <span className="absolute right-4 top-4 z-30 grid h-9 w-9 place-items-center rounded-full bg-black/65 text-white backdrop-blur transition hover:bg-black/80" aria-hidden="true"><Expand size={17} /></span>
                   </button>
                 </div>
               </SwiperSlide>
             ))}
           </Swiper>
-          <div ref={curtainRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-40 origin-right scale-x-0 bg-[#0B8F3A]" />
+          <div ref={curtainRef} aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-40 w-full origin-right scale-x-0 bg-white md:w-[43%]" />
         </div>
       </div>
 

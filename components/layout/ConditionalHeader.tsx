@@ -18,6 +18,5 @@ export function ConditionalHeader() {
   ];
 
   if (hiddenRoutes.some(route => pathname === route || pathname.startsWith(`${route}/`))) return null;
-  if (pathname === '/missions') return <Header />;
-  return <FloatingNavbar />;
+  return <Header />;
 }

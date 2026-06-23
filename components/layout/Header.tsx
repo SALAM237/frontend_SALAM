@@ -15,11 +15,25 @@ const NAV = PUBLIC_NAV_ITEMS;
 export function Header() {
   const [open,     setOpen]     = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [visible,  setVisible]  = useState(true);
   const pathname = usePathname();
   const user = useAuthStore(s => s.user);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 24);
+      if (y > lastY && y > 60) {
+        setVisible(false);
+        setOpen(false);
+        window.dispatchEvent(new CustomEvent('salam:header', { detail: { visible: false } }));
+      } else {
+        setVisible(true);
+        window.dispatchEvent(new CustomEvent('salam:header', { detail: { visible: true } }));
+      }
+      lastY = y;
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -38,7 +52,10 @@ export function Header() {
   return (
     <>
       <header
-        className="sticky z-50 transition-all duration-300"
+        className={[
+          'sticky z-50 transition-[transform,opacity,border-color,box-shadow] duration-300 ease-out',
+          visible ? 'translate-y-0 opacity-100 pointer-events-auto' : '-translate-y-full opacity-0 pointer-events-none',
+        ].join(' ')}
         style={{
           top: 'env(safe-area-inset-top, 0px)',
           background: 'rgba(255,255,255,0.94)',

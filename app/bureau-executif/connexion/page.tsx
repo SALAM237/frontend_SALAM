@@ -91,6 +91,18 @@ export default function BureauConnexionPage() {
         <div className="pointer-events-none absolute inset-0 opacity-[0.04]"
           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
 
+        {/* Motif ndop */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 mix-blend-soft-light opacity-[0.15] lg:opacity-[0.12]"
+          style={{
+            backgroundImage: "url('/images/placeholders/ndop motif WBG.png')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
+
         {/* Lueur centrale ambrée/or */}
         <div className="pointer-events-none absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-600/5 blur-[80px]" />
 
