@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { createPortal } from 'react-dom';
 import { Coins, Loader2, QrCode, X } from 'lucide-react';
 import { useMemberActivities } from '@/lib/api/activities';
 import { useCancelCauriRedemption, useCauriWallet, useCreateCauriRedemption } from '@/lib/api/cauris';
@@ -10,7 +11,10 @@ import { useCancelCauriRedemption, useCauriWallet, useCreateCauriRedemption } fr
 export function CauriBadge({ compact = false, space = 'member' }: { compact?: boolean; space?: 'member' | 'admin' }) {
   const { data, isLoading } = useCauriWallet(space);
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const balance = data?.data.balance ?? 0;
+
+  useEffect(() => { setMounted(true); }, []);
 
   return (
     <>
@@ -20,10 +24,10 @@ export function CauriBadge({ compact = false, space = 'member' }: { compact?: bo
         <span className={compact ? 'hidden sm:inline' : ''}>{isLoading ? '...' : balance} cauris</span>
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-[9999] grid place-items-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
+      {open && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] grid min-h-[100dvh] place-items-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
           <div role="dialog" aria-modal="true" aria-labelledby="cauri-dialog-title"
-            className="relative grid w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-2xl sm:grid-cols-[190px_1fr]"
+            className="relative grid max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-2xl sm:grid-cols-[190px_1fr]"
             onClick={event => event.stopPropagation()}>
             <button type="button" onClick={() => setOpen(false)} aria-label="Fermer"
               className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-neutral-600 shadow-sm transition hover:bg-neutral-100">
@@ -44,7 +48,8 @@ export function CauriBadge({ compact = false, space = 'member' }: { compact?: bo
               </Link>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

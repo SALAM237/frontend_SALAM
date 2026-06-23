@@ -252,12 +252,12 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                   {/* Média */}
                   <button type="button" onClick={() => setPreview(item)} className="relative order-1 h-full min-h-0 overflow-hidden bg-black text-left md:order-2">
                     {/* Barre de progression */}
-                    <span className="absolute left-0 right-0 top-0 z-20 h-[3px] bg-white/10">
+                    <span className="absolute left-0 right-0 top-0 z-20 h-1.5 bg-black/20">
                       <span className="block h-full origin-left transition-[width] duration-100 ease-linear" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#0B8F3A 0%,#C8102E 50%,#F7C600 100%)' }} />
                     </span>
                     <Media item={item} active={itemIndex === activeIndex && !preview} playbackId={'slide-' + item._id} onPlaybackChange={handlePlaybackChange} />
-                    <span className="absolute right-4 top-4 z-30 grid h-9 w-9 place-items-center rounded-full bg-black/65 text-white backdrop-blur transition hover:bg-black/80" aria-hidden="true">
-                      <Expand size={17} />
+                    <span className="absolute right-4 top-4 z-30 grid h-10 w-10 place-items-center rounded-full border border-white/30 bg-black/70 text-white shadow-lg backdrop-blur transition hover:scale-105 hover:bg-black/85" aria-hidden="true">
+                      <Expand size={19} />
                     </span>
                   </button>
                 </div>
