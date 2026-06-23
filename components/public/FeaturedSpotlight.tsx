@@ -143,7 +143,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
       <div className="mx-auto max-w-[1500px]">
 
         {/* ── Header : titre + contrôles ── */}
-        <div className="mx-auto mb-2 flex max-w-7xl items-end justify-between gap-4 px-4 sm:px-6">
+        <div className="mx-auto mb-1 flex max-w-7xl items-end justify-between gap-4 px-4 sm:mb-2 sm:px-6">
           <div>
             <p className="text-xs font-black uppercase text-emerald-700">Selection SALAM</p>
             <h2 id="featured-heading" className="text-3xl font-black text-neutral-950 sm:text-4xl">A la une</h2>
@@ -223,7 +223,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                       )}
                     </div>
 
-                    {/* Dots seulement — chevrons retirés */}
+                    {/* Dots — style mission tab nav (layoutId slide) */}
                     <div className="mt-3 flex shrink-0 items-center justify-center gap-1.5">
                       {items.map((entry, dotIndex) => (
                         <button
@@ -231,12 +231,20 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                           type="button"
                           onClick={() => selectSlide(dotIndex)}
                           aria-label={'Afficher ' + entry.title}
-                          className={`rounded-full transition-all duration-300 ${
+                          className={`relative rounded-full transition-all duration-300 ${
                             dotIndex === activeIndex
-                              ? 'h-[3px] w-4 bg-emerald-600'
-                              : 'h-[3px] w-[3px] bg-neutral-300 hover:bg-neutral-400'
+                              ? 'h-1.5 w-6 md:h-1 md:w-5'
+                              : 'h-1.5 w-1.5 bg-neutral-300 hover:bg-neutral-400 md:h-1 md:w-1'
                           }`}
-                        />
+                        >
+                          {dotIndex === activeIndex && (
+                            <motion.span
+                              layoutId="carousel-active-dot"
+                              className="absolute inset-0 rounded-full bg-emerald-600"
+                              transition={{ type: 'spring', bounce: 0.18, duration: 0.42 }}
+                            />
+                          )}
+                        </button>
                       ))}
                     </div>
                   </article>

@@ -17,11 +17,11 @@ export function CauriBadge({ compact = false, space = 'member' }: { compact?: bo
       <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog"
         className={'inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 font-bold text-amber-900 transition hover:border-amber-400 hover:bg-amber-100 ' + (compact ? 'px-2 py-1 text-[10px]' : 'px-3 py-1.5 text-xs')}>
         <Image src="/images/cauris/cauri.png" width={compact ? 16 : 20} height={compact ? 16 : 20} alt="" className="object-contain" />
-        {isLoading ? '...' : balance} cauris
+        <span className={compact ? 'hidden sm:inline' : ''}>{isLoading ? '...' : balance} cauris</span>
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[190] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-[9999] grid place-items-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
           <div role="dialog" aria-modal="true" aria-labelledby="cauri-dialog-title"
             className="relative grid w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-2xl sm:grid-cols-[190px_1fr]"
             onClick={event => event.stopPropagation()}>
@@ -30,7 +30,7 @@ export function CauriBadge({ compact = false, space = 'member' }: { compact?: bo
               <X size={16} />
             </button>
             <div className="flex min-h-44 items-center justify-center bg-amber-50 p-6">
-              <Image src="/images/cauris/cauri.png" width={170} height={170} alt="Caurris SALAM" className="h-auto w-full max-w-[170px] object-contain" />
+              <Image src="/images/cauris/cauri.png" width={170} height={170} alt="Cauris SALAM" className="h-auto w-full max-w-[170px] object-contain" />
             </div>
             <div className="flex flex-col justify-center p-6 sm:p-8">
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-700">Programme de fidelite SALAM</p>
@@ -99,14 +99,14 @@ export function CauriWalletPanel() {
           {createRedemption.isPending ? <Loader2 size={15} className="animate-spin" /> : <QrCode size={15} />} Generer
         </button>
       </div>
-      <p className="mt-2 text-[11px] text-neutral-400">Minimum {wallet?.redemption.minimum ?? 5} cauris. Le QR expire apres {wallet?.redemption.expiresInMinutes ?? 30} minutes et les cauris sont alors restitues.</p>
+      <p className="mt-2 text-[11px] text-neutral-400">Minimum {wallet?.redemption.minimum ?? 5} cauris. {wallet?.redemption.expiresInMinutes ? `Le QR expire apres ${wallet.redemption.expiresInMinutes} minutes et les cauris sont alors restitues.` : 'Le QR reste valable jusqu a son utilisation ou son annulation.'}</p>
 
       {wallet?.redemptions.length ? (
         <div className="mt-5 space-y-2">
           <p className="text-xs font-black uppercase text-neutral-500">Reservations actives</p>
           {wallet.redemptions.map(redemption => (
             <div key={redemption._id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2">
-              <div><p className="text-xs font-bold text-amber-900">{redemption.amount} cauris - {redemption.activityTitle}</p><p className="text-[10px] text-amber-700">Expire a {new Date(redemption.expiresAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p></div>
+              <div><p className="text-xs font-bold text-amber-900">{redemption.amount} cauris - {redemption.activityTitle}</p><p className="text-[10px] text-amber-700">Valable jusqu a utilisation</p></div>
               <button type="button" disabled={cancelRedemption.isPending} onClick={() => cancelRedemption.mutate(redemption._id)} className="h-8 rounded-lg border border-amber-200 bg-white px-3 text-[11px] font-bold text-amber-800 disabled:opacity-50">Annuler</button>
             </div>
           ))}
@@ -134,7 +134,7 @@ export function CauriWalletPanel() {
             <h3 className="mt-3 text-lg font-black text-neutral-900">{qr.amount} cauris</h3>
             <p className="mt-1 text-sm text-neutral-500">{qr.title}</p>
             <img src={qr.src} alt="QR code de validation des cauris" className="mx-auto mt-4 aspect-square w-full max-w-[260px]" />
-            <p className="mt-3 text-xs text-neutral-500">A presenter a un administrateur avant {new Date(qr.expiresAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}.</p>
+            <p className="mt-3 text-xs text-neutral-500">A presenter a un administrateur. Ce QR reste valable jusqu a son utilisation ou son annulation.</p>
           </div>
         </div>
       )}

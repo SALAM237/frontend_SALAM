@@ -447,6 +447,7 @@ export function useUpdateProfile() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['member-profile'] });
+      qc.invalidateQueries({ queryKey: ['member-cauris'] });
     },
     onError: (err: Error) => toast.error(err.message),
   });

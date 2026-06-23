@@ -10,14 +10,14 @@ export const metadata: Metadata = {
 };
 
 const REWARDS = [
-  ['Profil membre complet', '50 cauris', 'Attribués une seule fois lorsque les informations requises sont complètes.'],
-  ['Activité publiée', '40 cauris', 'Après validation et publication par une personne autorisée.'],
-  ['Actualité validée', '30 cauris', 'Pour une actualité proposée par un membre puis publiée.'],
-  ['Opportunité validée', '25 cauris', 'Pour une opportunité utile acceptée par le bureau.'],
-  ['Galerie validée', '20 cauris', 'Pour un album conforme accepté et publié.'],
+  ['Profil membre complet', '1000 cauris', 'Attribues une seule fois lorsque toutes les informations obligatoires du profil membre sont renseignees : identite, telephone, date de naissance, ville d origine au Maroc, residence, antenne, secteur, competences, domaines d expertise, bio et motivation.'],
+  ['Activite publiee', '200 cauris', 'Proposez ou creez une activite utile pour la communaute SALAM. Les cauris sont attribues apres validation et publication par une personne autorisee.'],
+  ['Actualite validee', '250 cauris', 'Soumettez une actualite claire, verifiable et utile aux membres. Le gain est applique lorsque l actualite proposee est acceptee puis publiee.'],
+  ['Opportunite validee', '500 cauris', 'Partagez une opportunite pertinente : emploi, stage, bourse, appel a projets ou reseautage. Les cauris sont accordes apres acceptation par le bureau.'],
+  ['Galerie validee', '300 cauris', 'Deposez un album conforme avec des images exploitables et respectueuses des droits. Les cauris sont attribues lorsque l album est accepte et publie.'],
 ];
 
-export default function ConditionsCaurrisPage() {
+export default function ConditionsCaurisPage() {
   return (
     <main>
       <PageHero
@@ -32,7 +32,7 @@ export default function ConditionsCaurrisPage() {
       <section className="bg-white px-5 py-14 md:px-8">
         <div className="mx-auto grid max-w-5xl items-center gap-9 md:grid-cols-[260px_1fr]">
           <div className="flex items-center justify-center rounded-lg bg-amber-50 p-7">
-            <Image src="/images/cauris/cauri.png" width={260} height={260} alt="Caurris SALAM" className="h-auto w-full max-w-[230px] object-contain" priority />
+            <Image src="/images/cauris/cauri.png" width={260} height={260} alt="Cauris SALAM" className="h-auto w-full max-w-[230px] object-contain" priority />
           </div>
           <div>
             <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">Une reconnaissance, pas une monnaie</p>
@@ -70,10 +70,10 @@ export default function ConditionsCaurrisPage() {
             <h2 className="mt-3 text-xl font-black text-neutral-950">Échanger lors d’un événement</h2>
             <div className="mt-5 space-y-4">
               {[
-                'Choisissez un événement publié et le nombre de cauris à réserver.',
-                'Un QR code personnel est généré pour une durée de 30 minutes.',
-                'Présentez-le à un administrateur habilité avant son expiration.',
-                'Une réservation expirée ou annulée restitue automatiquement les cauris.',
+                'Choisissez un evenement publie et le nombre de cauris a reserver.',
+                'Un QR code personnel est genere et reste valable jusqu a son utilisation ou son annulation.',
+                'Presentez-le a un administrateur habilite lors de l evenement choisi.',
+                'Une reservation annulee restitue automatiquement les cauris tant que le QR n a pas ete utilise.',
               ].map((text, index) => <p key={text} className="flex gap-3 text-sm leading-6 text-neutral-600"><span className="font-black text-emerald-700">{index + 1}.</span>{text}</p>)}
             </div>
           </div>

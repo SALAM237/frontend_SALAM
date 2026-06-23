@@ -320,9 +320,9 @@ export default function ProfilPage() {
             <F icon={User} label="Prenom" value={form.firstName} onChange={set('firstName')} required />
             <F icon={User} label="Nom" value={form.lastName} onChange={set('lastName')} required />
             <F icon={Mail} label="Email" value={form.email} onChange={set('email')} type="email" readOnly />
-            <F icon={Phone} label="Telephone" value={form.phone} onChange={set('phone')} placeholder="+237 6 00 00 00 00" />
+            <F icon={Phone} label="Telephone" value={form.phone} onChange={set('phone')} placeholder="+237 6 00 00 00 00" required />
             <F icon={Phone} label="Contact de recuperation" value={form.recoveryContact} onChange={set('recoveryContact')} placeholder="Email ou numero secondaire" />
-            <F icon={Calendar} label="Date de naissance" value={form.birthDate} onChange={set('birthDate')} type="date" />
+            <F icon={Calendar} label="Date de naissance" value={form.birthDate} onChange={set('birthDate')} type="date" required />
             <F icon={MapPin} label="Ville de résidence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." />
             <F icon={MapPin} label="Pays" value={form.country} onChange={set('country')} placeholder="Cameroun, Maroc..." />
             <F icon={User} label="Promotionnaire" value={form.promotionYear} onChange={set('promotionYear')} type="number" placeholder="2026" />
@@ -333,7 +333,7 @@ export default function ProfilPage() {
         <Section title="Parcours et expertises">
           <div className="grid gap-4 sm:grid-cols-2">
             <Select label="Secteur d'activite" value={form.activitySector} onChange={set('activitySector')} options={[['', 'Selectionner'], ...ACTIVITY_SECTORS.map(s => [s, s] as [string, string])]} />
-            <F icon={MapPin} label="Ville d'origine" value={form.city} onChange={set('city')} placeholder="Ville d'origine ou de reference" />
+            <F icon={MapPin} label="Ville d'origine au Maroc" value={form.city} onChange={set('city')} placeholder="Ville d'origine au Maroc" />
           </div>
           {form.activitySector === 'Autre' && (
             <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
@@ -414,6 +414,7 @@ function F({ icon: Icon, label, value, onChange, type = 'text', readOnly, placeh
           onChange={onChange}
           readOnly={readOnly}
           placeholder={placeholder}
+          required={required}
           className={`h-10 w-full rounded-xl border border-neutral-200 pl-9 pr-4 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 ${readOnly ? 'bg-neutral-50 text-neutral-500' : 'bg-white'}`}
         />
       </div>
@@ -506,7 +507,17 @@ function TagInput({ icon: Icon, label, help, value, onChange, placeholder }: {
           <Icon size={13} className="text-neutral-400" />
           <input
             value={draft}
-            onChange={e => setDraft(e.target.value)}
+            onChange={e => {
+              const nextValue = e.target.value;
+              if (nextValue.includes(',')) {
+                const parts = nextValue.split(',');
+                const tags = [...parts.slice(0, -1).map(tag => tag.trim()).filter(Boolean)];
+                if (tags.length) onChange([...new Set([...value, ...tags])].slice(0, 30));
+                setDraft(parts.at(-1) ?? '');
+                return;
+              }
+              setDraft(nextValue);
+            }}
             onBlur={addTags}
             onKeyDown={e => {
               if (e.key === 'Enter' || e.key === ',') {

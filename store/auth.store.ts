@@ -10,6 +10,8 @@ export interface AuthUser {
   promotionYear?: number | null;
   memberNumber?: string | null;
   cauriBalance?: number;
+  profileComplete?: boolean;
+  missingProfileFields?: string[];
   city?: string | null;
   country?: string | null;
   residenceCity?: string | null;
