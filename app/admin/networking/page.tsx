@@ -41,6 +41,8 @@ function MemberProfileModal({ member, onClose }: { member: MemberListItem; onClo
   const name = formatFullName(member.firstName, member.lastName);
   const photo = memberPhotoUrl(member);
   const location = [member.residenceCity || member.city, member.country].filter(Boolean).join(', ') || 'Residence non renseignee';
+  const whatsapp = member.phone?.replace(/\D/g, '').replace(/^0/, '237');
+  const modalMessageHref = '/admin/messages?to=' + encodeURIComponent(member._id) + '&name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(member.email);
 
   return (
     <div className="fixed inset-0 z-[9999] grid min-h-[100dvh] place-items-center bg-black/65 p-4 backdrop-blur-sm" onClick={onClose}>
@@ -52,6 +54,11 @@ function MemberProfileModal({ member, onClose }: { member: MemberListItem; onClo
             <h2 className="text-xl font-black text-neutral-950">{name}</h2>
             <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-neutral-500"><MapPin size={14} /> {location}</p>
             <p className="mt-2 inline-flex rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white">{member.activitySector || 'Secteur non renseigne'}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a href={`mailto:${member.email}`} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700"><Mail size={12} /> Email</a>
+              {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-2.5 text-xs font-black text-green-700 transition hover:bg-green-100">WhatsApp</a>}
+              <Link href={modalMessageHref} className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-emerald-600 px-2.5 text-xs font-black text-white transition hover:bg-emerald-700"><MessageSquare size={12} /> Message</Link>
+            </div>
           </div>
         </div>
         <div className="space-y-5 p-5">
@@ -136,3 +143,5 @@ export default function AdminNetworkingPage() {
     </div>
   );
 }
+
+

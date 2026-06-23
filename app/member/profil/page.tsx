@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -20,7 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
-import { useChangeMemberPassword, useSubmitActivitySectorProposal, useUpdateProfile } from '@/lib/api/members';
+import { useChangeMemberPassword, useRequestAccountDeletion, useSubmitActivitySectorProposal, useUpdateProfile } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { assetUrl } from '@/lib/assets';
@@ -116,6 +116,7 @@ export default function ProfilPage() {
   const [form, setForm] = useState<ProfileForm>(emptyForm);
   const [saved, setSaved] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [deletionOpen, setDeletionOpen] = useState(false);
   const updateProfile = useUpdateProfile();
   const sectorProposal = useSubmitActivitySectorProposal();
 
@@ -160,7 +161,7 @@ export default function ProfilPage() {
       || Number(form.promotionYear || 0) !== Number(user?.promotionYear || 0);
 
     if (sensitiveChanged && !['homme', 'femme'].includes(form.gender)) {
-      toast.error('Sélectionnez une civilité valide');
+      toast.error('SÃ©lectionnez une civilitÃ© valide');
       return;
     }
 
@@ -207,12 +208,12 @@ export default function ProfilPage() {
             </button>
             <p className="font-black text-orange-950">Information sensible</p>
             <p className="mt-1 text-sm leading-5 text-orange-800">
-              La mise à jour sera faite après validation par un administrateur.
+              La mise Ã  jour sera faite aprÃ¨s validation par un administrateur.
             </p>
           </div>
         ), { duration: 15_000 });
       } else {
-        toast.success('Profil mis à jour');
+        toast.success('Profil mis Ã  jour');
       }
 
       setSaved(true);
@@ -323,7 +324,7 @@ export default function ProfilPage() {
             <F icon={Phone} label="Telephone" value={form.phone} onChange={set('phone')} placeholder="+237 6 00 00 00 00" required />
             <F icon={Phone} label="Contact de recuperation" value={form.recoveryContact} onChange={set('recoveryContact')} placeholder="Email ou numero secondaire" />
             <F icon={Calendar} label="Date de naissance" value={form.birthDate} onChange={set('birthDate')} type="date" required />
-            <F icon={MapPin} label="Ville de résidence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." />
+            <F icon={MapPin} label="Ville de rÃ©sidence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." />
             <F icon={MapPin} label="Pays" value={form.country} onChange={set('country')} placeholder="Cameroun, Maroc..." />
             <F icon={User} label="Promotionnaire" value={form.promotionYear} onChange={set('promotionYear')} type="number" placeholder="2026" />
             <F icon={MapPin} label="Antenne" value={form.antenne} onChange={set('antenne')} placeholder="Casablanca, Yaounde..." />
@@ -363,7 +364,7 @@ export default function ProfilPage() {
             </button>
           </div>
           <div className="mt-4 border-t border-neutral-100 pt-4">
-            <button type="button" className="inline-flex h-9 items-center gap-2 rounded-full border border-red-200 px-4 text-xs font-semibold text-red-600 hover:bg-red-50">
+            <button type="button" onClick={() => setDeletionOpen(true)} className="inline-flex h-9 items-center gap-2 rounded-full border border-red-200 px-4 text-xs font-semibold text-red-600 hover:bg-red-50">
               Supprimer mon compte
             </button>
           </div>
@@ -378,6 +379,7 @@ export default function ProfilPage() {
         </button>
       </form>
       {passwordOpen && <PasswordModal onClose={() => setPasswordOpen(false)} />}
+      {deletionOpen && <AccountDeletionModal onClose={() => setDeletionOpen(false)} />}
     </div>
   );
 }
@@ -534,6 +536,54 @@ function TagInput({ icon: Icon, label, help, value, onChange, placeholder }: {
   );
 }
 
+function AccountDeletionModal({ onClose }: { onClose: () => void }) {
+  const requestDeletion = useRequestAccountDeletion();
+  const [reason, setReason] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const canSubmit = confirm.trim().toUpperCase() === 'SUPPRIMER';
+
+  const submit = () => {
+    if (!canSubmit || requestDeletion.isPending) return;
+    requestDeletion.mutate(
+      { reason: reason.trim() || undefined },
+      { onSuccess: onClose },
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 backdrop-blur-sm sm:items-center" onClick={onClose}>
+      <div role="dialog" aria-modal="true" className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5" onClick={event => event.stopPropagation()}>
+        <div className="flex items-start justify-between border-b border-red-100 bg-red-50/70 p-5">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-600">Validation administrateur</p>
+            <h2 className="mt-1 text-lg font-black text-neutral-900">Demander la suppression du compte</h2>
+            <p className="mt-1 text-sm leading-6 text-red-700/80">Le compte ne sera pas supprime maintenant. La demande sera envoyee aux administrateurs autorises.</p>
+          </div>
+          <button type="button" onClick={onClose} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-400 hover:bg-white/80">
+            <X size={15} />
+          </button>
+        </div>
+        <div className="space-y-4 p-5">
+          <div>
+            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Motif optionnel</label>
+            <textarea value={reason} onChange={event => setReason(event.target.value)} rows={3} maxLength={1000} placeholder="Expliquez votre demande si necessaire..." className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-red-300 focus:ring-2 focus:ring-red-500/10" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Tapez SUPPRIMER pour confirmer la demande</label>
+            <input value={confirm} onChange={event => setConfirm(event.target.value)} className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-red-300 focus:ring-2 focus:ring-red-500/10" />
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 border-t border-neutral-100 p-5 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} className="h-10 rounded-xl border border-neutral-200 px-4 text-sm font-bold text-neutral-600 hover:border-neutral-300">Annuler</button>
+          <button type="button" onClick={submit} disabled={!canSubmit || requestDeletion.isPending} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-sm font-black text-white transition hover:bg-red-700 disabled:opacity-50">
+            {requestDeletion.isPending && <Loader2 size={14} className="animate-spin" />}
+            Envoyer la demande
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 function PasswordModal({ onClose }: { onClose: () => void }) {
   const changePassword = useChangeMemberPassword();
   const [currentPassword, setCurrentPassword] = useState('');
@@ -604,3 +654,5 @@ function PasswordField({ label, value, onChange, autoComplete }: {
     </div>
   );
 }
+
+

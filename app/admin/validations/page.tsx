@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { BriefcaseBusiness, Loader2, Newspaper, Images, Tags, Check, X, UserRound } from 'lucide-react';
@@ -7,10 +7,11 @@ import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/
 import { formatFullName, formatInitials } from '@/lib/format-name';
 
 const TYPE_META = {
-  content: { label: 'Actualité', icon: Newspaper, cls: 'bg-blue-50 text-blue-700 border-blue-100' },
+  content: { label: 'ActualitÃ©', icon: Newspaper, cls: 'bg-blue-50 text-blue-700 border-blue-100' },
   gallery: { label: 'Album galerie', icon: Images, cls: 'bg-purple-50 text-purple-700 border-purple-100' },
   sector: { label: 'Secteur networking', icon: Tags, cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
   opportunity: { label: 'Opportunite', icon: BriefcaseBusiness, cls: 'bg-amber-50 text-amber-700 border-amber-100' },
+  memberDeletion: { label: 'Suppression compte', icon: UserRound, cls: 'bg-red-50 text-red-700 border-red-100' },
 } as const;
 
 function validationDetails(item: PendingValidationItem) {
@@ -19,29 +20,36 @@ function validationDetails(item: PendingValidationItem) {
   const details: string[] = [];
 
   if (item.type === 'content') {
-    if (data.category) details.push(`Catégorie : ${String(data.category)}`);
+    if (data.category) details.push('Categorie : ' + String(data.category));
     if (data.excerpt) details.push(String(data.excerpt));
   }
 
   if (item.type === 'gallery') {
     const images = Array.isArray(raw.images) ? raw.images.length : 0;
-    if (raw.visibility) details.push(`Visibilité : ${String(raw.visibility)}`);
-    details.push(`${images} image${images > 1 ? 's' : ''}`);
+    if (raw.visibility) details.push('Visibilite : ' + String(raw.visibility));
+    details.push(images + ' image' + (images > 1 ? 's' : ''));
   }
 
   if (item.type === 'sector') {
-    details.push('Demande d’ajout dans les secteurs networking');
+    details.push('Demande d\'ajout dans les secteurs networking');
   }
 
   if (item.type === 'opportunity') {
-    if (raw.type) details.push(`Type : ${String(raw.type)}`);
-    if (raw.organization) details.push(`Organisation : ${String(raw.organization)}`);
-    if (raw.location) details.push(`Lieu : ${String(raw.location)}`);
+    if (raw.type) details.push('Type : ' + String(raw.type));
+    if (raw.organization) details.push('Organisation : ' + String(raw.organization));
+    if (raw.location) details.push('Lieu : ' + String(raw.location));
+  }
+
+  if (item.type === 'memberDeletion') {
+    const target = raw.userId as Record<string, unknown> | undefined;
+    const email = typeof target?.email === 'string' ? target.email : undefined;
+    if (email) details.push('Compte : ' + email);
+    if (raw.reason) details.push('Motif : ' + String(raw.reason));
+    details.push('Suppression definitive apres validation');
   }
 
   return details.filter(Boolean).slice(0, 3);
 }
-
 export default function AdminValidationsPage() {
   const { data, isLoading } = usePendingValidations();
   const review = useReviewPendingValidation();
@@ -57,7 +65,7 @@ export default function AdminValidationsPage() {
     <div className="mx-auto max-w-5xl space-y-5">
       <div>
         <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Validations en attente</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">Éléments soumis par les membres, filtrés selon vos permissions de publication.</p>
+        <p className="mt-0.5 text-sm text-neutral-500">Ã‰lÃ©ments soumis par les membres, filtrÃ©s selon vos permissions de publication.</p>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
@@ -128,7 +136,7 @@ export default function AdminValidationsPage() {
                         ) : (
                           <>
                             <UserRound size={14} className="text-neutral-300" />
-                            <p className="text-xs font-semibold text-neutral-400">Demandeur non renseigné</p>
+                            <p className="text-xs font-semibold text-neutral-400">Demandeur non renseignÃ©</p>
                           </>
                         )}
                       </div>
@@ -161,3 +169,5 @@ export default function AdminValidationsPage() {
     </div>
   );
 }
+
+

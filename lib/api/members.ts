@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
@@ -84,7 +84,7 @@ export function useChangeMemberPassword() {
         body: JSON.stringify(payload),
         token: token ?? '',
       }),
-    onSuccess: res => toast.success((res as any).message ?? 'Mot de passe mis à jour'),
+    onSuccess: res => toast.success((res as any).message ?? 'Mot de passe mis Ã  jour'),
     onError: (err: Error) => toast.error(err.message),
   });
 }
@@ -98,7 +98,7 @@ export function useSubmitActivitySectorProposal() {
         body: JSON.stringify(payload),
         token: token ?? '',
       }),
-    onSuccess: res => toast.success((res as any).message ?? 'Secteur proposé'),
+    onSuccess: res => toast.success((res as any).message ?? 'Secteur proposÃ©'),
     onError: (err: Error) => toast.error(err.message),
   });
 }
@@ -142,7 +142,7 @@ export interface UpdateMemberPayload {
   promotionYear?: number;
 }
 
-/* ── Admin ──────────────────────────────────────────────── */
+/* â”€â”€ Admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 export function useAdminMembers(params: {
   status?: string;
@@ -209,7 +209,7 @@ export function useCreateMember() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-stats'] });
-      toast.success((res as any).message ?? 'Membre créé');
+      toast.success((res as any).message ?? 'Membre crÃ©Ã©');
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -228,7 +228,7 @@ export function useUpdateMember(id: string) {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-member', id] });
-      toast.success((res as any).message ?? 'Membre mis à jour');
+      toast.success((res as any).message ?? 'Membre mis Ã  jour');
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -252,7 +252,7 @@ export function useSuspendMember() {
   });
 }
 
-/* ── CSV bulk import ──────────────────────────────────────── */
+/* â”€â”€ CSV bulk import â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 export interface CsvImportMember {
   firstName:     string;
@@ -335,7 +335,7 @@ export function useUpdateMemberProfileValidationPolicy() {
     onSuccess: res => {
       qc.setQueryData(['member-profile-validation-policy'], res);
       qc.invalidateQueries({ queryKey: ['member-profile-validation-policy'] });
-      toast.success((res as any).message ?? 'Validations mises à jour');
+      toast.success((res as any).message ?? 'Validations mises Ã  jour');
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -367,7 +367,7 @@ export function useReviewMemberCardChangeRequest() {
       qc.invalidateQueries({ queryKey: ['member-card-change-requests'] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-member'] });
-      toast.success((res as any).message ?? 'Demande traitée');
+      toast.success((res as any).message ?? 'Demande traitÃ©e');
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -400,7 +400,7 @@ export function useHardDeleteMember() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-stats'] });
-      toast.success((res as any).message ?? 'Membre supprimé');
+      toast.success((res as any).message ?? 'Membre supprimÃ©');
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -411,12 +411,12 @@ export function useResendInvitation() {
   return useMutation({
     mutationFn: (id: string) =>
       apiClient(`/api/v1/admin/members/${id}/resend-invitation`, { method: 'POST', token: token ?? '' }),
-    onSuccess: res => toast.success((res as any).message ?? 'Invitation renvoyée'),
+    onSuccess: res => toast.success((res as any).message ?? 'Invitation renvoyÃ©e'),
     onError:   (err: Error) => toast.error(err.message),
   });
 }
 
-/* ── Member self-service ──────────────────────────────────── */
+/* â”€â”€ Member self-service â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 export function useSubmitMemberCardChangeRequest() {
   const token = useAuthStore(s => s.accessToken);
@@ -448,6 +448,24 @@ export function useUpdateProfile() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['member-profile'] });
       qc.invalidateQueries({ queryKey: ['member-cauris'] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useRequestAccountDeletion() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { reason?: string }) =>
+      apiClient('/api/v1/member/profile/deletion-request', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        token: token ?? '',
+      }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['admin-pending-validations'] });
+      toast.success((res as any).message ?? 'Demande de suppression envoyee');
     },
     onError: (err: Error) => toast.error(err.message),
   });

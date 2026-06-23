@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { ArrowLeft, CreditCard, Search, Loader2, Users } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
+import { downloadElementAsPng, memberCardMailto } from '@/lib/member-card-export';
 
 function toCardData(m: MemberListItem): MemberCardData {
   return {
@@ -24,6 +26,7 @@ export default function CartesPage() {
   const [search,   setSearch]   = useState('');
   const [filter,   setFilter]   = useState<'all' | 'active' | 'pending'>('all');
   const [selected, setSelected] = useState<MemberListItem | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useAdminMembers({ limit: 200 });
   const members = useMemo<MemberListItem[]>(() => data?.data?.data ?? [], [data]);
@@ -41,6 +44,15 @@ export default function CartesPage() {
   const actifs  = members.filter(m => m.memberStatus === 'active').length;
   const pending = members.filter(m => m.memberStatus === 'pending').length;
 
+  const handleDownloadCard = async () => {
+    if (!selected || !cardRef.current) return;
+    try {
+      await downloadElementAsPng(cardRef.current, `carte-salam-${selected.memberId}.png`);
+      toast.success('Carte telechargee');
+    } catch {
+      toast.error('Impossible de telecharger la carte. Reessayez sans photo distante si besoin.');
+    }
+  };
   return (
     <div className="mx-auto max-w-6xl space-y-5">
 
@@ -175,16 +187,16 @@ export default function CartesPage() {
                 <p className="text-sm font-black text-neutral-900">Aperçu carte</p>
                 <span className="font-mono text-xs text-neutral-400">{selected.memberId}</span>
               </div>
-              <div className="mx-auto w-full max-w-[380px]">
+              <div ref={cardRef} className="mx-auto w-full max-w-[380px]">
                 <MemberCard member={toCardData(selected)} />
               </div>
               <div className="flex gap-2 pt-2">
-                <button className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:border-neutral-300">
+                <button type="button" onClick={handleDownloadCard} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:border-neutral-300">
                   <CreditCard size={13} /> Télécharger
                 </button>
-                <button className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700">
+                <a href={memberCardMailto(selected.email, formatFullName(selected.firstName, selected.lastName), selected.memberId)} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700">
                   Envoyer par email
-                </button>
+                </a>
               </div>
             </div>
           ) : (

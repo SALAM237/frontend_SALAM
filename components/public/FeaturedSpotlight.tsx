@@ -129,7 +129,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
         {/* Motif ndop */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.15] md:opacity-[0.15]"
+          className="pointer-events-none absolute inset-0 opacity-[0.15] md:opacity-[0.20]"
           style={{
             backgroundImage: "url('/images/placeholders/ndop motif WBG.png')",
             backgroundSize: 'cover',
@@ -240,7 +240,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
           >
             {items.map((item, itemIndex) => (
               <SwiperSlide key={item._id} className="!flex h-full items-center justify-center">
-                <div className="grid h-[78%] w-full min-h-0 overflow-hidden rounded-none border-0 bg-transparent grid-rows-[58%_42%] md:h-[520px] md:grid-cols-[1fr_1.35fr] md:grid-rows-1 lg:h-[560px]">
+                <div className="grid h-[78%] w-full min-h-0 overflow-hidden rounded-none border-0 bg-transparent grid-rows-[58%_42%] md:h-[440px] md:grid-cols-[1fr_1.2fr] md:grid-rows-1 md:pr-6 lg:h-[480px] lg:pr-10">
 
                   {/* Texte */}
                   <article className="relative order-2 flex min-h-0 flex-col justify-center bg-transparent p-4 text-left text-neutral-950 md:order-1 md:p-6 lg:p-7">

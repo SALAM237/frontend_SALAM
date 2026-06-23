@@ -1,8 +1,9 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import {
   ArrowLeft, CreditCard, Mail, Phone, MapPin, Calendar,
   Edit, CheckCircle2, Clock, Loader2, Trash2,
@@ -11,6 +12,7 @@ import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard'
 import { useAdminMember, useHardDeleteMember } from '@/lib/api/members';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName } from '@/lib/format-name';
+import { downloadElementAsPng, memberCardMailto } from '@/lib/member-card-export';
 
 export default function AdherentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id }       = use(params);
@@ -23,7 +25,18 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
 
   const hardDelete   = useHardDeleteMember();
   const [confirming, setConfirming] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
+
+  const handleDownloadCard = async () => {
+    if (!member || !cardRef.current) return;
+    try {
+      await downloadElementAsPng(cardRef.current, `carte-salam-${member.memberId}.png`);
+      toast.success('Carte telechargee');
+    } catch {
+      toast.error('Impossible de telecharger la carte. Reessayez sans photo distante si besoin.');
+    }
+  };
   const handleDelete = () => {
     if (!confirming) { setConfirming(true); return; }
     hardDelete.mutate(id, {
@@ -160,19 +173,19 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
                 <CheckCircle2 size={10} /> Active
               </span>
             </div>
-            <div className="flex justify-center overflow-x-auto">
+            <div ref={cardRef} className="flex justify-center overflow-x-auto">
               <MemberCard member={cardData} />
             </div>
             <p className="mt-3 text-center text-[10px] text-neutral-400">
               QR vers salam-cameroun.com/verify/{member.memberId}
             </p>
             <div className="mt-4 flex gap-2">
-              <button className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:border-neutral-300">
+              <button type="button" onClick={handleDownloadCard} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:border-neutral-300">
                 <CreditCard size={13} /> Télécharger
               </button>
-              <button className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700">
+              <a href={memberCardMailto(member.email, formatFullName(member.firstName, member.lastName), member.memberId)} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700">
                 Envoyer par email
-              </button>
+              </a>
             </div>
           </div>
         </div>

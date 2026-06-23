@@ -240,7 +240,7 @@ select {
 }
 @media (min-width: 1024px) {
   .featured-gradient {
-    background: linear-gradient(to right, #ffffff 0%, #ffffff 28%, #effff6 62%, #e5fff1 80%, #abffcf 100%);
+    background: linear-gradient(to right, #ffffff 0%, #ffffff 28%, #effff6 62%, #6db68f 80%, #3db972 100%);
   }
 }
 
