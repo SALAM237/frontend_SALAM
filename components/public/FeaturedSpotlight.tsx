@@ -139,8 +139,25 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   }
 
   return (
-    <section className="overflow-hidden bg-white py-10 sm:py-14" aria-labelledby="featured-heading">
-      <div className="mx-auto max-w-[1500px]">
+    <section
+      className="relative overflow-hidden py-10 sm:py-14"
+      style={{ background: 'linear-gradient(to right, #ffffff 0%, #ffffff 30%, #0b1f15 72%, #07140d 100%)' }}
+      aria-labelledby="featured-heading"
+    >
+      {/* Motif ndop */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-[0.15] md:opacity-[0.12]"
+        style={{
+          backgroundImage: "url('/images/placeholders/ndop motif WBG.png')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          mixBlendMode: 'soft-light',
+        }}
+      />
+
+      <div className="relative mx-auto max-w-[1500px]">
 
         {/* ── Header : titre + contrôles ── */}
         <div className="mx-auto mb-1 flex max-w-7xl items-end justify-between gap-4 px-4 sm:mb-2 sm:px-6">
@@ -209,10 +226,10 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
           >
             {items.map((item, itemIndex) => (
               <SwiperSlide key={item._id} className="!flex h-full items-center justify-center">
-                <div className="grid h-[78%] w-full min-h-0 overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-lg grid-rows-[58%_42%] md:h-[520px] md:grid-cols-[1fr_1.35fr] md:grid-rows-1 lg:h-[560px]">
+                <div className="grid h-[78%] w-full min-h-0 overflow-hidden rounded-2xl border border-neutral-200/80 bg-white grid-rows-[58%_42%] md:h-[520px] md:grid-cols-[1fr_1.35fr] md:grid-rows-1 lg:h-[560px]">
 
                   {/* Texte */}
-                  <article className="relative order-2 flex min-h-0 flex-col bg-white p-4 text-neutral-950 md:order-1 md:p-6 lg:p-7">
+                  <article className="relative order-2 flex min-h-0 flex-col justify-center bg-white p-4 text-left text-neutral-950 md:order-1 md:p-6 lg:p-7">
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                       <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl lg:text-3xl">{item.title}</a>
                       <a {...destinationProps(item.textDestination)} className="mt-2.5 block whitespace-pre-line text-sm leading-6 text-neutral-600 hover:text-neutral-900">{item.description}</a>
@@ -250,7 +267,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                   </article>
 
                   {/* Média */}
-                  <button type="button" onClick={() => setPreview(item)} className="relative order-1 h-full min-h-0 overflow-hidden bg-black text-left md:order-2">
+                  <button type="button" onClick={() => setPreview(item)} className="relative order-1 h-full min-h-0 overflow-hidden bg-black text-left md:order-2" style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 10px 50px' }}>
                     {/* Barre de progression */}
                     <span className="absolute left-0 right-0 top-0 z-20 h-1.5 bg-black/20">
                       <span className="block h-full origin-left transition-[width] duration-100 ease-linear" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#0B8F3A 0%,#C8102E 50%,#F7C600 100%)' }} />

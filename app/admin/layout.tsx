@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, CalendarDays,
   Images, Newspaper, Settings, Menu, X, ChevronRight, Bell,
   Banknote, FileText, History, MessageSquare, Shield, Loader2, Globe, ShieldCheck,
-  Handshake, BriefcaseBusiness, Sparkles, Target,
+  Handshake, BriefcaseBusiness, Sparkles, Target, ScanLine,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
@@ -31,6 +31,7 @@ const BASE_NAV: NavItem[] = [
   { label: 'Facturation',       href: '/admin/facturation',       icon: FileText },
   { label: 'Tresorerie',        href: '/admin/tresorerie',        icon: Banknote, permissions: ['treasury.read', 'treasury.create', 'treasury.update', 'treasury.delete'] },
   { label: 'Activités',         href: '/admin/activites',         icon: CalendarDays },
+  { label: 'Scanner QR',        href: '/admin/scanner',           icon: ScanLine,    permissions: ['scans.create', 'scans.read'] },
   { label: 'Galerie',           href: '/admin/galerie',           icon: Images },
   { label: 'Actualités',        href: '/admin/actualites',        icon: Newspaper },
   { label: 'Networking',        href: '/admin/networking',        icon: Handshake, permissions: ['networking.publish'] },
