@@ -123,8 +123,8 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   if (!items.length) {
     return (
       <section
-        className="relative overflow-hidden py-12 sm:py-16"
-        style={{ background: 'linear-gradient(to right, #ffffff 0%, #ffffff 30%, #0b1f15 72%, #07140d 100%)' }}
+        className="relative overflow-hidden rounded-none py-12 sm:py-16 lg:mx-3 lg:my-3 lg:rounded-[2.5rem]"
+        style={{ background: 'linear-gradient(to right, #ffffff 0%, #ffffff 28%, #052e16 62%, #021a0d 80%, #010f07 100%)' }}
         aria-labelledby="featured-heading"
       >
         {/* Motif ndop */}
@@ -156,8 +156,8 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
 
   return (
     <section
-      className="relative overflow-hidden py-10 sm:py-14"
-      style={{ background: 'linear-gradient(to right, #ffffff 0%, #ffffff 30%, #0b1f15 72%, #07140d 100%)' }}
+      className="relative overflow-hidden rounded-none py-10 sm:py-14 lg:mx-3 lg:my-3 lg:rounded-[2.5rem]"
+      style={{ background: 'linear-gradient(to right, #ffffff 0%, #ffffff 28%, #052e16 62%, #021a0d 80%, #010f07 100%)' }}
       aria-labelledby="featured-heading"
     >
       {/* Motif ndop */}
@@ -190,8 +190,8 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
               aria-label="Element précédent"
               className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${
                 lastNav === 'prev'
-                  ? 'border-transparent bg-emerald-600 text-white'
-                  : 'border-neutral-200 bg-white text-neutral-500 hover:border-emerald-300 hover:text-emerald-700'
+                  ? 'border-transparent bg-emerald-500 text-white'
+                  : 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 hover:text-emerald-300'
               }`}
             >
               <ChevronLeft size={14} strokeWidth={1.5} />
@@ -201,7 +201,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
               type="button"
               onClick={() => setManualPaused(v => !v)}
               aria-label={manualPaused ? 'Relancer le carrousel' : 'Mettre le carrousel en pause'}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 transition-all duration-200 hover:border-emerald-300 hover:text-emerald-700"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/15 text-emerald-400 transition-all duration-200 hover:bg-emerald-500/25 hover:text-emerald-300"
             >
               {manualPaused ? <Play size={13} /> : <Pause size={13} />}
             </button>
@@ -212,8 +212,8 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
               aria-label="Element suivant"
               className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${
                 lastNav === 'next'
-                  ? 'border-transparent bg-emerald-600 text-white'
-                  : 'border-neutral-200 bg-white text-neutral-500 hover:border-emerald-300 hover:text-emerald-700'
+                  ? 'border-transparent bg-emerald-500 text-white'
+                  : 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 hover:text-emerald-300'
               }`}
             >
               <ChevronRight size={14} strokeWidth={1.5} />
