@@ -169,6 +169,7 @@ export default function NouveauAdherentPage() {
   const [selectedSet,   setSelectedSet]   = useState<Set<number>>(new Set());
   const [csvError,      setCsvError]      = useState<string | null>(null);
   const [importResult,  setImportResult]  = useState<ImportResult | null>(null);
+  const [createdCardVerifyToken, setCreatedCardVerifyToken] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const csvTopScrollRef = useRef<HTMLDivElement>(null);
   const csvTableScrollRef = useRef<HTMLDivElement>(null);
@@ -190,6 +191,7 @@ export default function NouveauAdherentPage() {
 
   const cardData: MemberCardData = {
     id: editingMember?.memberId ?? previewMemberNumber(form.gender, form.promotionYear) ?? generatedId,
+    cardVerifyToken: editingMember?.cardVerifyToken ?? createdCardVerifyToken,
     firstName: form.firstName || 'Prénom',
     lastName:  form.lastName  || 'Nom',
     gender:    (form.gender as 'homme' | 'femme') || undefined,
@@ -217,7 +219,7 @@ export default function NouveauAdherentPage() {
         return;
       }
 
-      await createMember.mutateAsync({
+      const created = await createMember.mutateAsync({
         firstName:     form.firstName,
         lastName:      form.lastName,
         email:         form.email,
@@ -226,6 +228,7 @@ export default function NouveauAdherentPage() {
         gender:        (form.gender as 'homme' | 'femme') || undefined,
         promotionYear: form.promotionYear ? Number(form.promotionYear) : undefined,
       });
+      setCreatedCardVerifyToken(created.data.cardVerifyToken ?? null);
       setStep('done');
     } catch {
       // Les hooks API affichent deja le toast d'erreur.
@@ -366,7 +369,7 @@ export default function NouveauAdherentPage() {
         <p className="mb-4 text-sm font-black text-neutral-900">Carte de membre générée</p>
         <div className="flex justify-center overflow-x-auto"><MemberCard member={cardData} /></div>
         <p className="mt-3 text-center text-xs text-neutral-400">
-          Le QR code renvoie vers <span className="font-mono text-emerald-600">salam-cameroun.com/verify/{cardData.id}</span>
+          Le QR code renvoie vers <span className="font-mono text-emerald-600">salam-cameroun.com/verify-card/&#123;token&#125;</span>
         </p>
       </div>
       <div className="flex gap-3">

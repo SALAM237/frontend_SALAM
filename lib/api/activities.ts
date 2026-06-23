@@ -3,6 +3,29 @@ import { toast } from 'sonner';
 import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
 
+export interface ActivityInvitationSummary { total: number; pending: number; present: number; absent: number; unsure: number; scanned: number; }
+
+export interface ActivityInvitationDoc {
+  _id: string;
+  activityId: string;
+  guestType: 'member' | 'client' | 'external';
+  memberId?: string | { _id: string; firstName?: string; lastName?: string; email?: string; phone?: string; memberNumber?: string; avatar?: string };
+  clientId?: string | { _id: string; name?: string; email?: string; phone?: string };
+  externalGuest?: { firstName?: string; lastName?: string; email?: string; phone?: string };
+  email?: string;
+  name?: string;
+  phone?: string;
+  rsvpRequired: boolean;
+  rsvpDeadline?: string;
+  rsvpStatus: 'pending' | 'present' | 'unsure' | 'absent';
+  rsvpAt?: string;
+  shortCode?: string;
+  qrExpiresAt?: string;
+  scanStatus?: 'unused' | 'used' | 'expired';
+  scannedAt?: string;
+  qrDataUrl?: string;
+  scanValue?: string;
+}
 export interface ActivityDoc {
   _id: string;
   title: string;
@@ -16,6 +39,8 @@ export interface ActivityDoc {
   visibility: 'public' | 'members' | 'office';
   status: 'draft' | 'published' | 'finished' | 'cancelled';
   createdAt: string;
+  invitationSummary?: ActivityInvitationSummary;
+  myInvitation?: ActivityInvitationDoc | null;
 }
 
 export const ACTIVITY_CATEGORIES = [
@@ -132,6 +157,52 @@ export function useDeleteActivity() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-activities'] });
       toast.success((res as any).message ?? 'Activité supprimée');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useActivityInvitations(activityId?: string) {
+  const token = useAuthStore(s => s.accessToken);
+  return useQuery({
+    queryKey: ['activity-invitations', activityId],
+    queryFn: () => apiClient<{ invitations: ActivityInvitationDoc[] }>(`/api/v1/admin/activities/${activityId}/invitations`, { token: token ?? '' }),
+    enabled: Boolean(token && activityId),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useRespondActivityInvitation(activityId: string) {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (status: 'present' | 'unsure' | 'absent') =>
+      apiClient<{ invitation: ActivityInvitationDoc; qrDataUrl?: string; scanValue?: string }>(`/api/v1/member/activities/${activityId}/rsvp`, {
+        method: 'POST',
+        body: JSON.stringify({ status }),
+        token: token ?? '',
+      }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['member-activities'] });
+      qc.invalidateQueries({ queryKey: ['member-activity'] });
+      toast.success((res as any).message ?? 'Presence confirmee');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useRemindActivityInvitations() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (activityId: string) => apiClient<{ sent: number; total: number }>(`/api/v1/admin/activities/${activityId}/invitations/remind`, {
+      method: 'POST',
+      token: token ?? '',
+    }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['admin-activities'] });
+      qc.invalidateQueries({ queryKey: ['activity-invitations'] });
+      toast.success((res as any).message ?? 'Relance envoyee');
     },
     onError: (err: Error) => toast.error(err.message),
   });

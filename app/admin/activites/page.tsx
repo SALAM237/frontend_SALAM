@@ -1,15 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { CalendarDays, Plus, X, MapPin, Users, Loader2, Trash2, Edit3, PlusCircle } from 'lucide-react';
+import { CalendarDays, Plus, X, MapPin, Users, Loader2, Trash2, Edit3, PlusCircle, Send } from 'lucide-react';
 import {
-  useActivities, useCreateActivity, useUpdateActivity, useDeleteActivity,
+  useActivities, useCreateActivity, useUpdateActivity, useDeleteActivity, useActivityInvitations, useRemindActivityInvitations,
   ACTIVITY_CATEGORIES, type ActivityDoc,
 } from '@/lib/api/activities';
+import { useAdminMembers } from '@/lib/api/members';
+import { useInvoiceClients } from '@/lib/api/invoices';
 import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
 type ExtraBlock = { id: string; label: string; title: string; description: string };
+type GuestMode = 'none' | 'member' | 'client' | 'external';
+type ExternalGuest = { id: string; firstName: string; lastName: string; email: string; phone: string };
 
 const sCfg: Record<string, { label: string; cls: string }> = {
   published: { label: 'Publiée',   cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
@@ -45,9 +49,22 @@ function ActivityForm({
   const [activeDesign, setActiveDesign] = useState<string | null>(null);
   const [styles, setStyles] = useState<Record<string, DesignStyle>>({});
   const [extraBlocks, setExtraBlocks] = useState<ExtraBlock[]>([]);
+  const [guestMode, setGuestMode] = useState<GuestMode>('none');
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
+  const [externalGuests, setExternalGuests] = useState<ExternalGuest[]>([{ id: 'guest-initial', firstName: '', lastName: '', email: '', phone: '' }]);
+  const [rsvpMode, setRsvpMode] = useState<'required' | 'optional'>('optional');
+  const [rsvpDeadline, setRsvpDeadline] = useState('');
+  const membersQuery = useAdminMembers({ status: 'active', limit: 500 });
+  const clientsQuery = useInvoiceClients();
+  const members = membersQuery.data?.data?.data ?? [];
+  const clients = clientsQuery.data?.data ?? [];
 
   const upd = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setF(p => ({ ...p, [k]: e.target.value }));
+
+  const toggleId = (id: string, values: string[], setValues: (value: string[]) => void) => setValues(values.includes(id) ? values.filter(item => item !== id) : [...values, id]);
+  const setAll = (ids: string[], values: string[], setValues: (value: string[]) => void) => setValues(ids.length > 0 && values.length === ids.length ? [] : ids);
 
   const inp = (err?: string) =>
     `w-full rounded-xl border bg-white px-4 py-2.5 text-sm outline-none transition focus:ring-2 placeholder:text-neutral-300 ${err ? 'border-red-300 focus:ring-red-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`;
@@ -70,6 +87,15 @@ function ActivityForm({
       location: f.location || undefined,
       capacity: f.capacity ? Number(f.capacity) : undefined,
       visibility: f.visibility, status: f.status,
+      invitations: {
+        guestMode,
+        memberIds: guestMode === 'member' ? selectedMemberIds : [],
+        clientIds: guestMode === 'client' ? selectedClientIds : [],
+        externalGuests: guestMode === 'external' ? externalGuests.filter(g => g.email.trim() || g.phone.trim()).map(({ firstName, lastName, email, phone }) => ({ firstName, lastName, email, phone })) : [],
+        rsvpRequired: rsvpMode === 'required',
+        rsvpDeadline: rsvpDeadline || undefined,
+        sendInvitations: true,
+      },
     });
   };
 
@@ -125,6 +151,64 @@ function ActivityForm({
                 {style => <input type="number" min="1" value={f.capacity} onChange={upd('capacity')} placeholder="50" className={inp()} style={style} />}
               </DesignEditorField>
             </div>
+          </div>
+          <div className="rounded-2xl border border-neutral-200 bg-neutral-50/60 p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-neutral-700">Invité(s)</p>
+                <p className="text-[11px] text-neutral-500">Sélectionnez les personnes à inviter et le niveau de confirmation attendu.</p>
+              </div>
+              <label className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white px-3 py-1.5 text-[11px] font-black text-emerald-700">
+                <input type="checkbox" checked={rsvpMode === 'required'} onChange={e => setRsvpMode(e.target.checked ? 'required' : 'optional')} /> Présence obligatoire
+              </label>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[1fr_1fr]">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Type d'invité</label>
+                <select value={guestMode} onChange={e => setGuestMode(e.target.value as GuestMode)} className={inp()}>
+                  <option value="none">Aucun invité ciblé</option>
+                  <option value="member">Membre</option>
+                  <option value="client">Clients externes</option>
+                  <option value="external">Non membre</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date limite de confirmation</label>
+                <input type="datetime-local" value={rsvpDeadline} onChange={e => setRsvpDeadline(e.target.value)} className={inp()} />
+              </div>
+            </div>
+            {guestMode === 'member' && (
+              <GuestChecklist
+                title="Membres actifs"
+                items={members.map(m => ({ id: m._id, label: `${m.firstName} ${m.lastName}`, detail: m.email }))}
+                selected={selectedMemberIds}
+                onToggle={id => toggleId(id, selectedMemberIds, setSelectedMemberIds)}
+                onToggleAll={() => setAll(members.map(m => m._id), selectedMemberIds, setSelectedMemberIds)}
+              />
+            )}
+            {guestMode === 'client' && (
+              <GuestChecklist
+                title="Clients externes"
+                items={clients.map(c => ({ id: c._id, label: c.name, detail: c.email || c.phone || 'Coordonnées non renseignées' }))}
+                selected={selectedClientIds}
+                onToggle={id => toggleId(id, selectedClientIds, setSelectedClientIds)}
+                onToggleAll={() => setAll(clients.map(c => c._id), selectedClientIds, setSelectedClientIds)}
+              />
+            )}
+            {guestMode === 'external' && (
+              <div className="mt-3 space-y-2">
+                {externalGuests.map((guest, index) => (
+                  <div key={guest.id} className="grid gap-2 rounded-2xl border border-neutral-200 bg-white p-3 sm:grid-cols-2">
+                    <input value={guest.firstName} onChange={e => setExternalGuests(prev => prev.map(g => g.id === guest.id ? { ...g, firstName: e.target.value } : g))} placeholder="Prénom" className={inp()} />
+                    <input value={guest.lastName} onChange={e => setExternalGuests(prev => prev.map(g => g.id === guest.id ? { ...g, lastName: e.target.value } : g))} placeholder="Nom" className={inp()} />
+                    <input value={guest.email} onChange={e => setExternalGuests(prev => prev.map(g => g.id === guest.id ? { ...g, email: e.target.value } : g))} placeholder="Email" type="email" className={inp()} />
+                    <input value={guest.phone} onChange={e => setExternalGuests(prev => prev.map(g => g.id === guest.id ? { ...g, phone: e.target.value } : g))} placeholder="Téléphone" className={inp()} />
+                    {externalGuests.length > 1 && <button type="button" onClick={() => setExternalGuests(prev => prev.filter(g => g.id !== guest.id))} className="text-left text-xs font-black text-red-500">Retirer l'invité {index + 1}</button>}
+                  </div>
+                ))}
+                <button type="button" onClick={() => setExternalGuests(prev => [...prev, { id: `guest-${Date.now()}`, firstName: '', lastName: '', email: '', phone: '' }])} className="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-black text-emerald-700">Ajouter un non membre</button>
+              </div>
+            )}
           </div>
           <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 p-3">
             <div className="mb-3 flex items-center justify-between gap-3">
@@ -201,6 +285,57 @@ function ActivityForm({
 }
 
 /* ─── Edit wrapper ────────────────────────────────────────── */
+
+
+function PresenceModal({ activity, onClose }: { activity: ActivityDoc; onClose: () => void }) {
+  const { data, isLoading } = useActivityInvitations(activity._id);
+  const invitations = data?.data?.invitations ?? [];
+  const label = (status: string) => status === 'present' ? 'Présents' : status === 'absent' ? 'Absents' : status === 'unsure' ? 'Je ne sais pas' : 'En attente';
+  const guestName = (inv: any) => {
+    if (inv.memberId && typeof inv.memberId === 'object') return `${inv.memberId.firstName ?? ''} ${inv.memberId.lastName ?? ''}`.trim();
+    if (inv.clientId && typeof inv.clientId === 'object') return inv.clientId.name;
+    return inv.name || `${inv.externalGuest?.firstName ?? ''} ${inv.externalGuest?.lastName ?? ''}`.trim() || inv.email || 'Invite';
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+          <div><p className="text-sm font-black text-neutral-900">Présences - {activity.title}</p><p className="text-xs text-neutral-400">Réponses et QR codes liés à cette activité.</p></div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
+        </div>
+        <div className="max-h-[72vh] overflow-y-auto p-4">
+          {isLoading && <p className="py-10 text-center text-sm text-neutral-400">Chargement...</p>}
+          {!isLoading && invitations.length === 0 && <p className="py-10 text-center text-sm font-semibold text-neutral-400">Aucune invitation enregistrée.</p>}
+          <div className="grid gap-3 md:grid-cols-2">
+            {(['present','unsure','absent','pending'] as const).map(status => {
+              const rows = invitations.filter(inv => inv.rsvpStatus === status);
+              return <div key={status} className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-3"><p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-neutral-600">{label(status)} · {rows.length}</p><div className="space-y-2">{rows.map(inv => <div key={inv._id} className="rounded-xl bg-white p-3 text-xs shadow-sm"><p className="font-black text-neutral-800">{guestName(inv)}</p><p className="mt-0.5 text-neutral-400">{inv.guestType} · {inv.email || inv.phone || 'contact non renseigné'}</p>{inv.shortCode && <p className="mt-1 font-mono text-[11px] font-black text-emerald-700">Code {inv.shortCode} · {inv.scanStatus ?? 'unused'}</p>}</div>)}</div></div>;
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+function GuestChecklist({ title, items, selected, onToggle, onToggleAll }: { title: string; items: { id: string; label: string; detail?: string }[]; selected: string[]; onToggle: (id: string) => void; onToggleAll: () => void }) {
+  return (
+    <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+      <div className="flex items-center justify-between gap-3 border-b border-neutral-100 px-3 py-2">
+        <p className="text-xs font-black text-neutral-700">{title}</p>
+        <label className="inline-flex items-center gap-2 text-[11px] font-black text-emerald-700"><input type="checkbox" checked={items.length > 0 && selected.length === items.length} onChange={onToggleAll} /> Tout</label>
+      </div>
+      <div className="max-h-56 overflow-y-auto divide-y divide-neutral-50">
+        {items.length === 0 && <p className="px-3 py-6 text-center text-xs font-semibold text-neutral-400">Aucun element disponible.</p>}
+        {items.map(item => (
+          <label key={item.id} className="flex cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-emerald-50/40">
+            <input type="checkbox" checked={selected.includes(item.id)} onChange={() => onToggle(item.id)} />
+            <span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold text-neutral-800">{item.label}</span>{item.detail && <span className="block truncate text-[11px] text-neutral-400">{item.detail}</span>}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
 function EditActivityModal({ activity, onClose }: { activity: ActivityDoc; onClose: () => void }) {
   const update = useUpdateActivity(activity._id);
   return (
@@ -219,10 +354,12 @@ export default function AdminActivitesPage() {
   const [filter,      setFilter]      = useState<string>('all');
   const [showCreate,  setShowCreate]  = useState(false);
   const [editTarget,  setEditTarget]  = useState<ActivityDoc | null>(null);
+  const [presenceTarget, setPresenceTarget] = useState<ActivityDoc | null>(null);
 
   const { data, isLoading } = useActivities({ status: filter === 'all' ? undefined : filter });
   const deleteActivity = useDeleteActivity();
   const createActivity = useCreateActivity();
+  const remindInvitations = useRemindActivityInvitations();
 
   const activities = data?.data?.activities ?? [];
   const stats = {
@@ -296,14 +433,22 @@ export default function AdminActivitesPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-black text-sm text-neutral-900 truncate">{a.title}</p>
+                      <p className="truncate text-sm font-black text-neutral-900">{a.title}</p>
                       <span className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black ${cfg.cls}`}>{cfg.label}</span>
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-400">
                       <span className="rounded-full bg-neutral-100 px-2 py-0.5 font-semibold text-neutral-600">{catLabel}</span>
-                      {a.location  && <span className="flex items-center gap-1"><MapPin size={10} /> {a.location}</span>}
-                      {a.capacity  && <span className="flex items-center gap-1"><Users size={10} /> {a.capacity} places</span>}
+                      {a.location && <span className="flex items-center gap-1"><MapPin size={10} /> {a.location}</span>}
+                      {a.capacity && <span className="flex items-center gap-1"><Users size={10} /> {a.capacity} places</span>}
                     </div>
+                    {a.invitationSummary && a.invitationSummary.total > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-black">
+                        <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">Présents {a.invitationSummary.present}</span>
+                        <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">Je ne sais pas {a.invitationSummary.unsure}</span>
+                        <span className="rounded-full bg-red-50 px-2 py-1 text-red-600">Absents {a.invitationSummary.absent}</span>
+                        <span className="rounded-full bg-neutral-100 px-2 py-1 text-neutral-600">Scannés {a.invitationSummary.scanned}</span>
+                      </div>
+                    )}
                     {a.startDate && (
                       <p className="mt-0.5 text-[11px] text-neutral-300">
                         {new Date(a.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -312,6 +457,14 @@ export default function AdminActivitesPage() {
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className="hidden text-[10px] font-semibold text-neutral-400 sm:inline">{visiLabels[a.visibility]}</span>
+                    <button title="Présences" onClick={() => setPresenceTarget(a)}
+                      className="hidden h-8 items-center rounded-lg border border-emerald-100 px-2 text-[10px] font-black text-emerald-700 transition hover:bg-emerald-50 sm:flex">
+                      Présences
+                    </button>
+                    <button title="Envoyer une relance" onClick={() => remindInvitations.mutate(a._id)} disabled={remindInvitations.isPending || !a.invitationSummary || (a.invitationSummary.pending + a.invitationSummary.unsure) === 0}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-amber-100 text-amber-500 transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-40">
+                      <Send size={12} />
+                    </button>
                     <button title="Modifier" onClick={() => setEditTarget(a)}
                       className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition hover:border-emerald-300 hover:text-emerald-700">
                       <Edit3 size={12} />
@@ -337,6 +490,7 @@ export default function AdminActivitesPage() {
         />
       )}
       {editTarget && <EditActivityModal activity={editTarget} onClose={() => setEditTarget(null)} />}
+      {presenceTarget && <PresenceModal activity={presenceTarget} onClose={() => setPresenceTarget(null)} />}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -29,6 +29,19 @@ import { AvatarLightbox } from '@/components/portal/AvatarLightbox';
 import { CauriBadge, CauriWalletPanel } from '@/components/member/CauriWallet';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+
+const ANTENNE_OPTIONS = [
+  'Yaoundé',
+  'Douala',
+  'Maroc',
+  'Sénégal',
+  'France',
+  'Europe',
+  'Amérique',
+  'Autre',
+] as const;
+
+const ANTENNE_KNOWN = new Set<string>(ANTENNE_OPTIONS.filter(a => a !== 'Autre'));
 
 const ACTIVITY_SECTORS = [
   'Administration publique',
@@ -69,6 +82,7 @@ type ProfileForm = {
   country: string;
   residenceCity: string;
   antenne: string;
+  antenneAutre: string;
   birthDate: string;
   activitySector: string;
   activitySectorProposal: string;
@@ -90,6 +104,7 @@ const emptyForm: ProfileForm = {
   country: '',
   residenceCity: '',
   antenne: '',
+  antenneAutre: '',
   birthDate: '',
   activitySector: '',
   activitySectorProposal: '',
@@ -132,7 +147,8 @@ export default function ProfilPage() {
       city: user.city ?? '',
       country: user.country ?? '',
       residenceCity: user.residenceCity ?? user.city ?? '',
-      antenne: user.antenne ?? '',
+      antenne: ANTENNE_KNOWN.has(user.antenne ?? '') ? (user.antenne ?? '') : (user.antenne ? 'Autre' : ''),
+      antenneAutre: ANTENNE_KNOWN.has(user.antenne ?? '') ? '' : (user.antenne ?? ''),
       birthDate: dateInputValue(user.birthDate),
       activitySector: user.activitySector ?? '',
       activitySectorProposal: user.activitySectorProposal ?? '',
@@ -152,7 +168,7 @@ export default function ProfilPage() {
   const handleSave = async (e: React.FormEvent) => {
     if (!['homme', 'femme'].includes(form.gender)) {
       e.preventDefault();
-      toast.error('La civilite est obligatoire.');
+      toast.error('La civilité est obligatoire.');
       return;
     }
     e.preventDefault();
@@ -161,7 +177,7 @@ export default function ProfilPage() {
       || Number(form.promotionYear || 0) !== Number(user?.promotionYear || 0);
 
     if (sensitiveChanged && !['homme', 'femme'].includes(form.gender)) {
-      toast.error('SÃ©lectionnez une civilitÃ© valide');
+      toast.error('Sélectionnez une civilité valide');
       return;
     }
 
@@ -175,7 +191,7 @@ export default function ProfilPage() {
         city: form.city || undefined,
         country: form.country || undefined,
         residenceCity: form.residenceCity || undefined,
-        antenne: form.antenne || undefined,
+        antenne: form.antenne === 'Autre' ? (form.antenneAutre.trim() || undefined) : (form.antenne || undefined),
         birthDate: form.birthDate || undefined,
         activitySector: form.activitySector || undefined,
         activitySectorProposal: form.activitySector === 'Autre' ? form.activitySectorProposal || undefined : undefined,
@@ -208,12 +224,12 @@ export default function ProfilPage() {
             </button>
             <p className="font-black text-orange-950">Information sensible</p>
             <p className="mt-1 text-sm leading-5 text-orange-800">
-              La mise Ã  jour sera faite aprÃ¨s validation par un administrateur.
+              La mise à jour sera faite après validation par un administrateur.
             </p>
           </div>
         ), { duration: 15_000 });
       } else {
-        toast.success('Profil mis Ã  jour');
+        toast.success('Profil mis à jour');
       }
 
       setSaved(true);
@@ -324,10 +340,26 @@ export default function ProfilPage() {
             <F icon={Phone} label="Telephone" value={form.phone} onChange={set('phone')} placeholder="+237 6 00 00 00 00" required />
             <F icon={Phone} label="Contact de recuperation" value={form.recoveryContact} onChange={set('recoveryContact')} placeholder="Email ou numero secondaire" />
             <F icon={Calendar} label="Date de naissance" value={form.birthDate} onChange={set('birthDate')} type="date" required />
-            <F icon={MapPin} label="Ville de rÃ©sidence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." />
+            <F icon={MapPin} label="Ville de résidence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." />
             <F icon={MapPin} label="Pays" value={form.country} onChange={set('country')} placeholder="Cameroun, Maroc..." />
             <F icon={User} label="Promotionnaire" value={form.promotionYear} onChange={set('promotionYear')} type="number" placeholder="2026" />
-            <F icon={MapPin} label="Antenne" value={form.antenne} onChange={set('antenne')} placeholder="Casablanca, Yaounde..." />
+            <div className="space-y-2">
+              <Select
+                label="Antenne"
+                value={form.antenne}
+                onChange={set('antenne')}
+                options={[['', 'Sélectionner une antenne'], ...ANTENNE_OPTIONS.map(a => [a, a] as [string, string])]}
+              />
+              {form.antenne === 'Autre' && (
+                <F
+                  icon={MapPin}
+                  label="Préciser l'antenne"
+                  value={form.antenneAutre}
+                  onChange={set('antenneAutre')}
+                  placeholder="Ex : Bruxelles, Berlin, Abidjan..."
+                />
+              )}
+            </div>
           </div>
         </Section>
 

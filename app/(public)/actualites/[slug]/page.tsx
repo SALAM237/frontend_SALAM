@@ -139,16 +139,14 @@ export default function ActualiteDetailPage({ params }: { params: Promise<{ slug
 
               {/* Excerpt */}
               {article.data?.excerpt && (
-                <p className="text-base font-semibold leading-relaxed text-neutral-600 border-l-4 border-emerald-400 pl-4">
-                  <RichText value={article.data.excerpt} />
-                </p>
+                <RichText value={article.data.excerpt} className="text-base font-semibold leading-relaxed text-neutral-600 border-l-4 border-emerald-400 pl-4" block />
               )}
 
               {/* Content */}
               {article.data?.content && (
                 <div className="rounded-[1.5rem] border border-neutral-100 bg-white p-6">
-                  <div className="prose prose-sm max-w-none text-neutral-700 leading-relaxed whitespace-pre-wrap">
-                    <RichText value={article.data.content} />
+                  <div className="prose prose-sm max-w-none text-neutral-700 leading-relaxed">
+                    <RichText value={article.data.content} block />
                   </div>
                 </div>
               )}

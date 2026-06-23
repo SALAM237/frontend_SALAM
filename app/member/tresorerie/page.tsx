@@ -229,9 +229,9 @@ export default function TresoreriePage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Card>
+            <Card className="border-red-100 bg-red-50/80">
               <CardTitle title="Alertes" />
-              <InfoRow icon={AlertTriangle} tone="amber" title="Adhesions en attente" text={`${formatFcfa(data?.kpis.pendingAdhesions ?? 0)} restent a recouvrer.`} compact />
+              <InfoRow icon={AlertTriangle} tone="red" title="Adhesions en attente" text={`${formatFcfa(data?.kpis.pendingAdhesions ?? 0)} restent a recouvrer.`} compact />
             </Card>
             <Card>
               <CardTitle title="Recommandations" />
@@ -349,11 +349,12 @@ function AssetList({ title, items, loading }: { title: string; items: TreasuryAs
   );
 }
 
-function InfoRow({ icon: Icon, title, text, tone, compact = false }: { icon: React.ElementType; title: string; text: string; tone: 'amber' | 'emerald' | 'blue'; compact?: boolean }) {
+function InfoRow({ icon: Icon, title, text, tone, compact = false }: { icon: React.ElementType; title: string; text: string; tone: 'amber' | 'emerald' | 'blue' | 'red'; compact?: boolean }) {
   const cls = {
     amber: 'bg-amber-50 text-amber-700',
     emerald: 'bg-emerald-50 text-emerald-700',
     blue: 'bg-blue-50 text-blue-700',
+    red: 'bg-red-100 text-red-700',
   }[tone];
 
   return (

@@ -87,6 +87,24 @@ export function useInspectCauriRedemption(tokenValue: string) {
   });
 }
 
+export function useAdjustMemberCauris() {
+  const token = useAuthStore(state => state.accessToken);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { memberIds: string[]; amount: number; operation: 'add' | 'remove'; reason?: string }) =>
+      apiClient<{ memberId: string; ok: boolean; newBalance?: number }[]>('/api/v1/admin/cauris/adjust', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        token: token ?? '',
+      }),
+    onSuccess: response => {
+      queryClient.invalidateQueries({ queryKey: ['admin-members'] });
+      toast.success(response.message);
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+}
+
 export function useRedeemCauris() {
   const token = useAuthStore(state => state.accessToken);
   const queryClient = useQueryClient();

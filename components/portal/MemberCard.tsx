@@ -5,6 +5,7 @@ import { formatFullName } from '@/lib/format-name';
 
 export type MemberCardData = {
   id: string;
+  cardVerifyToken?: string | null;
   firstName: string;
   lastName: string;
   gender?: 'homme' | 'femme';
@@ -13,6 +14,12 @@ export type MemberCardData = {
   year: number;
   photo?: string;
 };
+
+export function memberCardVerifyUrl(member: { id: string; cardVerifyToken?: string | null }) {
+  return member.cardVerifyToken
+    ? `https://salam-cameroun.com/verify-card/${encodeURIComponent(member.cardVerifyToken)}`
+    : `SALAM-MEMBER-${member.id}`;
+}
 
 function QRCode({ data, size = 72 }: { data: string; size?: number }) {
   const encoded = encodeURIComponent(data);
@@ -29,7 +36,7 @@ function QRCode({ data, size = 72 }: { data: string; size?: number }) {
 }
 
 export function MemberCard({ member, printable = false }: { member: MemberCardData; printable?: boolean }) {
-  const verifyUrl = `https://salam-cameroun.com/verify/${member.id}`;
+  const verifyUrl = memberCardVerifyUrl(member);
 
   return (
     <div

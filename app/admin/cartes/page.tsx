@@ -13,6 +13,7 @@ import { downloadElementAsPng, memberCardMailto } from '@/lib/member-card-export
 function toCardData(m: MemberListItem): MemberCardData {
   return {
     id:        m.memberId,
+    cardVerifyToken: m.cardVerifyToken,
     firstName: m.firstName,
     lastName:  m.lastName,
     gender:    m.gender,
@@ -47,7 +48,7 @@ export default function CartesPage() {
   const handleDownloadCard = async () => {
     if (!selected || !cardRef.current) return;
     try {
-      await downloadElementAsPng(cardRef.current, `carte-salam-${selected.memberId}.png`);
+      await downloadElementAsPng(cardRef.current, `carte-salam-${selected.memberId}.png`, toCardData(selected));
       toast.success('Carte telechargee');
     } catch {
       toast.error('Impossible de telecharger la carte. Reessayez sans photo distante si besoin.');
@@ -194,7 +195,7 @@ export default function CartesPage() {
                 <button type="button" onClick={handleDownloadCard} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:border-neutral-300">
                   <CreditCard size={13} /> Télécharger
                 </button>
-                <a href={memberCardMailto(selected.email, formatFullName(selected.firstName, selected.lastName), selected.memberId)} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700">
+                <a href={memberCardMailto(selected.email, formatFullName(selected.firstName, selected.lastName), selected.memberId, selected.cardVerifyToken)} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700">
                   Envoyer par email
                 </a>
               </div>

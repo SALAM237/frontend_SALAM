@@ -352,12 +352,13 @@ export function HeroCarousel() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.55, delay: 0.1 }}
-              className="mx-auto overflow-hidden rounded-xl border border-white/10 shadow-2xl sm:rounded-2xl"
+              className="mx-auto overflow-hidden rounded-xl border border-white/10 sm:rounded-2xl"
               style={{
                 maxWidth: '680px',
                 background: 'rgba(7,13,9,0.55)',
                 backdropFilter: 'blur(16px)',
                 WebkitBackdropFilter: 'blur(16px)',
+                boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px',
               }}
             >
               {/* Panel header */}

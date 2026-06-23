@@ -114,7 +114,7 @@ function OpportunityDetailModal({ item, onClose }: { item: OpportunityDoc; onClo
           </p>
         </div>
         <div className="max-h-[70vh] space-y-5 overflow-y-auto px-6 py-5">
-          <p className="whitespace-pre-line text-sm leading-7 text-neutral-600"><RichText value={item.description} /></p>
+          <RichText value={item.description} className="text-sm leading-7 text-neutral-600" block />
           <div className="grid gap-2 text-xs font-semibold text-neutral-500 sm:grid-cols-2">
             {item.organization && <Meta icon={BriefcaseBusiness}>{item.organization}</Meta>}
             {item.location && <Meta icon={MapPin}>{item.location}</Meta>}

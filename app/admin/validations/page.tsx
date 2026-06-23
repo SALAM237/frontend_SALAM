@@ -7,7 +7,7 @@ import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/
 import { formatFullName, formatInitials } from '@/lib/format-name';
 
 const TYPE_META = {
-  content: { label: 'ActualitÃ©', icon: Newspaper, cls: 'bg-blue-50 text-blue-700 border-blue-100' },
+  content: { label: 'Actualité', icon: Newspaper, cls: 'bg-blue-50 text-blue-700 border-blue-100' },
   gallery: { label: 'Album galerie', icon: Images, cls: 'bg-purple-50 text-purple-700 border-purple-100' },
   sector: { label: 'Secteur networking', icon: Tags, cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
   opportunity: { label: 'Opportunite', icon: BriefcaseBusiness, cls: 'bg-amber-50 text-amber-700 border-amber-100' },
@@ -65,7 +65,7 @@ export default function AdminValidationsPage() {
     <div className="mx-auto max-w-5xl space-y-5">
       <div>
         <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Validations en attente</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">Ã‰lÃ©ments soumis par les membres, filtrÃ©s selon vos permissions de publication.</p>
+        <p className="mt-0.5 text-sm text-neutral-500">Éléments soumis par les membres, filtrés selon vos permissions de publication.</p>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
@@ -136,7 +136,7 @@ export default function AdminValidationsPage() {
                         ) : (
                           <>
                             <UserRound size={14} className="text-neutral-300" />
-                            <p className="text-xs font-semibold text-neutral-400">Demandeur non renseignÃ©</p>
+                            <p className="text-xs font-semibold text-neutral-400">Demandeur non renseigné</p>
                           </>
                         )}
                       </div>

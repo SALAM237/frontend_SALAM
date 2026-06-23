@@ -161,9 +161,7 @@ export default function MemberActualitesPage() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={articleImage(selected)} alt="" className="mb-4 max-h-72 w-full rounded-2xl object-cover" />
               )}
-              <div className="whitespace-pre-wrap text-sm leading-7 text-neutral-700">
-                <RichText value={selected.data?.content || selected.data?.excerpt || 'Contenu indisponible.'} />
-              </div>
+              <RichText value={selected.data?.content || selected.data?.excerpt || 'Contenu indisponible.'} className="text-sm leading-7 text-neutral-700" block />
             </div>
           </div>
         </div>

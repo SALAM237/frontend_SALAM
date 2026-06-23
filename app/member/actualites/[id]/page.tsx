@@ -55,12 +55,10 @@ export default function MemberArticleDetailPage({ params }: { params: Promise<{ 
             </div>
 
             {article.data?.excerpt && (
-              <p className="border-l-4 border-emerald-400 pl-4 text-sm font-semibold leading-7 text-neutral-600"><RichText value={article.data.excerpt} /></p>
+              <RichText value={article.data.excerpt} className="border-l-4 border-emerald-400 pl-4 text-sm font-semibold leading-7 text-neutral-600" block />
             )}
             <div className="rounded-2xl bg-neutral-50 p-5">
-              <div className="whitespace-pre-wrap text-sm leading-7 text-neutral-700">
-                <RichText value={article.data?.content || article.data?.excerpt || 'Contenu indisponible.'} />
-              </div>
+              <RichText value={article.data?.content || article.data?.excerpt || 'Contenu indisponible.'} className="text-sm leading-7 text-neutral-700" block />
             </div>
           </div>
         </article>

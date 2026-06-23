@@ -156,9 +156,7 @@ export default function OpportuniteDetailPage({ params }: { params: Promise<{ sl
 
               <div className="rounded-[1.5rem] border border-neutral-100 bg-white p-6">
                 <h2 className="mb-3 text-sm font-black uppercase tracking-widest text-neutral-400">Description</h2>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-700">
-                  <RichText value={item.description} />
-                </div>
+                <RichText value={item.description} className="text-sm leading-relaxed text-neutral-700" block />
               </div>
 
               <div className="rounded-[1.5rem] bg-gradient-to-br from-emerald-600 to-teal-700 p-6 text-white">

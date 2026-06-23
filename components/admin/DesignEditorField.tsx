@@ -51,6 +51,7 @@ function DesignPalette({ label, style, position, onMove, onChange, onInlineStyle
       || patch.fontFamily !== undefined
     ) {
       onInlineStyle(patch);
+      onChange(patch); // met à jour l'état palette pour feedback visuel (bold/slider/couleur)
       return;
     }
     onChange(patch);
@@ -135,7 +136,10 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
   const [palettePosition, setPalettePosition] = useState<PalettePosition>({ x: 12, y: 42 });
   const update = (patch: Partial<DesignStyle>) => setStyles(prev => ({ ...prev, [id]: { ...(prev[id] ?? defaultDesign), ...patch } }));
   const closePalette = () => {
+    // Annuler le timer de 80ms qui pourrait ré-ouvrir la palette après le clic sur X
+    if (selectionTimer.current) clearTimeout(selectionTimer.current);
     selectionRef.current = null;
+    try { window.getSelection()?.removeAllRanges(); } catch {}
     setActive(null);
   };
   const rememberSelection = (target: EventTarget | null) => {

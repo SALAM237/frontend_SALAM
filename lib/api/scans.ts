@@ -4,7 +4,12 @@ import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
 
 export interface ScannedMember {
-  _id: string;
+  kind?: 'member' | 'activityInvitation';
+  _id?: string;
+  invitationId?: string;
+  activityId?: string;
+  activityTitle?: string;
+  guestType?: 'member' | 'client' | 'external';
   firstName: string;
   lastName: string;
   memberNumber: string;
@@ -54,7 +59,7 @@ export function useScanCheckin() {
   const token = useAuthStore(s => s.accessToken);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { memberId: string; activityId?: string; note?: string; context?: string }) =>
+    mutationFn: (payload: { memberId?: string; invitationId?: string; activityId?: string; note?: string; context?: string }) =>
       apiClient('/api/v1/admin/scans/checkin', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -69,15 +74,18 @@ export function useScanCheckin() {
   });
 }
 
-export function useScanHistory(activityId?: string) {
+export function useScanHistory(activityId?: string, page = 1) {
   const token = useAuthStore(s => s.accessToken);
   return useQuery({
-    queryKey: ['scan-history', activityId ?? 'all'],
-    queryFn: () =>
-      apiClient<{ scans: ScanRecord[]; total: number; page: number; perPage: number }>(
-        `/api/v1/admin/scans/history${activityId ? `?activityId=${activityId}` : ''}`,
+    queryKey: ['scan-history', activityId ?? 'all', page],
+    queryFn: () => {
+      const params = new URLSearchParams({ limit: '50', page: String(page) });
+      if (activityId) params.set('activityId', activityId);
+      return apiClient<{ scans: ScanRecord[]; total: number; page: number; perPage: number }>(
+        `/api/v1/admin/scans/history?${params}`,
         { token: token ?? '' },
-      ),
+      );
+    },
     enabled: Boolean(token),
     refetchInterval: 10_000,
     staleTime: 5_000,

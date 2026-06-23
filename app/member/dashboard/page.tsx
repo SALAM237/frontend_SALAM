@@ -45,7 +45,8 @@ export default function MemberDashboardPage() {
   const memberId = displayMemberNumber(user);
 
   const memberCardData: MemberCardData = {
-    id: memberId,
+    id:        memberId,
+    cardVerifyToken: user?.cardVerifyToken,
     firstName: firstName || '-',
     lastName: lastName || '-',
     gender,

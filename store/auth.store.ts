@@ -9,6 +9,7 @@ export interface AuthUser {
   phone?: string | null;
   promotionYear?: number | null;
   memberNumber?: string | null;
+  cardVerifyToken?: string | null;
   cauriBalance?: number;
   profileComplete?: boolean;
   missingProfileFields?: string[];

@@ -2,13 +2,14 @@
 
 import { use } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CalendarDays, Loader2, MapPin, Users } from 'lucide-react';
-import { ACTIVITY_CATEGORIES, useMemberActivity } from '@/lib/api/activities';
+import { ArrowLeft, CalendarDays, Loader2, MapPin, Users, CheckCircle2, HelpCircle, XCircle } from 'lucide-react';
+import { ACTIVITY_CATEGORIES, useMemberActivity, useRespondActivityInvitation } from '@/lib/api/activities';
 
 export default function MemberActivityDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const { data, isLoading, isError } = useMemberActivity(slug);
   const activity = data?.data;
+  const respond = useRespondActivityInvitation(activity?._id ?? '');
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
@@ -48,6 +49,33 @@ export default function MemberActivityDetailPage({ params }: { params: Promise<{
               {activity.capacity && <Info icon={Users} text={`${activity.capacity} places`} />}
             </div>
 
+
+            {activity.myInvitation && (
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-black text-neutral-900">Confirmation de présence</p>
+                    <p className="mt-0.5 text-xs text-neutral-500">
+                      {activity.myInvitation.rsvpRequired ? 'Réponse obligatoire' : 'Réponse libre'}
+                      {activity.myInvitation.rsvpDeadline ? ` · avant ${new Date(activity.myInvitation.rsvpDeadline).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}` : ''}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">{activity.myInvitation.rsvpStatus}</span>
+                </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  <button onClick={() => respond.mutate('present')} disabled={respond.isPending} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 text-xs font-black text-white disabled:opacity-50"><CheckCircle2 size={14} /> Présent</button>
+                  <button onClick={() => respond.mutate('unsure')} disabled={respond.isPending} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-amber-100 px-3 text-xs font-black text-amber-800 disabled:opacity-50"><HelpCircle size={14} /> Je ne sais pas</button>
+                  <button onClick={() => respond.mutate('absent')} disabled={respond.isPending} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-50 px-3 text-xs font-black text-red-600 disabled:opacity-50"><XCircle size={14} /> Absent</button>
+                </div>
+                {activity.myInvitation.qrDataUrl && activity.myInvitation.rsvpStatus === 'present' && (
+                  <div className="mt-4 flex flex-col items-center rounded-2xl bg-white p-4 text-center ring-1 ring-emerald-100">
+                    <img src={activity.myInvitation.qrDataUrl} alt="QR code de présence" className="h-44 w-44 rounded-xl object-contain" />
+                    <p className="mt-2 text-xs font-semibold text-neutral-500">Code manuel</p>
+                    <p className="font-mono text-lg font-black tracking-[0.18em] text-emerald-700">{activity.myInvitation.shortCode}</p>
+                  </div>
+                )}
+              </div>
+            )}
             {activity.description && (
               <div className="rounded-2xl bg-neutral-50 p-5">
                 <p className="whitespace-pre-line text-sm leading-7 text-neutral-700">{activity.description}</p>

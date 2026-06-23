@@ -322,7 +322,7 @@ export default function OpportunitesPage() {
                   {item.remote && <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700">Distanciel</span>}
                 </div>
                 <h2 className="mt-2 text-lg font-black leading-tight text-neutral-900"><RichText value={item.title} /></h2>
-                <p className="mt-1 text-sm leading-6 text-neutral-600"><RichText value={item.description} /></p>
+                <RichText value={item.description} className="mt-1 text-sm leading-6 text-neutral-600" block />
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <button onClick={() => openOpportunityDetail(item, 'view_button_click')} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" title="Visualiser">

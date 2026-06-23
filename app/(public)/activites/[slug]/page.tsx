@@ -194,7 +194,7 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ slug:
               {activity.description && (
                 <div className="rounded-[1.5rem] border border-neutral-100 bg-white p-6">
                   <h2 className="mb-3 text-sm font-black uppercase tracking-widest text-neutral-400">Description</h2>
-                  <p className="text-sm leading-relaxed text-neutral-700 whitespace-pre-wrap"><RichText value={activity.description} /></p>
+                  <RichText value={activity.description} className="text-sm leading-relaxed text-neutral-700" block />
                 </div>
               )}
 

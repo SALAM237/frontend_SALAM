@@ -31,7 +31,7 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
   const handleDownloadCard = async () => {
     if (!member || !cardRef.current) return;
     try {
-      await downloadElementAsPng(cardRef.current, `carte-salam-${member.memberId}.png`);
+      await downloadElementAsPng(cardRef.current, `carte-salam-${member.memberId}.png`, cardData);
       toast.success('Carte telechargee');
     } catch {
       toast.error('Impossible de telecharger la carte. Reessayez sans photo distante si besoin.');
@@ -64,6 +64,7 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
 
   const cardData: MemberCardData = {
     id:        member.memberId,
+    cardVerifyToken: member.cardVerifyToken,
     firstName: member.firstName,
     lastName:  member.lastName,
     gender:    member.gender,
@@ -177,13 +178,13 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
               <MemberCard member={cardData} />
             </div>
             <p className="mt-3 text-center text-[10px] text-neutral-400">
-              QR vers salam-cameroun.com/verify/{member.memberId}
+              QR securise vers salam-cameroun.com/verify-card/&#123;token&#125;
             </p>
             <div className="mt-4 flex gap-2">
               <button type="button" onClick={handleDownloadCard} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:border-neutral-300">
                 <CreditCard size={13} /> Télécharger
               </button>
-              <a href={memberCardMailto(member.email, formatFullName(member.firstName, member.lastName), member.memberId)} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700">
+              <a href={memberCardMailto(member.email, formatFullName(member.firstName, member.lastName), member.memberId, member.cardVerifyToken)} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700">
                 Envoyer par email
               </a>
             </div>

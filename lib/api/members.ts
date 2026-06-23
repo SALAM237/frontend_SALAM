@@ -1,4 +1,4 @@
-﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
@@ -18,6 +18,7 @@ export interface MemberListItem {
   lastLoginAt?: string;
   memberId: string;
   memberNumber?: string;
+  cardVerifyToken?: string | null;
   cotisationStatus: 'paid' | 'unpaid' | 'exempt';
   profileComplete?: boolean;
   missingProfileFields?: string[];
@@ -53,6 +54,7 @@ export interface DirectoryMember {
   bio?: string;
   memberId: string;
   memberNumber?: string;
+  cardVerifyToken?: string | null;
 }
 
 export interface UpdateProfilePayload {
@@ -98,7 +100,7 @@ export function useSubmitActivitySectorProposal() {
         body: JSON.stringify(payload),
         token: token ?? '',
       }),
-    onSuccess: res => toast.success((res as any).message ?? 'Secteur proposÃ©'),
+    onSuccess: res => toast.success((res as any).message ?? 'Secteur proposé'),
     onError: (err: Error) => toast.error(err.message),
   });
 }
@@ -201,7 +203,7 @@ export function useCreateMember() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateMemberPayload) =>
-      apiClient('/api/v1/admin/members', {
+      apiClient<{ id: string; email: string; memberId: string; memberNumber: string; cardVerifyToken?: string | null; emailSent: boolean }>('/api/v1/admin/members', {
         method: 'POST',
         body: JSON.stringify(payload),
         token: token ?? '',
@@ -209,7 +211,7 @@ export function useCreateMember() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-stats'] });
-      toast.success((res as any).message ?? 'Membre crÃ©Ã©');
+      toast.success((res as any).message ?? 'Membre créé');
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -281,6 +283,7 @@ export interface MemberCardChangeRequest {
     gender?: 'homme' | 'femme';
     promotionYear?: number;
     memberNumber?: string;
+  cardVerifyToken?: string | null;
     avatar?: string | null;
     bureauPhoto?: string | null;
   };
@@ -367,7 +370,7 @@ export function useReviewMemberCardChangeRequest() {
       qc.invalidateQueries({ queryKey: ['member-card-change-requests'] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-member'] });
-      toast.success((res as any).message ?? 'Demande traitÃ©e');
+      toast.success((res as any).message ?? 'Demande traitée');
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -400,7 +403,7 @@ export function useHardDeleteMember() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-stats'] });
-      toast.success((res as any).message ?? 'Membre supprimÃ©');
+      toast.success((res as any).message ?? 'Membre supprimé');
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -411,7 +414,7 @@ export function useResendInvitation() {
   return useMutation({
     mutationFn: (id: string) =>
       apiClient(`/api/v1/admin/members/${id}/resend-invitation`, { method: 'POST', token: token ?? '' }),
-    onSuccess: res => toast.success((res as any).message ?? 'Invitation renvoyÃ©e'),
+    onSuccess: res => toast.success((res as any).message ?? 'Invitation renvoyée'),
     onError:   (err: Error) => toast.error(err.message),
   });
 }

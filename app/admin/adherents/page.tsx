@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   UserPlus, CreditCard, Search, Eye, CheckCircle2, Clock, XCircle,
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
-  ShieldCheck, Plus,
+  ShieldCheck, Plus, Coins, Minus,
 } from 'lucide-react';
 import {
   useAdminMembers,
@@ -19,6 +19,7 @@ import {
   type MemberProfileValidationField,
   type MemberListItem,
 } from '@/lib/api/members';
+import { useAdjustMemberCauris } from '@/lib/api/cauris';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
@@ -73,6 +74,7 @@ export default function AdminAdherentsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<{ src: string; name: string } | null>(null);
   const [showCardRequests, setShowCardRequests] = useState(false);
+  const [showCaurisManager, setShowCaurisManager] = useState(false);
 
   const user        = useAuthStore(s => s.user);
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
@@ -153,21 +155,36 @@ export default function AdminAdherentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Valider modifications — icône seule sur mobile */}
           <button
             type="button"
             onClick={() => setShowCardRequests(true)}
-            className="relative inline-flex h-9 items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 text-sm font-semibold text-emerald-700 transition-all hover:border-emerald-400 hover:bg-emerald-50"
+            className="relative inline-flex h-9 items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 text-sm font-semibold text-emerald-700 transition-all hover:border-emerald-400 hover:bg-emerald-50 sm:px-4"
           >
-            <ShieldCheck size={14} /> Valider cartes modifiées
+            <ShieldCheck size={14} />
+            <span className="hidden sm:inline">Valider modifications</span>
             <span className="absolute -right-1.5 -top-2 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-black text-white ring-2 ring-white">
               {cardRequestsError ? '!' : pendingCardRequests}
             </span>
           </button>
-          <Link href="/admin/cartes" className="inline-flex h-9 items-center gap-2 rounded-full border border-yellow-300 bg-yellow-200 px-4 text-sm font-semibold text-yellow-800 transition-all hover:bg-yellow-300">
-            <CreditCard size={14} /> Cartes membres
+          {/* Gestion cauris */}
+          <button
+            type="button"
+            onClick={() => setShowCaurisManager(true)}
+            className="inline-flex h-9 items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 text-sm font-semibold text-amber-800 transition-all hover:bg-amber-100 sm:px-4"
+          >
+            <Coins size={14} />
+            <span className="hidden sm:inline">Gestion cauris</span>
+          </button>
+          {/* Cartes membres — icône seule sur mobile */}
+          <Link href="/admin/cartes" className="inline-flex h-9 items-center gap-2 rounded-full border border-yellow-300 bg-yellow-200 px-3 text-sm font-semibold text-yellow-800 transition-all hover:bg-yellow-300 sm:px-4">
+            <CreditCard size={14} />
+            <span className="hidden sm:inline">Cartes membres</span>
           </Link>
-          <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white transition-all hover:bg-emerald-700">
-            <UserPlus size={14} /> Nouveau membre
+          {/* Nouveau membre — icône seule sur mobile */}
+          <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-3 text-sm font-black text-white transition-all hover:bg-emerald-700 sm:px-5">
+            <UserPlus size={14} />
+            <span className="hidden sm:inline">Nouveau membre</span>
           </Link>
         </div>
       </div>
@@ -488,6 +505,7 @@ export default function AdminAdherentsPage() {
     </div>
       {photoPreview && <ControlledAvatarDialog src={photoPreview.src} alt={photoPreview.name} onClose={() => setPhotoPreview(null)} />}
       {showCardRequests && <CardChangeRequestsModal onClose={() => setShowCardRequests(false)} />}
+      {showCaurisManager && <CaurisManagementModal members={members} onClose={() => setShowCaurisManager(false)} />}
     </>
   );
 }
@@ -694,6 +712,192 @@ function displayChangeValue(field: string, value: unknown) {
   if (Array.isArray(value)) return value.length ? value.join(', ') : '-';
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
+}
+
+function CaurisManagementModal({ members, onClose }: { members: MemberListItem[]; onClose: () => void }) {
+  const [operation, setOperation] = useState<'add' | 'remove'>('add');
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('');
+  const [balances, setBalances] = useState<Record<string, number>>({});
+  const adjust = useAdjustMemberCauris();
+
+  const activeMembers = useMemo(() =>
+    members.filter(m => m.memberStatus === 'active'),
+  [members]);
+
+  const filtered = useMemo(() =>
+    activeMembers.filter(m =>
+      `${m.firstName} ${m.lastName} ${m.email} ${m.memberId}`
+        .toLowerCase().includes(search.toLowerCase())
+    ),
+  [activeMembers, search]);
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every(m => selected.has(m._id));
+
+  const toggleAll = () => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (allFilteredSelected) { filtered.forEach(m => next.delete(m._id)); }
+      else { filtered.forEach(m => next.add(m._id)); }
+      return next;
+    });
+  };
+
+  const toggle = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleSubmit = async () => {
+    const amt = parseInt(amount);
+    if (!amt || amt < 1 || selected.size === 0) return;
+    const result = await adjust.mutateAsync({
+      memberIds: [...selected],
+      amount: amt,
+      operation,
+      reason: reason.trim() || undefined,
+    });
+    if (result.data) {
+      const updates: Record<string, number> = {};
+      for (const r of result.data) {
+        if (r.ok && r.newBalance != null) updates[r.memberId] = r.newBalance;
+      }
+      setBalances(prev => ({ ...prev, ...updates }));
+    }
+    setSelected(new Set());
+    setAmount('');
+    setReason('');
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 backdrop-blur-sm sm:items-center">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <Coins size={18} className="text-amber-600" />
+            <h2 className="text-base font-black text-neutral-900">Gestion des cauris</h2>
+          </div>
+          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
+            <XCircle size={16} />
+          </button>
+        </div>
+
+        <div className="max-h-[75vh] overflow-y-auto">
+          {/* Opération + Montant */}
+          <div className="space-y-3 border-b border-neutral-100 px-5 py-4">
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setOperation('add')}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-black transition ${operation === 'add' ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300'}`}>
+                <Plus size={14} /> Ajouter
+              </button>
+              <button type="button" onClick={() => setOperation('remove')}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-black transition ${operation === 'remove' ? 'border-red-500 bg-red-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-red-300'}`}>
+                <Minus size={14} /> Retirer
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="mb-1 block text-[10px] font-black uppercase tracking-wide text-neutral-400">Montant (cauris)</label>
+                <input
+                  type="number" min="1" value={amount} onChange={e => setAmount(e.target.value)}
+                  placeholder="ex : 50"
+                  className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm font-bold focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="mb-1 block text-[10px] font-black uppercase tracking-wide text-neutral-400">Motif (optionnel)</label>
+                <input
+                  type="text" value={reason} onChange={e => setReason(e.target.value)}
+                  placeholder="Bonus événement…"
+                  className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Recherche + sélection */}
+          <div className="space-y-2 px-5 py-3">
+            <div className="relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <input
+                type="text" placeholder="Rechercher un membre…" value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="h-9 w-full rounded-lg border border-neutral-200 bg-white pl-8 pr-3 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              />
+            </div>
+            {/* Tout sélectionner */}
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 hover:bg-neutral-50">
+              <input type="checkbox" checked={allFilteredSelected} onChange={toggleAll}
+                className="h-4 w-4 rounded border-neutral-300 accent-emerald-600" />
+              <span className="text-xs font-bold text-neutral-600">
+                Tout sélectionner ({filtered.length} membres actifs)
+              </span>
+              {selected.size > 0 && (
+                <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">
+                  {selected.size} sélectionné{selected.size > 1 ? 's' : ''}
+                </span>
+              )}
+            </label>
+          </div>
+
+          {/* Liste membres */}
+          <div className="divide-y divide-neutral-50 px-5 pb-3">
+            {filtered.length === 0 && (
+              <p className="py-6 text-center text-sm text-neutral-400">Aucun membre actif trouvé</p>
+            )}
+            {filtered.map(m => {
+              const isSelected = selected.has(m._id);
+              const newBal = balances[m._id];
+              const photoUrl = memberPhotoUrl(m);
+              return (
+                <label key={m._id} className={`flex cursor-pointer items-center gap-3 py-2.5 transition ${isSelected ? 'opacity-100' : 'opacity-80 hover:opacity-100'}`}>
+                  <input type="checkbox" checked={isSelected} onChange={() => toggle(m._id)}
+                    className="h-4 w-4 shrink-0 rounded border-neutral-300 accent-emerald-600" />
+                  {photoUrl
+                    ? <img src={photoUrl} alt="" className={`h-8 w-8 shrink-0 rounded-full border-2 object-cover ${memberAvatarBorderClass(m.gender)}`} />
+                    : <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${memberInitialsClass(m.gender)}`}>
+                        {formatInitials(m.firstName, m.lastName)}
+                      </div>
+                  }
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
+                    <p className="font-mono text-[10px] text-neutral-400">{m.memberId}</p>
+                  </div>
+                  {newBal != null && (
+                    <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">
+                      {newBal} C
+                    </span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between border-t border-neutral-100 px-5 py-3">
+          <button type="button" onClick={onClose} className="text-sm font-semibold text-neutral-500 hover:text-neutral-700">
+            Fermer
+          </button>
+          <button
+            type="button"
+            disabled={selected.size === 0 || !amount || parseInt(amount) < 1 || adjust.isPending}
+            onClick={handleSubmit}
+            className={`inline-flex h-9 items-center gap-2 rounded-xl px-5 text-sm font-black text-white transition disabled:opacity-40 ${operation === 'add' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}
+          >
+            {adjust.isPending ? <Loader2 size={14} className="animate-spin" /> : operation === 'add' ? <Plus size={14} /> : <Minus size={14} />}
+            {operation === 'add' ? 'Ajouter' : 'Retirer'} {amount ? `${amount} C` : ''} — {selected.size} membre{selected.size > 1 ? 's' : ''}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ChangeBox({ label, field, before, after }: { label: string; field: string; before: unknown; after: unknown }) {

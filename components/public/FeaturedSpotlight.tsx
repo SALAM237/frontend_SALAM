@@ -86,6 +86,9 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   const [manualPaused, setManualPaused] = useState(false);
   const [lastNav, setLastNav] = useState<'prev' | 'next' | null>(null);
   const [progress, setProgress] = useState(0);
+  const progressElapsedRef = useRef(0);
+  const progressFrameRef = useRef<number | null>(null);
+  const progressLastTickRef = useRef<number | null>(null);
   const [preview, setPreview] = useState<FeaturedItem | null>(null);
   const [playingMediaIds, setPlayingMediaIds] = useState<Set<string>>(() => new Set());
 
@@ -113,6 +116,37 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
       setActiveIndex(0);
     }
   }, [activeIndex, items.length]);
+  useEffect(() => {
+    progressElapsedRef.current = 0;
+    progressLastTickRef.current = null;
+    setProgress(0);
+  }, [activeIndex, items.length]);
+
+  useEffect(() => {
+    const shouldPauseProgress = manualPaused || mediaPlaying || Boolean(preview) || items.length <= 1;
+    if (progressFrameRef.current !== null) {
+      cancelAnimationFrame(progressFrameRef.current);
+      progressFrameRef.current = null;
+    }
+    if (shouldPauseProgress) {
+      progressLastTickRef.current = null;
+      return;
+    }
+
+    const tick = (now: number) => {
+      const previous = progressLastTickRef.current ?? now;
+      progressLastTickRef.current = now;
+      progressElapsedRef.current = Math.min(SLIDE_DELAY, progressElapsedRef.current + Math.max(0, now - previous));
+      setProgress((progressElapsedRef.current / SLIDE_DELAY) * 100);
+      progressFrameRef.current = requestAnimationFrame(tick);
+    };
+
+    progressFrameRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (progressFrameRef.current !== null) cancelAnimationFrame(progressFrameRef.current);
+      progressFrameRef.current = null;
+    };
+  }, [manualPaused, mediaPlaying, preview, items.length, activeIndex]);
 
   const selectSlide = (index: number) => {
     if (index === activeIndex) return;
@@ -155,7 +189,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
 
   return (
     <section
-      className="featured-gradient relative overflow-hidden rounded-none py-10 sm:py-14 lg:mx-3 lg:my-3 lg:rounded-[2.5rem]"
+      className="featured-gradient relative overflow-hidden rounded-none py-7 sm:py-8 lg:mx-3 lg:my-3 lg:rounded-[2.5rem] lg:py-8"
       aria-labelledby="featured-heading"
     >
       {/* Motif ndop */}
@@ -174,7 +208,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
       <div className="relative mx-auto max-w-[1500px]">
 
         {/* ── Header : titre + contrôles ── */}
-        <div className="mx-auto mb-1 flex max-w-7xl items-end justify-between gap-4 px-4 sm:mb-2 sm:px-6">
+        <div className="mx-auto mb-0 flex max-w-7xl items-end justify-between gap-4 px-4 sm:px-6">
           <div>
             <p className="text-xs font-black uppercase text-emerald-700">Selection SALAM</p>
             <h2 id="featured-heading" className="text-3xl font-black text-neutral-950 sm:text-4xl">A la une</h2>
@@ -220,19 +254,19 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
         </div>
 
         {/* ── Carrousel ── */}
-        <div className="relative h-[90vh] min-h-[560px] max-h-[860px] overflow-hidden">
+        <div className="relative h-[80vh] min-h-[500px] max-h-[760px] overflow-hidden lg:h-[70vh] lg:min-h-[460px] lg:max-h-[620px]">
           <Swiper
             modules={[Autoplay, A11y]}
             className="h-full"
-            slidesPerView={1.05}
+            slidesPerView={1.1}
             centeredSlides={false}
             spaceBetween={8}
             rewind={items.length > 1}
             speed={500}
             autoplay={items.length > 1 ? { delay: SLIDE_DELAY, disableOnInteraction: false, waitForTransition: true } : false}
             breakpoints={{
-              768:  { slidesPerView: 1.05, spaceBetween: 12 },
-              1024: { slidesPerView: 1.05, spaceBetween: 16 },
+              768:  { slidesPerView: 1.1, spaceBetween: 12 },
+              1024: { slidesPerView: 1.1, spaceBetween: 16 },
             }}
             onSwiper={swiper => { swiperRef.current = swiper; setActiveIndex(swiper.realIndex); }}
             onSlideChange={swiper => setActiveIndex(swiper.realIndex)}
@@ -240,7 +274,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
           >
             {items.map((item, itemIndex) => (
               <SwiperSlide key={item._id} className="!flex h-full items-center justify-center">
-                <div className="grid h-[75%] w-[90%] min-h-0 overflow-hidden rounded-none border-0 bg-transparent grid-rows-[56%_44%] md:h-[360px] md:w-[90%] md:grid-cols-[0.92fr_1.08fr] md:grid-rows-1 md:pr-4 lg:h-[400px] lg:w-[90%] lg:pr-7 xl:h-[430px]">
+                <div className="grid h-[75%] w-[90%] min-h-0 overflow-hidden rounded-none border-0 bg-transparent grid-rows-[50%_50%] md:h-[360px] md:w-[90%] md:grid-cols-[1fr_1fr] md:grid-rows-1 md:pr-4 lg:h-[400px] lg:w-[90%] lg:pr-7 xl:h-[430px]">
 
                   {/* Texte */}
                   <article className="relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl bg-white p-4 text-left text-neutral-950 md:order-1 md:rounded-none md:bg-transparent md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6">
