@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
-import { Eye, Loader2, QrCode, X, UserCheck, RefreshCw, Hash } from 'lucide-react';
+import { CheckCircle2, Clock, Eye, Hash, Loader2, QrCode, RefreshCw, UserCheck, X } from 'lucide-react';
 import { useMemberActivities } from '@/lib/api/activities';
-import { useCancelCauriRedemption, useCauriWallet, useCreateCauriRedemption } from '@/lib/api/cauris';
+import { CauriRedemption, CauriTransaction, useCancelCauriRedemption, useCauriWallet, useCreateCauriRedemption } from '@/lib/api/cauris';
 
 // ── Image cauri réutilisable ────────────────────────────────────────────────
 function CauriImg({ size = 24, className = '' }: { size?: number; className?: string }) {
@@ -22,7 +22,7 @@ function CauriImg({ size = 24, className = '' }: { size?: number; className?: st
 
 // ── localStorage QR persistence ─────────────────────────────────────────────
 const QR_KEY = 'salam_cauri_qr_v1';
-const SC_KEY = 'salam_cauri_sc_v1'; // shortCodes
+const SC_KEY = 'salam_cauri_sc_v1';
 
 function getStored(key: string): Record<string, string> {
   if (typeof window === 'undefined') return {};
@@ -37,7 +37,7 @@ function storeDel(key: string, id: string) {
   try { localStorage.setItem(key, JSON.stringify(m)); } catch {}
 }
 
-// ── Badge cauris (inchangé) ─────────────────────────────────────────────────
+// ── Badge cauris ─────────────────────────────────────────────────────────────
 export function CauriBadge({ compact = false, space = 'member' }: { compact?: boolean; space?: 'member' | 'admin' }) {
   const { data, isLoading } = useCauriWallet(space);
   const [open, setOpen] = useState(false);
@@ -85,7 +85,7 @@ export function CauriBadge({ compact = false, space = 'member' }: { compact?: bo
   );
 }
 
-// ── Popup QR avec numéro lisible ────────────────────────────────────────────
+// ── Popup QR ─────────────────────────────────────────────────────────────────
 function QrPopup({ src, title, amount, shortCode, onClose }: {
   src: string; title: string; amount: number; shortCode?: string; onClose: () => void;
 }) {
@@ -118,12 +118,77 @@ function QrPopup({ src, title, amount, shortCode, onClose }: {
   );
 }
 
-// ── Icône selon la raison de la transaction ─────────────────────────────────
+// ── Timeline unifiée : transaction ou scan ───────────────────────────────────
+type UnifiedEntry =
+  | { kind: 'tx'; data: CauriTransaction; sortDate: string }
+  | { kind: 'scan'; data: CauriRedemption; sortDate: string };
+
 function TxIcon({ reason }: { reason: string }) {
-  if (reason === 'event_redeemed')             return <UserCheck   size={14} className="text-emerald-600" />;
-  if (reason === 'event_redemption_reserved')  return <QrCode      size={14} className="text-amber-500"   />;
-  if (reason === 'redemption_cancelled')       return <RefreshCw   size={14} className="text-blue-500"    />;
+  if (reason === 'event_redeemed')             return <UserCheck  size={14} className="text-emerald-600" />;
+  if (reason === 'event_redemption_reserved')  return <QrCode     size={14} className="text-amber-500"   />;
+  if (reason === 'redemption_cancelled')       return <RefreshCw  size={14} className="text-blue-500"    />;
   return <CauriImg size={14} />;
+}
+
+function ScanIcon({ status }: { status: string }) {
+  if (status === 'redeemed') return <CheckCircle2 size={14} className="text-emerald-600" />;
+  if (status === 'expired')  return <Clock        size={14} className="text-neutral-400" />;
+  return <RefreshCw size={14} className="text-blue-500" />;
+}
+
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString('fr-FR', {
+    day: '2-digit', month: 'short', year: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
+function TxRow({ tx }: { tx: CauriTransaction }) {
+  return (
+    <div className="flex items-start gap-3 rounded-lg bg-neutral-50 px-3 py-2.5">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+        <TxIcon reason={tx.reason} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="break-words text-xs font-semibold text-neutral-700">{tx.label}</p>
+        <p className="mt-0.5 text-[10px] text-neutral-400">{formatDate(tx.createdAt)}</p>
+      </div>
+      {tx.amount !== 0 && (
+        <span className={'mt-1 shrink-0 text-sm font-black ' + (tx.amount > 0 ? 'text-emerald-700' : 'text-red-600')}>
+          {tx.amount > 0 ? '+' : ''}{tx.amount}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function ScanRow({ r }: { r: CauriRedemption }) {
+  const scanner = r.redeemedBy ? `${r.redeemedBy.firstName} ${r.redeemedBy.lastName}` : null;
+  const date    = r.redeemedAt ?? r.updatedAt;
+  const label   = r.status === 'redeemed'
+    ? `QR utilise — ${r.activityTitle}`
+    : r.status === 'expired'
+    ? `QR expire — ${r.activityTitle}`
+    : `QR annule — ${r.activityTitle}`;
+  const bg = r.status === 'redeemed' ? 'bg-emerald-50' : 'bg-neutral-50';
+
+  return (
+    <div className={`flex items-start gap-3 rounded-lg px-3 py-2.5 ${bg}`}>
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+        <ScanIcon status={r.status} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="break-words text-xs font-semibold text-neutral-700">{label}</p>
+        <p className="mt-0.5 text-[10px] text-neutral-400">
+          {scanner ? `Scanne par ${scanner}${date ? ' · ' : ''}` : ''}
+          {date ? formatDate(date) : ''}
+        </p>
+      </div>
+      <span className="mt-1 shrink-0 flex items-center gap-0.5 text-[10px] font-black text-neutral-600">
+        <CauriImg size={10} /> {r.amount}
+      </span>
+    </div>
+  );
 }
 
 // ── Panel principal ─────────────────────────────────────────────────────────
@@ -134,11 +199,11 @@ export function CauriWalletPanel() {
   const cancelRedemption = useCancelCauriRedemption();
 
   const [activityId, setActivityId] = useState('');
-  const [amount, setAmount] = useState(5);
-  const [qrPopup, setQrPopup] = useState<{ src: string; title: string; amount: number; shortCode?: string } | null>(null);
-  const [storedQRs, setStoredQRs] = useState<Record<string, string>>({});
-  const [storedSCs, setStoredSCs] = useState<Record<string, string>>({});
-  const [mounted, setMounted] = useState(false);
+  const [amount, setAmount]         = useState(5);
+  const [qrPopup, setQrPopup]       = useState<{ src: string; title: string; amount: number; shortCode?: string } | null>(null);
+  const [storedQRs, setStoredQRs]   = useState<Record<string, string>>({});
+  const [storedSCs, setStoredSCs]   = useState<Record<string, string>>({});
+  const [mounted, setMounted]       = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -154,13 +219,13 @@ export function CauriWalletPanel() {
     );
   }
 
-  const wallet = data?.data;
+  const wallet     = data?.data;
   const activities = (activitiesData?.data.activities ?? []).filter(a => {
     const d = a.endDate ?? a.startDate;
     return !d || new Date(d).getTime() >= Date.now() - 86_400_000;
   });
 
-  // Max sans cap arbitraire — limité uniquement par le solde et la config backend
+  // 0 = illimité : seul le solde membre limite le montant
   const max = wallet?.redemption.maximum != null && wallet.redemption.maximum > 0
     ? Math.min(wallet.balance ?? 0, wallet.redemption.maximum)
     : (wallet?.balance ?? 0);
@@ -183,7 +248,25 @@ export function CauriWalletPanel() {
     setStoredSCs(getStored(SC_KEY));
   };
 
+  // ── Timeline unifiée : transactions + validations QR ────────────────────
   const recentRedeemed = wallet?.recentRedeemed ?? [];
+  const allEntries: UnifiedEntry[] = [
+    ...(wallet?.transactions ?? []).slice(0, 30).map(tx => ({
+      kind: 'tx' as const,
+      data: tx,
+      sortDate: tx.createdAt,
+    })),
+    // Redeemed & expired : cancelled a déjà une transaction refund représentative
+    ...recentRedeemed
+      .filter(r => r.status !== 'cancelled')
+      .map(r => ({
+        kind: 'scan' as const,
+        data: r,
+        sortDate: r.redeemedAt ?? r.updatedAt ?? r.expiresAt,
+      })),
+  ]
+    .sort((a, b) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime())
+    .slice(0, 30);
 
   return (
     <section className="rounded-lg border border-neutral-100 bg-white p-5 shadow-sm sm:p-6">
@@ -236,7 +319,7 @@ export function CauriWalletPanel() {
           : ' QR valable jusqu a utilisation ou annulation.'}
       </p>
 
-      {/* Réservations actives avec icône œil */}
+      {/* Réservations actives */}
       {wallet?.redemptions.length ? (
         <div className="mt-5 space-y-2">
           <p className="text-xs font-black uppercase text-neutral-500">Reservations actives</p>
@@ -247,12 +330,10 @@ export function CauriWalletPanel() {
               <div key={r._id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2.5">
                 <div>
                   <p className="text-xs font-bold text-amber-900">{r.amount} cauris — {r.activityTitle}</p>
-                  {sc && (
-                    <p className="mt-0.5 flex items-center gap-1 font-mono text-[10px] font-black text-amber-700">
-                      <Hash size={9} /> {sc}
-                    </p>
-                  )}
-                  {!sc && <p className="text-[10px] text-amber-700">Valable jusqu a utilisation</p>}
+                  {sc
+                    ? <p className="mt-0.5 flex items-center gap-1 font-mono text-[10px] font-black text-amber-700"><Hash size={9} /> {sc}</p>
+                    : <p className="text-[10px] text-amber-700">Valable jusqu a utilisation</p>
+                  }
                 </div>
                 <div className="flex items-center gap-2">
                   {hasSrc && (
@@ -280,70 +361,19 @@ export function CauriWalletPanel() {
         </div>
       ) : null}
 
-      {/* Historique des scans (QR validés / expirés / annulés) */}
-      {recentRedeemed.length > 0 && (
-        <div className="mt-5 space-y-2">
-          <p className="text-xs font-black uppercase text-neutral-500">Historique des QR</p>
-          {recentRedeemed.map(r => {
-            const statusCls = r.status === 'redeemed'
-              ? 'border-emerald-100 bg-emerald-50'
-              : r.status === 'expired' ? 'border-neutral-100 bg-neutral-50'
-              : 'border-neutral-100 bg-neutral-50';
-            const statusLabel = r.status === 'redeemed' ? 'Validé' : r.status === 'expired' ? 'Expiré' : 'Annulé';
-            const statusColor = r.status === 'redeemed' ? 'text-emerald-700' : 'text-neutral-500';
-            const scanner    = r.redeemedBy ? `${r.redeemedBy.firstName} ${r.redeemedBy.lastName}` : null;
-            return (
-              <div key={r._id} className={`rounded-lg border px-3 py-2.5 ${statusCls}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-bold text-neutral-800">{r.activityTitle}</p>
-                    <p className="flex items-center gap-1 text-[10px] text-neutral-500">
-                      <CauriImg size={10} /> {r.amount} cauris
-                      {scanner && <> · scanné par <strong>{scanner}</strong></>}
-                    </p>
-                    {r.redeemedAt && (
-                      <p className="text-[10px] text-neutral-400">
-                        {new Date(r.redeemedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    )}
-                  </div>
-                  <span className={`shrink-0 text-[10px] font-black uppercase ${statusColor}`}>{statusLabel}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Historique des transactions */}
-      {wallet?.transactions.length ? (
+      {/* Timeline unifiée : mouvements + validations QR */}
+      {allEntries.length > 0 && (
         <div className="mt-6 border-t border-neutral-100 pt-4">
           <p className="mb-3 text-xs font-black uppercase text-neutral-500">Mouvements de cauris</p>
-          <div className="max-h-64 space-y-2 overflow-y-auto">
-            {wallet.transactions.slice(0, 20).map(tx => (
-              <div key={tx._id} className="flex items-start gap-3 rounded-lg bg-neutral-50 px-3 py-2.5">
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
-                  <TxIcon reason={tx.reason} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="break-words text-xs font-semibold text-neutral-700">{tx.label}</p>
-                  <p className="mt-0.5 text-[10px] text-neutral-400">
-                    {new Date(tx.createdAt).toLocaleDateString('fr-FR', {
-                      day: '2-digit', month: 'short', year: '2-digit',
-                      hour: '2-digit', minute: '2-digit',
-                    })}
-                  </p>
-                </div>
-                {tx.amount !== 0 && (
-                  <span className={'mt-1 shrink-0 text-sm font-black ' + (tx.amount > 0 ? 'text-emerald-700' : 'text-red-600')}>
-                    {tx.amount > 0 ? '+' : ''}{tx.amount}
-                  </span>
-                )}
-              </div>
-            ))}
+          <div className="max-h-72 space-y-2 overflow-y-auto">
+            {allEntries.map(entry =>
+              entry.kind === 'tx'
+                ? <TxRow key={'tx-' + entry.data._id} tx={entry.data} />
+                : <ScanRow key={'scan-' + entry.data._id} r={entry.data} />
+            )}
           </div>
         </div>
-      ) : null}
+      )}
 
       {qrPopup && (
         <QrPopup

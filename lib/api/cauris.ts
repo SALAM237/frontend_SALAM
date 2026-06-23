@@ -14,13 +14,15 @@ export interface CauriTransaction {
 
 export interface CauriRedemption {
   _id: string;
-  activityId: string;
+  activityId: string | { _id: string; title: string; startDate?: string; location?: string };
   activityTitle: string;
   amount: number;
   status: 'reserved' | 'redeemed' | 'expired' | 'cancelled';
   expiresAt: string;
   shortCode?: string;
   redeemedAt?: string;
+  updatedAt?: string;
+  createdAt?: string;
   redeemedBy?: { _id: string; firstName: string; lastName: string } | null;
 }
 

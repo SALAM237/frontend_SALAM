@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import {
   QrCode, Camera, CameraOff, Search, CheckCircle2, XCircle,
   Clock, Users, ScanLine, Loader2, AlertCircle, RefreshCw,
@@ -13,6 +14,9 @@ import {
 } from '@/lib/api/scans';
 import { memberPhotoUrl } from '@/lib/avatar';
 import { formatFullName } from '@/lib/format-name';
+
+// Code cauris : 2 chiffres + 2 lettres + 2 chiffres (ex: 87WF88)
+const CAURIS_CODE_RE = /^\d{2}[A-Za-z]{2}\d{2}$/;
 
 type ScannerControlsLike = { stop: () => void | Promise<void> };
 
@@ -274,10 +278,23 @@ export default function ScannerPage() {
 
   const processCode = useCallback(async (raw: string) => {
     if (!raw.trim() || processingRef.current) return;
+    const trimmed = raw.trim();
+
+    // Caméra qui scanne un QR cauris (URL de validation) → redirection directe
+    if (trimmed.includes('/admin/cauris/validation')) {
+      window.location.href = trimmed;
+      return;
+    }
+    // Shortcode cauris saisi manuellement → redirection vers validation
+    if (CAURIS_CODE_RE.test(trimmed)) {
+      window.location.href = `/admin/cauris/validation?token=${encodeURIComponent(trimmed.toUpperCase())}`;
+      return;
+    }
+
     processingRef.current = true;
     setScannedMember(null); setCheckinDone(false); setNote('');
     try {
-      const res = await lookup.mutateAsync(raw.trim());
+      const res = await lookup.mutateAsync(trimmed);
       setScannedMember(res.data ?? null);
       setFlashState('success'); vibrate(80); beepOk();
     } catch {
@@ -440,16 +457,33 @@ export default function ScannerPage() {
                 placeholder="Ex: SALAM-MEMBER-0042 ou 0042"
                 className="flex-1 rounded-lg border border-neutral-200 px-3 py-2.5 font-mono text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
               />
-              <button type="button" disabled={!manualCode.trim() || lookup.isPending} onClick={() => processCode(manualCode)}
+              <button type="button"
+                disabled={!manualCode.trim() || lookup.isPending}
+                onClick={() => processCode(manualCode)}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-black text-white hover:bg-neutral-700 disabled:opacity-40">
                 {lookup.isPending ? <Loader2 size={15} className="animate-spin"/> : <Search size={15}/>} Chercher
               </button>
             </div>
-            {lookup.isError && (
+            {/* Détection code cauris — orienter vers la bonne page */}
+            {CAURIS_CODE_RE.test(manualCode.trim()) ? (
+              <div className="mt-2 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+                <AlertCircle size={13} className="shrink-0 text-amber-500"/>
+                <p className="flex-1 text-xs text-amber-800">
+                  Code cauris détecté (<span className="font-mono font-bold">{manualCode.trim().toUpperCase()}</span>).
+                  Ce scanner est réservé aux membres.
+                </p>
+                <Link
+                  href={`/admin/cauris/validation?token=${encodeURIComponent(manualCode.trim().toUpperCase())}`}
+                  className="shrink-0 rounded-md bg-amber-600 px-3 py-1 text-[11px] font-black text-white hover:bg-amber-700"
+                >
+                  Valider →
+                </Link>
+              </div>
+            ) : lookup.isError ? (
               <p className="mt-2 flex items-center gap-1.5 text-xs text-red-600">
                 <XCircle size={13}/> Membre introuvable — vérifiez le code
               </p>
-            )}
+            ) : null}
           </div>
 
           {/* Historique mobile */}

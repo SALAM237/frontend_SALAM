@@ -224,15 +224,15 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
           <Swiper
             modules={[Autoplay, A11y]}
             className="h-full"
-            slidesPerView={1.065}
+            slidesPerView={1.05}
             centeredSlides={false}
             spaceBetween={8}
             rewind={items.length > 1}
             speed={500}
             autoplay={items.length > 1 ? { delay: SLIDE_DELAY, disableOnInteraction: false, waitForTransition: true } : false}
             breakpoints={{
-              768:  { slidesPerView: 1.06, spaceBetween: 12 },
-              1024: { slidesPerView: 1.055, spaceBetween: 16 },
+              768:  { slidesPerView: 1.05, spaceBetween: 12 },
+              1024: { slidesPerView: 1.05, spaceBetween: 16 },
             }}
             onSwiper={swiper => { swiperRef.current = swiper; setActiveIndex(swiper.realIndex); }}
             onSlideChange={swiper => setActiveIndex(swiper.realIndex)}
@@ -281,7 +281,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                   </article>
 
                   {/* Média */}
-                  <button type="button" onClick={() => setPreview(item)} className="relative order-1 h-full min-h-0 overflow-hidden rounded-t-2xl bg-black text-left md:order-2 md:rounded-2xl" style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 10px 50px' }}>
+                  <button type="button" onClick={() => setPreview(item)} className="relative order-1 h-full min-h-0 overflow-hidden rounded-t-2xl bg-black text-left md:order-2 md:rounded-2xl lg:rounded-l-none" style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 10px 50px' }}>
                     {/* Barre de progression */}
                     <span className="absolute left-0 right-0 top-0 z-20 h-1.5 bg-black/20">
                       <span className="block h-full origin-left transition-[width] duration-100 ease-linear" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#0B8F3A 0%,#C8102E 50%,#F7C600 100%)' }} />
