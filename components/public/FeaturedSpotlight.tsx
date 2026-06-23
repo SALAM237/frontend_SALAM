@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUpRight, ChevronLeft, ChevronRight, Expand, Pause, Play, X, Megaphone } from 'lucide-react';
+import { ArrowUpRight, Expand, Pause, Play, X, Megaphone, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { A11y, Autoplay } from 'swiper/modules';
 import type { Swiper as SwiperInstance } from 'swiper';
@@ -10,7 +10,7 @@ import 'swiper/css';
 import { useMemberFeatured, usePublicFeatured, type FeaturedDestination, type FeaturedItem } from '@/lib/api/featured';
 import { useAuthStore } from '@/store/auth.store';
 
-const SLIDE_DELAY = 12_000;
+const SLIDE_DELAY = 5_000;
 
 function youtubeEmbed(url: string) {
   try {
@@ -84,6 +84,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   const swiperRef = useRef<SwiperInstance | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [manualPaused, setManualPaused] = useState(false);
+  const [lastNav, setLastNav] = useState<'prev' | 'next' | null>(null);
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState<FeaturedItem | null>(null);
   const [playingMediaIds, setPlayingMediaIds] = useState<Set<string>>(() => new Set());
@@ -113,37 +114,94 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
     }
   }, [activeIndex, items.length]);
 
-
   const selectSlide = (index: number) => {
     if (index === activeIndex) return;
+    setLastNav(index > activeIndex ? 'next' : 'prev');
     swiperRef.current?.slideTo(index);
   };
 
   if (!items.length) {
-    return <section className="bg-white py-12 sm:py-16" aria-labelledby="featured-heading"><div className="mx-auto max-w-7xl px-4 sm:px-6"><div className="mb-7"><p className="text-xs font-black uppercase text-emerald-700">Selection SALAM</p><h2 id="featured-heading" className="mt-1 text-3xl font-black text-neutral-950 sm:text-4xl">A la une</h2></div><div className="flex min-h-[260px] w-full flex-col items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50 px-6 text-center">{isLoading ? <span className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" /> : <Megaphone size={30} className="text-emerald-700" />}<p className="mt-4 text-base font-black text-neutral-800">{isLoading ? 'Chargement des informations...' : 'Les prochaines informations a la une seront publiees ici.'}</p>{!isLoading && <p className="mt-1 max-w-lg text-sm leading-6 text-neutral-500">Actualites importantes, annonces et initiatives mises en avant par SALAM.</p>}</div></div></section>;
+    return (
+      <section className="bg-white py-12 sm:py-16" aria-labelledby="featured-heading">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mb-5">
+            <p className="text-xs font-black uppercase text-emerald-700">Selection SALAM</p>
+            <h2 id="featured-heading" className="text-3xl font-black text-neutral-950 sm:text-4xl">A la une</h2>
+          </div>
+          <div className="flex min-h-[260px] w-full flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 px-6 text-center">
+            {isLoading ? <span className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" /> : <Megaphone size={30} className="text-emerald-700" />}
+            <p className="mt-4 text-base font-black text-neutral-800">{isLoading ? 'Chargement des informations...' : 'Les prochaines informations a la une seront publiees ici.'}</p>
+            {!isLoading && <p className="mt-1 max-w-lg text-sm leading-6 text-neutral-500">Actualites importantes, annonces et initiatives mises en avant par SALAM.</p>}
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (
     <section className="overflow-hidden bg-white py-10 sm:py-14" aria-labelledby="featured-heading">
       <div className="mx-auto max-w-[1500px]">
-        <div className="mx-auto mb-4 flex max-w-7xl items-end justify-between gap-4 px-4 sm:px-6">
-          <div><p className="text-xs font-black uppercase text-emerald-700">Selection SALAM</p><h2 id="featured-heading" className="mt-1 text-3xl font-black text-neutral-950 sm:text-4xl">A la une</h2></div>
-          <button type="button" onClick={() => setManualPaused(value => !value)} aria-label={manualPaused ? 'Relancer le carrousel' : 'Mettre le carrousel en pause'} className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 text-neutral-600 hover:border-emerald-300 hover:text-emerald-700">{manualPaused ? <Play size={15} /> : <Pause size={15} />}</button>
+
+        {/* ── Header : titre + contrôles ── */}
+        <div className="mx-auto mb-2 flex max-w-7xl items-end justify-between gap-4 px-4 sm:px-6">
+          <div>
+            <p className="text-xs font-black uppercase text-emerald-700">Selection SALAM</p>
+            <h2 id="featured-heading" className="text-3xl font-black text-neutral-950 sm:text-4xl">A la une</h2>
+          </div>
+
+          {/* Chevron gauche · Pause · Chevron droit */}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => { swiperRef.current?.slidePrev(); setLastNav('prev'); }}
+              aria-label="Element précédent"
+              className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${
+                lastNav === 'prev'
+                  ? 'border-transparent bg-emerald-600 text-white'
+                  : 'border-neutral-200 bg-white text-neutral-500 hover:border-emerald-300 hover:text-emerald-700'
+              }`}
+            >
+              <ChevronLeft size={14} strokeWidth={1.5} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setManualPaused(v => !v)}
+              aria-label={manualPaused ? 'Relancer le carrousel' : 'Mettre le carrousel en pause'}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 transition-all duration-200 hover:border-emerald-300 hover:text-emerald-700"
+            >
+              {manualPaused ? <Play size={13} /> : <Pause size={13} />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { swiperRef.current?.slideNext(); setLastNav('next'); }}
+              aria-label="Element suivant"
+              className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${
+                lastNav === 'next'
+                  ? 'border-transparent bg-emerald-600 text-white'
+                  : 'border-neutral-200 bg-white text-neutral-500 hover:border-emerald-300 hover:text-emerald-700'
+              }`}
+            >
+              <ChevronRight size={14} strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
 
+        {/* ── Carrousel ── */}
         <div className="relative h-[90vh] min-h-[560px] max-h-[860px] overflow-hidden">
           <Swiper
             modules={[Autoplay, A11y]}
             className="h-full !overflow-visible"
             slidesPerView={1.1}
-            spaceBetween={14}
-            centeredSlides={false}
+            centeredSlides
+            spaceBetween={12}
             rewind={items.length > 1}
-            speed={650}
+            speed={500}
             autoplay={items.length > 1 ? { delay: SLIDE_DELAY, disableOnInteraction: false, waitForTransition: true } : false}
             breakpoints={{
-              768: { slidesPerView: 1.25, centeredSlides: true, spaceBetween: 24 },
-              1024: { slidesPerView: 1.25, centeredSlides: true, spaceBetween: 28 },
+              768:  { slidesPerView: 1.1, centeredSlides: true, spaceBetween: 18 },
+              1024: { slidesPerView: 1.1, centeredSlides: true, spaceBetween: 22 },
             }}
             onSwiper={swiper => { swiperRef.current = swiper; setActiveIndex(swiper.realIndex); }}
             onSlideChange={swiper => setActiveIndex(swiper.realIndex)}
@@ -151,28 +209,48 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
           >
             {items.map((item, itemIndex) => (
               <SwiperSlide key={item._id} className="!flex h-full items-center justify-center">
-                <div className="grid h-[78%] w-full min-h-0 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl grid-rows-[58%_42%] md:h-[520px] md:grid-cols-[1fr_1.35fr] md:grid-rows-1 lg:h-[560px]">
+                <div className="grid h-[78%] w-full min-h-0 overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-lg grid-rows-[58%_42%] md:h-[520px] md:grid-cols-[1fr_1.35fr] md:grid-rows-1 lg:h-[560px]">
+
+                  {/* Texte */}
                   <article className="relative order-2 flex min-h-0 flex-col bg-white p-4 text-neutral-950 md:order-1 md:p-6 lg:p-7">
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                       <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl lg:text-3xl">{item.title}</a>
                       <a {...destinationProps(item.textDestination)} className="mt-2.5 block whitespace-pre-line text-sm leading-6 text-neutral-600 hover:text-neutral-900">{item.description}</a>
-                      {item.buttonDestination?.type !== 'none' && <a {...destinationProps(item.buttonDestination)} className="mt-4 inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-emerald-600/45 bg-emerald-100/75 px-3.5 text-[11px] font-black text-emerald-800 backdrop-blur transition hover:border-emerald-700/70 hover:bg-emerald-100">{item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={12} /></a>}
+                      {item.buttonDestination?.type !== 'none' && (
+                        <a {...destinationProps(item.buttonDestination)} className="mt-4 inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-emerald-600/45 bg-emerald-100/75 px-3.5 text-[11px] font-black text-emerald-800 backdrop-blur transition hover:border-emerald-700/70 hover:bg-emerald-100">
+                          {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={12} />
+                        </a>
+                      )}
                     </div>
-                    <div className="mt-3 flex shrink-0 items-center justify-center gap-2">
-                      <button type="button" onClick={() => swiperRef.current?.slidePrev()} aria-label="Element precedent" className="hidden h-7 w-7 place-items-center rounded-full border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700 md:grid"><ChevronLeft size={13} /></button>
-                      <div className="flex items-center justify-center gap-2">
-                        {items.map((entry, dotIndex) => <button key={entry._id} type="button" onClick={() => selectSlide(dotIndex)} aria-label={'Afficher ' + entry.title} className={'h-1 rounded-full transition-all md:h-1.5 ' + (dotIndex === activeIndex ? 'w-5 bg-emerald-700 md:w-7' : 'w-1 bg-neutral-300 md:w-1.5')} />)}
-                      </div>
-                      <button type="button" onClick={() => swiperRef.current?.slideNext()} aria-label="Element suivant" className="hidden h-7 w-7 place-items-center rounded-full border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700 md:grid"><ChevronRight size={13} /></button>
+
+                    {/* Dots seulement — chevrons retirés */}
+                    <div className="mt-3 flex shrink-0 items-center justify-center gap-1.5">
+                      {items.map((entry, dotIndex) => (
+                        <button
+                          key={entry._id}
+                          type="button"
+                          onClick={() => selectSlide(dotIndex)}
+                          aria-label={'Afficher ' + entry.title}
+                          className={`rounded-full transition-all duration-300 ${
+                            dotIndex === activeIndex
+                              ? 'h-[3px] w-4 bg-emerald-600'
+                              : 'h-[3px] w-[3px] bg-neutral-300 hover:bg-neutral-400'
+                          }`}
+                        />
+                      ))}
                     </div>
                   </article>
 
+                  {/* Média */}
                   <button type="button" onClick={() => setPreview(item)} className="relative order-1 h-full min-h-0 overflow-hidden bg-black text-left md:order-2">
+                    {/* Barre de progression */}
                     <span className="absolute left-0 right-0 top-0 z-20 h-[3px] bg-white/10">
                       <span className="block h-full origin-left transition-[width] duration-100 ease-linear" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#0B8F3A 0%,#C8102E 50%,#F7C600 100%)' }} />
                     </span>
                     <Media item={item} active={itemIndex === activeIndex && !preview} playbackId={'slide-' + item._id} onPlaybackChange={handlePlaybackChange} />
-                    <span className="absolute right-4 top-4 z-30 grid h-9 w-9 place-items-center rounded-full bg-black/65 text-white backdrop-blur transition hover:bg-black/80" aria-hidden="true"><Expand size={17} /></span>
+                    <span className="absolute right-4 top-4 z-30 grid h-9 w-9 place-items-center rounded-full bg-black/65 text-white backdrop-blur transition hover:bg-black/80" aria-hidden="true">
+                      <Expand size={17} />
+                    </span>
                   </button>
                 </div>
               </SwiperSlide>
@@ -181,8 +259,24 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
         </div>
       </div>
 
+      {/* ── Lightbox preview ── */}
       <AnimatePresence>
-        {preview && <motion.div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/85 p-4 backdrop-blur" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setPreview(null)}><div className="relative h-auto max-h-[88vh] w-full max-w-5xl overflow-hidden rounded-lg bg-black" onClick={event => event.stopPropagation()}><button type="button" onClick={() => setPreview(null)} className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white"><X size={18} /></button><div className="aspect-video"><Media item={preview} active playbackId={'preview-' + preview._id} onPlaybackChange={handlePlaybackChange} /></div></div></motion.div>}
+        {preview && (
+          <motion.div
+            className="fixed inset-0 z-[160] flex items-center justify-center bg-black/85 p-4 backdrop-blur"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setPreview(null)}
+          >
+            <div className="relative h-auto max-h-[88vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-black" onClick={e => e.stopPropagation()}>
+              <button type="button" onClick={() => setPreview(null)} className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white">
+                <X size={18} />
+              </button>
+              <div className="aspect-video">
+                <Media item={preview} active playbackId={'preview-' + preview._id} onPlaybackChange={handlePlaybackChange} />
+              </div>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </section>
   );
