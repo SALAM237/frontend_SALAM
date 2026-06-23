@@ -129,7 +129,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
         {/* Motif ndop */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.15] md:opacity-[0.12]"
+          className="pointer-events-none absolute inset-0 opacity-[0.15] md:opacity-[0.15]"
           style={{
             backgroundImage: "url('/images/placeholders/ndop motif WBG.png')",
             backgroundSize: 'cover',
