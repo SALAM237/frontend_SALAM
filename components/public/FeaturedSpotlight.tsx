@@ -240,10 +240,10 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
           >
             {items.map((item, itemIndex) => (
               <SwiperSlide key={item._id} className="!flex h-full items-center justify-center">
-                <div className="grid h-[68%] w-[86%] min-h-0 overflow-hidden rounded-none border-0 bg-transparent grid-rows-[56%_44%] md:h-[360px] md:w-[84%] md:grid-cols-[0.92fr_1.08fr] md:grid-rows-1 md:pr-4 lg:h-[400px] lg:w-[82%] lg:pr-7 xl:h-[430px]">
+                <div className="grid h-[75%] w-[90%] min-h-0 overflow-hidden rounded-none border-0 bg-transparent grid-rows-[56%_44%] md:h-[360px] md:w-[90%] md:grid-cols-[0.92fr_1.08fr] md:grid-rows-1 md:pr-4 lg:h-[400px] lg:w-[90%] lg:pr-7 xl:h-[430px]">
 
                   {/* Texte */}
-                  <article className="relative order-2 flex min-h-0 flex-col justify-center bg-transparent p-4 text-left text-neutral-950 md:order-1 md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6">
+                  <article className="relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl bg-white p-4 text-left text-neutral-950 md:order-1 md:rounded-none md:bg-transparent md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6">
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                       <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl lg:text-3xl">{item.title}</a>
                       <a {...destinationProps(item.textDestination)} className="mt-2.5 block whitespace-pre-line text-sm leading-6 text-neutral-600 hover:text-neutral-900">{item.description}</a>
@@ -281,7 +281,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                   </article>
 
                   {/* Média */}
-                  <button type="button" onClick={() => setPreview(item)} className="relative order-1 h-full min-h-0 overflow-hidden rounded-2xl bg-black text-left md:order-2" style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 10px 50px' }}>
+                  <button type="button" onClick={() => setPreview(item)} className="relative order-1 h-full min-h-0 overflow-hidden rounded-t-2xl bg-black text-left md:order-2 md:rounded-2xl" style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 10px 50px' }}>
                     {/* Barre de progression */}
                     <span className="absolute left-0 right-0 top-0 z-20 h-1.5 bg-black/20">
                       <span className="block h-full origin-left transition-[width] duration-100 ease-linear" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#0B8F3A 0%,#C8102E 50%,#F7C600 100%)' }} />

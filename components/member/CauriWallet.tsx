@@ -4,29 +4,40 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
-import { Coins, Eye, Loader2, QrCode, X, UserCheck, CalendarDays, RefreshCw } from 'lucide-react';
+import { Eye, Loader2, QrCode, X, UserCheck, RefreshCw, Hash } from 'lucide-react';
 import { useMemberActivities } from '@/lib/api/activities';
 import { useCancelCauriRedemption, useCauriWallet, useCreateCauriRedemption } from '@/lib/api/cauris';
 
-// ── Clé localStorage pour les QR codes générés ─────────────────────────────
-const QR_STORAGE_KEY = 'salam_cauri_qr_v1';
+// ── Image cauri réutilisable ────────────────────────────────────────────────
+function CauriImg({ size = 24, className = '' }: { size?: number; className?: string }) {
+  return (
+    <Image
+      src="/images/cauris/cauri.png"
+      width={size} height={size}
+      alt="cauris"
+      className={`object-contain ${className}`}
+    />
+  );
+}
 
-function getStoredQRs(): Record<string, string> {
+// ── localStorage QR persistence ─────────────────────────────────────────────
+const QR_KEY = 'salam_cauri_qr_v1';
+const SC_KEY = 'salam_cauri_sc_v1'; // shortCodes
+
+function getStored(key: string): Record<string, string> {
   if (typeof window === 'undefined') return {};
-  try { return JSON.parse(localStorage.getItem(QR_STORAGE_KEY) ?? '{}'); } catch { return {}; }
+  try { return JSON.parse(localStorage.getItem(key) ?? '{}'); } catch { return {}; }
 }
-function saveQR(id: string, dataUrl: string) {
-  const stored = getStoredQRs();
-  stored[id] = dataUrl;
-  try { localStorage.setItem(QR_STORAGE_KEY, JSON.stringify(stored)); } catch {}
+function storeSet(key: string, id: string, val: string) {
+  const m = getStored(key); m[id] = val;
+  try { localStorage.setItem(key, JSON.stringify(m)); } catch {}
 }
-function removeQR(id: string) {
-  const stored = getStoredQRs();
-  delete stored[id];
-  try { localStorage.setItem(QR_STORAGE_KEY, JSON.stringify(stored)); } catch {}
+function storeDel(key: string, id: string) {
+  const m = getStored(key); delete m[id];
+  try { localStorage.setItem(key, JSON.stringify(m)); } catch {}
 }
 
-// ── Badge cauris ────────────────────────────────────────────────────────────
+// ── Badge cauris (inchangé) ─────────────────────────────────────────────────
 export function CauriBadge({ compact = false, space = 'member' }: { compact?: boolean; space?: 'member' | 'admin' }) {
   const { data, isLoading } = useCauriWallet(space);
   const [open, setOpen] = useState(false);
@@ -39,7 +50,7 @@ export function CauriBadge({ compact = false, space = 'member' }: { compact?: bo
     <>
       <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog"
         className={'inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 font-bold text-amber-900 transition hover:border-amber-400 hover:bg-amber-100 ' + (compact ? 'px-2 py-1 text-[10px]' : 'px-3 py-1.5 text-xs')}>
-        <Image src="/images/cauris/cauri.png" width={compact ? 16 : 20} height={compact ? 16 : 20} alt="" className="object-contain" />
+        <CauriImg size={compact ? 16 : 20} />
         <span className={compact ? 'hidden sm:inline' : ''}>{isLoading ? '...' : balance} cauris</span>
       </button>
 
@@ -47,13 +58,13 @@ export function CauriBadge({ compact = false, space = 'member' }: { compact?: bo
         <div className="fixed inset-0 z-[9999] grid min-h-[100dvh] place-items-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
           <div role="dialog" aria-modal="true" aria-labelledby="cauri-dialog-title"
             className="relative grid max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-2xl ring-1 ring-black/5 sm:grid-cols-[190px_1fr]"
-            onClick={event => event.stopPropagation()}>
+            onClick={e => e.stopPropagation()}>
             <button type="button" onClick={() => setOpen(false)} aria-label="Fermer"
               className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-neutral-600 shadow-sm transition hover:bg-neutral-100">
               <X size={16} />
             </button>
             <div className="flex min-h-44 items-center justify-center bg-amber-50 p-6">
-              <Image src="/images/cauris/cauri.png" width={170} height={170} alt="Cauris SALAM" className="h-auto w-full max-w-[170px] object-contain" />
+              <CauriImg size={170} className="h-auto w-full max-w-[170px]" />
             </div>
             <div className="flex flex-col justify-center p-6 sm:p-8">
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-700">Programme de fidelite SALAM</p>
@@ -74,8 +85,10 @@ export function CauriBadge({ compact = false, space = 'member' }: { compact?: bo
   );
 }
 
-// ── Popup QR — création OU re-visualisation ─────────────────────────────────
-function QrPopup({ src, title, amount, onClose }: { src: string; title: string; amount: number; onClose: () => void }) {
+// ── Popup QR avec numéro lisible ────────────────────────────────────────────
+function QrPopup({ src, title, amount, shortCode, onClose }: {
+  src: string; title: string; amount: number; shortCode?: string; onClose: () => void;
+}) {
   return (
     <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div role="dialog" aria-modal="true"
@@ -85,12 +98,20 @@ function QrPopup({ src, title, amount, onClose }: { src: string; title: string; 
           className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
           <X size={16} />
         </button>
-        <Coins size={28} className="mx-auto text-amber-600" />
-        <h3 className="mt-3 text-lg font-black text-neutral-900">{amount} cauris</h3>
-        <p className="mt-1 text-sm font-semibold text-neutral-500">{title}</p>
-        <img src={src} alt="QR code de validation des cauris" className="mx-auto mt-4 aspect-square w-full max-w-[260px]" />
-        <p className="mt-3 text-xs text-neutral-500">
-          A presenter a un administrateur lors de l'evenement.
+        <div className="flex justify-center">
+          <CauriImg size={36} />
+        </div>
+        <h3 className="mt-2 text-xl font-black text-neutral-900">{amount} cauris</h3>
+        <p className="mt-0.5 text-sm font-semibold text-neutral-500">{title}</p>
+        <img src={src} alt="QR code de validation des cauris" className="mx-auto mt-4 aspect-square w-full max-w-[260px] rounded-lg" />
+        {shortCode && (
+          <div className="mt-3 flex items-center justify-center gap-1.5">
+            <Hash size={12} className="text-neutral-400" />
+            <p className="font-mono text-sm font-black tracking-[0.2em] text-neutral-700">{shortCode}</p>
+          </div>
+        )}
+        <p className="mt-2 text-[11px] text-neutral-400">
+          Presentez ce QR a un admin. Si inaccessible, donnez le code <strong className="text-neutral-600">{shortCode}</strong>.
         </p>
       </div>
     </div>
@@ -102,8 +123,7 @@ function TxIcon({ reason }: { reason: string }) {
   if (reason === 'event_redeemed')             return <UserCheck   size={14} className="text-emerald-600" />;
   if (reason === 'event_redemption_reserved')  return <QrCode      size={14} className="text-amber-500"   />;
   if (reason === 'redemption_cancelled')       return <RefreshCw   size={14} className="text-blue-500"    />;
-  if (reason?.startsWith('profile'))           return <CalendarDays size={14} className="text-violet-500" />;
-  return <Coins size={14} className="text-neutral-400" />;
+  return <CauriImg size={14} />;
 }
 
 // ── Panel principal ─────────────────────────────────────────────────────────
@@ -115,13 +135,15 @@ export function CauriWalletPanel() {
 
   const [activityId, setActivityId] = useState('');
   const [amount, setAmount] = useState(5);
-  const [qrPopup, setQrPopup] = useState<{ src: string; title: string; amount: number } | null>(null);
+  const [qrPopup, setQrPopup] = useState<{ src: string; title: string; amount: number; shortCode?: string } | null>(null);
   const [storedQRs, setStoredQRs] = useState<Record<string, string>>({});
+  const [storedSCs, setStoredSCs] = useState<Record<string, string>>({});
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    setStoredQRs(getStoredQRs());
+    setStoredQRs(getStored(QR_KEY));
+    setStoredSCs(getStored(SC_KEY));
   }, []);
 
   if (isLoading) {
@@ -133,36 +155,35 @@ export function CauriWalletPanel() {
   }
 
   const wallet = data?.data;
-  const activities = (activitiesData?.data.activities ?? []).filter(activity => {
-    const relevantDate = activity.endDate ?? activity.startDate;
-    return !relevantDate || new Date(relevantDate).getTime() >= Date.now() - 86_400_000;
+  const activities = (activitiesData?.data.activities ?? []).filter(a => {
+    const d = a.endDate ?? a.startDate;
+    return !d || new Date(d).getTime() >= Date.now() - 86_400_000;
   });
 
-  // Limite = solde disponible, sans cap arbitraire de 500
+  // Max sans cap arbitraire — limité uniquement par le solde et la config backend
   const max = wallet?.redemption.maximum != null && wallet.redemption.maximum > 0
     ? Math.min(wallet.balance ?? 0, wallet.redemption.maximum)
     : (wallet?.balance ?? 0);
 
   const generate = async () => {
-    const response = await createRedemption.mutateAsync({ activityId, amount });
-    const newId     = response.data.redemption._id;
-    const newQrSrc  = response.data.qrDataUrl;
-    // Persistance locale pour permettre de revoir le QR après fermeture
-    saveQR(newId, newQrSrc);
-    setStoredQRs(getStoredQRs());
-    setQrPopup({ src: newQrSrc, title: response.data.redemption.activityTitle, amount: response.data.redemption.amount });
+    const res = await createRedemption.mutateAsync({ activityId, amount });
+    const id  = res.data.redemption._id;
+    const sc  = res.data.redemption.shortCode ?? '';
+    storeSet(QR_KEY, id, res.data.qrDataUrl);
+    storeSet(SC_KEY, id, sc);
+    setStoredQRs(getStored(QR_KEY));
+    setStoredSCs(getStored(SC_KEY));
+    setQrPopup({ src: res.data.qrDataUrl, title: res.data.redemption.activityTitle, amount: res.data.redemption.amount, shortCode: sc });
   };
 
   const handleCancel = (id: string) => {
     cancelRedemption.mutate(id);
-    removeQR(id);
-    setStoredQRs(getStoredQRs());
+    storeDel(QR_KEY, id); storeDel(SC_KEY, id);
+    setStoredQRs(getStored(QR_KEY));
+    setStoredSCs(getStored(SC_KEY));
   };
 
-  const viewExistingQR = (id: string, title: string, amt: number) => {
-    const src = storedQRs[id];
-    if (src) setQrPopup({ src, title, amount: amt });
-  };
+  const recentRedeemed = wallet?.recentRedeemed ?? [];
 
   return (
     <section className="rounded-lg border border-neutral-100 bg-white p-5 shadow-sm sm:p-6">
@@ -187,7 +208,6 @@ export function CauriWalletPanel() {
           {activities.map(a => <option key={a._id} value={a._id}>{a.title}</option>)}
         </select>
 
-        {/* Saisie du montant — pas de max arbitraire, limité uniquement par le solde */}
         <input
           type="number"
           min={wallet?.redemption.minimum ?? 5}
@@ -221,21 +241,25 @@ export function CauriWalletPanel() {
         <div className="mt-5 space-y-2">
           <p className="text-xs font-black uppercase text-neutral-500">Reservations actives</p>
           {wallet.redemptions.map(r => {
-            const hasQR = mounted && Boolean(storedQRs[r._id]);
+            const hasSrc = mounted && Boolean(storedQRs[r._id]);
+            const sc     = r.shortCode ?? storedSCs[r._id];
             return (
               <div key={r._id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2.5">
                 <div>
                   <p className="text-xs font-bold text-amber-900">{r.amount} cauris — {r.activityTitle}</p>
-                  <p className="text-[10px] text-amber-700">
-                    {hasQR ? "Cliquez sur l'icone pour revoir le QR" : 'Valable jusqu a utilisation'}
-                  </p>
+                  {sc && (
+                    <p className="mt-0.5 flex items-center gap-1 font-mono text-[10px] font-black text-amber-700">
+                      <Hash size={9} /> {sc}
+                    </p>
+                  )}
+                  {!sc && <p className="text-[10px] text-amber-700">Valable jusqu a utilisation</p>}
                 </div>
                 <div className="flex items-center gap-2">
-                  {hasQR && (
+                  {hasSrc && (
                     <button
                       type="button"
                       title="Voir le QR code"
-                      onClick={() => viewExistingQR(r._id, r.activityTitle, r.amount)}
+                      onClick={() => setQrPopup({ src: storedQRs[r._id], title: r.activityTitle, amount: r.amount, shortCode: sc })}
                       className="flex h-8 w-8 items-center justify-center rounded-lg border border-amber-200 bg-white text-amber-700 transition hover:border-amber-400 hover:bg-amber-100"
                     >
                       <Eye size={14} />
@@ -256,10 +280,45 @@ export function CauriWalletPanel() {
         </div>
       ) : null}
 
-      {/* Historique des mouvements enrichi */}
+      {/* Historique des scans (QR validés / expirés / annulés) */}
+      {recentRedeemed.length > 0 && (
+        <div className="mt-5 space-y-2">
+          <p className="text-xs font-black uppercase text-neutral-500">Historique des QR</p>
+          {recentRedeemed.map(r => {
+            const statusCls = r.status === 'redeemed'
+              ? 'border-emerald-100 bg-emerald-50'
+              : r.status === 'expired' ? 'border-neutral-100 bg-neutral-50'
+              : 'border-neutral-100 bg-neutral-50';
+            const statusLabel = r.status === 'redeemed' ? 'Validé' : r.status === 'expired' ? 'Expiré' : 'Annulé';
+            const statusColor = r.status === 'redeemed' ? 'text-emerald-700' : 'text-neutral-500';
+            const scanner    = r.redeemedBy ? `${r.redeemedBy.firstName} ${r.redeemedBy.lastName}` : null;
+            return (
+              <div key={r._id} className={`rounded-lg border px-3 py-2.5 ${statusCls}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold text-neutral-800">{r.activityTitle}</p>
+                    <p className="flex items-center gap-1 text-[10px] text-neutral-500">
+                      <CauriImg size={10} /> {r.amount} cauris
+                      {scanner && <> · scanné par <strong>{scanner}</strong></>}
+                    </p>
+                    {r.redeemedAt && (
+                      <p className="text-[10px] text-neutral-400">
+                        {new Date(r.redeemedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                  </div>
+                  <span className={`shrink-0 text-[10px] font-black uppercase ${statusColor}`}>{statusLabel}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Historique des transactions */}
       {wallet?.transactions.length ? (
         <div className="mt-6 border-t border-neutral-100 pt-4">
-          <p className="mb-3 text-xs font-black uppercase text-neutral-500">Historique</p>
+          <p className="mb-3 text-xs font-black uppercase text-neutral-500">Mouvements de cauris</p>
           <div className="max-h-64 space-y-2 overflow-y-auto">
             {wallet.transactions.slice(0, 20).map(tx => (
               <div key={tx._id} className="flex items-start gap-3 rounded-lg bg-neutral-50 px-3 py-2.5">
@@ -286,12 +345,12 @@ export function CauriWalletPanel() {
         </div>
       ) : null}
 
-      {/* Popup QR (nouvelle génération ou re-visualisation) */}
       {qrPopup && (
         <QrPopup
           src={qrPopup.src}
           title={qrPopup.title}
           amount={qrPopup.amount}
+          shortCode={qrPopup.shortCode}
           onClose={() => setQrPopup(null)}
         />
       )}

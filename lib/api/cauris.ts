@@ -19,6 +19,9 @@ export interface CauriRedemption {
   amount: number;
   status: 'reserved' | 'redeemed' | 'expired' | 'cancelled';
   expiresAt: string;
+  shortCode?: string;
+  redeemedAt?: string;
+  redeemedBy?: { _id: string; firstName: string; lastName: string } | null;
 }
 
 export interface CauriWallet {
@@ -27,6 +30,7 @@ export interface CauriWallet {
   redemption: { minimum: number; maximum: number; expiresInMinutes: number };
   transactions: CauriTransaction[];
   redemptions: CauriRedemption[];
+  recentRedeemed?: CauriRedemption[];
 }
 
 export function useCauriWallet(space: 'member' | 'admin' = 'member') {
@@ -75,7 +79,8 @@ export function useInspectCauriRedemption(tokenValue: string) {
   return useQuery({
     queryKey: ['admin-cori-redemption', tokenValue],
     queryFn: () => apiClient<any>('/api/v1/admin/cauris/redemptions/inspect', { method: 'POST', body: JSON.stringify({ token: tokenValue }), token: token ?? '' }),
-    enabled: Boolean(token && tokenValue),
+    // min 6 : accepte le code court (6 chars) ET le token JWT long
+    enabled: Boolean(token && tokenValue && tokenValue.length >= 6),
     retry: false,
   });
 }
