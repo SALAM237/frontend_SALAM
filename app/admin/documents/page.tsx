@@ -1,10 +1,11 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Download, FileText, Loader2, Send, Trash2, Upload, Users, X, Search, CheckSquare, Square, Mail } from 'lucide-react';
+import { Check, Download, Eye, FileText, Loader2, Pencil, Send, Trash2, Upload, Users, X, Search, CheckSquare, Square, Mail } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAdminDocuments, useDeleteDocument, useSendDocument, useUploadDocument, type SharedDocument } from '@/lib/api/documents';
+import { useAdminDocuments, useDeleteDocument, useRenameDocument, useSendDocument, useUploadDocument, type SharedDocument } from '@/lib/api/documents';
 import { useAdminMembers } from '@/lib/api/members';
+import { DocumentPreviewModal } from '@/components/portal/DocumentPreviewModal';
 
 /* ── Helpers ──────────────────────────────────────────── */
 function fmtSize(bytes: number) {
@@ -231,10 +232,25 @@ function UploadZone() {
 
 /* ── Page principale ────────────────────────────────── */
 export default function AdminDocumentsPage() {
-  const [sendModal, setSendModal] = useState<SharedDocument | null>(null);
+  const [sendModal,    setSendModal]    = useState<SharedDocument | null>(null);
+  const [previewDoc,   setPreviewDoc]   = useState<SharedDocument | null>(null);
+  const [renaming,     setRenaming]     = useState<string | null>(null);
+  const [renameValue,  setRenameValue]  = useState('');
   const { data, isLoading } = useAdminDocuments();
-  const deleteDoc = useDeleteDocument();
-  const documents = data?.data?.documents ?? [];
+  const deleteDoc  = useDeleteDocument();
+  const renameDoc  = useRenameDocument();
+  const documents  = data?.data?.documents ?? [];
+
+  const startRename = (doc: SharedDocument) => {
+    setRenaming(doc._id);
+    setRenameValue(doc.title);
+  };
+  const commitRename = (id: string) => {
+    const title = renameValue.trim();
+    if (!title) { toast.error('Le titre ne peut pas être vide'); return; }
+    renameDoc.mutate({ id, title }, { onSuccess: () => setRenaming(null) });
+  };
+  const cancelRename = () => setRenaming(null);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -266,56 +282,112 @@ export default function AdminDocumentsPage() {
         )}
 
         <div className="divide-y divide-neutral-50">
-          {documents.map(doc => (
-            <div key={doc._id} className="flex items-center gap-3 px-4 py-3.5 sm:gap-4 sm:px-5">
-              <span className="text-xl shrink-0">{mimeIcon(doc.mimeType)}</span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-black text-neutral-900">{doc.title}</p>
-                <p className="mt-0.5 text-[11px] text-neutral-400">
-                  {fmtSize(doc.fileSize)} · {doc.mimeLabel} · Importé le {fmtDate(doc.createdAt)}
-                </p>
-                {doc.sentAt && (
-                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-emerald-600">
-                    <Users size={11} />
-                    {doc.sentAll ? 'Envoyé à tous les membres' : `Envoyé à ${doc.sentTo.length} membre(s)`} · {fmtDate(doc.sentAt)}
+          {documents.map(doc => {
+            const isRenaming = renaming === doc._id;
+            return (
+              <div key={doc._id} className="flex items-center gap-3 px-4 py-3.5 sm:gap-4 sm:px-5">
+                <span className="text-xl shrink-0">{mimeIcon(doc.mimeType)}</span>
+                <div className="min-w-0 flex-1">
+                  {isRenaming ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        autoFocus
+                        value={renameValue}
+                        onChange={e => setRenameValue(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') commitRename(doc._id);
+                          if (e.key === 'Escape') cancelRename();
+                        }}
+                        className="h-8 min-w-0 flex-1 rounded-lg border border-emerald-400 px-2 text-sm font-semibold text-neutral-900 outline-none ring-2 ring-emerald-500/15"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => commitRename(doc._id)}
+                        disabled={renameDoc.isPending}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                        title="Valider"
+                      >
+                        {renameDoc.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={13} />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelRename}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 hover:bg-neutral-50"
+                        title="Annuler"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="truncate text-sm font-black text-neutral-900">{doc.title}</p>
+                  )}
+                  <p className="mt-0.5 text-[11px] text-neutral-400">
+                    {fmtSize(doc.fileSize)} · {doc.mimeLabel} · Importé le {fmtDate(doc.createdAt)}
                   </p>
+                  {doc.sentAt && (
+                    <p className="mt-0.5 flex items-center gap-1 text-[11px] text-emerald-600">
+                      <Users size={11} />
+                      {doc.sentAll
+                        ? 'Envoyé à tous les membres'
+                        : `Envoyé à ${doc.sentToCount ?? doc.sentTo.length} membre(s)`} · {fmtDate(doc.sentAt)}
+                    </p>
+                  )}
+                </div>
+                {!isRenaming && (
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDoc(doc)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                      title="Visualiser"
+                    >
+                      <Eye size={13} />
+                    </button>
+                    <a
+                      href={doc.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition hover:border-neutral-300 hover:text-neutral-600"
+                      title="Télécharger"
+                    >
+                      <Download size={13} />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => startRename(doc)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                      title="Renommer"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSendModal(doc)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"
+                      title="Envoyer aux membres"
+                    >
+                      <Send size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Supprimer ce document ?')) deleteDoc.mutate(doc._id);
+                      }}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-500 transition hover:bg-red-100"
+                      title="Supprimer"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 )}
               </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                <a
-                  href={doc.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition hover:border-neutral-300 hover:text-neutral-600"
-                  title="Télécharger"
-                >
-                  <Download size={13} />
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setSendModal(doc)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"
-                  title="Envoyer aux membres"
-                >
-                  <Send size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (confirm('Supprimer ce document ?')) deleteDoc.mutate(doc._id);
-                  }}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-500 transition hover:bg-red-100"
-                  title="Supprimer"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {sendModal && <SendModal doc={sendModal} onClose={() => setSendModal(null)} />}
+      {sendModal    && <SendModal doc={sendModal} onClose={() => setSendModal(null)} />}
+      {previewDoc   && <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />}
     </div>
   );
 }

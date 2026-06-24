@@ -139,7 +139,7 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl
                     <Icon size={16} className={active ? 'text-emerald-400' : 'text-white/30 group-hover:text-white/60'} />
                     <span className="flex-1">{label}</span>
                     {badge > 0 && !active && (
-                      <span className="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emerald-500/80 px-1 text-[9px] font-black text-white shadow-sm">
+                      <span className="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emerald-500/45 px-1 text-[9px] font-black text-white/90 shadow-sm">
                         {badge > 9 ? '9+' : badge}
                       </span>
                     )}

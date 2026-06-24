@@ -1,12 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Download, Eye, FileText, FolderOpen, Loader2, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { downloadMemberInvoicePdf, useMemberInvoices } from '@/lib/api/invoices';
-import { useMemberSharedDocuments } from '@/lib/api/documents';
+import { useMemberSharedDocuments, type SharedDocument } from '@/lib/api/documents';
+import { DocumentPreviewModal } from '@/components/portal/DocumentPreviewModal';
+import { useMarkHrefRead } from '@/lib/api/notifications';
 
 const TABS = [
   { value: 'all',     label: 'Tous' },
@@ -22,9 +24,14 @@ function fmtSize(bytes: number) {
 }
 
 export default function MemberDocumentsPage() {
-  const [tab, setTab]       = useState<Tab>('all');
-  const [search, setSearch] = useState('');
+  const [tab, setTab]         = useState<Tab>('all');
+  const [search, setSearch]   = useState('');
+  const [preview, setPreview] = useState<SharedDocument | null>(null);
   const router = useRouter();
+
+  // Décrémente les badges sidebar en marquant lues les notifs documents à l'arrivée sur la page
+  const markHrefRead = useMarkHrefRead('member');
+  useEffect(() => { markHrefRead('/member/documents'); }, [markHrefRead]);
 
   const { data: invoicesData, isLoading: loadingInvoices, isError: errorInvoices } = useMemberInvoices();
   const { data: sharedData,   isLoading: loadingShared,   isError: errorShared   } = useMemberSharedDocuments();
@@ -92,15 +99,25 @@ export default function MemberDocumentsPage() {
                 </div>
                 <p className="mt-0.5 text-[11px] text-neutral-400">{doc.mimeLabel} · {fmtSize(doc.fileSize)}</p>
               </div>
-              <a
-                href={doc.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Télécharger"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-              >
-                <Download size={14} />
-              </a>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPreview(doc)}
+                  title="Visualiser"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                >
+                  <Eye size={14} />
+                </button>
+                <a
+                  href={doc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Télécharger"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                >
+                  <Download size={14} />
+                </a>
+              </div>
             </div>
           ))}
 
@@ -143,6 +160,8 @@ export default function MemberDocumentsPage() {
       {showInvoices && (
         <p className="text-xs leading-5 text-neutral-400">Les factures en attente peuvent être téléchargées. Elles ne constituent pas un reçu de paiement avant validation.</p>
       )}
+
+      {preview && <DocumentPreviewModal doc={preview} onClose={() => setPreview(null)} />}
     </div>
   );
 }

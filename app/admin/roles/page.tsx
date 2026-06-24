@@ -38,12 +38,13 @@ const RISK_LABEL: Record<string, string> = {
   low: 'Faible', medium: 'Moyen', high: 'Élevé', critical: 'Critique',
 };
 
-type BureauCategory = 'executive' | 'commission' | 'council';
+type BureauCategory = 'executive' | 'commission' | 'council' | 'other';
 
 const BUREAU_CATEGORIES: { id: BureauCategory; label: string; hint: string }[] = [
-  { id: 'executive', label: 'Bureau exécutif', hint: 'Postes élus de direction' },
-  { id: 'commission', label: 'Commissions', hint: 'Responsables de commissions' },
-  { id: 'council', label: 'Conseil des sages', hint: 'Membres sages' },
+  { id: 'executive',  label: 'Bureau exécutif', hint: 'Postes élus de direction'       },
+  { id: 'commission', label: 'Commissions',      hint: 'Responsables de commissions'   },
+  { id: 'council',    label: 'Conseil des sages', hint: 'Membres sages'                },
+  { id: 'other',      label: 'Autre',             hint: 'Promotion temporaire / rôle spécifique' },
 ];
 
 const EXECUTIVE_POSTES = [
@@ -73,6 +74,11 @@ const COMMISSION_RESPONSABLES: Record<string, string> = {
 };
 
 const COUNCIL_POSTES = ['Membre sage', 'Conseiller', 'Sage conseiller'];
+
+const OTHER_ROLES = [
+  'Chargé de mission', 'Délégué', 'Représentant', 'Coordinateur',
+  'Auditeur', 'Observateur', 'Modérateur', 'Ambassadeur',
+];
 
 const FEMININE_BUREAU_POSTES: Record<string, string> = {
   president: 'Présidente',
@@ -128,14 +134,16 @@ function getCategoryOptions(category: BureauCategory, roles: RoleDoc[] = []) {
     .map(rolePoste);
 
   if (category === 'commission') return uniqueOptions([...COMMISSION_GROUPS, ...roleOptions]);
-  if (category === 'council') return uniqueOptions([...COUNCIL_POSTES, ...roleOptions]);
+  if (category === 'council')    return uniqueOptions([...COUNCIL_POSTES,   ...roleOptions]);
+  if (category === 'other')      return uniqueOptions([...OTHER_ROLES,       ...roleOptions]);
   return uniqueOptions([...EXECUTIVE_POSTES, ...roleOptions]);
 }
 
 function buildBureauAssignment(category: BureauCategory, selection: string) {
   if (!selection) return { poste: null, category: null, group: null };
   if (category === 'commission') return { poste: COMMISSION_RESPONSABLES[selection] ?? 'Responsable', category, group: selection };
-  if (category === 'council') return { poste: selection, category, group: 'Conseil des sages' };
+  if (category === 'council')    return { poste: selection, category, group: 'Conseil des sages' };
+  if (category === 'other')      return { poste: cleanGenericBureauTitle(selection), category, group: 'Autre' };
   return { poste: cleanGenericBureauTitle(selection), category, group: 'Bureau exécutif' };
 }
 
@@ -254,6 +262,18 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
   const grouped = permsData?.data?.grouped ?? {};
   const updateRole  = useUpdateRole(role._id);
   const deleteRole  = useDeleteRole();
+
+  const allPermsFlat = useMemo(
+    () => Object.values(grouped as Record<string, PermissionDoc[]>).flat().map(p => p.key),
+    [grouped],
+  );
+  const globalAllOn  = allPermsFlat.length > 0 && allPermsFlat.every(k => selectedPerms.has(k));
+  const globalSomeOn = !globalAllOn && allPermsFlat.some(k => selectedPerms.has(k));
+  const toggleAllPerms = () => {
+    if (role.isSystem && role.slug === 'super_admin') return;
+    if (globalAllOn) setSelectedPerms(new Set());
+    else setSelectedPerms(new Set(allPermsFlat));
+  };
 
   const [selectedPerms, setSelectedPerms] = useState<Set<string>>(new Set(role.permissions));
   const [permSearch,    setPermSearch]     = useState('');
@@ -389,6 +409,20 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
               </button>
             ))}
           </div>
+          {/* Sélectionner toutes les permissions d'un coup */}
+          <label className="flex cursor-pointer items-center gap-2 border-t border-neutral-100 pt-2">
+            <input
+              type="checkbox"
+              checked={globalAllOn}
+              ref={el => { if (el) el.indeterminate = globalSomeOn; }}
+              onChange={toggleAllPerms}
+              className="h-4 w-4 cursor-pointer rounded border-neutral-300 accent-emerald-600"
+            />
+            <span className="text-[11px] font-black text-neutral-700">
+              {globalAllOn ? 'Tout désélectionner' : 'Tout sélectionner'}
+              <span className="ml-1 font-normal text-neutral-400">({allPermsFlat.length} permissions)</span>
+            </span>
+          </label>
         </div>
       )}
 
@@ -574,7 +608,7 @@ function EditAdminModal({ admin, onClose, roles }: { admin: AdminUser; onClose: 
   const nominationYearValid = !poste || (/^\d{4}$/.test(nominationYear) && Number(nominationYear) >= 1900 && Number(nominationYear) <= 2100);
   const photoChanged = !!photoFile;
   const hasBureauPhoto = !!photoPreview;
-  const photoValid = !poste || hasBureauPhoto;
+  const photoValid = bureauCategory === 'other' || !poste || hasBureauPhoto;
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -609,7 +643,7 @@ function EditAdminModal({ admin, onClose, roles }: { admin: AdminUser; onClose: 
         await assign.mutateAsync({
           userId: admin._id,
           ...assignment,
-          nominationYear: poste ? Number(nominationYear) : null,
+          nominationYear: (poste && bureauCategory !== 'other') ? Number(nominationYear) : null,
         });
       }
       onClose();
@@ -667,43 +701,66 @@ function EditAdminModal({ admin, onClose, roles }: { admin: AdminUser; onClose: 
           {/* Catégorie bureau */}
           <div className="space-y-2">
             <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Catégorie</p>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2">
               {BUREAU_CATEGORIES.map(category => (
                 <button
                   key={category.id}
                   onClick={() => { setBureauCategory(category.id); setPoste(''); }}
-                  className={`rounded-xl border p-3 text-left transition ${bureauCategory === category.id ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-neutral-200 text-neutral-600 hover:border-emerald-300'}`}
+                  className={`rounded-xl border p-2.5 text-left transition ${
+                    bureauCategory === category.id
+                      ? category.id === 'other'
+                        ? 'border-violet-400 bg-violet-50 text-violet-800'
+                        : 'border-emerald-500 bg-emerald-50 text-emerald-800'
+                      : 'border-neutral-200 text-neutral-600 hover:border-neutral-300'
+                  }`}
                 >
-                  <span className="block text-xs font-black">{category.label}</span>
-                  <span className="mt-1 block text-[10px] leading-tight text-neutral-400">{category.hint}</span>
+                  <span className="block text-[11px] font-black">{category.label}</span>
+                  <span className="mt-0.5 block text-[9px] leading-tight text-neutral-400">{category.hint}</span>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Poste du bureau */}
-          <div className="space-y-1.5">
-            <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
-              {bureauCategory === 'commission' ? 'Commission' : bureauCategory === 'council' ? 'Poste conseil' : 'Poste du bureau'}
-            </p>
-            <div className="space-y-1">
-              <button onClick={() => setPoste('')}
-                className={`w-full rounded-xl border px-4 py-2.5 text-left text-sm transition ${poste === '' ? 'border-neutral-400 bg-neutral-50 font-black text-neutral-700' : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'}`}>
-                Aucun poste
-              </button>
-              <div className="max-h-36 overflow-y-auto space-y-1 pr-0.5">
-                {categoryOptions.map(p => (
-                  <button key={p} onClick={() => setPoste(p)}
-                    className={`w-full rounded-xl border px-4 py-2.5 text-left text-sm transition ${poste === p ? 'border-emerald-500 bg-emerald-50 font-black text-emerald-700' : 'border-neutral-200 text-neutral-700 hover:border-emerald-300'}`}>
-                    {p}
-                  </button>
-                ))}
+          {bureauCategory === 'other' ? (
+            <div className="space-y-2">
+              <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+                Titre / fonction <span className="font-normal normal-case tracking-normal text-neutral-400">(optionnel)</span>
+              </p>
+              <input
+                value={poste}
+                onChange={e => setPoste(e.target.value)}
+                placeholder="Ex : Chargé de mission, Délégué…"
+                className="h-9 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/10"
+              />
+              <div className="rounded-xl border border-violet-100 bg-violet-50/40 px-3 py-2">
+                <p className="text-[10px] text-violet-700">Aucune photo requise. Ce poste n&apos;apparaît pas sur la page Bureau public.</p>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-1.5">
+              <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+                {bureauCategory === 'commission' ? 'Commission' : bureauCategory === 'council' ? 'Poste conseil' : 'Poste du bureau'}
+              </p>
+              <div className="space-y-1">
+                <button onClick={() => setPoste('')}
+                  className={`w-full rounded-xl border px-4 py-2.5 text-left text-sm transition ${poste === '' ? 'border-neutral-400 bg-neutral-50 font-black text-neutral-700' : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'}`}>
+                  Aucun poste
+                </button>
+                <div className="max-h-36 overflow-y-auto space-y-1 pr-0.5">
+                  {categoryOptions.map(p => (
+                    <button key={p} onClick={() => setPoste(p)}
+                      className={`w-full rounded-xl border px-4 py-2.5 text-left text-sm transition ${poste === p ? 'border-emerald-500 bg-emerald-50 font-black text-emerald-700' : 'border-neutral-200 text-neutral-700 hover:border-emerald-300'}`}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
-          {/* Photo du bureau — visible seulement si un poste est sélectionné */}
-          {poste && (
+          {/* Photo du bureau — visible seulement si poste sélectionné ET catégorie ≠ 'autre' */}
+          {poste && bureauCategory !== 'other' && (
             <div className="space-y-4">
               <div>
                 <p className="mb-1.5 text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Année de nomination</p>
@@ -792,8 +849,9 @@ function PromoteModal({ onClose, roles }: { onClose: () => void; roles: RoleDoc[
       ? categoryOptions.filter(p => p.toLowerCase().includes(posteSearch.toLowerCase()))
       : categoryOptions,
   [categoryOptions, posteSearch]);
-  const nominationYearValid = !selectedPoste || (/^\d{4}$/.test(nominationYear) && Number(nominationYear) >= 1900 && Number(nominationYear) <= 2100);
-  const photoValid = !selectedPoste || !!photoFile;
+  const isOther = bureauCategory === 'other';
+  const nominationYearValid = isOther || !selectedPoste || (/^\d{4}$/.test(nominationYear) && Number(nominationYear) >= 1900 && Number(nominationYear) <= 2100);
+  const photoValid = isOther || !selectedPoste || !!photoFile;
 
   const handleSelectPoste = (p: string) => { setSelectedPoste(p); setPosteSearch(p); };
   const handleClearPoste  = () => { setSelectedPoste(''); setPosteSearch(''); setNominationYear(String(CURRENT_YEAR)); setPhotoFile(null); setPhotoPreview(null); };
@@ -816,11 +874,14 @@ function PromoteModal({ onClose, roles }: { onClose: () => void; roles: RoleDoc[
     }
     try {
       await promote.mutateAsync({ userId: selectedId, roleSlug });
-      if (selectedPoste && photoFile) {
+      if (selectedPoste && photoFile && !isOther) {
         await uploadPhoto.mutateAsync({ userId: selectedId, file: photoFile });
       }
       if (selectedPoste) {
-        await assign.mutateAsync({ userId: selectedId, ...assignment, nominationYear: Number(nominationYear) });
+        await assign.mutateAsync({
+          userId: selectedId, ...assignment,
+          nominationYear: !isOther ? Number(nominationYear) : null,
+        });
       }
       setStep('success');
     } catch {
@@ -843,7 +904,10 @@ function PromoteModal({ onClose, roles }: { onClose: () => void; roles: RoleDoc[
               {roleSlug === 'super_admin' ? 'super administrateur' : 'administrateur'}.
             </p>
             {selectedPoste && (
-              <p className="mt-1 text-xs font-semibold text-emerald-700">{assignment.group ?? selectedPoste} depuis {nominationYear}</p>
+              <p className="mt-1 text-xs font-semibold text-emerald-700">
+                {assignment.group ?? selectedPoste}
+                {!isOther && ` depuis ${nominationYear}`}
+              </p>
             )}
             <p className="mt-1.5 text-xs font-semibold text-emerald-700">
               ✉ Un email de notification lui a été envoyé avec un lien de connexion.
@@ -945,58 +1009,95 @@ function PromoteModal({ onClose, roles }: { onClose: () => void; roles: RoleDoc[
               {/* Catégorie bureau */}
               <div className="space-y-2">
                 <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Catégorie</p>
-                <div className="grid gap-2 sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-2">
                   {BUREAU_CATEGORIES.map(category => (
                     <button
                       key={category.id}
                       onClick={() => { setBureauCategory(category.id); handleClearPoste(); }}
-                      className={`rounded-xl border p-3 text-left transition ${bureauCategory === category.id ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-neutral-200 text-neutral-600 hover:border-emerald-300'}`}
+                      className={`rounded-xl border p-2.5 text-left transition ${bureauCategory === category.id ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-neutral-200 text-neutral-600 hover:border-emerald-300'} ${category.id === 'other' ? (bureauCategory === 'other' ? 'border-violet-400 bg-violet-50 text-violet-800' : 'hover:border-violet-300') : ''}`}
                     >
-                      <span className="block text-xs font-black">{category.label}</span>
-                      <span className="mt-1 block text-[10px] leading-tight text-neutral-400">{category.hint}</span>
+                      <span className="block text-[11px] font-black">{category.label}</span>
+                      <span className="mt-0.5 block text-[9px] leading-tight text-neutral-400">{category.hint}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Poste (combobox recherchable) */}
-              <div className="space-y-1.5">
-                <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
-                  {bureauCategory === 'commission' ? 'Commission' : bureauCategory === 'council' ? 'Poste conseil' : 'Poste du bureau'} <span className="font-normal normal-case tracking-normal text-neutral-400">(optionnel)</span>
-                </p>
-                <div className="relative">
-                  <Search size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                  <input
-                    value={posteSearch}
-                    onChange={e => { setPosteSearch(e.target.value); if (e.target.value !== selectedPoste) setSelectedPoste(''); }}
-                    placeholder="Rechercher un poste…"
-                    className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-8 pr-8 text-sm focus:border-emerald-400 focus:outline-none" />
-                  {selectedPoste && (
+              {/* Poste (combobox) — version simplifiée pour 'Autre' */}
+              {isOther ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+                    Titre / fonction <span className="font-normal normal-case tracking-normal text-neutral-400">(optionnel)</span>
+                  </p>
+                  <div className="relative">
+                    <input
+                      value={posteSearch}
+                      onChange={e => { setPosteSearch(e.target.value); setSelectedPoste(e.target.value.trim()); }}
+                      placeholder="Ex : Chargé de mission, Délégué…"
+                      className="h-9 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/10"
+                    />
+                    {posteSearch && (
+                      <button onClick={handleClearPoste} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-300 hover:text-neutral-500">
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                  {filteredPostes.length > 0 && !selectedPoste && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {filteredPostes.map(p => (
+                        <button key={p} type="button" onClick={() => handleSelectPoste(p)}
+                          className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700 transition hover:bg-violet-100">
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="rounded-xl border border-violet-100 bg-violet-50/40 px-3 py-2">
+                    <p className="text-[10px] text-violet-700">
+                      Aucune photo requise. Ce poste n&apos;apparaîtra pas sur la page Bureau public.
+                      La promotion est temporaire — les permissions sont attribuées via le rôle sélectionné.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+                    {bureauCategory === 'commission' ? 'Commission' : bureauCategory === 'council' ? 'Poste conseil' : 'Poste du bureau'} <span className="font-normal normal-case tracking-normal text-neutral-400">(optionnel)</span>
+                  </p>
+                  <div className="relative">
+                    <Search size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                    <input
+                      value={posteSearch}
+                      onChange={e => { setPosteSearch(e.target.value); if (e.target.value !== selectedPoste) setSelectedPoste(''); }}
+                      placeholder="Rechercher un poste…"
+                      className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-8 pr-8 text-sm focus:border-emerald-400 focus:outline-none" />
+                    {selectedPoste && (
+                      <button onClick={handleClearPoste}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-300 hover:text-neutral-500">
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-32 overflow-y-auto rounded-xl border border-neutral-100 divide-y divide-neutral-50">
                     <button onClick={handleClearPoste}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-300 hover:text-neutral-500">
-                      <X size={12} />
+                      className={`w-full px-3 py-2 text-left text-xs transition ${!selectedPoste ? 'bg-neutral-50 font-black text-neutral-500' : 'text-neutral-400 hover:bg-neutral-50'}`}>
+                      Aucun poste
                     </button>
-                  )}
+                    {filteredPostes.map(p => (
+                      <button key={p} onClick={() => handleSelectPoste(p)}
+                        className={`w-full px-3 py-2 text-left text-sm transition ${selectedPoste === p ? 'bg-emerald-50 font-black text-emerald-700' : 'text-neutral-700 hover:bg-neutral-50'}`}>
+                        {p}
+                      </button>
+                    ))}
+                    {filteredPostes.length === 0 && (
+                      <p className="px-3 py-3 text-center text-xs text-neutral-400">Aucun résultat</p>
+                    )}
+                  </div>
                 </div>
-                <div className="max-h-32 overflow-y-auto rounded-xl border border-neutral-100 divide-y divide-neutral-50">
-                  <button onClick={handleClearPoste}
-                    className={`w-full px-3 py-2 text-left text-xs transition ${!selectedPoste ? 'bg-neutral-50 font-black text-neutral-500' : 'text-neutral-400 hover:bg-neutral-50'}`}>
-                    Aucun poste
-                  </button>
-                  {filteredPostes.map(p => (
-                    <button key={p} onClick={() => handleSelectPoste(p)}
-                      className={`w-full px-3 py-2 text-left text-sm transition ${selectedPoste === p ? 'bg-emerald-50 font-black text-emerald-700' : 'text-neutral-700 hover:bg-neutral-50'}`}>
-                      {p}
-                    </button>
-                  ))}
-                  {filteredPostes.length === 0 && (
-                    <p className="px-3 py-3 text-center text-xs text-neutral-400">Aucun résultat</p>
-                  )}
-                </div>
-              </div>
+              )}
 
-              {/* Photo bureau — visible si poste sélectionné */}
-              {selectedPoste && (
+              {/* Photo bureau — visible si poste sélectionné ET catégorie ≠ 'autre' */}
+              {selectedPoste && !isOther && (
                 <div className="space-y-4">
                   <div>
                     <p className="mb-1.5 text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Année de nomination</p>

@@ -11,6 +11,8 @@ export interface SharedDocument {
   fileSize: number;
   mimeType: string;
   mimeLabel: string;
+  /** Fourni par la liste admin uniquement (sentTo n'est pas populé côté backend pour garder la réponse légère) */
+  sentToCount?: number;
   sentTo: { _id: string; firstName?: string; lastName?: string }[];
   sentAll: boolean;
   sentAt: string | null;
@@ -71,6 +73,38 @@ export function useSendDocument() {
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['admin-documents'] });
       toast.success((res as any).message ?? 'Document partagé');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useRenameDocument() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc    = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, title }: { id: string; title: string }) =>
+      apiClient<SharedDocument>(`/api/v1/admin/documents/${id}/rename`, {
+        method: 'PATCH',
+        body:   JSON.stringify({ title }),
+        token:  token ?? '',
+      }),
+    onSuccess: (res) => {
+      qc.setQueryData<{ data: { documents: SharedDocument[] } } | undefined>(
+        ['admin-documents'],
+        old => {
+          if (!old?.data?.documents) return old;
+          return {
+            ...old,
+            data: {
+              ...old.data,
+              documents: old.data.documents.map(d =>
+                d._id === (res as any).data?._id ? { ...d, title: (res as any).data.title } : d
+              ),
+            },
+          };
+        },
+      );
+      toast.success('Document renommé');
     },
     onError: (err: Error) => toast.error(err.message),
   });

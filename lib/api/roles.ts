@@ -201,7 +201,7 @@ export function useAssignPoste() {
       userId: string;
       poste: string | null;
       nominationYear?: number | null;
-      category?: 'executive' | 'commission' | 'council' | null;
+      category?: 'executive' | 'commission' | 'council' | 'other' | null;
       group?: string | null;
     }) =>
       apiClient(`/api/v1/admin/users/${userId}/poste`, {

@@ -1,5 +1,6 @@
+import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from './client';
+import { apiClient, type ApiResponse } from './client';
 import { useAuthStore } from '@/store/auth.store';
 
 export type PortalSpace = 'admin' | 'member';
@@ -39,4 +40,21 @@ export function useReadAllNotifications(space: PortalSpace) {
     mutationFn: () => apiClient('/api/v1/notifications/read-all', { method: 'PATCH', body: JSON.stringify({ space }), token: token ?? '' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications', space] }),
   });
+}
+
+/** Marque comme lues toutes les notifications dont le href commence par `hrefPrefix`.
+ *  Utilise le cache TanStack Query → aucun appel réseau supplémentaire pour obtenir la liste.
+ *  Utilisation : const markRead = useMarkHrefRead('member'); useEffect(() => { markRead('/member/documents'); }, [markRead]); */
+export function useMarkHrefRead(space: PortalSpace) {
+  const token = useAuthStore(state => state.accessToken);
+  const qc    = useQueryClient();
+  return useCallback(async (hrefPrefix: string) => {
+    const cache = qc.getQueryData<ApiResponse<NotificationFeed>>(['notifications', space]);
+    const unread = (cache?.data?.items ?? []).filter(n => !n.readAt && n.href.startsWith(hrefPrefix));
+    if (!unread.length || !token) return;
+    await Promise.allSettled(
+      unread.map(n => apiClient('/api/v1/notifications/' + n._id + '/read', { method: 'PATCH', token })),
+    );
+    qc.invalidateQueries({ queryKey: ['notifications', space] });
+  }, [space, token, qc]);
 }
