@@ -269,7 +269,7 @@ export function CauriWalletPanel() {
     .slice(0, 30);
 
   return (
-    <section className="rounded-lg border border-neutral-100 bg-white p-5 shadow-sm sm:p-6">
+    <section className="rounded-lg border border-neutral-100 bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-black text-neutral-900">Mes cauris</p>
@@ -281,35 +281,36 @@ export function CauriWalletPanel() {
       </div>
 
       {/* Formulaire génération QR */}
-      <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_130px_auto]">
+      <div className="mt-4 space-y-2">
         <select
           value={activityId}
           onChange={e => setActivityId(e.target.value)}
-          className="h-10 min-w-0 rounded-lg border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-emerald-500"
+          className="h-9 w-full min-w-0 rounded-lg border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-emerald-500"
         >
           <option value="">Choisir un evenement</option>
           {activities.map(a => <option key={a._id} value={a._id}>{a.title}</option>)}
         </select>
 
-        <input
-          type="number"
-          min={wallet?.redemption.minimum ?? 5}
-          max={max > 0 ? max : undefined}
-          value={amount}
-          onChange={e => setAmount(Number(e.target.value))}
-          className="h-10 rounded-lg border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-500"
-          aria-label="Nombre de cauris"
-        />
-
-        <button
-          type="button"
-          disabled={!activityId || amount < (wallet?.redemption.minimum ?? 5) || amount > max || createRedemption.isPending}
-          onClick={generate}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {createRedemption.isPending ? <Loader2 size={15} className="animate-spin" /> : <QrCode size={15} />}
-          Generer
-        </button>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            min={wallet?.redemption.minimum ?? 5}
+            max={max > 0 ? max : undefined}
+            value={amount}
+            onChange={e => setAmount(Number(e.target.value))}
+            className="h-9 w-20 shrink-0 rounded-lg border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-500"
+            aria-label="Nombre de cauris"
+          />
+          <button
+            type="button"
+            disabled={!activityId || amount < (wallet?.redemption.minimum ?? 5) || amount > max || createRedemption.isPending}
+            onClick={generate}
+            className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {createRedemption.isPending ? <Loader2 size={14} className="animate-spin" /> : <QrCode size={14} />}
+            Generer
+          </button>
+        </div>
       </div>
 
       <p className="mt-2 text-[11px] text-neutral-400">

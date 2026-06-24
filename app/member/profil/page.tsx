@@ -327,7 +327,7 @@ export default function ProfilPage() {
         </button>
       </div>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_300px]">
         <form onSubmit={handleSave} className="min-w-0 space-y-4">
         <Section title="Informations personnelles">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -386,16 +386,16 @@ export default function ProfilPage() {
         </Section>
 
         <Section title="Securite">
-          <div className="flex flex-wrap gap-3">
-            <button type="button" onClick={() => setPasswordOpen(true)} className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <button type="button" onClick={() => setPasswordOpen(true)} className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300 sm:w-auto sm:justify-start">
               <Lock size={13} /> Changer le mot de passe
             </button>
-            <button type="button" className="inline-flex h-9 items-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300">
+            <button type="button" className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300 sm:w-auto sm:justify-start">
               <Shield size={13} /> Authentification 2FA
             </button>
           </div>
           <div className="mt-4 border-t border-neutral-100 pt-4">
-            <button type="button" onClick={() => setDeletionOpen(true)} className="inline-flex h-9 items-center gap-2 rounded-full border border-red-200 px-4 text-xs font-semibold text-red-600 hover:bg-red-50">
+            <button type="button" onClick={() => setDeletionOpen(true)} className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-red-200 px-4 text-xs font-semibold text-red-600 hover:bg-red-50 sm:w-auto sm:justify-start">
               Supprimer mon compte
             </button>
           </div>
