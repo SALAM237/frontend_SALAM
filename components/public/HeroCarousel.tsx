@@ -67,6 +67,7 @@ const SLIDES: Slide[] = [
   },
 ];
 
+/* Durée de chaque slide — la jauge se remplit exactement sur cet intervalle */
 const INTERVAL = 7000;
 
 const SOCIALS = [
@@ -87,7 +88,7 @@ function PanelStats() {
         { value: '24',   label: 'ACTIVITÉS',   icon: CalendarDays },
         { value: '5 ANS',label: 'D\'HISTOIRE', icon: Trophy },
       ].map(({ value, label, icon: Icon }) => (
-        <div key={label} className="px-3 py-4 text-center sm:px-6 sm:py-5">
+        <div key={label} className="px-3 py-5 text-center sm:px-6 sm:py-6">
           <Icon className="mx-auto mb-1.5 h-4 w-4 text-white/40" />
           <p className="font-black text-white leading-none text-xl sm:text-3xl">{value}</p>
           <p className="mt-1 text-[9px] sm:text-[11px] tracking-[.18em] text-white/50">{label}</p>
@@ -104,7 +105,7 @@ function PanelActivities() {
       {items.map(a => {
         const d = new Date(a.date);
         return (
-          <li key={a.id} className="flex items-center gap-3 px-3 py-3 sm:gap-4 sm:px-6">
+          <li key={a.id} className="flex items-center gap-3 px-3 py-3.5 sm:gap-4 sm:px-6 sm:py-4">
             <div className="shrink-0 text-center">
               <p className="font-black text-white leading-none text-sm sm:text-base">
                 {d.toLocaleDateString('fr-FR', { day: '2-digit' })}
@@ -135,7 +136,7 @@ function PanelJoin() {
     'Réseau professionnel exclusif',
   ];
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-3 py-4 sm:px-6 sm:py-5">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-3 py-5 sm:px-6 sm:py-6">
       {perks.map(p => (
         <div key={p} className="flex items-start gap-2">
           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-salam-yellow" />
@@ -166,19 +167,19 @@ export function HeroCarousel() {
   const next = useCallback(() => go(current + 1), [current, go]);
   const prev = useCallback(() => go(current - 1), [current, go]);
 
-  /* Auto-advance */
+  /* Auto-advance — repart à chaque changement de slide */
   useEffect(() => {
     if (paused) return;
     timerRef.current = setInterval(next, INTERVAL);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [paused, next]);
 
-  /* Progress — FIXED: reset only on slide change, pause merely freezes */
+  /* Jauge — reset UNIQUEMENT au changement de slide, le hover freeze sans reset */
   useEffect(() => { setProgress(0); }, [current]);
 
   useEffect(() => {
     if (paused) return;
-    const step = 100 / (INTERVAL / 80);
+    const step = 100 / (INTERVAL / 80); /* remplit en exactement INTERVAL ms */
     progRef.current = setInterval(() => setProgress(p => Math.min(p + step, 100)), 80);
     return () => { if (progRef.current) clearInterval(progRef.current); };
   }, [current, paused]);
@@ -194,13 +195,17 @@ export function HeroCarousel() {
     return () => window.removeEventListener('keydown', fn);
   }, [prev, next]);
 
-  /* ── Common button style for chevrons + pause ── */
   const navBtn = 'grid place-items-center rounded-full border border-white/35 bg-black/30 text-white backdrop-blur-sm transition-all hover:border-white/70 hover:bg-white/10 active:scale-95';
 
   return (
     <section
       className="relative w-full overflow-hidden"
-      style={{ height: '100dvh', minHeight: '580px', background: '#070d09' }}
+      style={{
+        height: '100dvh',
+        minHeight: '580px',
+        background: '#070d09',
+        boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px',
+      }}
       aria-label="Carrousel SALAM"
     >
       {/* ── Animated background glow ── */}
@@ -250,7 +255,7 @@ export function HeroCarousel() {
         </motion.div>
       </AnimatePresence>
 
-      {/* ── Social icons — right side ── */}
+      {/* ── Social icons ── */}
       <div className="absolute right-3 top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-2 sm:right-5 md:flex">
         {SOCIALS.map(({ Icon, label }) => (
           <a
@@ -268,7 +273,7 @@ export function HeroCarousel() {
       <div className="relative z-10 flex h-full flex-col">
 
         {/* ── Logo — remonté sur mobile ── */}
-        <div className="flex justify-center px-4 pt-5 sm:pt-10">
+        <div className="flex justify-center px-4 pt-3 sm:pt-10">
           <motion.div
             key={`logo-${slide.id}`}
             initial={{ opacity: 0, y: -16 }}
@@ -285,8 +290,8 @@ export function HeroCarousel() {
           </motion.div>
         </div>
 
-        {/* ── Center: Main text ── */}
-        <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+        {/* ── Center: Main text — poussé vers le bas sur mobile ── */}
+        <div className="flex flex-1 flex-col items-center justify-end pb-3 px-4 text-center sm:justify-center sm:pb-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={`content-${slide.id}`}
@@ -339,23 +344,22 @@ export function HeroCarousel() {
         {/* ── Bottom: Glass info panel — peek carousel ── */}
         <div className="relative pb-[62px] sm:pb-[78px]">
 
-          {/* ── Peek ghost — next slide card edge visible at right ── */}
+          {/* Ghost du prochain slide — visible à droite du panneau actif */}
           <div
-            className="pointer-events-none absolute right-0 top-0 bottom-[62px] sm:bottom-[78px] z-10 overflow-hidden rounded-l-xl sm:rounded-l-2xl"
+            className="pointer-events-none absolute right-0 top-0 bottom-[62px] sm:bottom-[78px] z-10 overflow-hidden rounded-l-xl sm:rounded-l-2xl lg:rounded-2xl"
             style={{
-              width: '8%',
-              borderLeft:   `1px solid ${nextSlide.glow}25`,
+              width: '5%',
+              borderLeft:   `1px solid ${nextSlide.glow}30`,
               borderTop:    '1px solid rgba(255,255,255,0.07)',
               borderBottom: '1px solid rgba(255,255,255,0.07)',
               background:   'rgba(7,13,9,0.42)',
               backdropFilter: 'blur(10px)',
             }}
           >
-            {/* Color accent stripe of the next slide */}
-            <div className="h-[2px] w-full" style={{ background: nextSlide.glow, opacity: 0.45 }} />
+            <div className="h-[2px] w-full" style={{ background: nextSlide.glow, opacity: 0.5 }} />
           </div>
 
-          {/* ── Main animated panel ── */}
+          {/* ── Panneau principal animé ── */}
           <AnimatePresence mode="wait">
             <motion.div
               key={`panel-${slide.id}`}
@@ -363,15 +367,24 @@ export function HeroCarousel() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.55, delay: 0.1 }}
-              /* Left-aligned with right margin to reveal peek ghost */
-              className="ml-[3%] mr-[9%] overflow-hidden rounded-l-xl border border-white/10 sm:ml-[5%] sm:mr-[9%] sm:rounded-l-2xl"
+              className="ml-[3%] mr-[5%] overflow-hidden rounded-l-xl border border-white/10 sm:ml-[4%] sm:mr-[6%] sm:rounded-l-2xl lg:ml-[5%] lg:mr-[4%] lg:rounded-2xl"
               style={{
-                background:         'rgba(7,13,9,0.55)',
-                backdropFilter:     'blur(16px)',
+                background:           'rgba(7,13,9,0.55)',
+                backdropFilter:       'blur(16px)',
                 WebkitBackdropFilter: 'blur(16px)',
                 boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px',
               }}
             >
+              {/* ── Jauge de temps — composant du slide, se remplit en 7s ── */}
+              <div className="h-[2.5px] w-full overflow-hidden bg-white/5">
+                <motion.div
+                  className="h-full"
+                  style={{ background: slide.glow }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.08, ease: 'linear' }}
+                />
+              </div>
+
               {/* Panel header */}
               <div className="flex items-center justify-between border-b border-white/8 px-4 py-2.5 sm:px-6">
                 <span className="text-[10px] font-bold uppercase tracking-[.2em]" style={{ color: slide.glow }}>
@@ -418,7 +431,7 @@ export function HeroCarousel() {
 
       {/* ─────── NAVIGATION ─────── */}
 
-      {/* Arrow left */}
+      {/* Flèche gauche */}
       <button
         onClick={prev}
         aria-label="Slide précédent"
@@ -427,20 +440,20 @@ export function HeroCarousel() {
         <ChevronLeft className="h-5 w-5" />
       </button>
 
-      {/* Arrow right */}
+      {/* Flèche droite — alignée sur le panneau actif (hors ghost) */}
       <button
         onClick={next}
         aria-label="Slide suivant"
-        className={`absolute right-[10%] top-1/2 z-20 -translate-y-1/2 size-9 sm:right-[11%] sm:size-11 ${navBtn}`}
+        className={`absolute right-[7%] top-1/2 z-20 -translate-y-1/2 size-9 sm:right-[8%] sm:size-11 lg:right-[6%] ${navBtn}`}
       >
         <ChevronRight className="h-5 w-5" />
       </button>
 
-      {/* Bottom: Dots + Pause + Progress */}
+      {/* Dots + Pause */}
       <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pb-4 sm:px-6 sm:pb-5">
         <div className="mb-3 flex items-center justify-center gap-3">
 
-          {/* Pause / Play button */}
+          {/* Bouton Pause / Play */}
           <button
             type="button"
             onClick={() => setPaused(p => !p)}
@@ -453,13 +466,13 @@ export function HeroCarousel() {
             }
           </button>
 
-          {/* Dot indicators */}
+          {/* Indicateurs de slide */}
           {SLIDES.map((s, i) => (
             <button
               key={s.id}
               onClick={() => go(i)}
               aria-label={`Aller au slide ${i + 1}`}
-              className="relative h-[3px] rounded-full transition-all duration-300 overflow-hidden"
+              className="relative h-[3px] overflow-hidden rounded-full transition-all duration-300"
               style={{
                 width:      i === current ? '32px' : '16px',
                 background: i === current ? slide.glow : 'rgba(255,255,255,0.25)',
@@ -477,7 +490,7 @@ export function HeroCarousel() {
           ))}
         </div>
 
-        {/* Flag stripe */}
+        {/* Bandelette tricolore */}
         <div
           className="mx-auto h-[3px] rounded-full"
           style={{
