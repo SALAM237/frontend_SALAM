@@ -247,16 +247,19 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
             }
           >
             {items.map((item, itemIndex) => (
-              <SwiperSlide key={item._id} className="!flex h-full items-center justify-center">
+              <SwiperSlide key={item._id} className="!flex h-full items-center justify-center md:justify-end">
                 <div
-                  className="grid h-[82%] w-[93%] min-h-0 overflow-hidden rounded-none border-0 bg-transparent grid-rows-[43%_57%] md:h-[360px] md:w-[90%] md:grid-cols-[1fr_1fr] md:grid-rows-1 md:pr-4 lg:h-[400px] lg:w-[90%] lg:pr-7 xl:h-[430px]"
+                  className="grid h-[82%] w-[93%] min-h-0 overflow-hidden rounded-2xl border-0 bg-transparent grid-rows-[43%_57%] md:h-[360px] md:w-[92%] md:mr-2 md:grid-cols-[1fr_1fr] md:grid-rows-1 md:pr-4 lg:h-[400px] lg:w-[91%] lg:mr-3 lg:pr-7 xl:h-[430px]"
                   style={{
                     boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px',
                   }}
                 >
 
                   {/* ── Bloc texte ── */}
-                  <article className="relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl bg-white p-4 text-left text-neutral-950 md:order-1 md:rounded-b-none md:rounded-l-2xl md:bg-transparent md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6">
+                  <article
+                    className="relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl bg-white p-4 text-left text-neutral-950 md:order-1 md:rounded-b-none md:rounded-l-2xl md:bg-transparent md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6"
+                    style={{ boxShadow: '0 -10px 32px rgba(0,0,0,0.10), 0 -2px 8px rgba(0,0,0,0.06)' }}
+                  >
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                       <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl lg:text-3xl">{item.title}</a>
                       <a {...destinationProps(item.textDestination)} className="mt-2.5 block whitespace-pre-line text-sm leading-6 text-neutral-600 hover:text-neutral-900">{item.description}</a>
@@ -298,7 +301,6 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                     type="button"
                     onClick={() => setPreview(item)}
                     className="relative order-1 h-full min-h-0 overflow-hidden rounded-t-2xl bg-black text-left md:order-2 md:rounded-2xl lg:rounded-l-none"
-                    style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 10px 50px' }}
                   >
                     {/* Barre de progression — jauge du slide, se remplit sur SLIDE_DELAY ms */}
                     <span className="absolute left-0 right-0 top-0 z-20 h-1.5 bg-black/20">
