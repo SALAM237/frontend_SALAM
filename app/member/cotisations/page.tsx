@@ -201,7 +201,7 @@ export default function MemberCotisationsPage() {
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-black ${cfg.badge}`}>
+                <span className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-black sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[11px] ${cfg.badge}`}>
                   {cfg.icon}{cfg.label}
                 </span>
                 {cot.status === 'paid' && (

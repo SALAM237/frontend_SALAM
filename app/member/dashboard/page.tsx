@@ -117,51 +117,46 @@ export default function MemberDashboardPage() {
   ];
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-900 via-[#0b1f15] to-[#061009] p-6 text-white">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-white/50">
-              {civility ? `Bienvenue, ${civility}` : 'Bienvenue,'}
-            </p>
-            <h1 className="flex items-center gap-2 text-2xl font-black tracking-[-0.03em]">
-              <GenderIcon gender={gender} size={22} />
-              {firstName || lastName ? formatFullName(firstName, lastName) : 'Membre'}
-            </h1>
-            <p className="mt-1 text-sm text-white/50">Membre actif</p>
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/30">No membre</p>
-            <p className="font-mono text-sm font-bold text-emerald-400">{memberId}</p>
-          </div>
+      <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-900 via-[#0b1f15] to-[#061009] p-3 text-white sm:p-6">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-semibold text-white/50 sm:text-sm">
+            {civility ? `Bienvenue, ${civility}` : 'Bienvenue,'}
+          </p>
+          <p className="font-mono text-[7px] font-bold text-emerald-400 sm:text-[10px]">{memberId}</p>
         </div>
-        <div className="mt-4 h-px bg-white/[0.08]" />
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link href="/member/carte" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-500 px-5 text-xs font-black text-white transition-all hover:bg-emerald-400">
-            <CreditCard size={13} /> Ma carte membre
+        <h1 className="mt-0.5 flex items-center gap-1.5 text-base font-black tracking-[-0.03em] sm:mt-1 sm:gap-2 sm:text-2xl">
+          <GenderIcon gender={gender} size={16} />
+          {firstName || lastName ? formatFullName(firstName, lastName) : 'Membre'}
+        </h1>
+        <p className="mt-0.5 text-[10px] text-white/50 sm:mt-1 sm:text-sm">Membre actif</p>
+        <div className="mt-2 h-px bg-white/[0.08] sm:mt-4" />
+        <div className="mt-2 flex gap-2 sm:mt-4 sm:gap-3">
+          <Link href="/member/carte" className="inline-flex h-7 items-center gap-1 rounded-full bg-emerald-500 px-3 text-[10px] font-black text-white transition-all hover:bg-emerald-400 sm:h-9 sm:gap-2 sm:px-5 sm:text-xs">
+            <CreditCard size={11} /> Ma carte membre
           </Link>
-          <Link href="/member/activites" className="inline-flex h-9 items-center gap-2 rounded-full border border-white/15 px-5 text-xs font-semibold text-white/70 transition-all hover:border-white/30 hover:text-white">
-            <CalendarDays size={13} /> Voir les activites
+          <Link href="/member/activites" className="inline-flex h-7 items-center gap-1 rounded-full border border-white/15 px-3 text-[10px] font-semibold text-white/70 transition-all hover:border-white/30 hover:text-white sm:h-9 sm:gap-2 sm:px-5 sm:text-xs">
+            <CalendarDays size={11} /> Voir les activites
           </Link>
         </div>
       </div>
 
-      <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 xl:grid-cols-6">
         {stats.map(({ label, value, icon: Icon, href, color, detail, subtitle } : any) => (
           <motion.div key={label} variants={fadeUp}>
-            <Link href={href} className="flex h-[168px] w-full flex-col justify-between rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
-                <Icon size={18} />
+            <Link href={href} className="flex h-[112px] w-full flex-col justify-between rounded-lg border border-neutral-100 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md sm:h-[122px] lg:h-[136px]">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${color}`}>
+                <Icon size={15} />
               </div>
               <div className="min-w-0 text-right">
-                <p className="text-[2.35rem] font-black leading-[0.9] tracking-[-0.05em] text-neutral-900">{value}</p>
-                <p className="mt-3 min-h-[2rem] text-xs font-medium leading-tight text-neutral-500">{label}</p>
+                <p className="text-2xl font-black leading-none text-neutral-900 lg:text-[1.75rem]">{value}</p>
+                <p className="mt-1 line-clamp-2 min-h-[1.5rem] text-[10px] font-bold leading-[14px] text-neutral-500">{label}</p>
                 {subtitle && (
-                  <p className="mt-1 truncate text-[10px] font-semibold leading-snug text-neutral-400" title={subtitle}>{subtitle}</p>
+                  <p className="mt-0.5 truncate text-[9px] font-semibold leading-snug text-neutral-400" title={subtitle}>{subtitle}</p>
                 )}
                 {detail && (
-                  <p className="mt-1 flex flex-wrap justify-end gap-x-2 gap-y-1 text-[11px] font-normal leading-snug">
-                    <span className="text-red-600">{detail.rejected} refusee{detail.rejected > 1 ? 's' : ''}</span>
-                    <span className="text-emerald-700">{detail.accepted} acceptee{detail.accepted > 1 ? 's' : ''}</span>
+                  <p className="mt-0.5 flex flex-wrap justify-end gap-x-1.5 gap-y-0.5 text-[9px] font-normal leading-snug">
+                    <span className="text-red-600">{detail.rejected} ref.</span>
+                    <span className="text-emerald-700">{detail.accepted} acc.</span>
                   </p>
                 )}
               </div>
