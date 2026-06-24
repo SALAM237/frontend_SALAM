@@ -3,11 +3,14 @@ import path from 'node:path';
 
 const NOINDEX = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
 
-const SECURITY_HEADERS = [
+// Politique caméra séparée pour pouvoir l'override sur /admin/scanner
+const DENY_CAMERA  = { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' };
+const ALLOW_CAMERA = { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' };
+
+const BASE_SECURITY_HEADERS = [
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
   {
     key: 'Strict-Transport-Security',
     value: 'max-age=63072000; includeSubDomains; preload',
@@ -71,34 +74,45 @@ const nextConfig: NextConfig = {
     }];
   },
   async headers() {
+    const SEC      = [...BASE_SECURITY_HEADERS, DENY_CAMERA];
+    const SEC_NI   = [...BASE_SECURITY_HEADERS, DENY_CAMERA, ...NOINDEX];
+    // Scanner : autoriser la caméra (camera=(self) au lieu de camera=())
+    const SCANNER  = [...BASE_SECURITY_HEADERS, ALLOW_CAMERA, ...NOINDEX];
+
     return [
       {
         source: '/:path*',
-        headers: SECURITY_HEADERS,
+        headers: SEC,
       },
       {
         source: '/member/:path*',
-        headers: [...SECURITY_HEADERS, ...NOINDEX],
+        headers: SEC_NI,
       },
       {
         source: '/admin/:path*',
-        headers: [...SECURITY_HEADERS, ...NOINDEX],
+        headers: SEC_NI,
+      },
+      // Override pour la page scanner — doit venir APRÈS /admin/:path*
+      // pour que sa Permissions-Policy écrase la précédente (last-wins Next.js)
+      {
+        source: '/admin/scanner',
+        headers: SCANNER,
       },
       {
         source: '/choisir-espace',
-        headers: [...SECURITY_HEADERS, ...NOINDEX],
+        headers: SEC_NI,
       },
       {
         source: '/auth/:path*',
-        headers: [...SECURITY_HEADERS, ...NOINDEX],
+        headers: SEC_NI,
       },
       {
         source: '/bureau-executif/connexion',
-        headers: [...SECURITY_HEADERS, ...NOINDEX],
+        headers: SEC_NI,
       },
       {
         source: '/demo/admin/:path*',
-        headers: [...SECURITY_HEADERS, ...NOINDEX],
+        headers: SEC_NI,
       },
       // Cache long sur les assets publics versionnes.
       {
