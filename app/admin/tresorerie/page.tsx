@@ -218,13 +218,20 @@ export default function AdminTresoreriePage() {
   const VALID_KINDS: TreasuryKind[] = ['income', 'expense'];
   const VALID_SOURCES: TreasurySource[] = ['adhesion', 'don', 'crowdfunding', 'activity', 'subvention', 'partner', 'other'];
   const KIND_ALIASES: Record<string, TreasuryKind> = {
-    income: 'income', encaissement: 'income', entree: 'income', recette: 'income',
-    expense: 'expense', decaissement: 'expense', sortie: 'expense', depense: 'expense',
+    income: 'income', encaissement: 'income', entree: 'income', entrée: 'income', recette: 'income',
+    credit: 'income', crédit: 'income', versement: 'income', perception: 'income', gain: 'income',
+    expense: 'expense', decaissement: 'expense', décaissement: 'expense',
+    sortie: 'expense', depense: 'expense', dépense: 'expense', debit: 'expense', débit: 'expense',
+    charge: 'expense', paiement: 'expense', retrait: 'expense', achat: 'expense',
   };
   const SOURCE_ALIASES: Record<string, TreasurySource> = {
-    adhesion: 'adhesion', don: 'don', donation: 'don', crowdfunding: 'crowdfunding',
-    activity: 'activity', activite: 'activity', activité: 'activity', subvention: 'subvention',
-    partner: 'partner', partenaire: 'partner', other: 'other', autre: 'other',
+    adhesion: 'adhesion', adhésion: 'adhesion', cotisation: 'adhesion',
+    don: 'don', donation: 'don', dons: 'don',
+    crowdfunding: 'crowdfunding',
+    activity: 'activity', activite: 'activity', activité: 'activity', evenement: 'activity', événement: 'activity',
+    subvention: 'subvention', subventions: 'subvention', grant: 'subvention',
+    partner: 'partner', partenaire: 'partner', partenariat: 'partner',
+    other: 'other', autre: 'other', autres: 'other', divers: 'other', virement: 'other', inconnu: 'other',
     "frais d'adhesion": 'adhesion', "frais d'adhésion": 'adhesion',
   };
 
@@ -241,38 +248,43 @@ export default function AdminTresoreriePage() {
   };
 
   const normalizeRows = (raw: Record<string, string>[]): ImportRow[] => {
-    return raw.map(r => {
+    return raw.filter(r => Object.values(r).some(v => String(v ?? '').trim())).map(r => {
       const col = (names: string[]) => {
         for (const n of names) {
-          const key = Object.keys(r).find(k => k.trim().toLowerCase() === n.toLowerCase());
+          const key = Object.keys(r).find(k => k.trim().toLowerCase().replace(/[_\s-]/g, '') === n.toLowerCase().replace(/[_\s-]/g, ''));
           if (key !== undefined) return String(r[key] ?? '').trim();
         }
         return '';
       };
-      const rawKind   = col(['type', 'kind', 'type_operation']);
-      const rawSource = col(['source']);
-      const rawLabel  = col(['libelle', 'label', 'libellé', 'designation', 'désignation']);
-      const rawAmount = col(['montant', 'amount', 'valeur']);
-      const rawDate   = col(['date', 'occurred_at', 'occurredAt', 'date_operation']);
-      const rawTiers  = col(['tiers', 'counterparty', 'contrepartie']);
-      const rawRef    = col(['reference', 'référence', 'ref']);
+      /* Chercher toutes les colonnes texte non mappées pour le libellé */
+      const mappedCols = new Set(['type', 'kind', 'type_operation', 'source', 'montant', 'amount', 'valeur', 'date', 'occurred_at', 'occurredat', 'date_operation', 'tiers', 'counterparty', 'contrepartie', 'reference', 'référence', 'ref']);
+      const autoLabel = () => Object.entries(r).find(([k, v]) => !mappedCols.has(k.trim().toLowerCase()) && String(v ?? '').trim())?.[1]?.trim() ?? '';
 
-      const kind   = KIND_ALIASES[rawKind.toLowerCase()] as TreasuryKind | undefined;
-      const source = SOURCE_ALIASES[rawSource.toLowerCase()] as TreasurySource | undefined;
-      const amount = parseFloat(rawAmount.replace(/\s/g, '').replace(',', '.'));
+      const rawKind   = col(['type', 'kind', 'type_operation', 'nature', 'operation', 'opération', 'sens']);
+      const rawSource = col(['source', 'categorie', 'catégorie', 'category', 'origine', 'provenance', 'objet']);
+      const rawLabel  = col(['libelle', 'libellé', 'label', 'designation', 'désignation', 'motif', 'description', 'intitule', 'intitulé', 'objet', 'detail', 'détail', 'notes', 'note', 'commentaire']);
+      const rawAmount = col(['montant', 'amount', 'valeur', 'somme', 'total']);
+      const rawDate   = col(['date', 'occurred_at', 'occurredAt', 'date_operation', 'date_transaction', 'datevaleur', 'date_valeur']);
+      const rawTiers  = col(['tiers', 'counterparty', 'contrepartie', 'beneficiaire', 'bénéficiaire', 'emetteur', 'émetteur', 'donateur', 'payeur']);
+      const rawRef    = col(['reference', 'référence', 'ref', 'numero', 'numéro', 'no']);
+
+      const kind   = KIND_ALIASES[(rawKind || '').toLowerCase()] as TreasuryKind | undefined;
+      const source = SOURCE_ALIASES[(rawSource || '').toLowerCase()] as TreasurySource | undefined;
+      const rawAmountClean = rawAmount.replace(/[^\d,.-]/g, '').replace(',', '.');
+      const amount = parseFloat(rawAmountClean);
       const date   = normalizeDate(rawDate);
 
+      /* label : colonne explicite → colonne texte libre → auto */
+      const label = rawLabel || autoLabel() || `Opération du ${date || rawDate || 'date inconnue'}`;
+
       const errors: string[] = [];
-      if (!kind)             errors.push('Type invalide');
-      if (!source)           errors.push('Source invalide');
-      if (!rawLabel)         errors.push('Libellé manquant');
       if (isNaN(amount) || amount <= 0) errors.push('Montant invalide');
-      if (!date)             errors.push('Date invalide');
+      if (!date)                        errors.push('Date invalide');
 
       return {
         kind:         kind   ?? 'income',
         source:       source ?? 'other',
-        label:        rawLabel || '(sans libellé)',
+        label,
         amount:       isNaN(amount) ? 0 : amount,
         occurredAt:   date || new Date().toISOString().slice(0, 10),
         counterparty: rawTiers   || undefined,
