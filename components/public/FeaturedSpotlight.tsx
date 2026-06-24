@@ -249,7 +249,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
             {items.map((item, itemIndex) => (
               <SwiperSlide key={item._id} className="!flex h-full items-center justify-center md:justify-end" style={{ boxShadow: 'inset 0 0 0 3px blue' }}>
                 <div
-                  className="grid h-[82%] w-[93%] min-h-0 overflow-hidden rounded-2xl border-0 bg-transparent grid-rows-[43%_57%] md:h-[360px] md:w-[92%] md:mr-2 md:grid-cols-[1fr_1fr] md:grid-rows-1 md:pr-4 lg:h-[400px] lg:w-[91%] lg:mr-3 lg:pr-7 xl:h-[430px]"
+                  className="grid h-[82%] w-[93%] min-h-0 overflow-hidden rounded-2xl border-0 bg-transparent grid-rows-[43%_57%] md:h-[360px] md:w-[92%] md:mr-2 md:grid-cols-[1fr_1fr] md:grid-rows-1 lg:h-[400px] lg:w-[91%] lg:mr-3 xl:h-[430px]"
                   style={{
                     boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px, inset 0 0 0 3px orange',
                   }}
