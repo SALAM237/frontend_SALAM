@@ -139,7 +139,7 @@ export default function MemberCotisationsPage() {
       </div>
 
       {/* Filter */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-1.5 flex-wrap">
         {([
           { value: 'all',    label: 'Toutes'     },
           { value: 'paid',   label: 'Payées'     },
@@ -147,7 +147,7 @@ export default function MemberCotisationsPage() {
           { value: 'exempt', label: 'Exemptées'  },
         ] as { value: CotisationStatus | 'all'; label: string }[]).map(f => (
           <button key={f.value} onClick={() => setFilter(f.value)}
-            className={`rounded-full px-4 py-1.5 text-xs font-black transition ${
+            className={`rounded-full px-2.5 py-0.5 text-[11px] font-black transition sm:px-4 sm:py-1.5 sm:text-xs ${
               filter === f.value
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'bg-white border border-neutral-200 text-neutral-600 hover:border-neutral-300'
