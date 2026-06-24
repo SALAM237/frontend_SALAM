@@ -23,22 +23,45 @@ type ScannerControlsLike = { stop: () => void | Promise<void> };
 
 // ── Feedback sensoriel ─────────────────────────────────────────────────────
 function vibrate(p: number | number[]) { try { navigator.vibrate?.(p); } catch {} }
-function beepOk() {
+function audioContext() {
+  const AudioCtor = window.AudioContext || (window as any).webkitAudioContext;
+  return AudioCtor ? new AudioCtor() as AudioContext : null;
+}
+function triggerSuccessFeedback() {
+  vibrate(80);
   try {
-    const ctx = new AudioContext(); const o = ctx.createOscillator(); const g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination); o.type = 'sine'; o.frequency.value = 880; g.gain.value = 0.15;
-    o.start(); o.frequency.setValueAtTime(1200, ctx.currentTime + 0.1); o.stop(ctx.currentTime + 0.22);
+    const ctx = audioContext();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.value = 0.15;
+    osc.start();
+    osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.1);
+    osc.stop(ctx.currentTime + 0.22);
   } catch {}
 }
-function beepErr() {
+function triggerErrorFeedback() {
+  vibrate([300, 100, 300, 100, 300]);
   try {
-    const ctx = new AudioContext(); const o = ctx.createOscillator(); const g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination); o.type = 'square'; o.frequency.value = 320; g.gain.value = 0.2;
-    o.start(); o.frequency.setValueAtTime(200, ctx.currentTime + 0.3); o.stop(ctx.currentTime + 0.6);
+    const ctx = audioContext();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'square';
+    osc.frequency.value = 400;
+    gain.gain.value = 0.6;
+    osc.start();
+    osc.frequency.setValueAtTime(300, ctx.currentTime + 0.3);
+    osc.frequency.setValueAtTime(400, ctx.currentTime + 0.5);
+    osc.stop(ctx.currentTime + 1.2);
   } catch {}
 }
-
-// ── Badge statut ───────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: ScannedMember['memberStatus'] }) {
   const m: Record<string, { l: string; c: string }> = {
     active:    { l: 'Actif',      c: 'bg-emerald-100 text-emerald-700' },
@@ -252,29 +275,28 @@ function ScanAlertModal({ title, message, onClose }: { title: string; message: s
         initial={{ scale: 0.96, opacity: 0, y: 14 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.96, opacity: 0, y: 10 }}
-        className="w-full max-w-sm rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900 shadow-2xl"
+        className="w-full max-w-sm overflow-hidden rounded-2xl border border-red-200 bg-white text-red-900 shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700">
-            <AlertCircle size={22} />
+        <div className="bg-red-50 px-5 py-4 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-700">
+            <AlertCircle size={25} />
           </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-base font-black">{title}</h2>
-            <p className="mt-1 text-sm leading-5 text-red-700">{message}</p>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-full p-1 text-red-600 hover:bg-red-100">
-            <X size={17} />
+          <h2 className="mt-2 text-lg font-black text-red-700">{title}</h2>
+        </div>
+        <div className="px-5 py-5 text-center">
+          <p className="text-base font-black text-red-700">Code deja utilise</p>
+          <p className="mt-1 text-sm leading-5 text-neutral-600">{message}</p>
+        </div>
+        <div className="border-t border-red-100 bg-red-50/60 p-4">
+          <button type="button" onClick={onClose} className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-red-600 text-sm font-black text-white hover:bg-red-700">
+            Compris
           </button>
         </div>
-        <button type="button" onClick={onClose} className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-red-600 text-sm font-black text-white hover:bg-red-700">
-          Compris
-        </button>
       </motion.div>
     </div>
   );
 }
-
 function CameraPermissionModal({ onAllow, onClose }: { onAllow: () => void; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm" onClick={onClose}>
@@ -377,9 +399,9 @@ export default function ScannerPage() {
     try {
       const res = await lookup.mutateAsync(trimmed);
       setScannedMember(res.data ?? null);
-      setFlashState('success'); vibrate(80); beepOk();
+      setFlashState('success'); triggerSuccessFeedback();
     } catch {
-      setFlashState('error'); vibrate([200, 80, 200]); beepErr();
+      setFlashState('error'); triggerErrorFeedback();
     } finally {
       processingRef.current = false;
       setManualCode('');
@@ -439,14 +461,12 @@ export default function ScannerPage() {
         context: selectedActivityId ? 'activity' : 'general',
       });
       setCheckinDone(true);
-      vibrate(100);
-      beepOk();
+      triggerSuccessFeedback();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Erreur lors de l\'enregistrement';
       const alreadyUsed = /deja|déjà|utilise|utilisé|enregistree|enregistrée/i.test(msg);
       setFlashState('error');
-      vibrate([220, 80, 220]);
-      beepErr();
+      triggerErrorFeedback();
       if (alreadyUsed) {
         setScanAlert({
           title: 'QR code deja valide',
