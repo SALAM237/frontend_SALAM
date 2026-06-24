@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { CalendarDays, Search, MapPin, Users, Loader2, Eye, X, CheckCircle2, HelpCircle, XCircle } from 'lucide-react';
 import { useMemberActivities, useRespondActivityInvitation, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
@@ -128,16 +128,9 @@ function ActivityCard({ a }: { a: any }) {
   const sCls     = a.status === 'published' ? 'bg-emerald-500 text-white' : a.status === 'finished' ? 'bg-neutral-400 text-white' : a.status === 'cancelled' ? 'bg-red-500 text-white' : 'bg-yellow-400 text-white';
   const sLabel   = a.status === 'published' ? 'Ouverte' : a.status === 'finished' ? 'Passée' : a.status === 'cancelled' ? 'Annulée' : 'Brouillon';
 
-  const respond = useRespondActivityInvitation(a._id);
-  const [localRsvp, setLocalRsvp] = useState<string | null>(null);
-  const currentRsvp = localRsvp ?? a.myInvitation?.rsvpStatus;
-
-  const handleRespond = (status: 'present' | 'unsure' | 'absent') => {
-    setLocalRsvp(status);
-    respond.mutate(status);
-  };
-
-  const hasRsvp = !!a.myInvitation;
+  const respond  = useRespondActivityInvitation(a._id, a.slug);
+  const currentRsvp = a.myInvitation?.rsvpStatus;
+  const hasRsvp  = !!a.myInvitation;
 
   return (
     <article className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
@@ -181,15 +174,15 @@ function ActivityCard({ a }: { a: any }) {
         {/* Boutons RSVP — uniquement si le membre est invité */}
         {hasRsvp && (
           <div className="grid grid-cols-3 gap-1.5 rounded-xl bg-neutral-50 p-1.5">
-            <button onClick={() => handleRespond('present')} disabled={respond.isPending}
+            <button onClick={() => respond.mutate('present')} disabled={respond.isPending}
               className={`inline-flex h-7 items-center justify-center gap-1 rounded-lg text-[10px] font-black transition disabled:opacity-50 ${currentRsvp === 'present' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white ring-1 ring-emerald-200 text-emerald-700 hover:bg-emerald-50'}`}>
               <CheckCircle2 size={11} /> Présent
             </button>
-            <button onClick={() => handleRespond('unsure')} disabled={respond.isPending}
+            <button onClick={() => respond.mutate('unsure')} disabled={respond.isPending}
               className={`inline-flex h-7 items-center justify-center gap-1 rounded-lg text-[10px] font-black transition disabled:opacity-50 ${currentRsvp === 'unsure' ? 'bg-amber-500 text-white shadow-sm' : 'bg-white ring-1 ring-amber-200 text-amber-700 hover:bg-amber-50'}`}>
               <HelpCircle size={11} /> Peut-être
             </button>
-            <button onClick={() => handleRespond('absent')} disabled={respond.isPending}
+            <button onClick={() => respond.mutate('absent')} disabled={respond.isPending}
               className={`inline-flex h-7 items-center justify-center gap-1 rounded-lg text-[10px] font-black transition disabled:opacity-50 ${currentRsvp === 'absent' ? 'bg-red-500 text-white shadow-sm' : 'bg-white ring-1 ring-red-200 text-red-600 hover:bg-red-50'}`}>
               <XCircle size={11} /> Absent
             </button>

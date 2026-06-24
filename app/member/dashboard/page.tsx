@@ -12,6 +12,8 @@ import {
   MessageSquare,
   Newspaper,
   ShieldCheck,
+  UserCheck,
+  CalendarCheck,
 } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { GenderIcon } from '@/components/ui/GenderIcon';
@@ -54,6 +56,16 @@ export default function MemberDashboardPage() {
     year: new Date().getFullYear(),
   };
 
+  // Calculs activités (avant stats pour éviter les références avant déclaration)
+  const now = Date.now();
+  const allActivities = activitiesResponse?.data?.activities ?? [];
+  const upcomingSorted = allActivities
+    .filter(a => a.startDate && new Date(a.startDate).getTime() >= now)
+    .sort((a, b) => new Date(a.startDate ?? 0).getTime() - new Date(b.startDate ?? 0).getTime());
+  const upcomingActivities = upcomingSorted.slice(0, 3);
+  const nextActivity = upcomingSorted[0];
+  const pendingRsvpCount = allActivities.filter(a => a.myInvitation?.rsvpStatus === 'pending').length;
+
   const stats = [
     {
       label: 'Opportunites non lues',
@@ -77,6 +89,21 @@ export default function MemberDashboardPage() {
       color: 'bg-red-50 text-red-700',
     },
     {
+      label: 'Activités à venir',
+      value: upcomingSorted.length,
+      icon: CalendarCheck,
+      href: '/member/activites',
+      color: 'bg-violet-50 text-violet-700',
+      subtitle: nextActivity ? `Imminente : ${nextActivity.title}` : undefined,
+    },
+    {
+      label: 'Présences à confirmer',
+      value: pendingRsvpCount,
+      icon: UserCheck,
+      href: '/member/activites',
+      color: 'bg-orange-50 text-orange-700',
+    },
+    {
       label: 'Publication en attente',
       value: kpis?.submissions.pending ?? 0,
       icon: ShieldCheck,
@@ -88,12 +115,6 @@ export default function MemberDashboardPage() {
       },
     },
   ];
-  const now = Date.now();
-  const upcomingActivities = (activitiesResponse?.data?.activities ?? [])
-    .filter(activity => activity.startDate && new Date(activity.startDate).getTime() >= now)
-    .sort((a, b) => new Date(a.startDate ?? 0).getTime() - new Date(b.startDate ?? 0).getTime())
-    .slice(0, 3);
-
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-900 via-[#0b1f15] to-[#061009] p-6 text-white">
@@ -124,8 +145,8 @@ export default function MemberDashboardPage() {
         </div>
       </div>
 
-      <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {stats.map(({ label, value, icon: Icon, href, color, detail }) => (
+      <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
+        {stats.map(({ label, value, icon: Icon, href, color, detail, subtitle } : any) => (
           <motion.div key={label} variants={fadeUp}>
             <Link href={href} className="flex h-[168px] w-full flex-col justify-between rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
               <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
@@ -134,6 +155,9 @@ export default function MemberDashboardPage() {
               <div className="min-w-0 text-right">
                 <p className="text-[2.35rem] font-black leading-[0.9] tracking-[-0.05em] text-neutral-900">{value}</p>
                 <p className="mt-3 min-h-[2rem] text-xs font-medium leading-tight text-neutral-500">{label}</p>
+                {subtitle && (
+                  <p className="mt-1 truncate text-[10px] font-semibold leading-snug text-neutral-400" title={subtitle}>{subtitle}</p>
+                )}
                 {detail && (
                   <p className="mt-1 flex flex-wrap justify-end gap-x-2 gap-y-1 text-[11px] font-normal leading-snug">
                     <span className="text-red-600">{detail.rejected} refusee{detail.rejected > 1 ? 's' : ''}</span>

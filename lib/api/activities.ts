@@ -23,6 +23,7 @@ export interface ActivityInvitationDoc {
   qrExpiresAt?: string;
   scanStatus?: 'unused' | 'used' | 'expired';
   scannedAt?: string;
+  scannedBy?: { firstName?: string; lastName?: string } | null;
   qrDataUrl?: string;
   scanValue?: string;
 }
@@ -205,7 +206,7 @@ export function useActivityInvitations(activityId?: string) {
   });
 }
 
-export function useRespondActivityInvitation(activityId: string) {
+export function useRespondActivityInvitation(activityId: string, slug?: string) {
   const token = useAuthStore(s => s.accessToken);
   const qc = useQueryClient();
   return useMutation({
@@ -215,12 +216,53 @@ export function useRespondActivityInvitation(activityId: string) {
         body: JSON.stringify({ status }),
         token: token ?? '',
       }),
+    onMutate: async (status) => {
+      await qc.cancelQueries({ queryKey: ['member-activities'] });
+      if (slug) await qc.cancelQueries({ queryKey: ['member-activity', slug] });
+
+      const prevList   = qc.getQueriesData<any>({ queryKey: ['member-activities'] });
+      const prevDetail = slug ? qc.getQueryData<any>(['member-activity', slug]) : undefined;
+
+      // Mise à jour optimiste de la liste
+      qc.setQueriesData<any>({ queryKey: ['member-activities'] }, (old: any) => {
+        if (!old?.data?.activities) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            activities: old.data.activities.map((a: any) =>
+              a._id === activityId
+                ? { ...a, myInvitation: { ...(a.myInvitation ?? {}), rsvpStatus: status } }
+                : a
+            ),
+          },
+        };
+      });
+
+      // Mise à jour optimiste de la fiche détail
+      if (slug) {
+        qc.setQueryData<any>(['member-activity', slug], (old: any) => {
+          if (!old?.data?.myInvitation) return old;
+          return {
+            ...old,
+            data: { ...old.data, myInvitation: { ...old.data.myInvitation, rsvpStatus: status } },
+          };
+        });
+      }
+
+      return { prevList, prevDetail };
+    },
+    onError: (err: Error, _status, ctx: any) => {
+      // Rollback
+      ctx?.prevList?.forEach(([key, val]: [any, any]) => qc.setQueryData(key, val));
+      if (slug && ctx?.prevDetail) qc.setQueryData(['member-activity', slug], ctx.prevDetail);
+      toast.error(err.message);
+    },
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['member-activities'] });
       qc.invalidateQueries({ queryKey: ['member-activity'] });
-      toast.success((res as any).message ?? 'Presence confirmee');
+      toast.success((res as any).message ?? 'Présence confirmée');
     },
-    onError: (err: Error) => toast.error(err.message),
   });
 }
 

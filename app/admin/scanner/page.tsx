@@ -20,6 +20,24 @@ import { toast } from 'sonner';
 const CAURIS_CODE_RE = /^\d{2}[A-Za-z]{2}\d{2}$/;
 const CAURIS_LINK_RE = /\/admin\/cauris\/validation/i;
 
+/**
+ * Normalise le code saisi avant envoi :
+ *   - SALAM-120075441 / salam-120075441 / SALAM120075441 / SALAM 120075441 → SALAM-120075441
+ *   - SALAM-MEMBER-xxx variantes → SALAM-MEMBER-xxx
+ *   - Autres codes (ABCD1234, lien QR) → uppercase, sans espaces
+ */
+function normalizeCode(raw: string): string {
+  const s = raw.trim().toUpperCase();
+  // SALAM + numéro membre (avec ou sans tiret/espace)
+  const salamNum = s.match(/^SALAM[\s\-]?(\d+)$/);
+  if (salamNum) return `SALAM-${salamNum[1]}`;
+  // SALAM-MEMBER-xxx variantes
+  const salamMember = s.match(/^SALAM[\s\-]?MEMBER[\s\-]?(.+)$/);
+  if (salamMember) return `SALAM-MEMBER-${salamMember[1].replace(/[\s\-]+/g, '-')}`;
+  // Tout le reste : uppercase + suppression des espaces internes
+  return s.replace(/\s+/g, '');
+}
+
 type ScannerControlsLike = { stop: () => void | Promise<void> };
 
 // ── Feedback sensoriel ─────────────────────────────────────────────────────
@@ -386,14 +404,14 @@ export default function ScannerPage() {
 
   const processCode = useCallback(async (raw: string) => {
     if (!raw.trim() || processingRef.current) return;
-    const trimmed = raw.trim();
+    const trimmed = normalizeCode(raw);
 
-    if (CAURIS_LINK_RE.test(trimmed)) {
-      window.location.href = trimmed;
+    if (CAURIS_LINK_RE.test(raw.trim())) {
+      window.location.href = raw.trim();
       return;
     }
-    if (CAURIS_CODE_RE.test(trimmed)) {
-      window.location.href = `/admin/cauris/validation?token=${encodeURIComponent(trimmed.toUpperCase())}`;
+    if (CAURIS_CODE_RE.test(raw.trim().toUpperCase())) {
+      window.location.href = `/admin/cauris/validation?token=${encodeURIComponent(raw.trim().toUpperCase())}`;
       return;
     }
 
@@ -463,14 +481,20 @@ export default function ScannerPage() {
 
       const { BrowserMultiFormatReader } = await import('@zxing/browser');
       const reader = new BrowserMultiFormatReader();
-      const controls = await reader.decodeFromStream(stream, videoRef.current!, (result) => {
+
+      // Attacher le flux vidéo au <video> avant de lancer le décodeur
+      const video = videoRef.current!;
+      video.srcObject = stream;
+      await video.play().catch(() => {});
+      setScannerReady(true);
+
+      const controls = await reader.decodeFromVideoElement(video, (result) => {
         if (result && !processingRef.current) {
           const text = result.getText();
           void (async () => { await stopScanner(); await processCode(text); })();
         }
       });
       controlsRef.current = controls as ScannerControlsLike;
-      setScannerReady(true);
     } catch (e) {
       if (stream) stream.getTracks().forEach(t => t.stop());
       await stopScanner();
@@ -683,7 +707,7 @@ export default function ScannerPage() {
             </div>
 
             {/* Détection code cauris */}
-            {CAURIS_CODE_RE.test(manualCode.trim()) ? (
+            {CAURIS_CODE_RE.test(manualCode.trim().toUpperCase()) ? (
               <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
                 <AlertCircle size={13} className="shrink-0 text-amber-500"/>
                 <p className="flex-1 text-xs text-amber-800">

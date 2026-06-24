@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { CalendarDays, ImagePlus, Plus, X, MapPin, Users, Loader2, Trash2, Edit3, PlusCircle, Send, Eye, Tag } from 'lucide-react';
+import { CalendarDays, ImagePlus, Plus, X, MapPin, Users, Loader2, Trash2, Edit3, PlusCircle, Send, Eye, Tag, CheckCircle2, XCircle, HelpCircle, Clock, ChevronDown } from 'lucide-react';
 import {
   useActivities, useCreateActivity, useUpdateActivity, useDeleteActivity, useActivityInvitations, useRemindActivityInvitations,
   useUploadActivityImage,
@@ -428,31 +428,135 @@ function ActivityForm({
 /* ─── Edit wrapper ────────────────────────────────────────── */
 
 
+const PRESENCE_CFG = {
+  present: {
+    label: 'Présents',
+    icon: CheckCircle2,
+    hdr: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    ico: 'text-emerald-600',
+    badge: 'bg-emerald-100 text-emerald-700',
+  },
+  unsure: {
+    label: 'Peut-être',
+    icon: HelpCircle,
+    hdr: 'bg-amber-50 text-amber-700 border-amber-200',
+    ico: 'text-amber-500',
+    badge: 'bg-amber-100 text-amber-700',
+  },
+  absent: {
+    label: 'Absents',
+    icon: XCircle,
+    hdr: 'bg-red-50 text-red-700 border-red-200',
+    ico: 'text-red-500',
+    badge: 'bg-red-100 text-red-600',
+  },
+  pending: {
+    label: 'En attente',
+    icon: Clock,
+    hdr: 'bg-blue-50 text-blue-700 border-blue-200',
+    ico: 'text-blue-500',
+    badge: 'bg-blue-100 text-blue-700',
+  },
+} as const;
+
 function PresenceModal({ activity, onClose }: { activity: ActivityDoc; onClose: () => void }) {
   const { data, isLoading } = useActivityInvitations(activity._id);
   const invitations = data?.data?.invitations ?? [];
-  const label = (status: string) => status === 'present' ? 'Présents' : status === 'absent' ? 'Absents' : status === 'unsure' ? 'Je ne sais pas' : 'En attente';
+  const [open, setOpen] = useState<Record<string, boolean>>({ present: true, unsure: true, absent: true, pending: true });
+
   const guestName = (inv: any) => {
     if (inv.memberId && typeof inv.memberId === 'object') return `${inv.memberId.firstName ?? ''} ${inv.memberId.lastName ?? ''}`.trim();
     if (inv.clientId && typeof inv.clientId === 'object') return inv.clientId.name;
-    return inv.name || `${inv.externalGuest?.firstName ?? ''} ${inv.externalGuest?.lastName ?? ''}`.trim() || inv.email || 'Invite';
+    return inv.name || `${inv.externalGuest?.firstName ?? ''} ${inv.externalGuest?.lastName ?? ''}`.trim() || inv.email || 'Invité';
   };
+
+  const toggle = (s: string) => setOpen(o => ({ ...o, [s]: !o[s] }));
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
-          <div><p className="text-sm font-black text-neutral-900">Présences - {activity.title}</p><p className="text-xs text-neutral-400">Réponses et QR codes liés à cette activité.</p></div>
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4 shrink-0">
+          <div>
+            <p className="text-sm font-black text-neutral-900">Présences — {activity.title}</p>
+            <p className="text-xs text-neutral-400">Réponses et QR codes liés à cette activité.</p>
+          </div>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
         </div>
-        <div className="max-h-[72vh] overflow-y-auto p-4">
-          {isLoading && <p className="py-10 text-center text-sm text-neutral-400">Chargement...</p>}
-          {!isLoading && invitations.length === 0 && <p className="py-10 text-center text-sm font-semibold text-neutral-400">Aucune invitation enregistrée.</p>}
-          <div className="grid gap-3 md:grid-cols-2">
-            {(['present','unsure','absent','pending'] as const).map(status => {
-              const rows = invitations.filter(inv => inv.rsvpStatus === status);
-              return <div key={status} className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-3"><p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-neutral-600">{label(status)} · {rows.length}</p><div className="space-y-2">{rows.map(inv => <div key={inv._id} className="rounded-xl bg-white p-3 text-xs shadow-sm"><p className="font-black text-neutral-800">{guestName(inv)}</p><p className="mt-0.5 text-neutral-400">{inv.guestType} · {inv.email || inv.phone || 'contact non renseigné'}</p>{inv.shortCode && <p className="mt-1 font-mono text-[11px] font-black text-emerald-700">Code {inv.shortCode} · {inv.scanStatus ?? 'unused'}</p>}</div>)}</div></div>;
-            })}
-          </div>
+
+        <div className="max-h-[74vh] overflow-y-auto p-4 space-y-3">
+          {isLoading && <p className="py-10 text-center text-sm text-neutral-400">Chargement…</p>}
+          {!isLoading && invitations.length === 0 && (
+            <p className="py-10 text-center text-sm font-semibold text-neutral-400">Aucune invitation enregistrée.</p>
+          )}
+
+          {!isLoading && (['present', 'unsure', 'absent', 'pending'] as const).map(status => {
+            const rows = invitations.filter(inv => inv.rsvpStatus === status);
+            const cfg = PRESENCE_CFG[status];
+            const Icon = cfg.icon;
+            const isOpen = open[status];
+
+            return (
+              <div key={status} className={`overflow-hidden rounded-2xl border ${cfg.hdr}`}>
+                {/* Header accordéon */}
+                <button
+                  type="button"
+                  onClick={() => toggle(status)}
+                  className={`flex w-full items-center justify-between gap-3 px-4 py-3 transition-colors hover:opacity-80 ${cfg.hdr}`}
+                >
+                  <span className="flex items-center gap-2 text-sm font-black">
+                    <Icon size={15} className={cfg.ico} />
+                    {cfg.label}
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${cfg.badge}`}>{rows.length}</span>
+                  </span>
+                  <ChevronDown size={15} className={`shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Contenu déroulant */}
+                {isOpen && (
+                  <div className="divide-y divide-neutral-100 bg-white">
+                    {rows.length === 0 ? (
+                      <p className="px-4 py-4 text-center text-xs font-semibold text-neutral-400">Aucun invité dans cette catégorie.</p>
+                    ) : (
+                      rows.map(inv => {
+                        const scannerName = inv.scannedBy && typeof inv.scannedBy === 'object'
+                          ? `${inv.scannedBy.firstName ?? ''} ${inv.scannedBy.lastName ?? ''}`.trim()
+                          : null;
+                        const scanDate = inv.scannedAt
+                          ? new Date(inv.scannedAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          : null;
+
+                        return (
+                          <div key={inv._id} className="flex flex-wrap items-start gap-3 px-4 py-3 text-xs sm:flex-nowrap">
+                            {/* Avatar initiales */}
+                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${cfg.badge}`}>
+                              {guestName(inv).slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-black text-neutral-800 truncate">{guestName(inv)}</p>
+                              <p className="mt-0.5 text-neutral-400 truncate">
+                                {inv.guestType} · {inv.email || inv.phone || 'contact non renseigné'}
+                              </p>
+                              {inv.shortCode && (
+                                <p className="mt-1 font-mono text-[11px] font-black text-emerald-700">
+                                  Code {inv.shortCode} · {inv.scanStatus ?? 'unused'}
+                                </p>
+                              )}
+                              {scanDate && (
+                                <p className="mt-1 text-[11px] text-neutral-500">
+                                  Scanné le {scanDate}
+                                  {scannerName ? ` · par ${scannerName}` : ''}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -630,8 +734,9 @@ export default function AdminActivitesPage() {
                     {/* Actions */}
                     <div className="flex items-center gap-1.5">
                       <Link href={`/activites/${a.slug}`} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2 text-[11px] font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700 whitespace-nowrap">
-                        <Eye size={11} /> Voir
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700"
+                        title="Voir l'activité">
+                        <Eye size={11} />
                       </Link>
                       <button onClick={() => setPresenceTarget(a)}
                         className="inline-flex h-7 items-center gap-1 rounded-lg border border-emerald-100 px-2 text-[11px] font-black text-emerald-700 transition hover:bg-emerald-50 whitespace-nowrap">
@@ -639,7 +744,7 @@ export default function AdminActivitesPage() {
                       </button>
                       <button onClick={() => remindInvitations.mutate(a._id)}
                         disabled={remindInvitations.isPending || !hasSummary || (a.invitationSummary!.pending + a.invitationSummary!.unsure) === 0}
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-amber-100 text-amber-500 transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-40"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 border-amber-300 text-amber-500 transition hover:border-amber-500 hover:bg-amber-50 disabled:opacity-40"
                         title="Relancer">
                         <Send size={11} />
                       </button>
