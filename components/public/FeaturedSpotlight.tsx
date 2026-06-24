@@ -249,7 +249,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
             {items.map((item, itemIndex) => (
               <SwiperSlide key={item._id} className="!flex h-full items-start pt-7 justify-end md:items-center md:pt-0" style={{ boxShadow: 'inset 0 0 0 3px blue' }}>
                 <div
-                  className="grid h-[88%] w-[93%] min-h-0 overflow-hidden rounded-2xl border-0 bg-transparent grid-rows-[30%_70%] md:h-[360px] md:w-[92%] md:grid-cols-[1fr_1fr] md:grid-rows-1 lg:h-[400px] lg:w-[91%] xl:h-[430px]"
+                  className="grid h-[88%] w-[93%] min-h-0 overflow-hidden rounded-2xl border-0 bg-transparent grid-rows-[42%_58%] md:h-[360px] md:w-[92%] md:grid-cols-[1fr_1fr] md:grid-rows-1 lg:h-[400px] lg:w-[91%] xl:h-[430px]"
                   style={{
                     boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px, inset 0 0 0 3px orange',
                   }}
@@ -257,7 +257,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
 
                   {/* ── Bloc texte ── */}
                   <article
-                    className="relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl rounded-l-2xl bg-white p-4 text-left text-neutral-950 md:order-1 md:rounded-b-none md:rounded-l-2xl md:bg-transparent md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6"
+                    className="relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl bg-white p-4 text-left text-neutral-950 md:order-1 md:rounded-b-none md:rounded-l-2xl md:bg-transparent md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6"
                     style={{ boxShadow: '0 -10px 32px rgba(0,0,0,0.10), 0 -2px 8px rgba(0,0,0,0.06), inset 0 0 0 3px magenta' }}
                   >
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
@@ -278,10 +278,11 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                           type="button"
                           onClick={() => selectSlide(dotIndex)}
                           aria-label={'Afficher ' + entry.title}
-                          className={`relative p-0 rounded-full transition-all duration-300 ${
+                          style={{ height: '4px', minHeight: '0' }}
+                          className={`relative overflow-hidden p-0 rounded-full transition-all duration-300 ${
                             dotIndex === activeIndex
-                              ? 'h-1 w-5'
-                              : 'h-1 w-1 bg-neutral-300 hover:bg-neutral-400'
+                              ? 'w-5'
+                              : 'w-1 bg-neutral-300 hover:bg-neutral-400'
                           }`}
                         >
                           {dotIndex === activeIndex && (

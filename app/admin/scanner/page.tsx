@@ -274,11 +274,49 @@ function ScanAlertModal({ title, message, onClose }: { title: string; message: s
     </div>
   );
 }
+
+function CameraPermissionModal({ onAllow, onClose }: { onAllow: () => void; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm" onClick={onClose}>
+      <motion.div
+        initial={{ scale: 0.96, opacity: 0, y: 14 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.96, opacity: 0, y: 10 }}
+        className="w-full max-w-sm rounded-2xl border border-emerald-100 bg-white p-5 shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+            <Camera size={22} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-black text-neutral-950">Autoriser la camera</h2>
+            <p className="mt-1 text-sm leading-5 text-neutral-600">
+              Le scanner doit acceder a la camera pour lire les QR codes des membres, invites et cauris. Le navigateur demandera votre autorisation juste apres.
+            </p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full p-1 text-neutral-500 hover:bg-neutral-100">
+            <X size={17} />
+          </button>
+        </div>
+        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          <button type="button" onClick={onClose} className="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 text-sm font-bold text-neutral-600 hover:bg-neutral-50">
+            Annuler
+          </button>
+          <button type="button" onClick={onAllow} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-black text-white hover:bg-emerald-700">
+            <Camera size={15} /> Autoriser
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 export default function ScannerPage() {
   const [selectedActivityId, setSelectedActivityId] = useState('');
   const [manualCode,  setManualCode]   = useState('');
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError,  setCameraError]  = useState<string | null>(null);
+  const [showCameraPrompt, setShowCameraPrompt] = useState(false);
   const [scannerReady, setScannerReady] = useState(false);
   const [scannedMember, setScannedMember] = useState<ScannedMember | null>(null);
   const [checkinDone, setCheckinDone]   = useState(false);
@@ -349,6 +387,7 @@ export default function ScannerPage() {
   }, [lookup]);
 
   const toggleCamera = async () => {
+    setShowCameraPrompt(false);
     setCameraError(null);
     if (cameraActive) { await stopScanner(); return; }
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -475,7 +514,7 @@ export default function ScannerPage() {
               <span className="text-sm font-black text-neutral-700">Caméra QR</span>
               <button
                 type="button"
-                onClick={toggleCamera}
+                onClick={() => { if (cameraActive) void stopScanner(); else setShowCameraPrompt(true); }}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black transition-all sm:gap-2 sm:px-4 ${cameraActive ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
               >
                 {cameraActive ? <><CameraOff size={14}/> <span className="hidden sm:inline">Arrêter</span></> : <><Camera size={14}/> <span className="hidden sm:inline">Démarrer</span></>}
@@ -634,6 +673,9 @@ export default function ScannerPage() {
 
       {/* Modal résultat scan */}
       <AnimatePresence>
+        {showCameraPrompt && (
+          <CameraPermissionModal onAllow={() => void toggleCamera()} onClose={() => setShowCameraPrompt(false)} />
+        )}
         {scanAlert && (
           <ScanAlertModal title={scanAlert.title} message={scanAlert.message} onClose={() => setScanAlert(null)} />
         )}
