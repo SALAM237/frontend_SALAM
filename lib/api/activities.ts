@@ -253,14 +253,39 @@ export function useRespondActivityInvitation(activityId: string, slug?: string) 
       return { prevList, prevDetail };
     },
     onError: (err: Error, _status, ctx: any) => {
-      // Rollback
       ctx?.prevList?.forEach(([key, val]: [any, any]) => qc.setQueryData(key, val));
       if (slug && ctx?.prevDetail) qc.setQueryData(['member-activity', slug], ctx.prevDetail);
       toast.error(err.message);
     },
-    onSuccess: res => {
-      qc.invalidateQueries({ queryKey: ['member-activities'] });
-      qc.invalidateQueries({ queryKey: ['member-activity'] });
+    onSuccess: (res, status) => {
+      const inv = (res as any)?.data?.invitation as ActivityInvitationDoc | undefined;
+
+      // Consolider avec la réponse serveur (évite le race condition du invalidateQueries+refetch)
+      qc.setQueriesData<any>({ queryKey: ['member-activities'] }, (old: any) => {
+        if (!old?.data?.activities) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            activities: old.data.activities.map((a: any) =>
+              a._id === activityId
+                ? { ...a, myInvitation: inv ?? { ...(a.myInvitation ?? {}), rsvpStatus: status } }
+                : a
+            ),
+          },
+        };
+      });
+
+      if (slug) {
+        qc.setQueryData<any>(['member-activity', slug], (old: any) => {
+          if (!old?.data) return old;
+          return {
+            ...old,
+            data: { ...old.data, myInvitation: inv ?? { ...(old.data.myInvitation ?? {}), rsvpStatus: status } },
+          };
+        });
+      }
+
       toast.success((res as any).message ?? 'Présence confirmée');
     },
   });
