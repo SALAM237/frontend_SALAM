@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft, ChevronRight, ArrowRight,
+  ChevronLeft, ChevronRight, ArrowRight, Pause, Play,
   Users, CalendarDays, Trophy, CheckCircle2,
   Share2, Globe, X as XIcon, Video,
 } from 'lucide-react';
@@ -21,8 +21,8 @@ interface Slide {
   heading1: string;
   heading2: string;
   body:     string;
-  glow:     string;   /* hex color for the radial glow */
-  stroke:   string;   /* -webkit-text-stroke color */
+  glow:     string;
+  stroke:   string;
   panel:    SlidePanel;
   cta1:     { label: string; href: string };
   cta2:     { label: string; href: string };
@@ -67,7 +67,7 @@ const SLIDES: Slide[] = [
   },
 ];
 
-const INTERVAL = 7000; /* ms auto-advance */
+const INTERVAL = 7000;
 
 const SOCIALS = [
   { Icon: Share2, label: 'Facebook' },
@@ -83,11 +83,11 @@ function PanelStats() {
   return (
     <div className="grid grid-cols-3 divide-x divide-white/10">
       {[
-        { value: '128+', label: 'MEMBRES', icon: Users },
-        { value: '24',   label: 'ACTIVITÉS', icon: CalendarDays },
-        { value: '5 ANS', label: 'D\'HISTOIRE', icon: Trophy },
+        { value: '128+', label: 'MEMBRES',     icon: Users },
+        { value: '24',   label: 'ACTIVITÉS',   icon: CalendarDays },
+        { value: '5 ANS',label: 'D\'HISTOIRE', icon: Trophy },
       ].map(({ value, label, icon: Icon }) => (
-        <div key={label} className="px-4 py-4 text-center sm:px-6 sm:py-5">
+        <div key={label} className="px-3 py-4 text-center sm:px-6 sm:py-5">
           <Icon className="mx-auto mb-1.5 h-4 w-4 text-white/40" />
           <p className="font-black text-white leading-none text-xl sm:text-3xl">{value}</p>
           <p className="mt-1 text-[9px] sm:text-[11px] tracking-[.18em] text-white/50">{label}</p>
@@ -104,7 +104,7 @@ function PanelActivities() {
       {items.map(a => {
         const d = new Date(a.date);
         return (
-          <li key={a.id} className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6">
+          <li key={a.id} className="flex items-center gap-3 px-3 py-3 sm:gap-4 sm:px-6">
             <div className="shrink-0 text-center">
               <p className="font-black text-white leading-none text-sm sm:text-base">
                 {d.toLocaleDateString('fr-FR', { day: '2-digit' })}
@@ -135,7 +135,7 @@ function PanelJoin() {
     'Réseau professionnel exclusif',
   ];
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-3 py-4 sm:px-6 sm:py-5">
       {perks.map(p => (
         <div key={p} className="flex items-start gap-2">
           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-salam-yellow" />
@@ -156,11 +156,11 @@ export function HeroCarousel() {
   const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const progRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const slide = SLIDES[current];
+  const slide     = SLIDES[current];
+  const nextSlide = SLIDES[(current + 1) % SLIDES.length];
 
   const go = useCallback((idx: number) => {
     setCurrent(((idx % SLIDES.length) + SLIDES.length) % SLIDES.length);
-    setProgress(0);
   }, []);
 
   const next = useCallback(() => go(current + 1), [current, go]);
@@ -173,9 +173,10 @@ export function HeroCarousel() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [paused, next]);
 
-  /* Progress bar */
+  /* Progress — FIXED: reset only on slide change, pause merely freezes */
+  useEffect(() => { setProgress(0); }, [current]);
+
   useEffect(() => {
-    setProgress(0);
     if (paused) return;
     const step = 100 / (INTERVAL / 80);
     progRef.current = setInterval(() => setProgress(p => Math.min(p + step, 100)), 80);
@@ -187,17 +188,19 @@ export function HeroCarousel() {
     const fn = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft')  prev();
       if (e.key === 'ArrowRight') next();
+      if (e.key === ' ')          { e.preventDefault(); setPaused(p => !p); }
     };
     window.addEventListener('keydown', fn);
     return () => window.removeEventListener('keydown', fn);
   }, [prev, next]);
 
+  /* ── Common button style for chevrons + pause ── */
+  const navBtn = 'grid place-items-center rounded-full border border-white/35 bg-black/30 text-white backdrop-blur-sm transition-all hover:border-white/70 hover:bg-white/10 active:scale-95';
+
   return (
     <section
       className="relative w-full overflow-hidden"
       style={{ height: '100dvh', minHeight: '580px', background: '#070d09' }}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
       aria-label="Carrousel SALAM"
     >
       {/* ── Animated background glow ── */}
@@ -210,7 +213,6 @@ export function HeroCarousel() {
           exit={{ opacity: 0 }}
           transition={{ duration: 1.2 }}
         >
-          {/* Primary color radial glow — changes per slide */}
           <div
             className="absolute rounded-full"
             style={{
@@ -224,7 +226,6 @@ export function HeroCarousel() {
               transform: 'translate(-50%,-55%)',
             }}
           />
-          {/* Secondary soft glow bottom */}
           <div
             className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full"
             style={{
@@ -235,7 +236,6 @@ export function HeroCarousel() {
               filter: 'blur(60px)',
             }}
           />
-          {/* Dot grid overlay */}
           <div
             className="absolute inset-0"
             style={{
@@ -243,7 +243,6 @@ export function HeroCarousel() {
               backgroundSize: '32px 32px',
             }}
           />
-          {/* Bottom dark fade */}
           <div
             className="absolute inset-0"
             style={{ background: 'linear-gradient(180deg, rgba(7,13,9,0.3) 0%, transparent 30%, transparent 55%, rgba(7,13,9,0.95) 100%)' }}
@@ -251,7 +250,7 @@ export function HeroCarousel() {
         </motion.div>
       </AnimatePresence>
 
-      {/* ── Social icons — right side (CVO style) ── */}
+      {/* ── Social icons — right side ── */}
       <div className="absolute right-3 top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-2 sm:right-5 md:flex">
         {SOCIALS.map(({ Icon, label }) => (
           <a
@@ -268,8 +267,8 @@ export function HeroCarousel() {
       {/* ─────── SLIDE CONTENT ─────── */}
       <div className="relative z-10 flex h-full flex-col">
 
-        {/* ── Top: Logo ── */}
-        <div className="flex justify-center px-4 pt-8 sm:pt-10">
+        {/* ── Logo — remonté sur mobile ── */}
+        <div className="flex justify-center px-4 pt-5 sm:pt-10">
           <motion.div
             key={`logo-${slide.id}`}
             initial={{ opacity: 0, y: -16 }}
@@ -297,18 +296,13 @@ export function HeroCarousel() {
               transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
               className="w-full max-w-3xl"
             >
-              {/* Eyebrow */}
               <p className="mb-4 inline-flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[.28em] text-white/60">
                 <span className="h-px w-8 bg-current" />
                 {slide.eyebrow}
                 <span className="h-px w-8 bg-current" />
               </p>
 
-              {/* Heading — CVO outline text style */}
-              <h1
-                className="select-none leading-[0.88]"
-                style={{ fontWeight: 900 }}
-              >
+              <h1 className="select-none leading-[0.88]" style={{ fontWeight: 900 }}>
                 <span
                   className="block text-transparent"
                   style={{
@@ -332,7 +326,6 @@ export function HeroCarousel() {
                 </span>
               </h1>
 
-              {/* Tagline */}
               <p
                 className="mx-auto mt-5 text-white/65 sm:mt-6"
                 style={{ fontSize: 'clamp(0.9rem, 1.4vw, 1.15rem)', maxWidth: '520px', lineHeight: 1.6 }}
@@ -343,8 +336,26 @@ export function HeroCarousel() {
           </AnimatePresence>
         </div>
 
-        {/* ── Bottom: Glass info panel ── */}
-        <div className="relative z-10 px-3 pb-[72px] sm:px-6 sm:pb-[84px]">
+        {/* ── Bottom: Glass info panel — peek carousel ── */}
+        <div className="relative pb-[62px] sm:pb-[78px]">
+
+          {/* ── Peek ghost — next slide card edge visible at right ── */}
+          <div
+            className="pointer-events-none absolute right-0 top-0 bottom-[62px] sm:bottom-[78px] z-10 overflow-hidden rounded-l-xl sm:rounded-l-2xl"
+            style={{
+              width: '8%',
+              borderLeft:   `1px solid ${nextSlide.glow}25`,
+              borderTop:    '1px solid rgba(255,255,255,0.07)',
+              borderBottom: '1px solid rgba(255,255,255,0.07)',
+              background:   'rgba(7,13,9,0.42)',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            {/* Color accent stripe of the next slide */}
+            <div className="h-[2px] w-full" style={{ background: nextSlide.glow, opacity: 0.45 }} />
+          </div>
+
+          {/* ── Main animated panel ── */}
           <AnimatePresence mode="wait">
             <motion.div
               key={`panel-${slide.id}`}
@@ -352,31 +363,23 @@ export function HeroCarousel() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.55, delay: 0.1 }}
-              className="mx-auto overflow-hidden rounded-xl border border-white/10 sm:rounded-2xl"
+              /* Left-aligned with right margin to reveal peek ghost */
+              className="ml-[3%] mr-[9%] overflow-hidden rounded-l-xl border border-white/10 sm:ml-[5%] sm:mr-[9%] sm:rounded-l-2xl"
               style={{
-                maxWidth: '680px',
-                background: 'rgba(7,13,9,0.55)',
-                backdropFilter: 'blur(16px)',
+                background:         'rgba(7,13,9,0.55)',
+                backdropFilter:     'blur(16px)',
                 WebkitBackdropFilter: 'blur(16px)',
                 boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px',
               }}
             >
               {/* Panel header */}
               <div className="flex items-center justify-between border-b border-white/8 px-4 py-2.5 sm:px-6">
-                <span
-                  className="text-[10px] font-bold uppercase tracking-[.2em]"
-                  style={{ color: slide.glow }}
-                >
+                <span className="text-[10px] font-bold uppercase tracking-[.2em]" style={{ color: slide.glow }}>
                   {slide.panel === 'stats'      ? 'SALAM EN CHIFFRES'
                   : slide.panel === 'activities' ? 'PROCHAINES DATES'
-                  :                               'AVANTAGES ADHÉRENTS'
-                  }
+                  :                               'AVANTAGES ADHÉRENTS'}
                 </span>
-                {/* Colored dot */}
-                <span
-                  className="size-2 rounded-full"
-                  style={{ background: slide.glow, boxShadow: `0 0 8px ${slide.glow}` }}
-                />
+                <span className="size-2 rounded-full" style={{ background: slide.glow, boxShadow: `0 0 8px ${slide.glow}` }} />
               </div>
 
               {/* Panel content */}
@@ -388,16 +391,14 @@ export function HeroCarousel() {
               <div className="grid grid-cols-2 gap-2 border-t border-white/8 p-3 sm:p-4">
                 <Link
                   href={slide.cta1.href}
-                  className="flex items-center justify-center rounded-lg border-2 border-white bg-black/10 py-2.5 text-center text-[11px] font-bold tracking-[.1em] text-white backdrop-blur-sm transition-all sm:text-xs hover:border-transparent"
-                  style={{
-                    transition: 'background 0.25s, border-color 0.25s',
-                  }}
+                  className="flex items-center justify-center rounded-lg border-2 border-white bg-black/10 py-2.5 text-center text-[11px] font-bold tracking-[.1em] text-white backdrop-blur-sm sm:text-xs"
+                  style={{ transition: 'background 0.25s, border-color 0.25s' }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.background = slide.glow;
+                    (e.currentTarget as HTMLElement).style.background  = slide.glow;
                     (e.currentTarget as HTMLElement).style.borderColor = slide.glow;
                   }}
                   onMouseLeave={e => {
-                    (e.currentTarget as HTMLElement).style.background = '';
+                    (e.currentTarget as HTMLElement).style.background  = '';
                     (e.currentTarget as HTMLElement).style.borderColor = 'white';
                   }}
                 >
@@ -421,7 +422,7 @@ export function HeroCarousel() {
       <button
         onClick={prev}
         aria-label="Slide précédent"
-        className="absolute left-3 top-1/2 z-20 -translate-y-1/2 grid size-10 place-items-center rounded-full border border-white/20 bg-black/25 text-white backdrop-blur-sm transition-all hover:border-white/50 hover:bg-white/10 sm:left-5 sm:size-12"
+        className={`absolute left-2.5 top-1/2 z-20 -translate-y-1/2 size-9 sm:left-4 sm:size-11 ${navBtn}`}
       >
         <ChevronLeft className="h-5 w-5" />
       </button>
@@ -430,23 +431,37 @@ export function HeroCarousel() {
       <button
         onClick={next}
         aria-label="Slide suivant"
-        className="absolute right-10 top-1/2 z-20 -translate-y-1/2 grid size-10 place-items-center rounded-full border border-white/20 bg-black/25 text-white backdrop-blur-sm transition-all hover:border-white/50 hover:bg-white/10 sm:right-14 md:right-16 sm:size-12"
+        className={`absolute right-[10%] top-1/2 z-20 -translate-y-1/2 size-9 sm:right-[11%] sm:size-11 ${navBtn}`}
       >
         <ChevronRight className="h-5 w-5" />
       </button>
 
-      {/* Bottom: Dots + Progress bar */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-5 sm:px-6 sm:pb-7">
-        {/* Dots */}
-        <div className="mb-3 flex items-center justify-center gap-2">
+      {/* Bottom: Dots + Pause + Progress */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pb-4 sm:px-6 sm:pb-5">
+        <div className="mb-3 flex items-center justify-center gap-3">
+
+          {/* Pause / Play button */}
+          <button
+            type="button"
+            onClick={() => setPaused(p => !p)}
+            aria-label={paused ? 'Reprendre' : 'Pause'}
+            className={`size-7 sm:size-8 ${navBtn}`}
+          >
+            {paused
+              ? <Play  className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              : <Pause className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            }
+          </button>
+
+          {/* Dot indicators */}
           {SLIDES.map((s, i) => (
             <button
               key={s.id}
               onClick={() => go(i)}
               aria-label={`Aller au slide ${i + 1}`}
-              className="relative h-[3px] rounded-full transition-all duration-300"
+              className="relative h-[3px] rounded-full transition-all duration-300 overflow-hidden"
               style={{
-                width: i === current ? '32px' : '16px',
+                width:      i === current ? '32px' : '16px',
                 background: i === current ? slide.glow : 'rgba(255,255,255,0.25)',
               }}
             >
@@ -454,9 +469,8 @@ export function HeroCarousel() {
                 <motion.span
                   className="absolute inset-y-0 left-0 rounded-full"
                   style={{ background: slide.glow }}
-                  initial={{ width: '0%' }}
                   animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0 }}
+                  transition={{ duration: 0.08, ease: 'linear' }}
                 />
               )}
             </button>

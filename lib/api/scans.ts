@@ -24,6 +24,12 @@ export interface ScannedMember {
 
 export interface ScanRecord {
   _id: string;
+  kind?: 'memberScan' | 'activityInvitation';
+  guestType?: 'client' | 'external' | 'member';
+  guestName?: string;
+  guestEmail?: string | null;
+  guestPhone?: string | null;
+  shortCode?: string | null;
   memberId: { _id: string; firstName: string; lastName: string; memberNumber: string; avatar?: string } | null;
   activityId: { _id: string; title: string; startDate?: string } | null;
   scannedBy:  { _id: string; firstName: string; lastName: string } | null;

@@ -55,9 +55,9 @@ function ScanRow({ scan }: { scan: ScanRecord }) {
   const member   = scan.memberId;
   const activity = scan.activityId;
   const scanner  = scan.scannedBy;
-  const name     = member ? `${member.firstName} ${member.lastName}` : '—';
-  const num      = member?.memberNumber ?? '—';
-  const scanName = scanner ? `${scanner.firstName} ${scanner.lastName}` : '—';
+  const name     = member ? `${member.firstName} ${member.lastName}` : scan.guestName ?? 'Invite externe';
+  const num      = member?.memberNumber ?? scan.shortCode ?? '-';
+  const scanName = scanner ? `${scanner.firstName} ${scanner.lastName}` : '-';
   const dt       = new Date(scan.createdAt);
   const time     = dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   const date     = dt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
@@ -69,7 +69,7 @@ function ScanRow({ scan }: { scan: ScanRecord }) {
         {member?.avatar
           ? <img src={memberPhotoUrl({ avatar: member.avatar })} alt={name} className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-neutral-200" />
           : <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-black text-emerald-700">
-              {member ? `${member.firstName[0]}${member.lastName[0]}` : '?'}
+              {member ? `${member.firstName[0]}${member.lastName[0]}` : name.slice(0, 2).toUpperCase()}
             </div>
         }
         <div className="min-w-0 flex-1 overflow-hidden">
@@ -98,6 +98,7 @@ function ScanRow({ scan }: { scan: ScanRecord }) {
         </span>
       </div>
       {scan.note && <p className="ml-11 mt-1 truncate text-[11px] italic text-neutral-400">"{scan.note}"</p>}
+      {!member && (scan.guestEmail || scan.guestPhone) && <p className="ml-11 mt-1 truncate text-[10px] text-neutral-400">{scan.guestEmail || scan.guestPhone}</p>}
     </div>
   );
 }
@@ -243,6 +244,36 @@ function ScanResultModal({
 }
 
 // ── Page principale ────────────────────────────────────────────────────────
+
+function ScanAlertModal({ title, message, onClose }: { title: string; message: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+      <motion.div
+        initial={{ scale: 0.96, opacity: 0, y: 14 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.96, opacity: 0, y: 10 }}
+        className="w-full max-w-sm rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900 shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700">
+            <AlertCircle size={22} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-black">{title}</h2>
+            <p className="mt-1 text-sm leading-5 text-red-700">{message}</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full p-1 text-red-600 hover:bg-red-100">
+            <X size={17} />
+          </button>
+        </div>
+        <button type="button" onClick={onClose} className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-red-600 text-sm font-black text-white hover:bg-red-700">
+          Compris
+        </button>
+      </motion.div>
+    </div>
+  );
+}
 export default function ScannerPage() {
   const [selectedActivityId, setSelectedActivityId] = useState('');
   const [manualCode,  setManualCode]   = useState('');
@@ -251,6 +282,7 @@ export default function ScannerPage() {
   const [scannerReady, setScannerReady] = useState(false);
   const [scannedMember, setScannedMember] = useState<ScannedMember | null>(null);
   const [checkinDone, setCheckinDone]   = useState(false);
+  const [scanAlert, setScanAlert] = useState<{ title: string; message: string } | null>(null);
   const [flashState, setFlashState]     = useState<'success' | 'error' | null>(null);
   const [note, setNote]    = useState('');
   const [histPage, setHistPage] = useState(1);
@@ -303,7 +335,7 @@ export default function ScannerPage() {
     }
 
     processingRef.current = true;
-    setScannedMember(null); setCheckinDone(false); setNote('');
+    setScannedMember(null); setCheckinDone(false); setScanAlert(null); setNote('');
     try {
       const res = await lookup.mutateAsync(trimmed);
       setScannedMember(res.data ?? null);
@@ -319,6 +351,12 @@ export default function ScannerPage() {
   const toggleCamera = async () => {
     setCameraError(null);
     if (cameraActive) { await stopScanner(); return; }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Camera non disponible. Ouvrez le site en HTTPS et utilisez un navigateur compatible.');
+      return;
+    }
+    setCameraActive(true);
+    setScannerReady(false);
     let stream: MediaStream | null = null;
     try {
       try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } } }); }
@@ -326,7 +364,6 @@ export default function ScannerPage() {
 
       const { BrowserMultiFormatReader } = await import('@zxing/browser');
       const reader = new BrowserMultiFormatReader();
-      setCameraActive(true); setScannerReady(false);
       const controls = await reader.decodeFromStream(stream, videoRef.current!, (result, err) => {
         if (result && !processingRef.current) {
           const text = result.getText();
@@ -367,7 +404,18 @@ export default function ScannerPage() {
       beepOk();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Erreur lors de l\'enregistrement';
-      toast.error(msg);
+      const alreadyUsed = /deja|déjà|utilise|utilisé|enregistree|enregistrée/i.test(msg);
+      setFlashState('error');
+      vibrate([220, 80, 220]);
+      beepErr();
+      if (alreadyUsed) {
+        setScanAlert({
+          title: 'QR code deja valide',
+          message: 'Ce QR code a deja ete utilise. La presence a deja ete prise en compte, il ne faut pas le valider une seconde fois.',
+        });
+      } else {
+        toast.error(msg);
+      }
     }
   };
 
@@ -528,7 +576,7 @@ export default function ScannerPage() {
               </div>
             ) : lookup.isError ? (
               <p className="mt-2 flex items-center gap-1.5 text-xs text-red-600">
-                <XCircle size={13}/> Membre introuvable — vérifiez le code
+                <XCircle size={13}/> {(lookup.error as Error)?.message || 'Code introuvable - verifiez le code'}
               </p>
             ) : null}
           </div>
@@ -567,6 +615,9 @@ export default function ScannerPage() {
 
       {/* Modal résultat scan */}
       <AnimatePresence>
+        {scanAlert && (
+          <ScanAlertModal title={scanAlert.title} message={scanAlert.message} onClose={() => setScanAlert(null)} />
+        )}
         {scannedMember && (
           <ScanResultModal
             member={scannedMember}
@@ -576,7 +627,7 @@ export default function ScannerPage() {
             setNote={setNote}
             selectedActivity={selectedActivity}
             onCheckin={handleCheckin}
-            onClose={() => { setScannedMember(null); setCheckinDone(false); setNote(''); }}
+            onClose={() => { setScannedMember(null); setCheckinDone(false); setScanAlert(null); setNote(''); }}
           />
         )}
       </AnimatePresence>

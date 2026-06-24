@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   UserPlus, CreditCard, Search, Eye, CheckCircle2, Clock, XCircle,
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
-  ShieldCheck, Plus, Coins, Minus,
+  ShieldCheck, Plus, Minus,
 } from 'lucide-react';
 import {
   useAdminMembers,
@@ -24,6 +24,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { ControlledAvatarDialog } from '@/components/portal/AvatarLightbox';
+import { CauriImg } from '@/components/member/CauriWallet';
 
 type MemberStatus = 'active' | 'pending' | 'suspended';
 
@@ -173,7 +174,7 @@ export default function AdminAdherentsPage() {
             onClick={() => setShowCaurisManager(true)}
             className="inline-flex h-9 items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 text-sm font-semibold text-amber-800 transition-all hover:bg-amber-100 sm:px-4"
           >
-            <Coins size={14} />
+            <CauriImg size={16} />
             <span className="hidden sm:inline">Gestion cauris</span>
           </button>
           {/* Cartes membres — icône seule sur mobile */}
@@ -780,7 +781,7 @@ function CaurisManagementModal({ members, onClose }: { members: MemberListItem[]
         {/* Header */}
         <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
           <div className="flex items-center gap-2">
-            <Coins size={18} className="text-amber-600" />
+            <CauriImg size={22} />
             <h2 className="text-base font-black text-neutral-900">Gestion des cauris</h2>
           </div>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">

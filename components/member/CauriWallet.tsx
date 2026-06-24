@@ -9,7 +9,7 @@ import { useMemberActivities } from '@/lib/api/activities';
 import { CauriRedemption, CauriTransaction, useCancelCauriRedemption, useCauriWallet, useCreateCauriRedemption } from '@/lib/api/cauris';
 
 // ── Image cauri réutilisable ────────────────────────────────────────────────
-function CauriImg({ size = 24, className = '' }: { size?: number; className?: string }) {
+export function CauriImg({ size = 24, className = '' }: { size?: number; className?: string }) {
   return (
     <Image
       src="/images/cauris/cauri.png"
