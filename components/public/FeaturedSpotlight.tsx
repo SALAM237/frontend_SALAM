@@ -229,15 +229,15 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
           <Swiper
             modules={[Autoplay, A11y]}
             className="h-full"
-            slidesPerView={1.08}
+            slidesPerView={1.12}
             centeredSlides={false}
             spaceBetween={4}
-            rewind={items.length > 1}
+            loop={items.length > 1}
             speed={500}
             autoplay={items.length > 1 ? { delay: SLIDE_DELAY, disableOnInteraction: false, waitForTransition: true } : false}
             breakpoints={{
-              768:  { slidesPerView: 1.1, spaceBetween: 12 },
-              1024: { slidesPerView: 1.1, spaceBetween: 16 },
+              768:  { slidesPerView: 1.12, spaceBetween: 12 },
+              1024: { slidesPerView: 1.12, spaceBetween: 16 },
             }}
             onSwiper={swiper => { swiperRef.current = swiper; setActiveIndex(swiper.realIndex); }}
             onSlideChange={swiper => { setActiveIndex(swiper.realIndex); setProgress(0); }}
