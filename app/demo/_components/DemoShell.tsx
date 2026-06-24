@@ -9,7 +9,7 @@ import {
   Banknote, Bell, CalendarDays, ChevronRight, CreditCard, FileText, FolderOpen,
   History, Images, LayoutDashboard, Menu, MessageSquare, Newspaper, Settings,
   Shield, User, Users, X, Globe, LogOut, Bot, BriefcaseBusiness, Handshake,
-  Network, ClipboardCheck,
+  Network, ClipboardCheck, ScanLine, BadgeDollarSign,
 } from 'lucide-react';
 import { demoAdminUser, demoMemberProfile } from '@/data/demo/demo-portal';
 import { formatFullName } from '@/lib/format-name';
@@ -33,6 +33,8 @@ const adminNav: NavItem[] = [
   { label: 'Actualites', href: '/demo/admin/actualites', icon: Newspaper },
   { label: 'Messages', href: '/demo/admin/messages', icon: MessageSquare },
   { label: 'Historique', href: '/demo/admin/historique', icon: History },
+  { label: 'Cauris', href: '/demo/admin/cauris/validation', icon: BadgeDollarSign },
+  { label: 'Scanner QR', href: '/demo/admin/scanner', icon: ScanLine },
   { label: 'Roles & Acces', href: '/demo/admin/roles', icon: Shield },
   { label: 'Parametres', href: '/demo/admin/parametres', icon: Settings },
 ];
