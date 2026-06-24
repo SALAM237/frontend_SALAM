@@ -247,7 +247,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
             }
           >
             {items.map((item, itemIndex) => (
-              <SwiperSlide key={item._id} className="!flex h-full items-start pt-7 justify-end md:items-center md:pt-0" style={{ boxShadow: 'inset 0 0 0 3px blue' }}>
+              <SwiperSlide key={item._id} className="!flex h-full items-start pt-7 justify-end md:items-center md:pt-0">
                 <div
                   className="grid h-[88%] w-[93%] min-h-0 overflow-hidden rounded-2xl border-0 bg-transparent grid-rows-[42%_58%] md:h-[360px] md:w-[92%] md:grid-cols-[1fr_1fr] md:grid-rows-1 lg:h-[400px] lg:w-[91%] xl:h-[430px]"
                   style={{
@@ -262,7 +262,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                   >
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                       <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl lg:text-3xl">{item.title}</a>
-                      <a {...destinationProps(item.textDestination)} className="mt-2.5 block whitespace-pre-line text-sm leading-6 text-neutral-600 hover:text-neutral-900">{item.description}</a>
+                      <a {...destinationProps(item.textDestination)} className="mt-2.5 block whitespace-pre-line break-words text-sm leading-6 text-neutral-600 hover:text-neutral-900">{item.description}</a>
                     </div>
                     {item.buttonDestination?.type !== 'none' && (
                       <a {...destinationProps(item.buttonDestination)} className="absolute bottom-9 left-4 z-10 inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-emerald-600/45 bg-emerald-100/75 px-3.5 text-[11px] font-black text-emerald-800 backdrop-blur transition hover:border-emerald-700/70 hover:bg-emerald-100 md:static md:bottom-auto md:left-auto md:z-auto md:mt-4">

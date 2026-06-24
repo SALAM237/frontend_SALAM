@@ -3,12 +3,13 @@
 import { useRef, useState } from 'react';
 import {
   ImagePlus, Newspaper, Plus, X, Loader2, Trash2, Edit3,
-  Palette, GripVertical, Bold, Italic, PlusCircle,
+  Palette, GripVertical, Bold, Italic, PlusCircle, Eye, Tag, Calendar,
 } from 'lucide-react';
+import Link from 'next/link';
 import {
   useArticles, useCreateArticle, useUpdateArticle, useDeleteArticle,
   useUploadAdminArticleImage,
-  ARTICLE_CATEGORIES, type ArticleDoc,
+  ARTICLE_CATEGORIES, type ArticleDoc, articleHref,
 } from '@/lib/api/content';
 import { applyInlineTextStyle, captureTextSelection, type StoredTextSelection } from '@/lib/rich-text';
 import { articleImage } from '@/lib/article-image';
@@ -445,45 +446,73 @@ export default function AdminActualitesPage() {
           </div>
         )}
         {!isLoading && articles.length > 0 && (
-          <div className="divide-y divide-neutral-50">
+          <div className="grid gap-3 p-4">
             {articles.map((a: ArticleDoc) => {
               const catLabel = ARTICLE_CATEGORIES.find(c => c.value === a.data?.category)?.label ?? 'Général';
+              const isPublished = a.status === 'published';
               return (
-                <div key={a._id} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-neutral-50/60">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-blue-50 border border-blue-100">
+                <article key={a._id} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex sm:items-stretch">
+                  {/* Image — pleine largeur mobile, colonne gauche desktop */}
+                  <div className="relative h-44 shrink-0 overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 sm:h-auto sm:w-36">
                     {articleImage(a) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={articleImage(a)} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <Newspaper size={16} className="text-blue-600" />
+                      <div className="flex h-full items-center justify-center">
+                        <Newspaper size={32} className="text-blue-200" />
+                      </div>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-black text-sm text-neutral-900 truncate"><RichText value={a.title} /></p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${a.status === 'published' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-yellow-200 bg-yellow-50 text-yellow-700'}`}>
-                        {a.status === 'published' ? 'Publié' : 'Brouillon'}
-                      </span>
+
+                  {/* Contenu */}
+                  <div className="flex flex-1 flex-col justify-between p-4">
+                    <div>
+                      {/* Badges */}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-black tracking-wide ${isPublished ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-yellow-200 bg-yellow-50 text-yellow-700'}`}>
+                          {isPublished ? 'Publié' : 'Brouillon'}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 px-2.5 py-0.5 text-[10px] font-semibold text-neutral-500">
+                          <Tag size={9} /> {catLabel}
+                        </span>
+                      </div>
+
+                      {/* Titre */}
+                      <h3 className="mt-2 text-sm font-black leading-snug text-neutral-900 line-clamp-2">
+                        <RichText value={a.title} />
+                      </h3>
+
+                      {/* Extrait */}
+                      {a.data?.excerpt && (
+                        <p className="mt-1 text-xs leading-5 text-neutral-500 line-clamp-2">
+                          <RichText value={a.data.excerpt} />
+                        </p>
+                      )}
+
+                      {/* Date */}
+                      <p className="mt-1.5 flex items-center gap-1 text-[11px] text-neutral-400">
+                        <Calendar size={10} />
+                        {new Date(a.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
                     </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-400">
-                      <span className="rounded-full bg-neutral-100 px-2 py-0.5 font-semibold text-neutral-600">{catLabel}</span>
-                      {a.data?.excerpt && <span className="truncate max-w-xs"><RichText value={a.data.excerpt} /></span>}
+
+                    {/* Actions */}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <Link href={articleHref(a)} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-neutral-200 px-3.5 text-xs font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
+                        <Eye size={13} /> Voir
+                      </Link>
+                      <button onClick={() => setEditTarget(a)}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-neutral-200 px-3.5 text-xs font-black text-neutral-600 transition hover:border-blue-300 hover:text-blue-700">
+                        <Edit3 size={13} /> Modifier
+                      </button>
+                      <button onClick={() => handleDelete(a._id, a.title)}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-red-100 px-3.5 text-xs font-black text-red-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700">
+                        <Trash2 size={13} /> Supprimer
+                      </button>
                     </div>
-                    <p className="mt-0.5 text-[11px] text-neutral-300">
-                      {new Date(a.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </p>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button title="Modifier" onClick={() => setEditTarget(a)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition hover:border-emerald-300 hover:text-emerald-700">
-                      <Edit3 size={12} />
-                    </button>
-                    <button title="Supprimer" onClick={() => handleDelete(a._id, a.title)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-100 text-red-300 transition hover:border-red-300 hover:text-red-600">
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
+                </article>
               );
             })}
           </div>

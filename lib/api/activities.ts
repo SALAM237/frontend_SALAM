@@ -26,16 +26,27 @@ export interface ActivityInvitationDoc {
   qrDataUrl?: string;
   scanValue?: string;
 }
+export interface ActivityProgramStep { time: string; title: string; }
+
 export interface ActivityDoc {
   _id: string;
   title: string;
   slug: string;
   category: string;
+  shortDescription?: string;
   description?: string;
   startDate?: string;
   endDate?: string;
+  city?: string;
+  venue?: string;
   location?: string;
   capacity?: number;
+  registeredCount?: number;
+  price?: number;
+  program?: ActivityProgramStep[];
+  practicalInfo?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   visibility: 'public' | 'members' | 'office';
   status: 'draft' | 'published' | 'finished' | 'cancelled';
   createdAt: string;

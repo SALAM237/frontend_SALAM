@@ -135,18 +135,18 @@ export function DesignEditorField({ id, label, styles, setStyles, active, setAct
   const selectionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [palettePosition, setPalettePosition] = useState<PalettePosition>({ x: 12, y: 42 });
   const update = (patch: Partial<DesignStyle>) => setStyles(prev => ({ ...prev, [id]: { ...(prev[id] ?? defaultDesign), ...patch } }));
-  const closePalette = () => {
+  const closePalette = (clearSelection = true) => {
     // Annuler le timer de 80ms qui pourrait ré-ouvrir la palette après le clic sur X
     if (selectionTimer.current) clearTimeout(selectionTimer.current);
     selectionRef.current = null;
-    try { window.getSelection()?.removeAllRanges(); } catch {}
+    if (clearSelection) { try { window.getSelection()?.removeAllRanges(); } catch {} }
     setActive(null);
   };
   const rememberSelection = (target: EventTarget | null) => {
     if (target instanceof HTMLElement && target.closest('[data-design-palette="true"]')) return;
     const selection = captureTextSelection(target);
     if (!selection) {
-      if (target instanceof HTMLElement && rootRef.current?.contains(target)) closePalette();
+      if (target instanceof HTMLElement && rootRef.current?.contains(target)) closePalette(false);
       return;
     }
     selectionRef.current = selection;

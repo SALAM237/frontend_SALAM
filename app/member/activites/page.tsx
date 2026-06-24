@@ -99,7 +99,7 @@ export default function MemberActivitesPage() {
                       <p className="font-black text-sm text-neutral-900">{a.title}</p>
                       <span className={`shrink-0 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${catCls}`}>{catLabel}</span>
                     </div>
-                    {a.description && <p className="mt-0.5 text-xs text-neutral-500 line-clamp-2">{a.description}</p>}
+                    {a.description && <p className="mt-0.5 whitespace-pre-line break-words text-xs text-neutral-500 line-clamp-2">{a.description}</p>}
                     <div className="mt-1 flex flex-wrap gap-3 text-[11px] text-neutral-400">
                       {a.startDate && (
                         <span className="flex items-center gap-1">
@@ -149,7 +149,7 @@ export default function MemberActivitesPage() {
               </button>
             </div>
             <div className="space-y-4 p-5">
-              {selected.description && <p className="whitespace-pre-line text-sm leading-7 text-neutral-700">{selected.description}</p>}
+              {selected.description && <p className="whitespace-pre-line break-words text-sm leading-7 text-neutral-700">{selected.description}</p>}
               <div className="grid gap-2 text-xs text-neutral-500 sm:grid-cols-2">
                 {selected.startDate && <Info icon={CalendarDays} text={new Date(selected.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })} />}
                 {selected.location && <Info icon={MapPin} text={selected.location} />}

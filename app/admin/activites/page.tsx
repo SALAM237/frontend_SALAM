@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { CalendarDays, Plus, X, MapPin, Users, Loader2, Trash2, Edit3, PlusCircle, Send } from 'lucide-react';
+import Link from 'next/link';
+import { CalendarDays, Plus, X, MapPin, Users, Loader2, Trash2, Edit3, PlusCircle, Send, Eye, Tag } from 'lucide-react';
 import {
   useActivities, useCreateActivity, useUpdateActivity, useDeleteActivity, useActivityInvitations, useRemindActivityInvitations,
   ACTIVITY_CATEGORIES, type ActivityDoc,
@@ -11,7 +12,8 @@ import { useInvoiceClients } from '@/lib/api/invoices';
 import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
-type ExtraBlock = { id: string; label: string; title: string; description: string };
+type ExtraBlock    = { id: string; label: string; title: string; description: string };
+type ProgramStep   = { id: string; time: string; title: string };
 type GuestMode = 'none' | 'member' | 'client' | 'external';
 type ExternalGuest = { id: string; firstName: string; lastName: string; email: string; phone: string };
 
@@ -35,20 +37,30 @@ function ActivityForm({
   title: string;
 }) {
   const [f, setF] = useState({
-    title:       initial?.title       ?? '',
-    category:    initial?.category    ?? '',
-    description: initial?.description ?? '',
-    startDate:   initial?.startDate   ? new Date(initial.startDate).toISOString().slice(0, 16) : '',
-    endDate:     initial?.endDate     ? new Date(initial.endDate).toISOString().slice(0, 16)   : '',
-    location:    initial?.location    ?? '',
-    capacity:    initial?.capacity    ? String(initial.capacity) : '',
-    visibility:  initial?.visibility  ?? 'public',
-    status:      initial?.status      ?? 'draft',
+    title:            initial?.title            ?? '',
+    category:         initial?.category         ?? '',
+    shortDescription: initial?.shortDescription ?? '',
+    description:      initial?.description      ?? '',
+    startDate:        initial?.startDate   ? new Date(initial.startDate).toISOString().slice(0, 16) : '',
+    endDate:          initial?.endDate     ? new Date(initial.endDate).toISOString().slice(0, 16)   : '',
+    city:             initial?.city             ?? '',
+    venue:            initial?.venue            ?? '',
+    location:         initial?.location         ?? '',
+    capacity:         initial?.capacity    ? String(initial.capacity) : '',
+    price:            initial?.price !== undefined ? String(initial.price) : '0',
+    practicalInfo:    initial?.practicalInfo    ?? '',
+    contactEmail:     initial?.contactEmail     ?? '',
+    contactPhone:     initial?.contactPhone     ?? '',
+    visibility:       initial?.visibility       ?? 'public',
+    status:           initial?.status           ?? 'draft',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeDesign, setActiveDesign] = useState<string | null>(null);
   const [styles, setStyles] = useState<Record<string, DesignStyle>>({});
   const [extraBlocks, setExtraBlocks] = useState<ExtraBlock[]>([]);
+  const [program, setProgram] = useState<ProgramStep[]>(
+    initial?.program?.map(s => ({ id: `step-${Math.random()}`, ...s })) ?? []
+  );
   const [guestMode, setGuestMode] = useState<GuestMode>('none');
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
@@ -82,10 +94,18 @@ function ActivityForm({
     onSubmit({
       title: f.title,
       category: f.category,
+      shortDescription: f.shortDescription || undefined,
       description: [f.description, extraDescription].filter(Boolean).join('\n\n') || undefined,
       startDate: f.startDate || undefined, endDate: f.endDate || undefined,
-      location: f.location || undefined,
+      city: f.city || undefined,
+      venue: f.venue || undefined,
+      location: f.venue || f.location || undefined,
       capacity: f.capacity ? Number(f.capacity) : undefined,
+      price: f.price !== '' ? Number(f.price) : 0,
+      program: program.filter(s => s.time.trim() || s.title.trim()).map(({ time, title }) => ({ time, title })),
+      practicalInfo: f.practicalInfo || undefined,
+      contactEmail: f.contactEmail || undefined,
+      contactPhone: f.contactPhone || undefined,
       visibility: f.visibility, status: f.status,
       invitations: {
         guestMode,
@@ -120,36 +140,108 @@ function ActivityForm({
             </select>
             {errors.category && <p className="text-[11px] text-red-500">{errors.category}</p>}
           </div>
+          {/* Description courte */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Description</label>
-            <DesignEditorField id="description" label="Description" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>{style => <RichTextEditor value={f.description} onChange={value => setF(p => ({ ...p, description: value }))} className="min-h-[96px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} placeholder="Description" />}</DesignEditorField>
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Description courte <span className="font-normal normal-case text-neutral-400">(carte)</span></label>
+            <input value={f.shortDescription} onChange={upd('shortDescription')} placeholder="Une phrase d'accroche pour la carte" className={inp()} />
           </div>
+
+          {/* À propos */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">À propos de l'activité</label>
+            <DesignEditorField id="description" label="À propos" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>{style => <RichTextEditor value={f.description} onChange={value => setF(p => ({ ...p, description: value }))} className="min-h-[96px] w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" style={style} placeholder="Description complète, contexte, objectifs…" />}</DesignEditorField>
+          </div>
+
+          {/* Date + Horaire */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date début</label>
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date de début <span className="text-red-500">*</span></label>
               <DesignEditorField id="startDate" label="Date début" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
                 {style => <input type="datetime-local" value={f.startDate} onChange={upd('startDate')} className={inp()} style={style} />}
               </DesignEditorField>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date fin</label>
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date de fin</label>
               <DesignEditorField id="endDate" label="Date fin" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
                 {style => <input type="datetime-local" value={f.endDate} onChange={upd('endDate')} className={inp()} style={style} />}
               </DesignEditorField>
             </div>
           </div>
+
+          {/* Ville + Venue */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Lieu</label>
-              <DesignEditorField id="location" label="Lieu" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
-                {style => <input value={f.location} onChange={upd('location')} placeholder="Yaoundé" className={inp()} style={style} />}
-              </DesignEditorField>
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Ville</label>
+              <input value={f.city} onChange={upd('city')} placeholder="Yaoundé" className={inp()} />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Capacité</label>
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Lieu / venue</label>
+              <input value={f.venue} onChange={upd('venue')} placeholder="Stade Omnisports" className={inp()} />
+            </div>
+          </div>
+
+          {/* Capacité + Tarif */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Capacité totale</label>
               <DesignEditorField id="capacity" label="Capacité" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
                 {style => <input type="number" min="1" value={f.capacity} onChange={upd('capacity')} placeholder="50" className={inp()} style={style} />}
               </DesignEditorField>
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">
+                Tarif (€) <span className="font-normal normal-case text-neutral-400">0 = gratuit</span>
+              </label>
+              <input type="number" min="0" step="0.5" value={f.price} onChange={upd('price')} placeholder="0" className={inp()} />
+            </div>
+          </div>
+
+          {/* Programme */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Programme</label>
+              <button type="button"
+                onClick={() => setProgram(p => [...p, { id: `step-${Date.now()}`, time: '', title: '' }])}
+                className="inline-flex h-7 items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 text-[11px] font-black text-emerald-700 hover:bg-emerald-100">
+                <PlusCircle size={12} /> Ajouter une étape
+              </button>
+            </div>
+            {program.length === 0 && (
+              <p className="rounded-xl border border-dashed border-neutral-200 py-3 text-center text-xs text-neutral-400">Aucune étape — cliquez sur Ajouter</p>
+            )}
+            <div className="space-y-2">
+              {program.map((step, i) => (
+                <div key={step.id} className="flex items-center gap-2">
+                  <input value={step.time} onChange={e => setProgram(p => p.map(s => s.id === step.id ? { ...s, time: e.target.value } : s))}
+                    placeholder="10:00" className="w-20 shrink-0 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" />
+                  <input value={step.title} onChange={e => setProgram(p => p.map(s => s.id === step.id ? { ...s, title: e.target.value } : s))}
+                    placeholder={`Étape ${i + 1}`} className={`flex-1 ${inp()}`} />
+                  <button type="button" onClick={() => setProgram(p => p.filter(s => s.id !== step.id))}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-100 text-red-400 hover:border-red-300 hover:text-red-600">
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Infos pratiques */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Infos pratiques</label>
+            <textarea value={f.practicalInfo} onChange={upd('practicalInfo')}
+              placeholder="Accès, parking, restauration, équipement à prévoir…"
+              rows={3} className={`${inp()} resize-none`} />
+          </div>
+
+          {/* Contacts */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Email contact</label>
+              <input type="email" value={f.contactEmail} onChange={upd('contactEmail')} placeholder="contact@salam.org" className={inp()} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Téléphone contact</label>
+              <input type="tel" value={f.contactPhone} onChange={upd('contactPhone')} placeholder="+237 6 00 00 00 00" className={inp()} />
             </div>
           </div>
           <div className="rounded-2xl border border-neutral-200 bg-neutral-50/60 p-4">
@@ -422,59 +514,91 @@ export default function AdminActivitesPage() {
           </div>
         )}
         {!isLoading && activities.length > 0 && (
-          <div className="divide-y divide-neutral-50">
+          <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
             {activities.map((a: ActivityDoc) => {
               const cfg      = sCfg[a.status] ?? sCfg.draft;
               const catLabel = ACTIVITY_CATEGORIES.find(c => c.value === a.category)?.label ?? a.category;
+              const hasSummary = a.invitationSummary && a.invitationSummary.total > 0;
               return (
-                <div key={a._id} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-neutral-50/60">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100">
-                    <CalendarDays size={16} className="text-emerald-600" />
+                <article key={a._id} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
+                  {/* Bannière catégorie */}
+                  <div className="relative flex h-36 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700">
+                    <CalendarDays size={48} className="text-white/20" />
+                    <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5">
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-black tracking-wide ${cfg.cls}`}>
+                        {cfg.label}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/15 px-2.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+                        <Tag size={9} /> {catLabel}
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-white/20 bg-white/15 px-2.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+                        {visiLabels[a.visibility]}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-sm font-black text-neutral-900">{a.title}</p>
-                      <span className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black ${cfg.cls}`}>{cfg.label}</span>
+
+                  {/* Contenu */}
+                  <div className="flex flex-col gap-3 p-4">
+                    {/* Titre */}
+                    <div>
+                      <h3 className="text-sm font-black leading-snug text-neutral-900 line-clamp-2">{a.title}</h3>
+                      {a.description && (
+                        <p className="mt-1 whitespace-pre-line break-words text-xs leading-5 text-neutral-500 line-clamp-2">{a.description}</p>
+                      )}
                     </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-400">
-                      <span className="rounded-full bg-neutral-100 px-2 py-0.5 font-semibold text-neutral-600">{catLabel}</span>
-                      {a.location && <span className="flex items-center gap-1"><MapPin size={10} /> {a.location}</span>}
-                      {a.capacity && <span className="flex items-center gap-1"><Users size={10} /> {a.capacity} places</span>}
+
+                    {/* Meta */}
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold text-neutral-400">
+                      {a.location && <span className="flex items-center gap-1"><MapPin size={11} /> {a.location}</span>}
+                      {a.capacity && <span className="flex items-center gap-1"><Users size={11} /> {a.capacity} places</span>}
+                      {a.startDate && (
+                        <span className="flex items-center gap-1">
+                          <CalendarDays size={11} />
+                          {new Date(a.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
                     </div>
-                    {a.invitationSummary && a.invitationSummary.total > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-black">
-                        <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">Présents {a.invitationSummary.present}</span>
-                        <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">Je ne sais pas {a.invitationSummary.unsure}</span>
-                        <span className="rounded-full bg-red-50 px-2 py-1 text-red-600">Absents {a.invitationSummary.absent}</span>
-                        <span className="rounded-full bg-neutral-100 px-2 py-1 text-neutral-600">Scannés {a.invitationSummary.scanned}</span>
+
+                    {/* Résumé présences */}
+                    {hasSummary && (
+                      <div className="flex flex-wrap gap-1.5 text-[10px] font-black">
+                        <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">✓ {a.invitationSummary!.present}</span>
+                        <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">? {a.invitationSummary!.unsure}</span>
+                        <span className="rounded-full bg-red-50 px-2 py-1 text-red-600">✗ {a.invitationSummary!.absent}</span>
+                        <span className="rounded-full bg-neutral-100 px-2 py-1 text-neutral-500">⊙ {a.invitationSummary!.scanned}</span>
                       </div>
                     )}
-                    {a.startDate && (
-                      <p className="mt-0.5 text-[11px] text-neutral-300">
-                        {new Date(a.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    )}
+
+                    {/* Séparateur */}
+                    <div className="border-t border-neutral-100" />
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link href={`/activites/${a.slug}`} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-neutral-200 px-3.5 text-xs font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
+                        <Eye size={13} /> Voir
+                      </Link>
+                      <button onClick={() => setPresenceTarget(a)}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-emerald-100 px-3.5 text-xs font-black text-emerald-700 transition hover:bg-emerald-50">
+                        <Users size={13} /> Présences
+                      </button>
+                      <button onClick={() => remindInvitations.mutate(a._id)}
+                        disabled={remindInvitations.isPending || !hasSummary || (a.invitationSummary!.pending + a.invitationSummary!.unsure) === 0}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-amber-100 text-amber-500 transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-40"
+                        title="Envoyer une relance">
+                        <Send size={13} />
+                      </button>
+                      <button onClick={() => setEditTarget(a)}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-neutral-200 px-3.5 text-xs font-black text-neutral-600 transition hover:border-blue-300 hover:text-blue-700">
+                        <Edit3 size={13} /> Modifier
+                      </button>
+                      <button onClick={() => handleDelete(a._id, a.title)}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-red-100 px-3.5 text-xs font-black text-red-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700">
+                        <Trash2 size={13} /> Supprimer
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="hidden text-[10px] font-semibold text-neutral-400 sm:inline">{visiLabels[a.visibility]}</span>
-                    <button title="Présences" onClick={() => setPresenceTarget(a)}
-                      className="hidden h-8 items-center rounded-lg border border-emerald-100 px-2 text-[10px] font-black text-emerald-700 transition hover:bg-emerald-50 sm:flex">
-                      Présences
-                    </button>
-                    <button title="Envoyer une relance" onClick={() => remindInvitations.mutate(a._id)} disabled={remindInvitations.isPending || !a.invitationSummary || (a.invitationSummary.pending + a.invitationSummary.unsure) === 0}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-amber-100 text-amber-500 transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-40">
-                      <Send size={12} />
-                    </button>
-                    <button title="Modifier" onClick={() => setEditTarget(a)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition hover:border-emerald-300 hover:text-emerald-700">
-                      <Edit3 size={12} />
-                    </button>
-                    <button title="Supprimer" onClick={() => handleDelete(a._id, a.title)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 text-red-300 transition hover:border-red-300 hover:text-red-600">
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
+                </article>
               );
             })}
           </div>

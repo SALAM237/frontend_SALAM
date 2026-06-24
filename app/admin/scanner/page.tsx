@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 
 // Code cauris : 2 chiffres + 2 lettres + 2 chiffres (ex: 87WF88)
 const CAURIS_CODE_RE = /^\d{2}[A-Za-z]{2}\d{2}$/;
+const CAURIS_LINK_RE = /\/admin\/cauris\/validation/i;
 
 type ScannerControlsLike = { stop: () => void | Promise<void> };
 
@@ -336,6 +337,7 @@ function CameraPermissionModal({ onAllow, onClose }: { onAllow: () => void; onCl
 export default function ScannerPage() {
   const [selectedActivityId, setSelectedActivityId] = useState('');
   const [manualCode,  setManualCode]   = useState('');
+  const [manualActivityError, setManualActivityError] = useState('');
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError,  setCameraError]  = useState<string | null>(null);
   const [showCameraPrompt, setShowCameraPrompt] = useState(false);
@@ -347,6 +349,7 @@ export default function ScannerPage() {
   const [note, setNote]    = useState('');
   const [histPage, setHistPage] = useState(1);
 
+  const activityFieldRef = useRef<HTMLDivElement | null>(null);
   const videoRef    = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<ScannerControlsLike | null>(null);
   const processingRef = useRef(false);
@@ -385,7 +388,7 @@ export default function ScannerPage() {
     if (!raw.trim() || processingRef.current) return;
     const trimmed = raw.trim();
 
-    if (trimmed.includes('/admin/cauris/validation')) {
+    if (CAURIS_LINK_RE.test(trimmed)) {
       window.location.href = trimmed;
       return;
     }
@@ -394,7 +397,18 @@ export default function ScannerPage() {
       return;
     }
 
+    if (!selectedActivityId) {
+      const message = 'Selectionnez d abord une activite avant de verifier ce code.';
+      setManualActivityError(message);
+      setFlashState('error');
+      triggerErrorFeedback();
+      toast.error(message);
+      activityFieldRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     processingRef.current = true;
+    setManualActivityError('');
     setScannedMember(null); setCheckinDone(false); setScanAlert(null); setNote('');
     try {
       const res = await lookup.mutateAsync(trimmed);
@@ -406,31 +420,54 @@ export default function ScannerPage() {
       processingRef.current = false;
       setManualCode('');
     }
-  }, [lookup]);
-
+  }, [lookup, selectedActivityId]);
   const toggleCamera = async () => {
     setShowCameraPrompt(false);
     setCameraError(null);
     if (cameraActive) { await stopScanner(); return; }
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraError('Camera non disponible. Ouvrez le site en HTTPS et utilisez un navigateur compatible.');
+
+    // Contexte sécurisé requis pour getUserMedia
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Caméra non disponible. Le site doit être ouvert en HTTPS.');
       return;
     }
+
+    // Vérifier l'état de la permission AVANT d'appeler getUserMedia
+    // pour éviter de déclencher inutilement le navigateur si déjà refusé
+    try {
+      const perm = await navigator.permissions.query({ name: 'camera' as PermissionName });
+      if (perm.state === 'denied') {
+        setCameraError(
+          'Accès caméra bloqué. Allez dans Paramètres > Navigateur > Autorisations > Caméra et autorisez ce site. Sur iOS : Réglages > Safari > Caméra.'
+        );
+        return;
+      }
+    } catch { /* permissions.query non supporté sur ce navigateur, on continue */ }
+
     setCameraActive(true);
     setScannerReady(false);
     let stream: MediaStream | null = null;
     try {
-      try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } } }); }
-      catch { stream = await navigator.mediaDevices.getUserMedia({ video: true }); }
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+        });
+      } catch (firstErr) {
+        // Ne pas réessayer si la permission est refusée — un second appel déclencherait
+        // le spam-protection du navigateur et bloquerait toute demande suivante
+        const name = (firstErr as Error)?.name;
+        if (name === 'NotAllowedError' || name === 'NotFoundError') throw firstErr;
+        // Fallback : contraintes impossibles sur cet appareil (OverconstrainedError / NotReadableError)
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
 
       const { BrowserMultiFormatReader } = await import('@zxing/browser');
       const reader = new BrowserMultiFormatReader();
-      const controls = await reader.decodeFromStream(stream, videoRef.current!, (result, err) => {
+      const controls = await reader.decodeFromStream(stream, videoRef.current!, (result) => {
         if (result && !processingRef.current) {
           const text = result.getText();
           void (async () => { await stopScanner(); await processCode(text); })();
         }
-        if (err && (err as Error).name !== 'NotFoundException') { /* frame sans QR — ignorer */ }
       });
       controlsRef.current = controls as ScannerControlsLike;
       setScannerReady(true);
@@ -438,11 +475,15 @@ export default function ScannerPage() {
       if (stream) stream.getTracks().forEach(t => t.stop());
       await stopScanner();
       const err = e instanceof Error ? e : null;
-      if (err?.name === 'NotAllowedError')       setCameraError('Permission caméra refusée. Autorisez-la dans les paramètres du navigateur.');
-      else if (err?.name === 'NotFoundError')    setCameraError('Aucune caméra détectée sur cet appareil.');
-      else if (err?.name === 'NotReadableError') setCameraError('Caméra utilisée par une autre application. Fermez-la et réessayez.');
-      else if (!navigator.mediaDevices)          setCameraError('Caméra non disponible. Ouvrez le site en HTTPS.');
-      else setCameraError(`Impossible de démarrer la caméra. ${err?.message ?? ''}`);
+      const name = err?.name ?? '';
+      if (name === 'NotAllowedError')
+        setCameraError('Permission caméra refusée. Sur Android : Paramètres du navigateur > Autorisations. Sur iOS : Réglages > Safari > Caméra > Autoriser.');
+      else if (name === 'NotFoundError')
+        setCameraError('Aucune caméra détectée sur cet appareil.');
+      else if (name === 'NotReadableError')
+        setCameraError('Caméra utilisée par une autre application. Fermez-la et réessayez.');
+      else
+        setCameraError(`Impossible de démarrer la caméra. ${err?.message ?? 'Erreur inconnue'}`);
     }
   };
 
@@ -511,23 +552,27 @@ export default function ScannerPage() {
             </div>
           </div>
 
-          {/* Sélecteur événement */}
-          <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-            <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-neutral-500">Événement / Activité</label>
+          {/* Selecteur activite */}
+          <div ref={activityFieldRef} className={`rounded-xl border bg-white p-4 shadow-sm transition-colors ${manualActivityError ? 'border-red-300 ring-2 ring-red-100' : 'border-neutral-200'}`}>
+            <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-neutral-500">Evenement / Activite</label>
             <select
               value={selectedActivityId}
-              onChange={e => { setSelectedActivityId(e.target.value); setHistPage(1); }}
+              onChange={e => { setSelectedActivityId(e.target.value); setManualActivityError(''); setHistPage(1); }}
               className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm font-semibold text-neutral-800 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
             >
-              <option value="">— Scan général (sans événement) —</option>
+              <option value="">-- Choisir une activite pour valider une presence --</option>
               {activities.map(a => (
                 <option key={a._id} value={a._id}>
-                  {a.title}{a.startDate ? ` — ${new Date(a.startDate).toLocaleDateString('fr-FR')}` : ''}
+                  {a.title}{a.startDate ? ` -- ${new Date(a.startDate).toLocaleDateString('fr-FR')}` : ''}
                 </option>
               ))}
             </select>
+            {manualActivityError && (
+              <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-red-600">
+                <AlertCircle size={13} /> {manualActivityError}
+              </p>
+            )}
           </div>
-
           {/* Caméra */}
           <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
@@ -614,11 +659,10 @@ export default function ScannerPage() {
               <span className="rounded-full bg-neutral-100 px-2 py-1 font-mono">SALAM-MEMBER-...</span>
             </div>
             {!selectedActivityId && (
-              <div className="mb-2.5 rounded-lg border border-yellow-100 bg-yellow-50 px-3 py-2 text-[11px] leading-5 text-yellow-800">
-                Pour valider une presence a une activite, selectionnez d'abord l'activite dans le champ au-dessus. Sans activite, le scan sera enregistre comme scan general.
+              <div className={`mb-2.5 rounded-lg border px-3 py-2 text-[11px] leading-5 ${manualActivityError ? 'border-red-200 bg-red-50 text-red-700' : 'border-yellow-100 bg-yellow-50 text-yellow-800'}`}>
+                Le choix de l'activite est obligatoire pour verifier un numero membre, un code invite, un lien QR ou un ancien code carte. Seuls les codes cauris peuvent etre valides sans activite.
               </div>
-            )}
-            <div className="flex gap-2">
+            )}            <div className="flex gap-2">
               <input
                 type="text"
                 value={manualCode}

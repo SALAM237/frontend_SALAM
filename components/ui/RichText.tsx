@@ -1,4 +1,4 @@
-import { sanitizeRichHtml } from '@/lib/rich-text';
+﻿import { sanitizeRichHtml } from '@/lib/rich-text';
 
 export function RichText({
   value,
@@ -10,22 +10,21 @@ export function RichText({
   block?: boolean;
 }) {
   const html = sanitizeRichHtml(String(value ?? '').replace(/\n/g, '<br />'));
+  const classes = ['whitespace-pre-line break-words', className].filter(Boolean).join(' ');
 
   if (block) {
     return (
       <div
-        className={className}
+        className={classes}
         dangerouslySetInnerHTML={{ __html: html }}
-        style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
       />
     );
   }
 
   return (
     <span
-      className={className}
+      className={classes}
       dangerouslySetInnerHTML={{ __html: html }}
-      style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
     />
   );
 }
