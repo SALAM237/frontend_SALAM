@@ -35,6 +35,9 @@ export interface ActivityDoc {
   category: string;
   shortDescription?: string;
   description?: string;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+  mediumUrl?: string;
   startDate?: string;
   endDate?: string;
   city?: string;
@@ -154,6 +157,25 @@ export function useUpdateActivity(id: string) {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-activities'] });
       toast.success((res as any).message ?? 'Activité mise à jour');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useUploadActivityImage() {
+  const token = useAuthStore(s => s.accessToken);
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData();
+      form.append('image', file);
+      return fetch(
+        `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '')}/api/v1/admin/content/image`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token ?? ''}` }, credentials: 'include', body: form },
+      ).then(async r => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json?.message ?? 'Erreur upload image');
+        return json as { data: { imageUrl: string; thumbnailUrl: string; mediumUrl: string; largeUrl: string } };
+      });
     },
     onError: (err: Error) => toast.error(err.message),
   });

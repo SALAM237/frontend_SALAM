@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { CalendarDays, Plus, X, MapPin, Users, Loader2, Trash2, Edit3, PlusCircle, Send, Eye, Tag } from 'lucide-react';
+import { CalendarDays, ImagePlus, Plus, X, MapPin, Users, Loader2, Trash2, Edit3, PlusCircle, Send, Eye, Tag } from 'lucide-react';
 import {
   useActivities, useCreateActivity, useUpdateActivity, useDeleteActivity, useActivityInvitations, useRemindActivityInvitations,
+  useUploadActivityImage,
   ACTIVITY_CATEGORIES, type ActivityDoc,
 } from '@/lib/api/activities';
 import { useAdminMembers } from '@/lib/api/members';
@@ -41,6 +42,9 @@ function ActivityForm({
     category:         initial?.category         ?? '',
     shortDescription: initial?.shortDescription ?? '',
     description:      initial?.description      ?? '',
+    imageUrl:         initial?.imageUrl         ?? '',
+    thumbnailUrl:     initial?.thumbnailUrl      ?? '',
+    mediumUrl:        initial?.mediumUrl         ?? '',
     startDate:        initial?.startDate   ? new Date(initial.startDate).toISOString().slice(0, 16) : '',
     endDate:          initial?.endDate     ? new Date(initial.endDate).toISOString().slice(0, 16)   : '',
     city:             initial?.city             ?? '',
@@ -54,6 +58,7 @@ function ActivityForm({
     visibility:       initial?.visibility       ?? 'public',
     status:           initial?.status           ?? 'draft',
   });
+  const uploadImage = useUploadActivityImage();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [activeDesign, setActiveDesign] = useState<string | null>(null);
   const [styles, setStyles] = useState<Record<string, DesignStyle>>({});
@@ -74,6 +79,25 @@ function ActivityForm({
 
   const upd = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setF(p => ({ ...p, [k]: e.target.value }));
+
+  const handleImageFile = (file?: File | null) => {
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    setF(p => ({ ...p, imageUrl: preview }));
+    uploadImage.mutate(file, {
+      onSuccess: res => {
+        const img = res.data;
+        setF(p => ({
+          ...p,
+          imageUrl:    img.mediumUrl  || img.imageUrl,
+          thumbnailUrl: img.thumbnailUrl || '',
+          mediumUrl:    img.mediumUrl    || '',
+        }));
+        URL.revokeObjectURL(preview);
+      },
+      onError: () => URL.revokeObjectURL(preview),
+    });
+  };
 
   const toggleId = (id: string, values: string[], setValues: (value: string[]) => void) => setValues(values.includes(id) ? values.filter(item => item !== id) : [...values, id]);
   const setAll = (ids: string[], values: string[], setValues: (value: string[]) => void) => setValues(ids.length > 0 && values.length === ids.length ? [] : ids);
@@ -96,6 +120,9 @@ function ActivityForm({
       category: f.category,
       shortDescription: f.shortDescription || undefined,
       description: [f.description, extraDescription].filter(Boolean).join('\n\n') || undefined,
+      imageUrl:     f.imageUrl     || undefined,
+      thumbnailUrl: f.thumbnailUrl || undefined,
+      mediumUrl:    f.mediumUrl    || undefined,
       startDate: f.startDate || undefined, endDate: f.endDate || undefined,
       city: f.city || undefined,
       venue: f.venue || undefined,
@@ -144,6 +171,28 @@ function ActivityForm({
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Description courte <span className="font-normal normal-case text-neutral-400">(carte)</span></label>
             <input value={f.shortDescription} onChange={upd('shortDescription')} placeholder="Une phrase d'accroche pour la carte" className={inp()} />
+          </div>
+
+          {/* Image de la carte */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Image de la carte</label>
+            <div className="grid gap-3 sm:grid-cols-[112px_1fr]">
+              <div className="flex h-24 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
+                {f.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={f.imageUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <ImagePlus size={24} className="text-neutral-300" />
+                )}
+              </div>
+              <div className="space-y-2">
+                <input value={f.imageUrl} onChange={upd('imageUrl')} placeholder="URL de l'image ou importer ci-dessous" className={inp()} />
+                <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-neutral-200 px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
+                  {uploadImage.isPending ? <Loader2 size={13} className="animate-spin" /> : <ImagePlus size={13} />} Importer une image
+                  <input type="file" accept="image/*" className="hidden" onChange={e => handleImageFile(e.target.files?.[0])} />
+                </label>
+              </div>
+            </div>
           </div>
 
           {/* À propos */}
@@ -523,7 +572,13 @@ export default function AdminActivitesPage() {
                 <article key={a._id} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
                   {/* Bannière catégorie */}
                   <div className="relative flex h-36 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700">
-                    <CalendarDays size={48} className="text-white/20" />
+                    {a.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={a.thumbnailUrl || a.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                    ) : (
+                      <CalendarDays size={48} className="text-white/20" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                     <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5">
                       <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-black tracking-wide ${cfg.cls}`}>
                         {cfg.label}
