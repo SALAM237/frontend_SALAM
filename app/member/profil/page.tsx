@@ -126,6 +126,7 @@ export default function ProfilPage() {
   const user = useAuthStore(s => s.user);
   const patchUser = useAuthStore(s => s.patchUser);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cauriRef = useRef<HTMLElement>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [form, setForm] = useState<ProfileForm>(emptyForm);
@@ -307,7 +308,7 @@ export default function ProfilPage() {
               {form.gender === 'femme' ? 'Madame' : 'Monsieur'}
             </p>
           )}
-          <div className="flex flex-wrap items-center gap-2"><p className="font-black text-neutral-900">{formatFullName(form.firstName, form.lastName)}</p><CauriBadge compact /></div>
+          <div className="flex flex-wrap items-center gap-2"><p className="font-black text-neutral-900">{formatFullName(form.firstName, form.lastName)}</p><CauriBadge compact onScrollTo={() => { cauriRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} /></div>
           <p className="text-sm text-neutral-500">{form.activitySector || 'Membre SALAM'}</p>
           {user?._id && (
             <p className="mt-1 font-mono text-xs text-emerald-600">
@@ -410,7 +411,7 @@ export default function ProfilPage() {
         </button>
         </form>
 
-        <aside className="min-w-0 lg:sticky lg:top-24">
+        <aside ref={cauriRef} className="min-w-0 lg:sticky lg:top-24">
           <CauriWalletPanel />
         </aside>
       </div>

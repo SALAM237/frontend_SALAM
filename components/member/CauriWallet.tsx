@@ -38,7 +38,7 @@ function storeDel(key: string, id: string) {
 }
 
 // ── Badge cauris ─────────────────────────────────────────────────────────────
-export function CauriBadge({ compact = false, space = 'member' }: { compact?: boolean; space?: 'member' | 'admin' }) {
+export function CauriBadge({ compact = false, space = 'member', onScrollTo }: { compact?: boolean; space?: 'member' | 'admin'; onScrollTo?: () => void }) {
   const { data, isLoading } = useCauriWallet(space);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -48,7 +48,7 @@ export function CauriBadge({ compact = false, space = 'member' }: { compact?: bo
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog"
+      <button type="button" onClick={onScrollTo ? onScrollTo : () => setOpen(true)} aria-haspopup={onScrollTo ? undefined : 'dialog'}
         className={'inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 font-bold text-amber-900 transition hover:border-amber-400 hover:bg-amber-100 ' + (compact ? 'px-2 py-1 text-[10px]' : 'px-3 py-1.5 text-xs')}>
         <CauriImg size={compact ? 16 : 20} />
         <span className={compact ? 'hidden sm:inline' : ''}>{isLoading ? '...' : balance} cauris</span>
