@@ -278,7 +278,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                           type="button"
                           onClick={() => selectSlide(dotIndex)}
                           aria-label={'Afficher ' + entry.title}
-                          className={`block p-0 rounded-full transition-all duration-300 ${
+                          className={`relative p-0 rounded-full transition-all duration-300 ${
                             dotIndex === activeIndex
                               ? 'h-1 w-5'
                               : 'h-1 w-1 bg-neutral-300 hover:bg-neutral-400'

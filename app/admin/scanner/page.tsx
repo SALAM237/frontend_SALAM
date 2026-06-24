@@ -536,17 +536,36 @@ export default function ScannerPage() {
 
           {/* Saisie manuelle */}
           <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-            <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-neutral-500">Saisie manuelle</label>
-            <p className="mb-2.5 text-[11px] text-neutral-400">
-              Entrez le code à 6 caractères imprimé sous le QR code du membre — ex : <span className="font-mono font-bold text-neutral-600">47BK23</span>
-            </p>
+            <div className="mb-2.5 flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wide text-neutral-500">Validation manuelle</label>
+                <p className="mt-1 text-[11px] leading-5 text-neutral-500">
+                  Entrez un numero membre SALAM, un code invite, un lien QR ou un ancien code carte.
+                </p>
+              </div>
+              {selectedActivityId ? (
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700">Presence activite</span>
+              ) : (
+                <span className="rounded-full bg-yellow-50 px-2.5 py-1 text-[10px] font-black text-yellow-700">Scan general</span>
+              )}
+            </div>
+            <div className="mb-2.5 flex flex-wrap gap-1.5 text-[10px] font-semibold text-neutral-500">
+              <span className="rounded-full bg-neutral-100 px-2 py-1 font-mono">SALAM-120075441</span>
+              <span className="rounded-full bg-neutral-100 px-2 py-1 font-mono">ABCD1234</span>
+              <span className="rounded-full bg-neutral-100 px-2 py-1 font-mono">SALAM-MEMBER-...</span>
+            </div>
+            {!selectedActivityId && (
+              <div className="mb-2.5 rounded-lg border border-yellow-100 bg-yellow-50 px-3 py-2 text-[11px] leading-5 text-yellow-800">
+                Pour valider une presence a une activite, selectionnez d'abord l'activite dans le champ au-dessus. Sans activite, le scan sera enregistre comme scan general.
+              </div>
+            )}
             <div className="flex gap-2">
               <input
                 type="text"
                 value={manualCode}
                 onChange={e => setManualCode(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && processCode(manualCode)}
-                placeholder="ex : 47BK23"
+                placeholder="N° membre, code invite ou lien QR..."
                 className="min-w-0 flex-1 rounded-lg border border-neutral-200 px-3 py-2.5 font-mono text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
               />
               <button
@@ -556,7 +575,7 @@ export default function ScannerPage() {
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-neutral-900 px-3 py-2.5 text-sm font-black text-white hover:bg-neutral-700 disabled:opacity-40 sm:px-4"
               >
                 {lookup.isPending ? <Loader2 size={15} className="animate-spin"/> : <Search size={15}/>}
-                <span className="hidden sm:inline">Chercher</span>
+                <span className="hidden sm:inline">Verifier</span>
               </button>
             </div>
 
