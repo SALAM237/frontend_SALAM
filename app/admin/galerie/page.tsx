@@ -144,7 +144,7 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
   return (
     <>
       <div className="fixed inset-0 z-50 flex flex-col bg-white">
-        <div className="flex items-center gap-4 border-b border-neutral-100 px-5 py-4 shrink-0">
+        <div className="flex items-center gap-4 border-b border-neutral-100 bg-emerald-50/40 px-5 py-4 shrink-0">
           <button onClick={onClose}
             className="flex h-9 items-center gap-1.5 rounded-full border border-neutral-200 px-3 text-xs font-semibold text-neutral-600 hover:bg-neutral-50 transition-colors">
             ← Albums

@@ -1,13 +1,14 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Settings, Shield, UserRound } from 'lucide-react';
+import { FileText, Settings, Shield, UserRound } from 'lucide-react';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 const tabs = [
-  { label: 'Profil admin', value: 'profil', icon: UserRound },
-  { label: 'Securite', value: 'securite', icon: Shield },
-  { label: 'Preferences', value: 'preferences', icon: Settings },
+  { label: 'Profil admin',  value: 'profil',      icon: UserRound },
+  { label: 'Securite',      value: 'securite',     icon: Shield    },
+  { label: 'Documents',     value: 'documents',    icon: FileText  },
+  { label: 'Preferences',   value: 'preferences',  icon: Settings  },
 ];
 
 export default function AdminAccountTabs() {

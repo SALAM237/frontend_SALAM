@@ -14,25 +14,27 @@ import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
 import { NotificationCenter } from '@/components/portal/NotificationCenter';
 import { CauriBadge } from '@/components/member/CauriWallet';
 import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
+import { useNotifications } from '@/lib/api/notifications';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, User, CalendarDays,
   MessageSquare, Menu, X, ChevronRight, Bell,
   Images, Newspaper, Loader2, Globe, Users,
-  Handshake, BriefcaseBusiness, WalletCards,
+  Handshake, BriefcaseBusiness, WalletCards, FileText,
 } from 'lucide-react';
 
 const NAV = [
-  { label: 'Dashboard',     href: '/member/dashboard',   icon: LayoutDashboard },
-  { label: 'Mon compte',    href: '/member/profil',      icon: User            },
-  { label: 'Bureau',        href: '/member/bureau',      icon: Users            },
-  { label: 'Activités',     href: '/member/activites',   icon: CalendarDays     },
-  { label: 'Galerie',       href: '/member/galerie',     icon: Images           },
-  { label: 'Actualités',    href: '/member/actualites',  icon: Newspaper        },
-  { label: 'Networking',    href: '/member/networking',  icon: Handshake        },
+  { label: 'Dashboard',     href: '/member/dashboard',   icon: LayoutDashboard   },
+  { label: 'Mon compte',    href: '/member/profil',      icon: User              },
+  { label: 'Bureau',        href: '/member/bureau',      icon: Users             },
+  { label: 'Activités',     href: '/member/activites',   icon: CalendarDays      },
+  { label: 'Galerie',       href: '/member/galerie',     icon: Images            },
+  { label: 'Actualités',    href: '/member/actualites',  icon: Newspaper         },
+  { label: 'Networking',    href: '/member/networking',  icon: Handshake         },
   { label: 'Opportunites',  href: '/member/opportunites', icon: BriefcaseBusiness },
-  { label: 'Tresorerie',    href: '/member/tresorerie',  icon: WalletCards      },
-  { label: 'Messages',      href: '/member/messages',    icon: MessageSquare    },
+  { label: 'Tresorerie',    href: '/member/tresorerie',  icon: WalletCards       },
+  { label: 'Documents',     href: '/member/documents',   icon: FileText          },
+  { label: 'Messages',      href: '/member/messages',    icon: MessageSquare     },
 ];
 
 function missingProfileFields(user: AuthUser | null) {
@@ -51,13 +53,22 @@ function missingProfileFields(user: AuthUser | null) {
 }
 
 
-function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl, initialsClass, gender, canSwitchAdmin, onLogout }: {
+function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl, initialsClass, gender, canSwitchAdmin, onLogout, profileMissingCount }: {
   open: boolean; onClose: () => void;
   firstName: string; lastName: string; initials: string;
   avatarUrl: string; initialsClass: string; gender?: string | null; canSwitchAdmin: boolean;
   onLogout: () => void;
+  profileMissingCount: number;
 }) {
   const pathname = usePathname();
+  const { data: notifData } = useNotifications('member');
+  const unreadItems = notifData?.data?.items?.filter(n => !n.readAt) ?? [];
+  const navBadges = new Map<string, number>();
+  for (const n of unreadItems) {
+    const match = NAV.find(nav => n.href.startsWith(nav.href));
+    if (match) navBadges.set(match.href, (navBadges.get(match.href) ?? 0) + 1);
+  }
+  if (profileMissingCount > 0) navBadges.set('/member/profil', (navBadges.get('/member/profil') ?? 0) + profileMissingCount);
 
   return (
     <>
@@ -112,7 +123,8 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl
         <nav className="flex-1 overflow-y-auto px-3 py-2">
           <ul className="flex flex-col gap-0.5">
             {NAV.map(({ label, href, icon: Icon }) => {
-              const active = pathname === href;
+              const active = pathname === href || (href !== '/member/dashboard' && pathname.startsWith(href));
+              const badge  = navBadges.get(href) ?? 0;
               return (
                 <li key={href}>
                   <Link
@@ -126,6 +138,11 @@ function MemberSidebar({ open, onClose, firstName, lastName, initials, avatarUrl
                   >
                     <Icon size={16} className={active ? 'text-emerald-400' : 'text-white/30 group-hover:text-white/60'} />
                     <span className="flex-1">{label}</span>
+                    {badge > 0 && !active && (
+                      <span className="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emerald-500/80 px-1 text-[9px] font-black text-white shadow-sm">
+                        {badge > 9 ? '9+' : badge}
+                      </span>
+                    )}
                     {active && <ChevronRight size={12} className="text-emerald-400/60" />}
                   </Link>
                 </li>
@@ -261,6 +278,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
         firstName={firstName} lastName={lastName} initials={initials}
         avatarUrl={avatarUrl} initialsClass={initialsClass} gender={user?.gender} canSwitchAdmin={hasAdminRole(user)}
         onLogout={handleLogout}
+        profileMissingCount={profileMissing.length}
       />
 
       <div className="flex min-w-0 flex-1 flex-col lg:pl-64">

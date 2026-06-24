@@ -24,8 +24,8 @@ function isPending(status: RecipientStatus) {
   return status === 'pending' || status === 'sent';
 }
 
-function fmtCfa(amount: number) {
-  return `${Number(amount || 0).toLocaleString('fr-FR')} F.CFA`;
+function fmtCfaNum(amount: number) {
+  return Number(amount || 0).toLocaleString('fr-FR');
 }
 
 /* ─── Skeleton ────────────────────────────────────────── */
@@ -97,13 +97,13 @@ function InvoiceModal({ invoice, onClose }: { invoice: MemberInvoiceDoc; onClose
                     <p className="font-black">{invoice.title}</p>
                     {invoice.description && <p className="mt-1 leading-relaxed text-neutral-500">{invoice.description}</p>}
                   </div>
-                  <b className="text-right">{fmtCfa(invoice.amount)}</b>
+                  <b className="text-right">{`${fmtCfaNum(invoice.amount)} F.CFA`}</b>
                 </div>
               </section>
               <div className="ml-auto w-[320px] rounded-2xl bg-neutral-50 p-5">
-                <div className="flex justify-between text-sm"><span>Total HT</span><b>{fmtCfa(invoice.amount)}</b></div>
+                <div className="flex justify-between text-sm"><span>Total HT</span><b>{`${fmtCfaNum(invoice.amount)} F.CFA`}</b></div>
                 <div className="mt-2 flex justify-between text-sm"><span>TVA</span><b>0 F.CFA</b></div>
-                <div className="mt-4 flex justify-between rounded-xl bg-emerald-700 px-4 py-3 text-white"><span className="font-bold">Total TTC</span><b>{fmtCfa(invoice.amount)}</b></div>
+                <div className="mt-4 flex justify-between rounded-xl bg-emerald-700 px-4 py-3 text-white"><span className="font-bold">Total TTC</span><b>{`${fmtCfaNum(invoice.amount)} F.CFA`}</b></div>
               </div>
               <div className={`mx-auto flex w-fit items-center gap-2 rounded-full border-2 px-6 py-2 ${recipientStatus === 'paid' ? 'border-emerald-500 text-emerald-700' : pending ? 'border-amber-400 text-amber-700' : 'border-neutral-300 text-neutral-500'}`}>
                 {recipientStatus === 'paid' ? <CheckCircle2 size={16} /> : pending ? <Clock size={16} /> : <XCircle size={16} />}
@@ -157,7 +157,7 @@ function InvoiceRow({ invoice, onView }: { invoice: MemberInvoiceDoc; onView: ()
         </p>
       </div>
       <div className="shrink-0 text-right hidden sm:block">
-        <p className="text-sm font-black text-neutral-900">{fmtCfa(invoice.amount)}</p>
+        <p className="text-sm font-black text-neutral-900">{`${fmtCfaNum(invoice.amount)} F.CFA`}</p>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         <button onClick={() => downloadMemberInvoicePdf(invoice._id, invoice.myRecipient?.invoiceNumber ?? invoice.invoiceNumber).catch(error => toast.error(error.message))}
@@ -204,15 +204,22 @@ export default function MemberFacturesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {[
-          { label: 'Total facturé', value: isLoading ? '…' : fmtCfa(total),        color: 'text-neutral-900', bg: 'bg-neutral-50  border-neutral-100' },
-          { label: 'Payé',          value: isLoading ? '…' : fmtCfa(paidTotal),    color: 'text-emerald-700', bg: 'bg-emerald-50  border-emerald-100' },
-          { label: 'En attente',    value: isLoading ? '…' : fmtCfa(pendingTotal), color: 'text-amber-700',   bg: 'bg-amber-50    border-amber-100'   },
+          { label: 'Total facturé', num: total,        color: 'text-neutral-900', bg: 'bg-neutral-50  border-neutral-100' },
+          { label: 'Payé',          num: paidTotal,    color: 'text-emerald-700', bg: 'bg-emerald-50  border-emerald-100' },
+          { label: 'En attente',    num: pendingTotal, color: 'text-amber-700',   bg: 'bg-amber-50    border-amber-100'   },
         ].map(s => (
-          <div key={s.label} className={`rounded-2xl border p-4 ${s.bg}`}>
-            <p className={`text-xl font-black leading-none ${s.color}`}>{s.value}</p>
-            <p className="mt-1.5 text-xs font-semibold text-neutral-500">{s.label}</p>
+          <div key={s.label} className={`rounded-xl sm:rounded-2xl border p-2 sm:p-4 ${s.bg}`}>
+            {isLoading ? (
+              <p className={`text-base sm:text-xl font-black leading-none ${s.color}`}>…</p>
+            ) : (
+              <p className={`font-black leading-none ${s.color}`}>
+                <span className="text-base sm:text-xl">{fmtCfaNum(s.num)}</span>
+                <span className="ml-0.5 text-[9px] sm:text-[11px] font-semibold opacity-70"> F.CFA</span>
+              </p>
+            )}
+            <p className="mt-1 sm:mt-1.5 text-[9px] sm:text-xs font-semibold text-neutral-500">{s.label}</p>
           </div>
         ))}
       </div>

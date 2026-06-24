@@ -88,7 +88,7 @@ function Compose({ space, initial, onClose }: { space: MessageSpace; initial?: R
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/55 p-3 backdrop-blur-sm sm:items-center" onMouseDown={event => event.target === event.currentTarget && onClose()}>
       <section className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-2xl">
-        <header className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+        <header className="flex items-center justify-between border-b border-neutral-100 bg-emerald-50/40 px-5 py-4">
           <h2 className="flex items-center gap-2 font-black text-neutral-900"><Pencil size={15} className="text-emerald-600" /> Nouveau message</h2>
           <button type="button" aria-label="Fermer" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full text-neutral-500 hover:bg-neutral-100"><X size={17} /></button>
         </header>

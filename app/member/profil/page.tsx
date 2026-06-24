@@ -8,6 +8,8 @@ import {
   Camera,
   CheckCircle2,
   ChevronDown,
+  Eye,
+  EyeOff,
   Loader2,
   Lock,
   Mail,
@@ -642,27 +644,37 @@ function AccountDeletionModal({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
+const PW_CHECKS = [
+  { label: 'Au moins 8 caractères', test: (p: string) => p.length >= 8 },
+  { label: 'Une majuscule',          test: (p: string) => /[A-Z]/.test(p) },
+  { label: 'Une minuscule',          test: (p: string) => /[a-z]/.test(p) },
+  { label: 'Un chiffre',             test: (p: string) => /[0-9]/.test(p) },
+  { label: 'Un caractère spécial',   test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
+const STRENGTH_LABEL = ['', 'Très faible', 'Faible', 'Moyen', 'Fort', 'Excellent'];
+const STRENGTH_COLOR = ['', 'bg-red-500', 'bg-red-400', 'bg-orange-400', 'bg-emerald-500', 'bg-emerald-600'];
+
 function PasswordModal({ onClose }: { onClose: () => void }) {
   const changePassword = useChangeMemberPassword();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const valid = currentPassword && newPassword.length >= 8 && newPassword === confirmPassword;
+
+  const checks   = PW_CHECKS.map(c => ({ ...c, valid: c.test(newPassword) }));
+  const strength = checks.filter(c => c.valid).length;
+  const valid    = currentPassword && strength === 5 && newPassword === confirmPassword;
 
   const submit = () => {
     if (!valid || changePassword.isPending) return;
-    changePassword.mutate(
-      { currentPassword, newPassword },
-      { onSuccess: onClose },
-    );
+    changePassword.mutate({ currentPassword, newPassword }, { onSuccess: onClose });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 backdrop-blur-sm sm:items-center">
       <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
-        <div className="flex items-center justify-between border-b border-neutral-100 p-5">
+        <div className="flex items-center justify-between border-b border-neutral-100 bg-emerald-50/40 p-5">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Securite</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Sécurité</p>
             <h2 className="text-lg font-black text-neutral-900">Changer le mot de passe</h2>
           </div>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
@@ -670,11 +682,35 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <div className="space-y-3 p-5">
-          <PasswordField label="Mot de passe actuel" value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />
-          <PasswordField label="Nouveau mot de passe" value={newPassword} onChange={setNewPassword} autoComplete="new-password" />
-          <PasswordField label="Confirmer le nouveau mot de passe" value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" />
-          {newPassword && newPassword.length < 8 && <p className="text-xs font-semibold text-red-500">Minimum 8 caracteres.</p>}
-          {confirmPassword && newPassword !== confirmPassword && <p className="text-xs font-semibold text-red-500">Les mots de passe ne correspondent pas.</p>}
+          <PasswordField label="Mot de passe actuel *" value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />
+          <div>
+            <PasswordField label="Nouveau mot de passe *" value={newPassword} onChange={setNewPassword} autoComplete="new-password" showToggle />
+            {/* Strength gauge */}
+            {newPassword.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= strength ? STRENGTH_COLOR[strength] : 'bg-neutral-100'}`} />
+                  ))}
+                </div>
+                <p className="text-[10px] font-semibold text-neutral-500">
+                  Force : <span className={strength >= 4 ? 'text-emerald-600' : strength >= 3 ? 'text-orange-500' : 'text-red-500'}>{STRENGTH_LABEL[strength]}</span>
+                </p>
+                <ul className="mt-1 grid grid-cols-1 gap-0.5">
+                  {checks.map(c => (
+                    <li key={c.label} className={`flex items-center gap-1.5 text-[10px] ${c.valid ? 'text-emerald-600' : 'text-neutral-400'}`}>
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${c.valid ? 'bg-emerald-500' : 'bg-neutral-300'}`} />
+                      {c.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <PasswordField label="Confirmer le nouveau mot de passe *" value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" showToggle />
+          {confirmPassword && newPassword !== confirmPassword && (
+            <p className="text-xs font-semibold text-red-500">Les mots de passe ne correspondent pas.</p>
+          )}
         </div>
         <div className="flex gap-3 border-t border-neutral-100 p-5">
           <button type="button" onClick={onClose} className="h-10 flex-1 rounded-xl border border-neutral-200 text-sm font-bold text-neutral-600 hover:border-neutral-300">Annuler</button>
@@ -693,22 +729,37 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function PasswordField({ label, value, onChange, autoComplete }: {
+function PasswordField({ label, value, onChange, autoComplete, showToggle = false }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   autoComplete: string;
+  showToggle?: boolean;
 }) {
+  const [show, setShow] = useState(false);
   return (
     <div>
       <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label}</label>
-      <input
-        type="password"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        autoComplete={autoComplete}
-        className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
-      />
+      <div className="relative">
+        <input
+          type={show ? 'text' : 'password'}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          autoComplete={autoComplete}
+          className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+          style={showToggle ? { paddingRight: '2.25rem' } : undefined}
+        />
+        {showToggle && (
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={() => setShow(v => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+          >
+            {show ? <EyeOff size={15} /> : <Eye size={15} />}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

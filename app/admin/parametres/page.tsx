@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Save, CheckCircle2, Shield, Bell, Globe, Lock, Palette } from 'lucide-react';
+import { Save, CheckCircle2, Shield, Bell, Globe, Lock, Palette, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
 import { isSuperAdmin } from '@/lib/auth/roles';
@@ -79,6 +79,9 @@ export default function ParametresPage() {
           </div>
         </Section>}
 
+        {/* Documents */}
+        {activeTab === 'documents' && <AdminDocumentsSection />}
+
         {/* Sécurité */}
         {activeTab === 'securite' && <Section icon={Shield} title="Sécurité">
           <div className="flex flex-wrap gap-3">
@@ -101,9 +104,9 @@ export default function ParametresPage() {
             <button
               type="button"
               onClick={handleMaintenanceToggle}
-              className={`relative h-6 w-11 rounded-full transition-all ${maintenanceMode ? 'bg-red-500' : 'bg-neutral-200'}`}
+              className={`relative h-5 w-9 shrink-0 rounded-full transition-all sm:h-6 sm:w-11 ${maintenanceMode ? 'bg-red-500' : 'bg-neutral-200'}`}
             >
-              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${maintenanceMode ? 'left-[22px]' : 'left-0.5'}`} />
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all sm:h-5 sm:w-5 ${maintenanceMode ? 'left-[18px] sm:left-[22px]' : 'left-0.5'}`} />
             </button>
           </div>
           {maintenanceMode && (
@@ -157,9 +160,26 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
   return (
     <div className="flex items-center justify-between gap-3">
       <p className="text-sm font-semibold text-neutral-700">{label}</p>
-      <button type="button" onClick={onChange} className={`relative h-6 w-11 rounded-full transition-all ${checked ? 'bg-emerald-500' : 'bg-neutral-200'}`}>
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? 'left-[22px]' : 'left-0.5'}`} />
+      <button type="button" onClick={onChange} className={`relative h-5 w-9 shrink-0 rounded-full transition-all sm:h-6 sm:w-11 ${checked ? 'bg-emerald-500' : 'bg-neutral-200'}`}>
+        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all sm:h-5 sm:w-5 ${checked ? 'left-[18px] sm:left-[22px]' : 'left-0.5'}`} />
       </button>
     </div>
+  );
+}
+
+function AdminDocumentsSection() {
+  return (
+    <Section icon={FileText} title="Documents internes">
+      <p className="text-sm text-neutral-500">
+        Importez et partagez des documents avec les membres (statuts, règlements, guides…).
+        Les membres reçoivent une notification et peuvent télécharger les fichiers depuis leur espace.
+      </p>
+      <a
+        href="/admin/documents"
+        className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-700"
+      >
+        <FileText size={13} /> Gérer les documents
+      </a>
+    </Section>
   );
 }

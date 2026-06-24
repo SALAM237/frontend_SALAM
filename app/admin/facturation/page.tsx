@@ -1492,7 +1492,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200 max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 shrink-0">
+        <div className="flex items-center justify-between border-b border-neutral-100 bg-emerald-50/40 px-6 py-4 shrink-0">
           <div>
             <h3 className="font-black text-neutral-900">Nouvelle facture</h3>
             <p className="text-xs text-neutral-500 mt-0.5">Générer une facture pour un événement</p>

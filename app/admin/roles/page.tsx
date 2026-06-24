@@ -316,7 +316,7 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
   return (
     <div className={compact ? 'flex flex-col' : 'flex h-full flex-col'}>
       {/* Header */}
-      <div className="flex items-start justify-between border-b border-neutral-100 px-6 py-4 shrink-0">
+      <div className="flex items-start justify-between border-b border-neutral-100 bg-emerald-50/40 px-6 py-4 shrink-0">
         <div className="min-w-0 flex-1">
           {isSA ? (
             <div>
@@ -1129,7 +1129,7 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
       <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200 max-h-[90vh] flex flex-col">
 
         {/* En-tête */}
-        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 shrink-0">
+        <div className="flex items-center justify-between border-b border-neutral-100 bg-emerald-50/40 px-6 py-4 shrink-0">
           <div>
             <p className="font-black text-neutral-900">Permissions personnalisées</p>
             <p className="text-xs text-neutral-500 mt-0.5">{formatFullName(admin.firstName, admin.lastName)}</p>

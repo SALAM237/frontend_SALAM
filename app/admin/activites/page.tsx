@@ -149,7 +149,7 @@ function ActivityForm({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
-        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 shrink-0">
+        <div className="flex items-center justify-between border-b border-neutral-100 bg-emerald-50/40 px-6 py-4 shrink-0">
           <h3 className="font-black text-neutral-900">{title}</h3>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
         </div>
@@ -475,7 +475,7 @@ function PresenceModal({ activity, onClose }: { activity: ActivityDoc; onClose: 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4 shrink-0">
+        <div className="flex items-center justify-between border-b border-neutral-100 bg-emerald-50/40 px-5 py-4 shrink-0">
           <div>
             <p className="text-sm font-black text-neutral-900">Présences — {activity.title}</p>
             <p className="text-xs text-neutral-400">Réponses et QR codes liés à cette activité.</p>
