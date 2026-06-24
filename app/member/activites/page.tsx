@@ -95,7 +95,13 @@ export default function MemberActivitesPage() {
                 <article key={a._id} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
                   {/* Bannière catégorie */}
                   <div className="relative flex h-32 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700">
-                    <CalendarDays size={44} className="text-white/20" />
+                    {a.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={a.thumbnailUrl || a.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                    ) : (
+                      <CalendarDays size={44} className="text-white/20" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                     <div className="absolute bottom-2.5 left-3 flex flex-wrap gap-1.5">
                       <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black ${sCls}`}>{sLabel}</span>
                       <span className={`inline-flex rounded-full border bg-white/90 px-2.5 py-0.5 text-[10px] font-black ${catCls}`}>{catLabel}</span>

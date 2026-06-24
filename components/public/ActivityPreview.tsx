@@ -89,8 +89,16 @@ export function ActivityPreview() {
                 variants={card}
                 className="card-salam group flex min-w-[82%] snap-start flex-col overflow-hidden sm:min-w-[48%] lg:min-w-[31%]"
               >
-                {/* Color top bar */}
-                <div className={`h-1.5 w-full shrink-0 ${TOPS[i % TOPS.length]}`} />
+                {/* Cover image or color bar */}
+                {activity.imageUrl ? (
+                  <div className="relative h-36 w-full shrink-0 overflow-hidden bg-neutral-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={activity.thumbnailUrl || activity.imageUrl} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                  </div>
+                ) : (
+                  <div className={`h-1.5 w-full shrink-0 ${TOPS[i % TOPS.length]}`} />
+                )}
 
                 <div className="flex flex-1 flex-col p-[clamp(1rem,2vw,1.5rem)]">
                   {/* Category badge */}

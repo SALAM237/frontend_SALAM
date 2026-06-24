@@ -115,7 +115,12 @@ export default function ActivitesPage() {
                   })}
                   className="group flex flex-col gap-4 rounded-[1.5rem] border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
                 >
-                  <div className={`aspect-[16/9] rounded-xl bg-gradient-to-br ${COVERS[i % COVERS.length]}`} />
+                  <div className={`relative aspect-[16/9] overflow-hidden rounded-xl bg-gradient-to-br ${COVERS[i % COVERS.length]}`}>
+                    {a.imageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={a.thumbnailUrl || a.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    )}
+                  </div>
                   <div className="flex flex-col gap-2">
                     <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[11px] font-bold ${CAT_COLORS[a.category] ?? 'bg-neutral-100 text-neutral-600'}`}>
                       {ACTIVITY_CATEGORIES.find(c => c.value === a.category)?.label ?? a.category}

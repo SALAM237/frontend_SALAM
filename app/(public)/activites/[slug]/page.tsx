@@ -132,7 +132,11 @@ export default function ActivityDetailPage({ params }: { params: Promise<{ slug:
 
               {/* Bannière */}
               <div className={`relative flex h-52 items-end bg-gradient-to-br ${catGrad} p-5 sm:h-64`}>
-                <div className="absolute inset-0 bg-black/20" />
+                {activity.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={activity.mediumUrl || activity.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                )}
+                <div className="absolute inset-0 bg-black/30" />
                 <div className="relative flex w-full items-end justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`rounded-full bg-white/90 px-3 py-1 text-[11px] font-black ${catColor}`}>{catLabel}</span>
