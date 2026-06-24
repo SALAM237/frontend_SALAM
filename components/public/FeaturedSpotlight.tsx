@@ -249,7 +249,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
             {items.map((item, itemIndex) => (
               <SwiperSlide key={item._id} className="!flex h-full items-start pt-7 justify-end md:items-center md:pt-0" style={{ boxShadow: 'inset 0 0 0 3px blue' }}>
                 <div
-                  className="grid h-[88%] w-[93%] min-h-0 overflow-hidden rounded-2xl border-0 bg-transparent grid-rows-[42%_58%] md:h-[360px] md:w-[92%] md:grid-cols-[1fr_1fr] md:grid-rows-1 lg:h-[400px] lg:w-[91%] xl:h-[430px]"
+                  className="grid h-[88%] w-[93%] min-h-0 overflow-hidden rounded-2xl border-0 bg-transparent grid-rows-[42%_58%] md:h-full md:w-[92%] md:grid-cols-[1fr_1fr] md:grid-rows-1 lg:w-[91%]"
                   style={{
                     boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px',
                   }}
@@ -263,12 +263,12 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                       <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl lg:text-3xl">{item.title}</a>
                       <a {...destinationProps(item.textDestination)} className="mt-2.5 block whitespace-pre-line text-sm leading-6 text-neutral-600 hover:text-neutral-900">{item.description}</a>
-                      {item.buttonDestination?.type !== 'none' && (
-                        <a {...destinationProps(item.buttonDestination)} className="mt-4 inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-emerald-600/45 bg-emerald-100/75 px-3.5 text-[11px] font-black text-emerald-800 backdrop-blur transition hover:border-emerald-700/70 hover:bg-emerald-100">
-                          {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={12} />
-                        </a>
-                      )}
                     </div>
+                    {item.buttonDestination?.type !== 'none' && (
+                      <a {...destinationProps(item.buttonDestination)} className="absolute bottom-9 left-4 z-10 inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-emerald-600/45 bg-emerald-100/75 px-3.5 text-[11px] font-black text-emerald-800 backdrop-blur transition hover:border-emerald-700/70 hover:bg-emerald-100 md:static md:bottom-auto md:left-auto md:z-auto md:mt-4">
+                        {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={12} />
+                      </a>
+                    )}
 
                     {/* Dots */}
                     <div className="mt-3 flex shrink-0 items-center justify-center gap-1.5">
@@ -315,8 +315,9 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                       />
                     </span>
                     <Media item={item} active={itemIndex === activeIndex && !preview} playbackId={'slide-' + item._id} onPlaybackChange={handlePlaybackChange} />
-                    <span className="absolute right-4 top-4 z-30 grid h-10 w-10 place-items-center rounded-full border border-white/30 bg-black/70 text-white shadow-lg backdrop-blur transition hover:scale-105 hover:bg-black/85" aria-hidden="true">
-                      <Expand size={19} />
+                    <span className="absolute right-3 top-3 z-30 grid h-7 w-7 place-items-center rounded-full border border-white/30 bg-black/70 text-white shadow-lg backdrop-blur transition hover:scale-105 hover:bg-black/85 md:right-4 md:top-4 md:h-10 md:w-10" aria-hidden="true">
+                      <Expand size={13} className="md:hidden" />
+                      <Expand size={19} className="hidden md:block" />
                     </span>
                   </button>
                 </div>
