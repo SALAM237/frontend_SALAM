@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft, CalendarDays, Loader2, MapPin, Users, CheckCircle2,
@@ -41,6 +41,15 @@ export default function MemberActivityDetailPage({ params }: { params: Promise<{
   const { data, isLoading, isError } = useMemberActivity(slug);
   const activity = data?.data;
   const respond = useRespondActivityInvitation(activity?._id ?? '');
+
+  // État optimiste — mis à jour immédiatement au clic, avant le refetch API
+  const [localRsvp, setLocalRsvp] = useState<string | null>(null);
+  const currentRsvp = localRsvp ?? activity?.myInvitation?.rsvpStatus;
+
+  const handleRespond = (status: 'present' | 'unsure' | 'absent') => {
+    setLocalRsvp(status);
+    respond.mutate(status);
+  };
 
   const catLabel   = activity ? (ACTIVITY_CATEGORIES.find(c => c.value === activity.category)?.label ?? activity.category) : '';
   const catColor   = activity ? (CAT_COLORS[activity.category] ?? 'bg-neutral-100 text-neutral-600') : '';
@@ -178,16 +187,16 @@ export default function MemberActivityDetailPage({ params }: { params: Promise<{
                     : ''}
                 </p>
                 <div className="mt-3 grid grid-cols-3 gap-2">
-                  <button onClick={() => respond.mutate('present')} disabled={respond.isPending}
-                    className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-xl text-xs font-black transition disabled:opacity-50 ${activity.myInvitation.rsvpStatus === 'present' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white ring-1 ring-emerald-200 text-emerald-700 hover:bg-emerald-50'}`}>
+                  <button onClick={() => handleRespond('present')} disabled={respond.isPending}
+                    className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-xl text-xs font-black transition disabled:opacity-50 ${currentRsvp === 'present' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white ring-1 ring-emerald-200 text-emerald-700 hover:bg-emerald-50'}`}>
                     <CheckCircle2 size={14} /> Présent
                   </button>
-                  <button onClick={() => respond.mutate('unsure')} disabled={respond.isPending}
-                    className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-xl text-xs font-black transition disabled:opacity-50 ${activity.myInvitation.rsvpStatus === 'unsure' ? 'bg-amber-500 text-white shadow-sm' : 'bg-white ring-1 ring-amber-200 text-amber-700 hover:bg-amber-50'}`}>
+                  <button onClick={() => handleRespond('unsure')} disabled={respond.isPending}
+                    className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-xl text-xs font-black transition disabled:opacity-50 ${currentRsvp === 'unsure' ? 'bg-amber-500 text-white shadow-sm' : 'bg-white ring-1 ring-amber-200 text-amber-700 hover:bg-amber-50'}`}>
                     <HelpCircle size={14} /> Peut-être
                   </button>
-                  <button onClick={() => respond.mutate('absent')} disabled={respond.isPending}
-                    className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-xl text-xs font-black transition disabled:opacity-50 ${activity.myInvitation.rsvpStatus === 'absent' ? 'bg-red-500 text-white shadow-sm' : 'bg-white ring-1 ring-red-200 text-red-600 hover:bg-red-50'}`}>
+                  <button onClick={() => handleRespond('absent')} disabled={respond.isPending}
+                    className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-xl text-xs font-black transition disabled:opacity-50 ${currentRsvp === 'absent' ? 'bg-red-500 text-white shadow-sm' : 'bg-white ring-1 ring-red-200 text-red-600 hover:bg-red-50'}`}>
                     <XCircle size={14} /> Absent
                   </button>
                 </div>

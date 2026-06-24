@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { CalendarDays, Search, MapPin, Users, Loader2, Eye, X } from 'lucide-react';
-import { useMemberActivities, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
+import { CalendarDays, Search, MapPin, Users, Loader2, Eye, X, CheckCircle2, HelpCircle, XCircle } from 'lucide-react';
+import { useMemberActivities, useRespondActivityInvitation, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
 import { trackEvent } from '@/lib/analytics';
 
 const CAT_COLORS: Record<string, string> = {
@@ -86,61 +86,9 @@ export default function MemberActivitesPage() {
 
         {!isLoading && filtered.length > 0 && (
           <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
-            {[...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(a => {
-              const catCls   = CAT_COLORS[a.category] ?? 'bg-neutral-50 text-neutral-600 border-neutral-200';
-              const catLabel = ACTIVITY_CATEGORIES.find(c => c.value === a.category)?.label ?? a.category;
-              const sCls = a.status === 'published' ? 'bg-emerald-500 text-white' : a.status === 'finished' ? 'bg-neutral-400 text-white' : a.status === 'cancelled' ? 'bg-red-500 text-white' : 'bg-yellow-400 text-white';
-              const sLabel = a.status === 'published' ? 'Ouverte' : a.status === 'finished' ? 'Passée' : a.status === 'cancelled' ? 'Annulée' : 'Brouillon';
-              return (
-                <article key={a._id} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
-                  {/* Bannière catégorie */}
-                  <div className="relative flex h-32 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700">
-                    {a.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={a.thumbnailUrl || a.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                    ) : (
-                      <CalendarDays size={44} className="text-white/20" />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    <div className="absolute bottom-2.5 left-3 flex flex-wrap gap-1.5">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black ${sCls}`}>{sLabel}</span>
-                      <span className={`inline-flex rounded-full border bg-white/90 px-2.5 py-0.5 text-[10px] font-black ${catCls}`}>{catLabel}</span>
-                    </div>
-                    {a.myInvitation?.rsvpStatus === 'present' && (
-                      <span className="absolute right-2.5 top-2.5 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-black text-white">✓ Inscrit</span>
-                    )}
-                  </div>
-
-                  {/* Contenu */}
-                  <div className="flex flex-col gap-2.5 p-4">
-                    <div>
-                      <h3 className="text-sm font-black leading-snug text-neutral-900 line-clamp-2">{a.title}</h3>
-                      {(a.shortDescription || a.description) && (
-                        <p className="mt-1 text-xs leading-5 text-neutral-500 line-clamp-2">{a.shortDescription || a.description}</p>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold text-neutral-400">
-                      {a.startDate && (
-                        <span className="flex items-center gap-1">
-                          <CalendarDays size={11} />
-                          {new Date(a.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      )}
-                      {(a.venue || a.location) && <span className="flex items-center gap-1"><MapPin size={11} />{a.venue || a.location}</span>}
-                      {a.capacity && <span className="flex items-center gap-1"><Users size={11} />{a.capacity} places</span>}
-                    </div>
-                    <div className="border-t border-neutral-100 pt-2">
-                      <Link
-                        href={`/member/activites/${a.slug}`}
-                        onClick={() => trackEvent('activity_click', { activity_id: a._id, activity_slug: a.slug, activity_title: a.title, category: a.category, status: a.status, source: 'member_list', action: 'view_button_click' })}
-                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-[11px] font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
-                        <Eye size={11} /> Voir
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+            {[...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(a => (
+              <ActivityCard key={a._id} a={a} />
+            ))}
           </div>
         )}
       </div>
@@ -171,6 +119,93 @@ export default function MemberActivitesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function ActivityCard({ a }: { a: any }) {
+  const catCls   = CAT_COLORS[a.category] ?? 'bg-neutral-50 text-neutral-600 border-neutral-200';
+  const catLabel = ACTIVITY_CATEGORIES.find(c => c.value === a.category)?.label ?? a.category;
+  const sCls     = a.status === 'published' ? 'bg-emerald-500 text-white' : a.status === 'finished' ? 'bg-neutral-400 text-white' : a.status === 'cancelled' ? 'bg-red-500 text-white' : 'bg-yellow-400 text-white';
+  const sLabel   = a.status === 'published' ? 'Ouverte' : a.status === 'finished' ? 'Passée' : a.status === 'cancelled' ? 'Annulée' : 'Brouillon';
+
+  const respond = useRespondActivityInvitation(a._id);
+  const [localRsvp, setLocalRsvp] = useState<string | null>(null);
+  const currentRsvp = localRsvp ?? a.myInvitation?.rsvpStatus;
+
+  const handleRespond = (status: 'present' | 'unsure' | 'absent') => {
+    setLocalRsvp(status);
+    respond.mutate(status);
+  };
+
+  const hasRsvp = !!a.myInvitation;
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
+      {/* Bannière */}
+      <div className="relative flex h-32 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700">
+        {a.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={a.thumbnailUrl || a.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        ) : (
+          <CalendarDays size={44} className="text-white/20" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        <div className="absolute bottom-2.5 left-3 flex flex-wrap gap-1.5">
+          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black ${sCls}`}>{sLabel}</span>
+          <span className={`inline-flex rounded-full border bg-white/90 px-2.5 py-0.5 text-[10px] font-black ${catCls}`}>{catLabel}</span>
+        </div>
+        {currentRsvp === 'present' && (
+          <span className="absolute right-2.5 top-2.5 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-black text-white">✓ Inscrit</span>
+        )}
+      </div>
+
+      {/* Contenu */}
+      <div className="flex flex-col gap-2.5 p-4">
+        <div>
+          <h3 className="text-sm font-black leading-snug text-neutral-900 line-clamp-2">{a.title}</h3>
+          {(a.shortDescription || a.description) && (
+            <p className="mt-1 text-xs leading-5 text-neutral-500 line-clamp-2">{a.shortDescription || a.description}</p>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold text-neutral-400">
+          {a.startDate && (
+            <span className="flex items-center gap-1">
+              <CalendarDays size={11} />
+              {new Date(a.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+          {(a.venue || a.location) && <span className="flex items-center gap-1"><MapPin size={11} />{a.venue || a.location}</span>}
+          {a.capacity && <span className="flex items-center gap-1"><Users size={11} />{a.capacity} places</span>}
+        </div>
+
+        {/* Boutons RSVP — uniquement si le membre est invité */}
+        {hasRsvp && (
+          <div className="grid grid-cols-3 gap-1.5 rounded-xl bg-neutral-50 p-1.5">
+            <button onClick={() => handleRespond('present')} disabled={respond.isPending}
+              className={`inline-flex h-7 items-center justify-center gap-1 rounded-lg text-[10px] font-black transition disabled:opacity-50 ${currentRsvp === 'present' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white ring-1 ring-emerald-200 text-emerald-700 hover:bg-emerald-50'}`}>
+              <CheckCircle2 size={11} /> Présent
+            </button>
+            <button onClick={() => handleRespond('unsure')} disabled={respond.isPending}
+              className={`inline-flex h-7 items-center justify-center gap-1 rounded-lg text-[10px] font-black transition disabled:opacity-50 ${currentRsvp === 'unsure' ? 'bg-amber-500 text-white shadow-sm' : 'bg-white ring-1 ring-amber-200 text-amber-700 hover:bg-amber-50'}`}>
+              <HelpCircle size={11} /> Peut-être
+            </button>
+            <button onClick={() => handleRespond('absent')} disabled={respond.isPending}
+              className={`inline-flex h-7 items-center justify-center gap-1 rounded-lg text-[10px] font-black transition disabled:opacity-50 ${currentRsvp === 'absent' ? 'bg-red-500 text-white shadow-sm' : 'bg-white ring-1 ring-red-200 text-red-600 hover:bg-red-50'}`}>
+              <XCircle size={11} /> Absent
+            </button>
+          </div>
+        )}
+
+        <div className="border-t border-neutral-100 pt-2">
+          <Link
+            href={`/member/activites/${a.slug}`}
+            onClick={() => trackEvent('activity_click', { activity_id: a._id, activity_slug: a.slug, activity_title: a.title, category: a.category, status: a.status, source: 'member_list', action: 'view_button_click' })}
+            className="inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-[11px] font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
+            <Eye size={11} /> Voir
+          </Link>
+        </div>
+      </div>
+    </article>
   );
 }
 

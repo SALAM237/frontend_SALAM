@@ -36,12 +36,23 @@ export default function DonPage() {
     trackEvent('don_click', { value: finalMontant, currency: 'XAF', placement: 'don_form_submit' });
     trackEvent('don_submit', { value: finalMontant, currency: 'XAF' });
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setLoading(false);
-    trackFormSubmit('don', { value: finalMontant, currency: 'XAF' });
-    trackGenerateLead('don_form', { value: finalMontant, currency: 'XAF' });
-    trackEvent('don_success', { value: finalMontant, currency: 'XAF', payment_status: 'simulated_intent' });
-    setSent(true);
+    try {
+      const api = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+      const res = await fetch(`${api}/api/v1/public/don`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: form.name, email: form.email, montant: finalMontant }),
+      });
+      if (!res.ok) throw new Error('Erreur serveur');
+      trackFormSubmit('don', { value: finalMontant, currency: 'XAF' });
+      trackGenerateLead('don_form', { value: finalMontant, currency: 'XAF' });
+      trackEvent('don_success', { value: finalMontant, currency: 'XAF', payment_status: 'email_sent' });
+      setSent(true);
+    } catch {
+      trackEvent('don_error', { value: finalMontant, currency: 'XAF' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const startDonation = (value?: number) => {
@@ -89,7 +100,10 @@ export default function DonPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-black text-neutral-900">Merci pour votre don !</h3>
-                    <p className="mt-2 max-w-xs text-sm text-neutral-500">
+                    <p className="mt-2 max-w-sm text-sm text-neutral-500 leading-relaxed">
+                      Vous recevrez par mail la procédure pour nous faire parvenir votre don.
+                    </p>
+                    <p className="mt-2 max-w-sm text-sm text-neutral-500">
                       Votre générosité contribue directement au développement de notre communauté.
                     </p>
                   </div>
