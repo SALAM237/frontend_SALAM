@@ -96,7 +96,7 @@ export default function ConditionsCaurisPage() {
       <section className="bg-emerald-950 px-5 py-12 text-white md:px-8">
         <div className="mx-auto flex max-w-5xl flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div><h2 className="text-xl font-black">Consultez votre solde</h2><p className="mt-1 text-sm text-white/60">Votre historique et vos QR codes sont accessibles depuis votre profil membre.</p></div>
-          <Link href="/member/profil" className="inline-flex h-11 items-center justify-center rounded-lg bg-amber-400 px-5 text-sm font-black text-emerald-950 transition hover:bg-amber-300">Ouvrir mon profil</Link>
+          <Link href="/member/profil#cauris" className="inline-flex h-11 items-center justify-center rounded-lg bg-amber-400 px-5 text-sm font-black text-emerald-950 transition hover:bg-amber-300">Ouvrir mon profil</Link>
         </div>
       </section>
     </main>

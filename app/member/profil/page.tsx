@@ -137,6 +137,15 @@ export default function ProfilPage() {
   const sectorProposal = useSubmitActivitySectorProposal();
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#cauris') {
+      const t = setTimeout(() => {
+        cauriRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 400);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!user) return;
     setForm({
       firstName: user.firstName ?? '',
@@ -411,7 +420,7 @@ export default function ProfilPage() {
         </button>
         </form>
 
-        <aside ref={cauriRef} className="min-w-0 lg:sticky lg:top-24">
+        <aside ref={cauriRef} id="cauris" className="min-w-0 lg:sticky lg:top-24">
           <CauriWalletPanel />
         </aside>
       </div>
