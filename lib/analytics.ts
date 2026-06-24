@@ -12,6 +12,7 @@ export type SalamAnalyticsEvent =
   | 'don_start'
   | 'don_submit'
   | 'don_success'
+  | 'don_error'
   | 'member_dashboard_view'
   | 'activity_click'
   | 'activity_view'
