@@ -580,74 +580,81 @@ export default function CotisationsAdminPage() {
               const cfg = STATUS_CONFIG[member.status];
               const photoUrl = memberPhotoUrl(member);
               return (
-                <div key={member.userId} className="flex items-center gap-2 px-3 py-3 transition-colors hover:bg-neutral-50/60 sm:gap-3 sm:px-5 sm:py-4">
-                  <div className={`h-2 w-2 shrink-0 rounded-full sm:h-2.5 sm:w-2.5 ${cfg.dot} shadow-sm`} />
-                  <Link href={`/admin/adherents/${member.userId}`} className="shrink-0" title="Voir la fiche membre">
-                    {photoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={photoUrl} alt={formatFullName(member.firstName, member.lastName)} className={`h-8 w-8 rounded-full border-2 object-cover sm:h-9 sm:w-9 ${memberAvatarBorderClass(member.gender)}`} />
-                    ) : (
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-black text-white sm:h-9 sm:w-9 sm:text-xs ${memberInitialsClass(member.gender)}`}>
-                        {formatInitials(member.firstName, member.lastName)}
-                      </div>
-                    )}
-                  </Link>
-                  <div className="flex-1 min-w-0">
-                    <Link href={`/admin/adherents/${member.userId}`} className="block truncate text-[13px] font-black text-neutral-900 transition hover:text-emerald-700 sm:text-sm">{formatFullName(member.firstName, member.lastName)}</Link>
-                    <p className="truncate font-mono text-[10px] text-neutral-400 sm:text-[11px]">{member.memberId}</p>
+                <div key={member.userId} className="flex flex-wrap items-center gap-x-2 gap-y-2 px-3 py-3 transition-colors hover:bg-neutral-50/60 sm:flex-nowrap sm:gap-x-3 sm:px-5 sm:py-4">
+                  {/* Dot + avatar + name */}
+                  <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                    <div className={`h-2 w-2 shrink-0 rounded-full sm:h-2.5 sm:w-2.5 ${cfg.dot} shadow-sm`} />
+                    <Link href={`/admin/adherents/${member.userId}`} className="shrink-0" title="Voir la fiche membre">
+                      {photoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={photoUrl} alt={formatFullName(member.firstName, member.lastName)} className={`h-8 w-8 rounded-full border-2 object-cover sm:h-9 sm:w-9 ${memberAvatarBorderClass(member.gender)}`} />
+                      ) : (
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-black text-white sm:h-9 sm:w-9 sm:text-xs ${memberInitialsClass(member.gender)}`}>
+                          {formatInitials(member.firstName, member.lastName)}
+                        </div>
+                      )}
+                    </Link>
+                    <div className="min-w-0">
+                      <Link href={`/admin/adherents/${member.userId}`} className="block truncate text-[13px] font-black text-neutral-900 transition hover:text-emerald-700 sm:text-sm">{formatFullName(member.firstName, member.lastName)}</Link>
+                      <p className="truncate font-mono text-[10px] text-neutral-400 sm:text-[11px]">{member.memberId}</p>
+                    </div>
                   </div>
+
+                  {/* Date (desktop only) */}
                   <div className="hidden w-28 text-right sm:block">
                     {member.status === 'paid'
                       ? <span className="text-xs font-semibold text-neutral-600">{fmt(member.paidAt)}</span>
                       : <span className="text-xs text-neutral-300">—</span>
                     }
                   </div>
+
+                  {/* Actions + select — wrap on mobile */}
                   <div className="flex shrink-0 items-center gap-1 sm:gap-2">
                     {member.status === 'unpaid' && (
                       <button onClick={() => triggerReminder(member)} title="Envoyer une relance"
-                        className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${
+                        className={`flex h-7 w-7 items-center justify-center rounded-lg border transition sm:h-8 sm:w-8 ${
                           reminderSentId === member.userId
                             ? 'border-orange-200 bg-orange-50 text-orange-500'
                             : 'border-neutral-200 bg-white text-neutral-400 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600'
                         }`}>
-                        {reminderSentId === member.userId ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                        {reminderSentId === member.userId ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
                       </button>
                     )}
                     {member.status === 'paid' && (
                       <button onClick={() => openPaymentReceiptPdf(member, year)} title="Voir le reçu"
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600">
-                        <Eye size={13} />
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600 sm:h-8 sm:w-8">
+                        <Eye size={12} />
                       </button>
                     )}
                     {member.status === 'paid' && (
                       <button onClick={() => setModal(member)} title="Modifier le paiement"
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600">
-                        <Edit3 size={13} />
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 sm:h-8 sm:w-8">
+                        <Edit3 size={12} />
                       </button>
                     )}
                     <button
                       onClick={() => handleDeleteCotisation(member)}
                       disabled={deleteCotisation.isPending}
-                      title="Supprimer le frais d'adhésion généré"
-                      className={`flex h-8 items-center justify-center rounded-lg transition ${
+                      title="Supprimer"
+                      className={`flex h-7 items-center justify-center rounded-lg transition sm:h-8 ${
                         deleteTarget === member.userId
                           ? 'w-auto bg-red-500 px-2 text-[10px] font-black text-white'
-                          : 'w-8 border border-red-100 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white'
+                          : 'w-7 border border-red-100 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white sm:w-8'
                       } disabled:opacity-50`}
                     >
-                      {deleteCotisation.isPending && deleteTarget === member.userId ? <Loader2 size={13} className="animate-spin" /> : deleteTarget === member.userId ? 'Confirmer' : <Trash2 size={13} />}
+                      {deleteCotisation.isPending && deleteTarget === member.userId ? <Loader2 size={12} className="animate-spin" /> : deleteTarget === member.userId ? 'OK' : <Trash2 size={12} />}
                     </button>
-                  </div>
-                  <div className="relative shrink-0">
-                    <select value={member.status}
-                      onChange={e => handleStatusChange(member, e.target.value as CotisationStatus)}
-                      disabled={updateStatus.isPending}
-                      className={`h-7 max-w-[6.6rem] appearance-none truncate rounded-full border pl-2.5 pr-6 text-[10px] font-black outline-none cursor-pointer disabled:opacity-60 sm:h-8 sm:max-w-none sm:pl-3 sm:pr-7 sm:text-[11px] ${cfg.badge}`}>
-                      <option value="unpaid">Non payé</option>
-                      <option value="paid">Payé</option>
-                      <option value="exempt">Exempté</option>
-                    </select>
-                    <ChevronDown size={11} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 opacity-60" />
+                    <div className="relative">
+                      <select value={member.status}
+                        onChange={e => handleStatusChange(member, e.target.value as CotisationStatus)}
+                        disabled={updateStatus.isPending}
+                        className={`h-7 w-[5.5rem] appearance-none truncate rounded-full border pl-2 pr-5 text-[10px] font-black outline-none cursor-pointer disabled:opacity-60 sm:h-8 sm:w-auto sm:pl-3 sm:pr-7 sm:text-[11px] ${cfg.badge}`}>
+                        <option value="unpaid">Non payé</option>
+                        <option value="paid">Payé</option>
+                        <option value="exempt">Exempté</option>
+                      </select>
+                      <ChevronDown size={10} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 opacity-60" />
+                    </div>
                   </div>
                 </div>
               );

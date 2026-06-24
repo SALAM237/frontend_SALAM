@@ -18,6 +18,8 @@ export interface OpportunityDoc {
   description: string;
   skills?: string[];
   deadline?: string;
+  expiresAt?: string;
+  extendedBy?: { firstName?: string; lastName?: string; email?: string };
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -25,6 +27,8 @@ export interface OpportunityDoc {
   status: OpportunityStatus;
   visibility: 'members' | 'public';
   submittedBy?: { firstName?: string; lastName?: string; email?: string };
+  viewCount?: number;
+  likeCount?: number;
   createdAt: string;
   publishedAt?: string;
 }

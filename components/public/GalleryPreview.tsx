@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, ImageIcon, Play } from 'lucide-react';
+import { ArrowRight, Images, ImageIcon } from 'lucide-react';
 import { usePublicAlbums } from '@/lib/api/gallery';
 
 const fallbackGradients = [
@@ -12,22 +12,12 @@ const fallbackGradients = [
   'linear-gradient(135deg,#F7C600,#d4a200)',
   'linear-gradient(135deg,#6D28D9,#4c1d95)',
   'linear-gradient(135deg,#2563EB,#1e3a8a)',
+  'linear-gradient(135deg,#0891b2,#164e63)',
 ];
 
 export function GalleryPreview() {
   const { data, isLoading } = usePublicAlbums();
-  const albums = data?.data ?? [];
-  const photos = albums
-    .flatMap(album => (album.images ?? [])
-      .filter(image => image.isPublished !== false && (image.visibility ?? album.visibility) === 'public')
-      .map(image => ({
-        id: `${album._id}-${image.url}`,
-        title: image.alt || album.title,
-        category: album.tags?.[0] || 'Galerie',
-        url: image.thumbnailUrl || image.mediumUrl || image.url,
-        albumTitle: album.title,
-      })))
-    .slice(0, 5);
+  const albums = (data?.data ?? []).slice(0, 6);
 
   return (
     <section>
@@ -47,7 +37,7 @@ export function GalleryPreview() {
               Nos moments<br />en images
             </h2>
             <p className="text-salam mt-3 max-w-md text-neutral-600">
-              Revivez les meilleurs moments publics de l'association SALAM.
+              Revivez les meilleurs moments publics de l&apos;association SALAM.
             </p>
           </div>
           <Link href="/galerie" className="group inline-flex items-center gap-2 whitespace-nowrap text-sm font-bold text-salam-green">
@@ -58,74 +48,83 @@ export function GalleryPreview() {
 
         {isLoading && (
           <div className="grid grid-cols-2 gap-[clamp(0.5rem,1.2vw,1rem)] md:grid-cols-3">
-            {[1, 2, 3, 4, 5].map(item => (
-              <div key={item} className="min-h-[clamp(100px,14vw,180px)] rounded-2xl bg-neutral-100" />
+            {[1, 2, 3, 4, 5, 6].map(item => (
+              <div key={item} className="h-[clamp(140px,20vw,220px)] rounded-2xl bg-neutral-100" />
             ))}
           </div>
         )}
 
-        {!isLoading && photos.length === 0 && (
+        {!isLoading && albums.length === 0 && (
           <div className="rounded-3xl border border-dashed border-emerald-200 bg-white p-8 text-center shadow-sm">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
               <ImageIcon size={22} />
             </div>
-            <h3 className="text-lg font-black text-neutral-900">Aucune photo publique pour le moment</h3>
+            <h3 className="text-lg font-black text-neutral-900">Aucun album publié pour le moment</h3>
             <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-neutral-500">
-              Les albums publics publiés dans la galerie apparaîtront ici automatiquement.
+              Les albums publics apparaîtront ici automatiquement.
             </p>
           </div>
         )}
 
-        {!isLoading && photos.length > 0 && (
-          <div
-            className="grid grid-cols-2 gap-[clamp(0.5rem,1.2vw,1rem)] md:grid-cols-3"
-            style={{ gridTemplateRows: 'repeat(2, minmax(clamp(100px,16vw,180px), 1fr))' }}
-          >
-            {photos.map((photo, idx) => {
-              const large = idx === 0;
+        {!isLoading && albums.length > 0 && (
+          <div className="grid grid-cols-2 gap-[clamp(0.5rem,1.2vw,1rem)] md:grid-cols-3">
+            {albums.map((album: any, idx: number) => {
+              const cover = (album.images ?? []).find((img: any) => img.isPublished !== false);
+              const photoCount = (album.images ?? []).filter((img: any) => img.isPublished !== false).length;
               return (
                 <motion.div
-                  key={photo.id}
+                  key={album._id}
                   initial={{ opacity: 0, scale: 0.94 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5, delay: idx * 0.07, ease: [0.16, 1, 0.3, 1] }}
                   viewport={{ once: true }}
-                  className={`group relative cursor-pointer overflow-hidden ${large ? 'md:col-span-2 md:row-span-2' : ''}`}
-                  style={{
-                    borderRadius: 'clamp(0.75rem,1.5vw,1.25rem)',
-                    background: fallbackGradients[idx % fallbackGradients.length],
-                    minHeight: large ? 'clamp(200px,28vw,320px)' : 'clamp(100px,14vw,180px)',
-                  }}
                 >
-                  <Image
-                    src={photo.url}
-                    alt={photo.title}
-                    fill
-                    loading="lazy"
-                    sizes={large ? '(max-width: 768px) 100vw, 520px' : '(max-width: 768px) 50vw, 250px'}
-                    className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-black/10 transition-colors duration-300 group-hover:bg-black/30" />
-                  {large && (
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                      <div className="flex size-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-                        <Play size={20} className="translate-x-0.5 text-white" />
+                  <Link
+                    href="/galerie"
+                    className="group block overflow-hidden rounded-2xl border border-white/10 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+                    style={{ borderRadius: 'clamp(0.75rem,1.5vw,1.25rem)' }}
+                  >
+                    <div
+                      className="relative overflow-hidden"
+                      style={{
+                        height: 'clamp(140px,20vw,220px)',
+                        background: fallbackGradients[idx % fallbackGradients.length],
+                      }}
+                    >
+                      {cover && (
+                        <Image
+                          src={cover.thumbnailUrl || cover.mediumUrl || cover.url}
+                          alt={cover.alt || album.title}
+                          fill
+                          loading="lazy"
+                          sizes="(max-width: 768px) 50vw, 33vw"
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-[clamp(0.75rem,1.5vw,1rem)]">
+                        {album.tags?.[0] && (
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-white/70 mb-0.5">
+                            {album.tags[0]}
+                          </p>
+                        )}
+                        <p className="line-clamp-2 font-black leading-tight text-white" style={{ fontSize: 'clamp(0.78rem,1.4vw,0.95rem)' }}>
+                          {album.title}
+                        </p>
+                        <div className="mt-1 flex items-center gap-1 text-white/60" style={{ fontSize: 'clamp(0.65rem,1vw,0.75rem)' }}>
+                          <Images size={10} />
+                          <span>{photoCount} photo{photoCount !== 1 ? 's' : ''}</span>
+                        </div>
                       </div>
                     </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 p-[clamp(0.75rem,1.5vw,1.25rem)]">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/75">{photo.category}</p>
-                    <p className="mt-0.5 line-clamp-2 font-bold leading-tight text-white" style={{ fontSize: large ? 'clamp(0.9rem,1.6vw,1.1rem)' : 'clamp(0.75rem,1.2vw,0.85rem)' }}>
-                      {photo.albumTitle}
-                    </p>
-                  </div>
+                  </Link>
                 </motion.div>
               );
             })}
           </div>
         )}
 
-        {photos.length > 0 && (
+        {albums.length > 0 && (
           <motion.p
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -133,7 +132,7 @@ export function GalleryPreview() {
             viewport={{ once: true }}
             className="mt-5 text-center text-[13px] text-neutral-400"
           >
-            <span className="font-bold text-salam-green">{photos.length}</span> photo{photos.length > 1 ? 's' : ''} publique{photos.length > 1 ? 's' : ''} mise{photos.length > 1 ? 's' : ''} en avant
+            <span className="font-bold text-salam-green">{albums.length}</span> album{albums.length > 1 ? 's' : ''} publié{albums.length > 1 ? 's' : ''}
           </motion.p>
         )}
       </div>

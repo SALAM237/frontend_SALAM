@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Inbox, Loader2, MessageSquare, Pencil, Search, Send, SendHorizontal, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Inbox, Loader2, MessageSquare, Paperclip, Pencil, Search, Send, SendHorizontal, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore } from '@/store/auth.store';
@@ -47,6 +47,8 @@ function Compose({ space, initial, onClose }: { space: MessageSpace; initial?: R
   const [results, setResults] = useState<Recipient[]>([]);
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const send = useSendInternalMessage(space);
 
   useEffect(() => {
@@ -93,7 +95,7 @@ function Compose({ space, initial, onClose }: { space: MessageSpace; initial?: R
 
         <div className="space-y-4 p-5">
           <div className="relative">
-            <label className="mb-1 block text-xs font-bold uppercase tracking-[0.1em] text-neutral-500">A</label>
+            <label className="mb-1 block text-xs font-bold uppercase tracking-[0.1em] text-emerald-600">À</label>
             {recipient ? (
               <div className="flex h-11 items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-sm font-bold text-emerald-800">
                 <span className="truncate">{recipient.name}</span>
@@ -116,12 +118,45 @@ function Compose({ space, initial, onClose }: { space: MessageSpace; initial?: R
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-bold uppercase tracking-[0.1em] text-neutral-500">Objet</label>
+            <label className="mb-1 block text-xs font-bold uppercase tracking-[0.1em] text-emerald-600">Objet</label>
             <input value={subject} maxLength={160} onChange={event => setSubject(event.target.value)} placeholder="Sujet du message..." className="h-11 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-500" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-bold uppercase tracking-[0.1em] text-neutral-500">Message</label>
-            <textarea value={content} maxLength={4000} rows={6} onChange={event => setContent(event.target.value)} placeholder="Redigez votre message..." className="w-full resize-none rounded-xl border border-neutral-200 p-3 text-sm outline-none focus:border-emerald-500" />
+            <label className="mb-1 block text-xs font-bold uppercase tracking-[0.1em] text-emerald-600">Message</label>
+            <textarea value={content} maxLength={4000} rows={6} onChange={event => setContent(event.target.value)} placeholder="Rédigez votre message..." className="w-full resize-none rounded-xl border border-neutral-200 p-3 text-sm outline-none focus:border-emerald-500" />
+          </div>
+
+          {/* Pièce jointe */}
+          <div>
+            <label className="mb-1 block text-xs font-bold uppercase tracking-[0.1em] text-emerald-600">Joindre un fichier</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.zip"
+              className="sr-only"
+              onChange={e => setAttachment(e.target.files?.[0] ?? null)}
+            />
+            {attachment ? (
+              <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
+                <span className="flex items-center gap-2 truncate text-sm font-bold text-emerald-800">
+                  <Paperclip size={13} className="shrink-0" />
+                  <span className="truncate">{attachment.name}</span>
+                </span>
+                <button type="button" onClick={() => { setAttachment(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="ml-2 shrink-0 text-neutral-400 hover:text-neutral-700">
+                  <X size={13} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full items-center gap-2 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-500 transition hover:border-emerald-300 hover:bg-emerald-50/40 hover:text-emerald-700"
+              >
+                <Paperclip size={14} />
+                <span>Sélectionner un fichier…</span>
+                <span className="ml-auto text-[10px] text-neutral-400">PDF, DOC, JPG, ZIP…</span>
+              </button>
+            )}
           </div>
         </div>
 

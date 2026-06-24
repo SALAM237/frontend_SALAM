@@ -1,13 +1,15 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import {
   AlertTriangle, ArrowDownRight, ArrowUpRight, Banknote, Boxes, CheckCircle2,
-  Clock, Download, FileUp, Package, Plus, RefreshCw, Settings2, WalletCards,
+  Clock, Download, FileSpreadsheet, FileUp, Loader2 as ImportLoader, Package, Plus, RefreshCw, Settings2, WalletCards,
   Trash2, WifiOff, X, XCircle,
 } from 'lucide-react';
 import {
@@ -31,6 +33,17 @@ import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 type TabValue = 'overview' | 'income' | 'expense' | 'don' | 'assets';
 type FormMode = 'income' | 'expense' | 'don' | 'asset' | null;
+
+interface ImportRow {
+  kind: TreasuryKind;
+  source: TreasurySource;
+  label: string;
+  amount: number;
+  occurredAt: string;
+  counterparty?: string;
+  reference?: string;
+  error?: string;
+}
 
 const tabs: { value: TabValue; label: string }[] = [
   { value: 'overview', label: "Vue d'ensemble" },
@@ -83,7 +96,9 @@ export default function AdminTresoreriePage() {
   const [asset, setAsset] = useState(emptyAsset);
   const [feeAmount, setFeeAmount] = useState('');
   const [feeReason, setFeeReason] = useState('');
-  const importRef = useRef<HTMLInputElement>(null);
+  const importRef    = useRef<HTMLInputElement>(null);
+  const csvImportRef = useRef<HTMLInputElement>(null);
+  const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
 
   const overview = useTreasuryOverview(true);
   const income = useTreasuryTransactions('income', true);
@@ -165,7 +180,106 @@ export default function AdminTresoreriePage() {
   };
 
   const handleImport = (file?: File) => {
-    if (file) uploadDoc.mutate(file);
+    if (!file) return;
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (ext === 'csv' || ext === 'xlsx' || ext === 'xls') {
+      parseCsvXlsx(file);
+    } else {
+      uploadDoc.mutate(file);
+    }
+  };
+
+  const parseCsvXlsx = (file: File) => {
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (ext === 'csv') {
+      Papa.parse<Record<string, string>>(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: result => setImportRows(normalizeRows(result.data)),
+        error: () => alert('Erreur lors de la lecture du fichier CSV.'),
+      });
+    } else {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const wb = XLSX.read(e.target?.result, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' });
+          setImportRows(normalizeRows(rows));
+        } catch {
+          alert('Erreur lors de la lecture du fichier XLSX.');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+    if (csvImportRef.current) csvImportRef.current.value = '';
+  };
+
+  const VALID_KINDS: TreasuryKind[] = ['income', 'expense'];
+  const VALID_SOURCES: TreasurySource[] = ['adhesion', 'don', 'crowdfunding', 'activity', 'subvention', 'partner', 'other'];
+  const KIND_ALIASES: Record<string, TreasuryKind> = {
+    income: 'income', encaissement: 'income', entree: 'income', recette: 'income',
+    expense: 'expense', decaissement: 'expense', sortie: 'expense', depense: 'expense',
+  };
+  const SOURCE_ALIASES: Record<string, TreasurySource> = {
+    adhesion: 'adhesion', don: 'don', donation: 'don', crowdfunding: 'crowdfunding',
+    activity: 'activity', activite: 'activity', activité: 'activity', subvention: 'subvention',
+    partner: 'partner', partenaire: 'partner', other: 'other', autre: 'other',
+    "frais d'adhesion": 'adhesion', "frais d'adhésion": 'adhesion',
+  };
+
+  const normalizeDate = (raw: string): string => {
+    if (!raw) return '';
+    const trimmed = raw.trim();
+    const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (iso) return trimmed;
+    const fr = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (fr) return `${fr[3]}-${fr[2].padStart(2, '0')}-${fr[1].padStart(2, '0')}`;
+    const dot = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (dot) return `${dot[3]}-${dot[2].padStart(2, '0')}-${dot[1].padStart(2, '0')}`;
+    return '';
+  };
+
+  const normalizeRows = (raw: Record<string, string>[]): ImportRow[] => {
+    return raw.map(r => {
+      const col = (names: string[]) => {
+        for (const n of names) {
+          const key = Object.keys(r).find(k => k.trim().toLowerCase() === n.toLowerCase());
+          if (key !== undefined) return String(r[key] ?? '').trim();
+        }
+        return '';
+      };
+      const rawKind   = col(['type', 'kind', 'type_operation']);
+      const rawSource = col(['source']);
+      const rawLabel  = col(['libelle', 'label', 'libellé', 'designation', 'désignation']);
+      const rawAmount = col(['montant', 'amount', 'valeur']);
+      const rawDate   = col(['date', 'occurred_at', 'occurredAt', 'date_operation']);
+      const rawTiers  = col(['tiers', 'counterparty', 'contrepartie']);
+      const rawRef    = col(['reference', 'référence', 'ref']);
+
+      const kind   = KIND_ALIASES[rawKind.toLowerCase()] as TreasuryKind | undefined;
+      const source = SOURCE_ALIASES[rawSource.toLowerCase()] as TreasurySource | undefined;
+      const amount = parseFloat(rawAmount.replace(/\s/g, '').replace(',', '.'));
+      const date   = normalizeDate(rawDate);
+
+      const errors: string[] = [];
+      if (!kind)             errors.push('Type invalide');
+      if (!source)           errors.push('Source invalide');
+      if (!rawLabel)         errors.push('Libellé manquant');
+      if (isNaN(amount) || amount <= 0) errors.push('Montant invalide');
+      if (!date)             errors.push('Date invalide');
+
+      return {
+        kind:         kind   ?? 'income',
+        source:       source ?? 'other',
+        label:        rawLabel || '(sans libellé)',
+        amount:       isNaN(amount) ? 0 : amount,
+        occurredAt:   date || new Date().toISOString().slice(0, 10),
+        counterparty: rawTiers   || undefined,
+        reference:    rawRef     || undefined,
+        error:        errors.length ? errors.join(', ') : undefined,
+      };
+    });
   };
 
   const handleDeleteTx = (id: string) => {
@@ -236,8 +350,11 @@ export default function AdminTresoreriePage() {
           <button onClick={() => openForm(tab === 'expense' ? 'expense' : tab === 'don' ? 'don' : tab === 'assets' ? 'asset' : 'income')} className="inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-600 px-3 text-xs font-black text-white shadow-sm transition hover:bg-emerald-700">
             <Plus size={14} /> {tab === 'expense' ? 'Ajouter depense' : tab === 'don' ? 'Ajouter don' : tab === 'assets' ? 'Ajouter patrimoine' : 'Ajouter encaissement'}
           </button>
+          <button onClick={() => csvImportRef.current?.click()} className="inline-flex h-9 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-100">
+            <FileSpreadsheet size={14} /> Importer CSV/XLSX
+          </button>
           <button onClick={() => importRef.current?.click()} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700">
-            <FileUp size={14} /> Importer
+            <FileUp size={14} /> Justificatif
           </button>
           <button onClick={exportCsv} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700">
             <Download size={14} /> Exporter
@@ -245,7 +362,8 @@ export default function AdminTresoreriePage() {
           <button onClick={() => setSettingsOpen(true)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700" title="Parametres tresorerie">
             <Settings2 size={15} />
           </button>
-          <input ref={importRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.csv,.xlsx" className="hidden" onChange={e => handleImport(e.target.files?.[0])} />
+          <input ref={importRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden" onChange={e => handleImport(e.target.files?.[0])} />
+          <input ref={csvImportRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => handleImport(e.target.files?.[0])} />
         </div>
       </div>
 
@@ -434,6 +552,28 @@ export default function AdminTresoreriePage() {
       {tab === 'expense' && <TransactionList title="Decaissements" items={expenseItems} loading={expense.isLoading} onDelete={handleDeleteTx} deletingId={deleteTx.variables} />}
       {tab === 'don' && <TransactionList title="Dons recus" items={donationItems} loading={donations.isLoading} onDelete={handleDeleteTx} deletingId={deleteTx.variables} />}
       {tab === 'assets' && <AssetList title="Patrimoine" items={assetItems} loading={assets.isLoading} onDelete={handleDeleteAsset} deletingId={deleteAsset.variables} />}
+
+      {importRows && (
+        <CsvImportModal
+          rows={importRows}
+          onConfirm={async validRows => {
+            for (const row of validRows) {
+              await createTx.mutateAsync({
+                kind: row.kind,
+                source: row.source,
+                label: row.label,
+                amount: row.amount,
+                occurredAt: row.occurredAt,
+                counterparty: row.counterparty,
+                reference: row.reference,
+                visibility: 'members',
+              } as Partial<TreasuryTransaction>);
+            }
+            setImportRows(null);
+          }}
+          onClose={() => setImportRows(null)}
+        />
+      )}
     </div>
   );
 }
@@ -596,6 +736,156 @@ function InfoRow({ icon: Icon, title, text, tone, compact = false }: { icon: Rea
       <div>
         <p className="text-xs font-black text-neutral-900">{title}</p>
         <p className="mt-0.5 text-xs leading-5 text-neutral-500">{text}</p>
+      </div>
+    </div>
+  );
+}
+
+function CsvImportModal({
+  rows,
+  onConfirm,
+  onClose,
+}: {
+  rows: ImportRow[];
+  onConfirm: (validRows: ImportRow[]) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const valid   = rows.filter(r => !r.error);
+  const invalid = rows.filter(r => r.error);
+
+  const handle = async () => {
+    if (valid.length === 0) return;
+    setLoading(true);
+    try {
+      await onConfirm(valid);
+      setDone(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-black/55 p-3 backdrop-blur-sm sm:items-center sm:justify-center">
+      <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <FileSpreadsheet size={18} />
+            </div>
+            <div>
+              <p className="font-black text-neutral-900">Import CSV / XLSX</p>
+              <p className="text-[11px] text-neutral-500">{rows.length} ligne{rows.length > 1 ? 's' : ''} détectée{rows.length > 1 ? 's' : ''}</p>
+            </div>
+          </div>
+          <button onClick={onClose} disabled={loading} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100">
+            <X size={16} />
+          </button>
+        </div>
+
+        {done ? (
+          <div className="flex flex-col items-center gap-4 px-6 py-12">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+              <CheckCircle2 size={28} />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-black text-neutral-900">{valid.length} opération{valid.length > 1 ? 's' : ''} importée{valid.length > 1 ? 's' : ''}</p>
+              <p className="mt-1 text-sm text-neutral-500">Les données sont disponibles dans les onglets Encaissements / Décaissements.</p>
+            </div>
+            <button onClick={onClose} className="h-10 rounded-xl bg-emerald-600 px-6 text-sm font-black text-white">Fermer</button>
+          </div>
+        ) : (
+          <>
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-px bg-neutral-100">
+              <div className="bg-white px-5 py-3 text-center">
+                <p className="text-xl font-black text-neutral-900">{rows.length}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-400">Total</p>
+              </div>
+              <div className="bg-white px-5 py-3 text-center">
+                <p className="text-xl font-black text-emerald-700">{valid.length}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-500">Valides</p>
+              </div>
+              <div className="bg-white px-5 py-3 text-center">
+                <p className="text-xl font-black text-red-600">{invalid.length}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-red-400">Erreurs</p>
+              </div>
+            </div>
+
+            {/* Format hint */}
+            <div className="border-b border-neutral-100 bg-blue-50 px-5 py-2.5">
+              <p className="text-[11px] text-blue-700">
+                <span className="font-black">Colonnes attendues :</span>{' '}
+                <span className="font-mono">type</span> (income/expense) ·{' '}
+                <span className="font-mono">source</span> (adhesion/don/…) ·{' '}
+                <span className="font-mono">libelle</span> ·{' '}
+                <span className="font-mono">montant</span> ·{' '}
+                <span className="font-mono">date</span> (JJ/MM/AAAA) ·{' '}
+                <span className="font-mono">tiers</span> ·{' '}
+                <span className="font-mono">reference</span>
+              </p>
+            </div>
+
+            {/* Preview table */}
+            <div className="max-h-[45vh] overflow-auto">
+              <table className="w-full min-w-[640px] border-collapse text-xs">
+                <thead>
+                  <tr className="sticky top-0 bg-neutral-50">
+                    {['Type', 'Source', 'Libellé', 'Montant', 'Date', 'Tiers', 'Statut'].map(h => (
+                      <th key={h} className="border-b border-neutral-100 px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.1em] text-neutral-500">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, i) => (
+                    <tr key={i} className={row.error ? 'bg-red-50' : 'hover:bg-neutral-50'}>
+                      <td className="border-b border-neutral-50 px-3 py-2">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${row.kind === 'income' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                          {row.kind === 'income' ? 'Encaissement' : 'Décaissement'}
+                        </span>
+                      </td>
+                      <td className="border-b border-neutral-50 px-3 py-2 text-neutral-600">{sourceLabels[row.source] ?? row.source}</td>
+                      <td className="border-b border-neutral-50 px-3 py-2 font-semibold text-neutral-900 max-w-[140px] truncate">{row.label}</td>
+                      <td className={`border-b border-neutral-50 px-3 py-2 font-black ${row.kind === 'income' ? 'text-emerald-700' : 'text-red-600'}`}>
+                        {formatFcfa(row.amount)}
+                      </td>
+                      <td className="border-b border-neutral-50 px-3 py-2 text-neutral-500">{row.occurredAt}</td>
+                      <td className="border-b border-neutral-50 px-3 py-2 text-neutral-400">{row.counterparty ?? '—'}</td>
+                      <td className="border-b border-neutral-50 px-3 py-2">
+                        {row.error ? (
+                          <span className="flex items-center gap-1 text-red-600"><XCircle size={11} /> {row.error}</span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 size={11} /> OK</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between gap-3 border-t border-neutral-100 px-6 py-4">
+              {invalid.length > 0 && (
+                <p className="text-[11px] text-amber-600">
+                  <span className="font-black">{invalid.length} ligne{invalid.length > 1 ? 's' : ''}</span> ignorée{invalid.length > 1 ? 's' : ''} (erreurs)
+                </p>
+              )}
+              <div className="ml-auto flex gap-2">
+                <button onClick={onClose} disabled={loading} className="h-10 rounded-xl border border-neutral-200 px-4 text-sm font-bold text-neutral-600 hover:bg-neutral-50 disabled:opacity-50">
+                  Annuler
+                </button>
+                <button onClick={handle} disabled={loading || valid.length === 0}
+                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50">
+                  {loading ? <><ImportLoader size={14} className="animate-spin" /> Import en cours…</> : `Importer ${valid.length} ligne${valid.length > 1 ? 's' : ''}`}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

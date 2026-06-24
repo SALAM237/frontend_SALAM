@@ -224,17 +224,64 @@ export function FeaturedManager({ showButton = true, showList = true }: { showBu
   return (
     <>
       {showButton && <button type="button" onClick={() => setEditor('new')} className="inline-flex h-9 items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 text-sm font-black text-emerald-800 hover:bg-emerald-100"><Sparkles size={14} /><span>Infos a la une</span><Plus size={13} /></button>}
-      {showList && <div className="overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3"><p className="text-sm font-black">A la une</p><span className="text-xs text-neutral-400">{items.length} element(s)</span></div>
-        {isLoading ? <div className="flex justify-center py-8"><Loader2 size={18} className="animate-spin" /></div> : items.map(item => (
-          <div key={item._id} className="flex items-center gap-3 border-b border-neutral-50 px-4 py-3">
-            <div className="flex h-10 w-12 items-center justify-center overflow-hidden rounded-lg bg-neutral-100">{item.mediaType === 'image' && item.mediaUrls[0] ? <img src={item.mediaUrls[0]} alt="" className="h-full w-full object-cover" /> : <ImagePlus size={16} />}</div>
-            <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">{item.title}</p><p className="text-[11px] text-neutral-400">{item.status} - {item.visibility}</p></div>
-            <button type="button" onClick={() => setEditor(item)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200" title="Modifier"><Edit3 size={13} /></button>
-            <button type="button" onClick={() => confirm('Supprimer cet element ?') && remove.mutate(item._id)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 text-red-500" title="Supprimer"><Trash2 size={13} /></button>
+      {showList && (
+        <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-3.5">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-neutral-500">À la une</p>
+            <span className="text-xs text-neutral-400">{items.length} élément{items.length > 1 ? 's' : ''}</span>
           </div>
-        ))}
-      </div>}
+          {isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 size={18} className="animate-spin text-emerald-600" /></div>
+          ) : items.length === 0 ? (
+            <p className="px-5 py-8 text-center text-sm text-neutral-400">Aucun élément à la une.</p>
+          ) : (
+            <div className="divide-y divide-neutral-50">
+              {items.map(item => (
+                <article key={item._id} className="overflow-hidden transition hover:bg-neutral-50/70 sm:flex sm:items-stretch">
+                  {/* Image */}
+                  <div className="relative h-36 shrink-0 overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100 sm:h-auto sm:w-52">
+                    {item.mediaType === 'image' && item.mediaUrls[0] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.mediaUrls[0]} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <ImagePlus size={28} className="text-emerald-300" />
+                      </div>
+                    )}
+                  </div>
+                  {/* Contenu */}
+                  <div className="flex flex-1 flex-col justify-between p-4">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-black tracking-wide ${item.status === 'published' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-yellow-200 bg-yellow-50 text-yellow-700'}`}>
+                          {item.status === 'published' ? 'Publié' : 'Brouillon'}
+                        </span>
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-black ${item.visibility === 'public' ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-violet-200 bg-violet-50 text-violet-700'}`}>
+                          {item.visibility === 'public' ? 'Public' : 'Membres'}
+                        </span>
+                      </div>
+                      <p className="text-sm font-black text-neutral-900 line-clamp-2">{item.title}</p>
+                      {item.description && (
+                        <p className="mt-1 text-xs leading-5 text-neutral-500 line-clamp-2">{item.description}</p>
+                      )}
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <button type="button" onClick={() => setEditor(item)}
+                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-[11px] font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
+                        <Edit3 size={11} /> Modifier
+                      </button>
+                      <button type="button" onClick={() => confirm('Supprimer cet élément ?') && remove.mutate(item._id)}
+                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-red-100 bg-red-50 px-2.5 text-[11px] font-black text-red-500 transition hover:bg-red-500 hover:text-white">
+                        <Trash2 size={11} /> Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {editor && <FeaturedEditor initial={editor === 'new' ? undefined : editor} onClose={() => setEditor(null)} />}
     </>
   );

@@ -278,7 +278,7 @@ export default function ProfilPage() {
   const initials = formatInitials(form.firstName, form.lastName, '??');
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div>
         <h1 className="text-[clamp(1.55rem,3vw,2rem)] font-black tracking-[-0.03em] text-neutral-900">Mon profil</h1>
         <p className="mt-0.5 text-sm text-neutral-500">Gerez vos informations personnelles et professionnelles</p>
@@ -327,11 +327,10 @@ export default function ProfilPage() {
         </button>
       </div>
 
-      <CauriWalletPanel />
-
-      <form onSubmit={handleSave} className="space-y-4">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]">
+        <form onSubmit={handleSave} className="min-w-0 space-y-4">
         <Section title="Informations personnelles">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Select label="Civilite" required value={form.gender} onChange={set('gender')} options={[['', 'Non renseignee'], ['homme', 'Monsieur'], ['femme', 'Madame']]} />
             <div className="hidden sm:block" />
             <F icon={User} label="Prenom" value={form.firstName} onChange={set('firstName')} required />
@@ -364,7 +363,7 @@ export default function ProfilPage() {
         </Section>
 
         <Section title="Parcours et expertises">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Select label="Secteur d'activite" value={form.activitySector} onChange={set('activitySector')} options={[['', 'Selectionner'], ...ACTIVITY_SECTORS.map(s => [s, s] as [string, string])]} />
             <F icon={MapPin} label="Ville d'origine au Maroc" value={form.city} onChange={set('city')} placeholder="Ville d'origine au Maroc" />
           </div>
@@ -376,11 +375,11 @@ export default function ProfilPage() {
               </p>
             </div>
           )}
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
             <TagInput icon={Tag} label="Competences" help="Saisissez des mots-cles separes par une virgule." value={form.skills} onChange={skills => setForm(prev => ({ ...prev, skills }))} placeholder="Ex: React, gestion de projet..." />
             <TagInput icon={Briefcase} label="Domaines d'expertise" help="Saisissez des mots-cles separes par une virgule." value={form.expertiseDomains} onChange={expertiseDomains => setForm(prev => ({ ...prev, expertiseDomains }))} placeholder="Ex: finance, communication..." />
           </div>
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
             <TextArea label="Biographie" value={form.bio} onChange={set('bio')} placeholder="Parlez de vous en quelques mots..." />
             <TextArea label="Motivation" value={form.motivation} onChange={set('motivation')} placeholder="Ce que vous souhaitez apporter a SALAM..." />
           </div>
@@ -409,7 +408,12 @@ export default function ProfilPage() {
         >
           {saved ? <><CheckCircle2 size={15} /> Enregistre !</> : <><Save size={15} /> Enregistrer les modifications</>}
         </button>
-      </form>
+        </form>
+
+        <aside className="min-w-0 lg:sticky lg:top-24">
+          <CauriWalletPanel />
+        </aside>
+      </div>
       {passwordOpen && <PasswordModal onClose={() => setPasswordOpen(false)} />}
       {deletionOpen && <AccountDeletionModal onClose={() => setDeletionOpen(false)} />}
     </div>
@@ -418,7 +422,7 @@ export default function ProfilPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm sm:p-6">
+    <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm sm:p-5">
       <p className="mb-4 text-sm font-black text-neutral-900">{title}</p>
       {children}
     </div>
@@ -449,7 +453,7 @@ function F({ icon: Icon, label, value, onChange, type = 'text', readOnly, placeh
           readOnly={readOnly}
           placeholder={placeholder}
           required={required}
-          className={`h-10 w-full rounded-xl border border-neutral-200 pl-9 pr-4 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 ${readOnly ? 'bg-neutral-50 text-neutral-500' : 'bg-white'}`}
+          className={`h-9 w-full rounded-xl border border-neutral-200 pl-9 pr-3 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 ${readOnly ? 'bg-neutral-50 text-neutral-500' : 'bg-white'}`}
         />
       </div>
     </div>
@@ -472,7 +476,7 @@ function Select({ label, value, onChange, options, readOnly, required }: {
         onChange={onChange}
         disabled={readOnly}
         required={required}
-        className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 disabled:bg-neutral-50 disabled:text-neutral-500"
+        className="h-9 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 disabled:bg-neutral-50 disabled:text-neutral-500"
       >
         {options.map(([optionValue, optionLabel]) => (
           <option key={optionValue || optionLabel} value={optionValue}>{optionLabel}</option>
@@ -494,9 +498,9 @@ function TextArea({ label, value, onChange, placeholder }: {
       <textarea
         value={value}
         onChange={onChange}
-        rows={4}
+        rows={3}
         placeholder={placeholder}
-        className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+        className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
       />
     </div>
   );

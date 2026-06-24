@@ -118,7 +118,7 @@ export function RichTextEditor({
 
         emitInput();
       }}
-      className={`${className ?? ''} empty:before:pointer-events-none empty:before:text-neutral-300 empty:before:content-[attr(data-placeholder)]`}
+      className={`${className ?? ''} empty:before:pointer-events-none empty:before:text-neutral-300 empty:before:content-[attr(data-placeholder)] [&_h1]:text-emerald-700 [&_h1]:font-black [&_h2]:text-emerald-700 [&_h2]:font-black [&_h3]:text-emerald-700 [&_h3]:font-black`}
       style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', ...style }}
     />
   );
