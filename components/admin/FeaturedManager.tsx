@@ -235,9 +235,9 @@ export function FeaturedManager({ showButton = true, showList = true }: { showBu
           ) : items.length === 0 ? (
             <p className="px-5 py-8 text-center text-sm text-neutral-400">Aucun élément à la une.</p>
           ) : (
-            <div className="divide-y divide-neutral-50">
+            <div className="grid gap-3 p-4">
               {items.map(item => (
-                <article key={item._id} className="overflow-hidden transition hover:bg-neutral-50/70 sm:flex sm:items-stretch">
+                <article key={item._id} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex sm:items-stretch">
                   {/* Image */}
                   <div className="relative h-36 shrink-0 overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100 sm:h-auto sm:w-52">
                     {item.mediaType === 'image' && item.mediaUrls[0] ? (
