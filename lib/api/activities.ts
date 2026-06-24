@@ -100,8 +100,8 @@ export function useMemberActivities(category?: string) {
     queryKey: ['member-activities', category],
     queryFn:  () => apiClient<{ activities: ActivityDoc[]; total: number }>(`/api/v1/member/activities${qs}`, { token: token ?? '' }),
     enabled:  !!token,
-    staleTime: 0,
-    refetchInterval: 30_000,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 }
 
@@ -258,9 +258,9 @@ export function useRespondActivityInvitation(activityId: string, slug?: string) 
       toast.error(err.message);
     },
     onSuccess: (res, status) => {
-      const inv = (res as any)?.data?.invitation as ActivityInvitationDoc | undefined;
-
-      // Consolider avec la réponse serveur (évite le race condition du invalidateQueries+refetch)
+      // Toujours utiliser la variable mutation (status) comme source de vérité.
+      // Ne pas utiliser inv.rsvpStatus du serveur : il peut renvoyer l'ancien état
+      // si le write DB n'est pas encore visible (race condition read-after-write).
       qc.setQueriesData<any>({ queryKey: ['member-activities'] }, (old: any) => {
         if (!old?.data?.activities) return old;
         return {
@@ -269,7 +269,7 @@ export function useRespondActivityInvitation(activityId: string, slug?: string) 
             ...old.data,
             activities: old.data.activities.map((a: any) =>
               a._id === activityId
-                ? { ...a, myInvitation: inv ?? { ...(a.myInvitation ?? {}), rsvpStatus: status } }
+                ? { ...a, myInvitation: { ...(a.myInvitation ?? {}), rsvpStatus: status } }
                 : a
             ),
           },
@@ -281,7 +281,7 @@ export function useRespondActivityInvitation(activityId: string, slug?: string) 
           if (!old?.data) return old;
           return {
             ...old,
-            data: { ...old.data, myInvitation: inv ?? { ...(old.data.myInvitation ?? {}), rsvpStatus: status } },
+            data: { ...old.data, myInvitation: { ...(old.data.myInvitation ?? {}), rsvpStatus: status } },
           };
         });
       }

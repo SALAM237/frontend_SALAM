@@ -7,13 +7,13 @@ import {
   Calendar,
   Camera,
   CheckCircle2,
+  ChevronDown,
   Loader2,
   Lock,
   Mail,
   MapPin,
   Phone,
   Save,
-
   Shield,
   Tag,
   User,
@@ -290,37 +290,37 @@ export default function ProfilPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div>
-        <h1 className="text-[clamp(1.55rem,3vw,2rem)] font-black tracking-[-0.03em] text-neutral-900">Mon profil</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">Gerez vos informations personnelles et professionnelles</p>
+        <h1 className="text-[clamp(1.35rem,3vw,2rem)] font-black tracking-[-0.03em] text-neutral-900">Mon profil</h1>
+        <p className="mt-0.5 line-clamp-1 text-xs text-neutral-500 sm:line-clamp-none sm:text-sm">Gerez vos informations personnelles et professionnelles</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm sm:gap-4 sm:p-5">
         <div className="relative shrink-0">
           {avatarPreview ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <AvatarLightbox src={avatarPreview} alt={user ? formatFullName(user.firstName, user.lastName) : 'Profil'} className={'h-16 w-16 rounded-full border-2 object-cover ' + memberAvatarBorderClass(user?.gender)} />
+            <AvatarLightbox src={avatarPreview} alt={user ? formatFullName(user.firstName, user.lastName) : 'Profil'} className={'h-12 w-12 rounded-full border-2 object-cover sm:h-16 sm:w-16 ' + memberAvatarBorderClass(user?.gender)} />
           ) : (
-            <div className={`flex h-16 w-16 items-center justify-center rounded-full text-2xl font-black text-white ${memberInitialsClass(user?.gender)}`}>
+            <div className={`flex h-12 w-12 items-center justify-center rounded-full text-xl font-black text-white sm:h-16 sm:w-16 sm:text-2xl ${memberInitialsClass(user?.gender)}`}>
               {initials}
             </div>
           )}
           {uploadingAvatar && (
             <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
-              <Loader2 size={18} className="animate-spin text-white" />
+              <Loader2 size={16} className="animate-spin text-white" />
             </div>
           )}
         </div>
 
         <div className="min-w-0 flex-1">
           {form.gender && (
-            <p className="mb-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-neutral-400">
+            <p className="mb-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-neutral-400 sm:text-[10px]">
               {form.gender === 'femme' ? 'Madame' : 'Monsieur'}
             </p>
           )}
-          <div className="flex flex-wrap items-center gap-2"><p className="font-black text-neutral-900">{formatFullName(form.firstName, form.lastName)}</p><CauriBadge compact onScrollTo={() => { cauriRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} /></div>
-          <p className="text-sm text-neutral-500">{form.activitySector || 'Membre SALAM'}</p>
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2"><p className="text-sm font-black text-neutral-900">{formatFullName(form.firstName, form.lastName)}</p><CauriBadge compact onScrollTo={() => { cauriRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} /></div>
+          <p className="text-xs text-neutral-500">{form.activitySector || 'Membre SALAM'}</p>
           {user?._id && (
-            <p className="mt-1 font-mono text-xs text-emerald-600">
+            <p className="mt-0.5 font-mono text-[11px] text-emerald-600">
               {displayMemberNumber(user)}
             </p>
           )}
@@ -331,9 +331,9 @@ export default function ProfilPage() {
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploadingAvatar}
-          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 transition-all hover:border-emerald-300 hover:text-emerald-700 disabled:opacity-50 sm:ml-auto sm:w-auto"
+          className="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-full border border-neutral-200 px-3 text-[11px] font-semibold text-neutral-600 transition-all hover:border-emerald-300 hover:text-emerald-700 disabled:opacity-50 sm:ml-auto sm:h-9 sm:w-auto sm:px-4 sm:text-xs"
         >
-          <Camera size={13} /> {uploadingAvatar ? 'Envoi...' : 'Changer la photo'}
+          <Camera size={12} /> {uploadingAvatar ? 'Envoi...' : 'Changer la photo'}
         </button>
       </div>
 
@@ -431,10 +431,22 @@ export default function ProfilPage() {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(true);
   return (
-    <div className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm sm:p-5">
-      <p className="mb-4 text-sm font-black text-neutral-900">{title}</p>
-      {children}
+    <div className="overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="flex w-full items-center justify-between bg-emerald-50/80 px-4 py-3 transition hover:bg-emerald-50 sm:px-5"
+      >
+        <p className="text-sm font-black text-emerald-900">{title}</p>
+        <ChevronDown size={16} className={`shrink-0 text-emerald-600 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="bg-neutral-50/60 p-4 sm:p-5">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -451,11 +463,11 @@ function F({ icon: Icon, label, value, onChange, type = 'text', readOnly, placeh
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">
+      <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">
         {label}{required && <span className="ml-0.5 text-red-500">*</span>}
       </label>
       <div className="relative">
-        <Icon size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+        <Icon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
         <input
           type={type}
           value={value}
@@ -463,7 +475,7 @@ function F({ icon: Icon, label, value, onChange, type = 'text', readOnly, placeh
           readOnly={readOnly}
           placeholder={placeholder}
           required={required}
-          className={`h-9 w-full rounded-xl border border-neutral-200 pl-9 pr-3 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 ${readOnly ? 'bg-neutral-50 text-neutral-500' : 'bg-white'}`}
+          className={`h-8 w-full rounded-xl border border-neutral-200 pl-8 pr-3 text-xs text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:pl-9 sm:text-sm ${readOnly ? 'bg-neutral-50 text-neutral-500' : 'bg-white'}`}
         />
       </div>
     </div>
@@ -480,13 +492,13 @@ function Select({ label, value, onChange, options, readOnly, required }: {
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label}{required && <span className="ml-0.5 text-red-500">*</span>}</label>
+      <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">{label}{required && <span className="ml-0.5 text-red-500">*</span>}</label>
       <select
         value={value}
         onChange={onChange}
         disabled={readOnly}
         required={required}
-        className="h-9 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 disabled:bg-neutral-50 disabled:text-neutral-500"
+        className="h-8 w-full rounded-xl border border-neutral-200 bg-white px-3 text-xs text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 disabled:bg-neutral-50 disabled:text-neutral-500 sm:h-9 sm:text-sm"
       >
         {options.map(([optionValue, optionLabel]) => (
           <option key={optionValue || optionLabel} value={optionValue}>{optionLabel}</option>
@@ -504,13 +516,13 @@ function TextArea({ label, value, onChange, placeholder }: {
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label}</label>
+      <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">{label}</label>
       <textarea
         value={value}
         onChange={onChange}
         rows={3}
         placeholder={placeholder}
-        className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+        className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 sm:py-2.5 sm:text-sm"
       />
     </div>
   );
@@ -538,8 +550,8 @@ function TagInput({ icon: Icon, label, help, value, onChange, placeholder }: {
 
   return (
     <div>
-      <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label}</label>
-      {help && <p className="mb-2 text-[11px] font-semibold text-neutral-400">{help}</p>}
+      <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">{label}</label>
+      {help && <p className="mb-1.5 text-[10px] font-semibold text-neutral-400 sm:mb-2 sm:text-[11px]">{help}</p>}
       <div className="rounded-xl border border-neutral-200 px-3 py-2 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-500/10">
         <div className="flex flex-wrap gap-1.5">
           {value.map(tag => (
