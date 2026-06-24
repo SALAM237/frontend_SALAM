@@ -217,7 +217,7 @@ function LoginForm() {
 
       <p className="text-center text-sm text-neutral-500">
         Pas encore membre ??{' '}
-        <Link href="/auth/register" className="font-black text-emerald-700 hover:text-emerald-600">
+        <Link href="/adhesion" className="font-black text-emerald-700 hover:text-emerald-600">
           Créer mon compte
         </Link>
       </p>
