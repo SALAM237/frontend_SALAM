@@ -257,7 +257,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
 
                   {/* ── Bloc texte ── */}
                   <article
-                    className="relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl bg-white p-4 text-left text-neutral-950 md:order-1 md:rounded-b-none md:rounded-l-2xl md:bg-transparent md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6"
+                    className="isolate relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl bg-white p-4 text-left text-neutral-950 md:order-1 md:rounded-b-none md:rounded-l-2xl md:bg-transparent md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:hidden before:h-14 before:bg-gradient-to-b before:from-black/[0.07] before:to-transparent before:z-[-1] md:before:block"
                     style={{ boxShadow: '0 -10px 32px rgba(0,0,0,0.10), 0 -2px 8px rgba(0,0,0,0.06)' }}
                   >
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">

@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
   UserPlus, CreditCard, Search, Eye, CheckCircle2, Clock, XCircle,
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
-  ShieldCheck, Plus, Minus,
+  ShieldCheck, Plus, Minus, SlidersHorizontal, X,
 } from 'lucide-react';
 import {
   useAdminMembers,
@@ -46,12 +46,19 @@ const profileConfig = {
   incomplete: { label: 'Incomplet', cls: 'bg-red-50 text-red-700 border-red-100' },
 };
 
-const FILTER_OPTIONS: { label: string; value: MemberStatus | 'all' }[] = [
-  { label: 'Tous',       value: 'all'       },
-  { label: 'Actifs',     value: 'active'    },
-  { label: 'En attente', value: 'pending'   },
-  { label: 'Suspendus',  value: 'suspended' },
+const MONTHS_FR = [
+  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
 ];
+
+type ActiveFilters = {
+  statut:     string[];
+  cotisation: string[];
+  profil:     string[];
+  mois:       number[];
+};
+
+const EMPTY_FILTERS: ActiveFilters = { statut: [], cotisation: [], profil: [], mois: [] };
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -70,7 +77,9 @@ function csvEscape(v: string | number | undefined | null): string {
 
 export default function AdminAdherentsPage() {
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<MemberStatus | 'all'>('all');
+  const [filters, setFilters] = useState<ActiveFilters>(EMPTY_FILTERS);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<{ src: string; name: string } | null>(null);
@@ -80,7 +89,19 @@ export default function AdminAdherentsPage() {
   const user        = useAuthStore(s => s.user);
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
 
-  const { data, isLoading }  = useAdminMembers({ status: filter, search, limit: 100 });
+  const { data, isLoading }  = useAdminMembers({ search, limit: 200 });
+
+  /* ferme le panneau filtre en cliquant à l'extérieur */
+  useEffect(() => {
+    if (!showFilterPanel) return;
+    const handler = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setShowFilterPanel(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showFilterPanel]);
   const { data: cardRequestsData, isError: cardRequestsError } = useMemberCardChangeRequests('pending');
   const hardDelete           = useHardDeleteMember();
   const resendInvitation     = useResendInvitation();
@@ -88,14 +109,32 @@ export default function AdminAdherentsPage() {
 
   const members = useMemo<MemberListItem[]>(() => data?.data?.data ?? [], [data]);
 
+  const activeFilterCount = filters.statut.length + filters.cotisation.length + filters.profil.length + filters.mois.length;
+
   const displayed = useMemo(() =>
     members.filter(m => {
-      const matchStatus = filter === 'all' || m.memberStatus === filter;
       const matchSearch = `${m.firstName} ${m.lastName} ${m.email} ${m.memberId}`
         .toLowerCase().includes(search.toLowerCase());
-      return matchStatus && matchSearch;
+      const matchStatut     = filters.statut.length     === 0 || filters.statut.includes(m.memberStatus);
+      const matchCotisation = filters.cotisation.length === 0 || filters.cotisation.includes(m.cotisationStatus);
+      const matchProfil     = filters.profil.length     === 0 ||
+        (filters.profil.includes('complete') && m.profileComplete) ||
+        (filters.profil.includes('incomplete') && !m.profileComplete);
+      const memberMonth     = new Date(m.createdAt).getMonth();
+      const matchMois       = filters.mois.length === 0 || filters.mois.includes(memberMonth);
+      return matchSearch && matchStatut && matchCotisation && matchProfil && matchMois;
     }),
-  [members, filter, search]);
+  [members, search, filters]);
+
+  const toggleFilter = <K extends keyof ActiveFilters>(key: K, value: ActiveFilters[K][number]) => {
+    setFilters(prev => {
+      const arr = prev[key] as (typeof value)[];
+      const next = arr.includes(value as never)
+        ? arr.filter(v => v !== value)
+        : [...arr, value];
+      return { ...prev, [key]: next };
+    });
+  };
 
   const handleDelete = (id: string) => {
     if (confirmDeleteId !== id) { setConfirmDeleteId(id); return; }
@@ -192,6 +231,7 @@ export default function AdminAdherentsPage() {
 
       {/* Filters */}
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        {/* Barre de recherche */}
         <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input
@@ -202,20 +242,170 @@ export default function AdminAdherentsPage() {
             className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
           />
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {FILTER_OPTIONS.map(({ label, value }) => (
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          {/* Bouton Filtrer avec panneau checkbox */}
+          <div ref={filterRef} className="relative">
             <button
-              key={value}
-              onClick={() => setFilter(value)}
-              className={`h-9 rounded-xl border px-3 text-xs font-bold transition-all sm:px-4 ${
-                filter === value
+              type="button"
+              onClick={() => setShowFilterPanel(v => !v)}
+              className={`relative flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all sm:px-4 ${
+                activeFilterCount > 0
                   ? 'border-emerald-500 bg-emerald-600 text-white'
                   : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300 hover:text-emerald-700'
               }`}
             >
-              {label}
+              <SlidersHorizontal size={13} />
+              Filtrer
+              {activeFilterCount > 0 && (
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-black text-emerald-700">
+                  {activeFilterCount}
+                </span>
+              )}
             </button>
-          ))}
+
+            {showFilterPanel && (
+              <div className="absolute left-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-2xl ring-1 ring-black/5 sm:left-auto sm:right-0">
+                {/* En-tête panneau */}
+                <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
+                  <span className="text-sm font-black text-neutral-900">Filtres</span>
+                  <div className="flex items-center gap-2">
+                    {activeFilterCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFilters(EMPTY_FILTERS)}
+                        className="text-[11px] font-bold text-emerald-700 hover:underline"
+                      >
+                        Réinitialiser
+                      </button>
+                    )}
+                    <button type="button" onClick={() => setShowFilterPanel(false)} className="flex h-6 w-6 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
+                      <X size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-[70vh] divide-y divide-neutral-50 overflow-y-auto">
+                  {/* Statut */}
+                  <div className="px-4 py-3">
+                    <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Statut</p>
+                    <div className="space-y-1.5">
+                      {([['active', 'Actif'], ['pending', 'En attente'], ['suspended', 'Suspendu']] as const).map(([val, lbl]) => {
+                        const checked = filters.statut.includes(val);
+                        const cfg = statusConfig[val];
+                        return (
+                          <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-emerald-200 bg-emerald-50' : 'border-transparent hover:bg-neutral-50'}`}>
+                            <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-emerald-600 bg-emerald-600' : 'border-neutral-300 bg-white'}`}>
+                              {checked && <CheckCircle2 size={10} className="text-white" />}
+                            </span>
+                            <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('statut', val)} />
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${cfg.cls}`}>
+                              <cfg.icon size={9} /> {lbl}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Cotisation */}
+                  <div className="px-4 py-3">
+                    <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Cotisation</p>
+                    <div className="space-y-1.5">
+                      {([['paid', 'Payée'], ['unpaid', 'Impayée'], ['exempt', 'Exempté']] as const).map(([val, lbl]) => {
+                        const checked = filters.cotisation.includes(val);
+                        const cfg = cotisationConfig[val];
+                        return (
+                          <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-emerald-200 bg-emerald-50' : 'border-transparent hover:bg-neutral-50'}`}>
+                            <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-emerald-600 bg-emerald-600' : 'border-neutral-300 bg-white'}`}>
+                              {checked && <CheckCircle2 size={10} className="text-white" />}
+                            </span>
+                            <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('cotisation', val)} />
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${cfg.cls}`}>{lbl}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Profil */}
+                  <div className="px-4 py-3">
+                    <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Profil</p>
+                    <div className="space-y-1.5">
+                      {([['complete', 'Complet', profileConfig.complete.cls], ['incomplete', 'Incomplet', profileConfig.incomplete.cls]] as const).map(([val, lbl, cls]) => {
+                        const checked = filters.profil.includes(val);
+                        return (
+                          <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-emerald-200 bg-emerald-50' : 'border-transparent hover:bg-neutral-50'}`}>
+                            <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-emerald-600 bg-emerald-600' : 'border-neutral-300 bg-white'}`}>
+                              {checked && <CheckCircle2 size={10} className="text-white" />}
+                            </span>
+                            <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('profil', val)} />
+                            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${cls}`}>{lbl}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Mois d'inscription */}
+                  <div className="px-4 py-3">
+                    <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Inscription (mois)</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {MONTHS_FR.map((mois, idx) => {
+                        const checked = filters.mois.includes(idx);
+                        return (
+                          <label key={idx} className={`flex cursor-pointer items-center justify-center rounded-lg border px-1 py-1.5 text-[11px] font-bold transition ${checked ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300 hover:text-emerald-700'}`}>
+                            <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('mois', idx)} />
+                            {mois.slice(0, 3)}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer résumé */}
+                <div className="border-t border-neutral-100 px-4 py-3">
+                  <p className="text-xs text-neutral-500">
+                    <span className="font-black text-neutral-900">{displayed.length}</span> membre{displayed.length > 1 ? 's' : ''} correspondent
+                    {activeFilterCount > 0 && <span> à {activeFilterCount} filtre{activeFilterCount > 1 ? 's' : ''}</span>}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Chips des filtres actifs */}
+          {activeFilterCount > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {filters.statut.map(v => (
+                <button key={v} type="button" onClick={() => toggleFilter('statut', v)}
+                  className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700 hover:bg-emerald-100">
+                  {statusConfig[v]?.label} <X size={9} />
+                </button>
+              ))}
+              {filters.cotisation.map(v => (
+                <button key={v} type="button" onClick={() => toggleFilter('cotisation', v)}
+                  className="flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700 hover:bg-blue-100">
+                  {cotisationConfig[v]?.label} <X size={9} />
+                </button>
+              ))}
+              {filters.profil.map(v => (
+                <button key={v} type="button" onClick={() => toggleFilter('profil', v)}
+                  className="flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-black text-violet-700 hover:bg-violet-100">
+                  Profil {v === 'complete' ? 'complet' : 'incomplet'} <X size={9} />
+                </button>
+              ))}
+              {filters.mois.map(idx => (
+                <button key={idx} type="button" onClick={() => toggleFilter('mois', idx)}
+                  className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-black text-amber-700 hover:bg-amber-100">
+                  {MONTHS_FR[idx]} <X size={9} />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Export */}
           <button
             onClick={exportToCSV}
             disabled={displayed.length === 0}

@@ -447,13 +447,13 @@ export default function AdminActualitesPage() {
         )}
         {!isLoading && articles.length > 0 && (
           <div className="grid gap-3 p-4">
-            {articles.map((a: ArticleDoc) => {
+            {[...articles].sort((a: ArticleDoc, b: ArticleDoc) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((a: ArticleDoc) => {
               const catLabel = ARTICLE_CATEGORIES.find(c => c.value === a.data?.category)?.label ?? 'Général';
               const isPublished = a.status === 'published';
               return (
                 <article key={a._id} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex sm:items-stretch">
                   {/* Image — pleine largeur mobile, colonne gauche desktop */}
-                  <div className="relative h-44 shrink-0 overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 sm:h-auto sm:w-36">
+                  <div className="relative h-44 shrink-0 overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 sm:h-auto sm:w-52">
                     {articleImage(a) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={articleImage(a)} alt="" className="h-full w-full object-cover" />

@@ -85,49 +85,54 @@ export default function MemberActivitesPage() {
         )}
 
         {!isLoading && filtered.length > 0 && (
-          <div className="divide-y divide-neutral-50">
-            {filtered.map(a => {
-              const catCls  = CAT_COLORS[a.category] ?? 'bg-neutral-50 text-neutral-600 border-neutral-200';
+          <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
+            {[...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(a => {
+              const catCls   = CAT_COLORS[a.category] ?? 'bg-neutral-50 text-neutral-600 border-neutral-200';
               const catLabel = ACTIVITY_CATEGORIES.find(c => c.value === a.category)?.label ?? a.category;
+              const sCls = a.status === 'published' ? 'bg-emerald-500 text-white' : a.status === 'finished' ? 'bg-neutral-400 text-white' : a.status === 'cancelled' ? 'bg-red-500 text-white' : 'bg-yellow-400 text-white';
+              const sLabel = a.status === 'published' ? 'Ouverte' : a.status === 'finished' ? 'Passée' : a.status === 'cancelled' ? 'Annulée' : 'Brouillon';
               return (
-                <div key={a._id} className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-neutral-50/60">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 mt-0.5">
-                    <CalendarDays size={16} className="text-emerald-600" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-black text-sm text-neutral-900">{a.title}</p>
-                      <span className={`shrink-0 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${catCls}`}>{catLabel}</span>
+                <article key={a._id} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
+                  {/* Bannière catégorie */}
+                  <div className="relative flex h-32 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700">
+                    <CalendarDays size={44} className="text-white/20" />
+                    <div className="absolute bottom-2.5 left-3 flex flex-wrap gap-1.5">
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black ${sCls}`}>{sLabel}</span>
+                      <span className={`inline-flex rounded-full border bg-white/90 px-2.5 py-0.5 text-[10px] font-black ${catCls}`}>{catLabel}</span>
                     </div>
-                    {a.description && <p className="mt-0.5 whitespace-pre-line break-words text-xs text-neutral-500 line-clamp-2">{a.description}</p>}
-                    <div className="mt-1 flex flex-wrap gap-3 text-[11px] text-neutral-400">
+                    {a.myInvitation?.rsvpStatus === 'present' && (
+                      <span className="absolute right-2.5 top-2.5 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-black text-white">✓ Inscrit</span>
+                    )}
+                  </div>
+
+                  {/* Contenu */}
+                  <div className="flex flex-col gap-2.5 p-4">
+                    <div>
+                      <h3 className="text-sm font-black leading-snug text-neutral-900 line-clamp-2">{a.title}</h3>
+                      {(a.shortDescription || a.description) && (
+                        <p className="mt-1 text-xs leading-5 text-neutral-500 line-clamp-2">{a.shortDescription || a.description}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold text-neutral-400">
                       {a.startDate && (
                         <span className="flex items-center gap-1">
-                          <CalendarDays size={10} />
+                          <CalendarDays size={11} />
                           {new Date(a.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </span>
                       )}
-                      {a.location  && <span className="flex items-center gap-1"><MapPin size={10} />{a.location}</span>}
-                      {a.capacity  && <span className="flex items-center gap-1"><Users size={10} />{a.capacity} places</span>}
+                      {(a.venue || a.location) && <span className="flex items-center gap-1"><MapPin size={11} />{a.venue || a.location}</span>}
+                      {a.capacity && <span className="flex items-center gap-1"><Users size={11} />{a.capacity} places</span>}
+                    </div>
+                    <div className="border-t border-neutral-100 pt-2">
+                      <Link
+                        href={`/member/activites/${a.slug}`}
+                        onClick={() => trackEvent('activity_click', { activity_id: a._id, activity_slug: a.slug, activity_title: a.title, category: a.category, status: a.status, source: 'member_list', action: 'view_button_click' })}
+                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-[11px] font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
+                        <Eye size={11} /> Voir
+                      </Link>
                     </div>
                   </div>
-                  <Link
-                    href={`/member/activites/${a.slug}`}
-                    onClick={() => trackEvent('activity_click', {
-                      activity_id: a._id,
-                      activity_slug: a.slug,
-                      activity_title: a.title,
-                      category: a.category,
-                      status: a.status,
-                      source: 'member_list',
-                      action: 'view_button_click',
-                    })}
-                    aria-label={`Voir ${a.title}`}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition-all hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
-                  >
-                    <Eye size={15} />
-                  </Link>
-                </div>
+                </article>
               );
             })}
           </div>

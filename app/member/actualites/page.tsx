@@ -90,50 +90,65 @@ export default function MemberActualitesPage() {
         )}
 
         {!isLoading && filtered.length > 0 && (
-          <div className="divide-y divide-neutral-50">
-            {filtered.map((n: any) => (
-              <div key={n._id} className="flex items-start gap-4 px-5 py-4 hover:bg-neutral-50/60 transition-colors">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-blue-50 border border-blue-100 mt-0.5">
-                  {articleImage(n) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={articleImage(n)} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <Newspaper size={16} className="text-blue-600" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-black text-sm text-neutral-900">{n.title}</p>
-                    <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-black text-emerald-700">
-                      <Tag size={8} />
-                      {ARTICLE_CATEGORIES.find(c => c.value === n.data?.category)?.label ?? 'Général'}
-                    </span>
+          <div className="grid gap-3 p-4">
+            {[...filtered].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((n: any) => {
+              const catLabel   = ARTICLE_CATEGORIES.find(c => c.value === n.data?.category)?.label ?? 'Général';
+              const isPublished = n.status === 'published';
+              const href = articleHref(n).replace('/actualites/', '/member/actualites/');
+              return (
+                <article key={n._id} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex sm:items-stretch">
+                  {/* Image */}
+                  <div className="relative h-44 shrink-0 overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 sm:h-auto sm:w-52">
+                    {articleImage(n) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={articleImage(n)} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Newspaper size={32} className="text-blue-200" />
+                      </div>
+                    )}
                   </div>
-                  {n.data?.excerpt && <p className="mt-0.5 text-xs text-neutral-500 line-clamp-2">{n.data.excerpt}</p>}
-                  <p className="mt-0.5 text-[11px] text-neutral-300">
-                    {new Date(n.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </p>
-                </div>
-                <Link
-                  href={articleHref(n).replace('/actualites/', '/member/actualites/')}
-                  onClick={() => {
-                    trackEvent('news_click', {
-                      article_id: n._id,
-                      article_slug: n.slug,
-                      article_title: n.title,
-                      category: n.data?.category,
-                      source: 'member_list',
-                      action: 'view_button_click',
-                    });
-                    markItemRead.mutate({ type: 'news', id: n._id });
-                  }}
-                  aria-label={`Voir ${n.title}`}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition-all hover:bg-emerald-50 hover:text-emerald-700 active:scale-95"
-                >
-                  <Eye size={15} />
-                </Link>
-              </div>
-            ))}
+
+                  {/* Contenu */}
+                  <div className="flex flex-1 flex-col justify-between p-4">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-black tracking-wide ${isPublished ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-yellow-200 bg-yellow-50 text-yellow-700'}`}>
+                          {isPublished ? 'Publié' : 'Brouillon'}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 px-2.5 py-0.5 text-[10px] font-semibold text-neutral-500">
+                          <Tag size={9} /> {catLabel}
+                        </span>
+                      </div>
+                      <h3 className="mt-2 text-sm font-black leading-snug text-neutral-900 line-clamp-2">
+                        <RichText value={n.title} />
+                      </h3>
+                      {n.data?.excerpt && (
+                        <p className="mt-1 text-xs leading-5 text-neutral-500 line-clamp-2">
+                          <RichText value={n.data.excerpt} />
+                        </p>
+                      )}
+                      <p className="mt-1.5 flex items-center gap-1 text-[11px] text-neutral-400">
+                        <Eye size={10} />
+                        {new Date(n.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <Link
+                        href={href}
+                        onClick={() => {
+                          trackEvent('news_click', { article_id: n._id, article_slug: n.slug, article_title: n.title, category: n.data?.category, source: 'member_list', action: 'view_button_click' });
+                          markItemRead.mutate({ type: 'news', id: n._id });
+                        }}
+                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-[11px] font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
+                        <Eye size={11} /> Lire
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </div>

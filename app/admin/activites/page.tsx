@@ -515,7 +515,7 @@ export default function AdminActivitesPage() {
         )}
         {!isLoading && activities.length > 0 && (
           <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
-            {activities.map((a: ActivityDoc) => {
+            {[...activities].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((a: ActivityDoc) => {
               const cfg      = sCfg[a.status] ?? sCfg.draft;
               const catLabel = ACTIVITY_CATEGORIES.find(c => c.value === a.category)?.label ?? a.category;
               const hasSummary = a.invitationSummary && a.invitationSummary.total > 0;
@@ -573,28 +573,29 @@ export default function AdminActivitesPage() {
                     <div className="border-t border-neutral-100" />
 
                     {/* Actions */}
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <Link href={`/activites/${a.slug}`} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-neutral-200 px-3.5 text-xs font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
-                        <Eye size={13} /> Voir
+                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2 text-[11px] font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700 whitespace-nowrap">
+                        <Eye size={11} /> Voir
                       </Link>
                       <button onClick={() => setPresenceTarget(a)}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-emerald-100 px-3.5 text-xs font-black text-emerald-700 transition hover:bg-emerald-50">
-                        <Users size={13} /> Présences
+                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-emerald-100 px-2 text-[11px] font-black text-emerald-700 transition hover:bg-emerald-50 whitespace-nowrap">
+                        <Users size={11} /> Présences
                       </button>
                       <button onClick={() => remindInvitations.mutate(a._id)}
                         disabled={remindInvitations.isPending || !hasSummary || (a.invitationSummary!.pending + a.invitationSummary!.unsure) === 0}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-amber-100 text-amber-500 transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-40"
-                        title="Envoyer une relance">
-                        <Send size={13} />
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-amber-100 text-amber-500 transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-40"
+                        title="Relancer">
+                        <Send size={11} />
                       </button>
                       <button onClick={() => setEditTarget(a)}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-neutral-200 px-3.5 text-xs font-black text-neutral-600 transition hover:border-blue-300 hover:text-blue-700">
-                        <Edit3 size={13} /> Modifier
+                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2 text-[11px] font-black text-neutral-600 transition hover:border-blue-300 hover:text-blue-700 whitespace-nowrap">
+                        <Edit3 size={11} /> Modifier
                       </button>
                       <button onClick={() => handleDelete(a._id, a.title)}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-red-100 px-3.5 text-xs font-black text-red-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700">
-                        <Trash2 size={13} /> Supprimer
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-red-100 text-red-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                        title="Supprimer">
+                        <Trash2 size={11} />
                       </button>
                     </div>
                   </div>

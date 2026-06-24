@@ -54,7 +54,7 @@ export default function AdminOpportunitesPage() {
 
         {!opportunities.isLoading && items.length > 0 && (
           <div className="divide-y divide-neutral-50">
-            {items.map(item => (
+            {[...items].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(item => (
               <article key={item._id} className="grid gap-3 px-5 py-4 transition hover:bg-neutral-50/70 md:grid-cols-[1fr_auto] md:items-center">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
