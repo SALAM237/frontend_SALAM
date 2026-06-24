@@ -85,10 +85,8 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   const [activeIndex, setActiveIndex] = useState(0);
   const [manualPaused, setManualPaused] = useState(false);
   const [lastNav, setLastNav] = useState<'prev' | 'next' | null>(null);
+  /* progress mis à jour uniquement via onAutoplayTimeLeft de Swiper */
   const [progress, setProgress] = useState(0);
-  const progressElapsedRef = useRef(0);
-  const progressFrameRef = useRef<number | null>(null);
-  const progressLastTickRef = useRef<number | null>(null);
   const [preview, setPreview] = useState<FeaturedItem | null>(null);
   const [playingMediaIds, setPlayingMediaIds] = useState<Set<string>>(() => new Set());
 
@@ -102,6 +100,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   }, []);
   const mediaPlaying = playingMediaIds.size > 0;
 
+  /* Pause / resume Swiper autoplay */
   useEffect(() => {
     const autoplay = swiperRef.current?.autoplay;
     if (!autoplay) return;
@@ -109,6 +108,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
     else autoplay.resume();
   }, [manualPaused, mediaPlaying, preview]);
 
+  /* Sync index si items recharge */
   useEffect(() => {
     swiperRef.current?.update();
     if (activeIndex >= items.length) {
@@ -116,37 +116,9 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
       setActiveIndex(0);
     }
   }, [activeIndex, items.length]);
-  useEffect(() => {
-    progressElapsedRef.current = 0;
-    progressLastTickRef.current = null;
-    setProgress(0);
-  }, [activeIndex, items.length]);
 
-  useEffect(() => {
-    const shouldPauseProgress = manualPaused || mediaPlaying || Boolean(preview) || items.length <= 1;
-    if (progressFrameRef.current !== null) {
-      cancelAnimationFrame(progressFrameRef.current);
-      progressFrameRef.current = null;
-    }
-    if (shouldPauseProgress) {
-      progressLastTickRef.current = null;
-      return;
-    }
-
-    const tick = (now: number) => {
-      const previous = progressLastTickRef.current ?? now;
-      progressLastTickRef.current = now;
-      progressElapsedRef.current = Math.min(SLIDE_DELAY, progressElapsedRef.current + Math.max(0, now - previous));
-      setProgress((progressElapsedRef.current / SLIDE_DELAY) * 100);
-      progressFrameRef.current = requestAnimationFrame(tick);
-    };
-
-    progressFrameRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (progressFrameRef.current !== null) cancelAnimationFrame(progressFrameRef.current);
-      progressFrameRef.current = null;
-    };
-  }, [manualPaused, mediaPlaying, preview, items.length, activeIndex]);
+  /* Reset jauge au changement de slide */
+  useEffect(() => { setProgress(0); }, [activeIndex]);
 
   const selectSlide = (index: number) => {
     if (index === activeIndex) return;
@@ -160,7 +132,6 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
         className="featured-gradient relative overflow-hidden rounded-none py-12 sm:py-16 lg:mx-3 lg:my-3 lg:rounded-[2.5rem]"
         aria-labelledby="featured-heading"
       >
-        {/* Motif ndop */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-[0.15] md:opacity-[0.20]"
@@ -189,7 +160,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
 
   return (
     <section
-      className="featured-gradient relative overflow-hidden rounded-none py-7 sm:py-8 lg:mx-3 lg:my-3 lg:rounded-[2.5rem] lg:py-8"
+      className="featured-gradient relative overflow-hidden rounded-none pt-4 pb-7 sm:pt-6 sm:pb-8 lg:mx-3 lg:my-3 lg:rounded-[2.5rem] lg:pt-8 lg:pb-8"
       aria-labelledby="featured-heading"
     >
       {/* Motif ndop */}
@@ -214,7 +185,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
             <h2 id="featured-heading" className="text-3xl font-black text-neutral-950 sm:text-4xl">A la une</h2>
           </div>
 
-          {/* Chevron gauche · Pause · Chevron droit */}
+          {/* Chevrons · Pause — bordure gris/blanc */}
           <div className="flex items-center gap-1.5">
             <button
               type="button"
@@ -222,8 +193,8 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
               aria-label="Element précédent"
               className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${
                 lastNav === 'prev'
-                  ? 'border-transparent bg-emerald-500 text-white'
-                  : 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 hover:text-emerald-300'
+                  ? 'border-transparent bg-neutral-700 text-white'
+                  : 'border-neutral-300 bg-white/70 text-neutral-500 hover:border-neutral-500 hover:bg-white hover:text-neutral-800'
               }`}
             >
               <ChevronLeft size={14} strokeWidth={1.5} />
@@ -233,7 +204,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
               type="button"
               onClick={() => setManualPaused(v => !v)}
               aria-label={manualPaused ? 'Relancer le carrousel' : 'Mettre le carrousel en pause'}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/15 text-emerald-400 transition-all duration-200 hover:bg-emerald-500/25 hover:text-emerald-300"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 bg-white/70 text-neutral-500 transition-all duration-200 hover:border-neutral-500 hover:bg-white hover:text-neutral-800"
             >
               {manualPaused ? <Play size={13} /> : <Pause size={13} />}
             </button>
@@ -244,8 +215,8 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
               aria-label="Element suivant"
               className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${
                 lastNav === 'next'
-                  ? 'border-transparent bg-emerald-500 text-white'
-                  : 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 hover:text-emerald-300'
+                  ? 'border-transparent bg-neutral-700 text-white'
+                  : 'border-neutral-300 bg-white/70 text-neutral-500 hover:border-neutral-500 hover:bg-white hover:text-neutral-800'
               }`}
             >
               <ChevronRight size={14} strokeWidth={1.5} />
@@ -254,13 +225,13 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
         </div>
 
         {/* ── Carrousel ── */}
-        <div className="relative h-[80vh] min-h-[500px] max-h-[760px] overflow-hidden lg:h-[70vh] lg:min-h-[460px] lg:max-h-[620px]">
+        <div className="relative h-[85vh] min-h-[520px] max-h-[780px] overflow-hidden lg:h-[70vh] lg:min-h-[460px] lg:max-h-[620px]">
           <Swiper
             modules={[Autoplay, A11y]}
             className="h-full"
-            slidesPerView={1.1}
+            slidesPerView={1.08}
             centeredSlides={false}
-            spaceBetween={8}
+            spaceBetween={4}
             rewind={items.length > 1}
             speed={500}
             autoplay={items.length > 1 ? { delay: SLIDE_DELAY, disableOnInteraction: false, waitForTransition: true } : false}
@@ -269,15 +240,23 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
               1024: { slidesPerView: 1.1, spaceBetween: 16 },
             }}
             onSwiper={swiper => { swiperRef.current = swiper; setActiveIndex(swiper.realIndex); }}
-            onSlideChange={swiper => setActiveIndex(swiper.realIndex)}
-            onAutoplayTimeLeft={(_swiper, _timeLeft, percentage) => setProgress(Math.max(0, Math.min(100, (1 - percentage) * 100)))}
+            onSlideChange={swiper => { setActiveIndex(swiper.realIndex); setProgress(0); }}
+            /* Jauge pilotée exclusivement par le timer Swiper */
+            onAutoplayTimeLeft={(_swiper, _timeLeft, percentage) =>
+              setProgress(Math.max(0, Math.min(100, (1 - percentage) * 100)))
+            }
           >
             {items.map((item, itemIndex) => (
               <SwiperSlide key={item._id} className="!flex h-full items-center justify-center">
-                <div className="grid h-[75%] w-[90%] min-h-0 overflow-hidden rounded-none border-0 bg-transparent grid-rows-[50%_50%] md:h-[360px] md:w-[90%] md:grid-cols-[1fr_1fr] md:grid-rows-1 md:pr-4 lg:h-[400px] lg:w-[90%] lg:pr-7 xl:h-[430px]">
+                <div
+                  className="grid h-[82%] w-[93%] min-h-0 overflow-hidden rounded-none border-0 bg-transparent grid-rows-[43%_57%] md:h-[360px] md:w-[90%] md:grid-cols-[1fr_1fr] md:grid-rows-1 md:pr-4 lg:h-[400px] lg:w-[90%] lg:pr-7 xl:h-[430px]"
+                  style={{
+                    boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px',
+                  }}
+                >
 
-                  {/* Texte */}
-                  <article className="relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl bg-white p-4 text-left text-neutral-950 md:order-1 md:rounded-none md:bg-transparent md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6">
+                  {/* ── Bloc texte ── */}
+                  <article className="relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl bg-white p-4 text-left text-neutral-950 md:order-1 md:rounded-b-none md:rounded-l-2xl md:bg-transparent md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6">
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                       <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl lg:text-3xl">{item.title}</a>
                       <a {...destinationProps(item.textDestination)} className="mt-2.5 block whitespace-pre-line text-sm leading-6 text-neutral-600 hover:text-neutral-900">{item.description}</a>
@@ -288,7 +267,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                       )}
                     </div>
 
-                    {/* Dots — style mission tab nav (layoutId slide) */}
+                    {/* Dots */}
                     <div className="mt-3 flex shrink-0 items-center justify-center gap-1.5">
                       {items.map((entry, dotIndex) => (
                         <button
@@ -314,11 +293,23 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
                     </div>
                   </article>
 
-                  {/* Média */}
-                  <button type="button" onClick={() => setPreview(item)} className="relative order-1 h-full min-h-0 overflow-hidden rounded-t-2xl bg-black text-left md:order-2 md:rounded-2xl lg:rounded-l-none" style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 10px 50px' }}>
-                    {/* Barre de progression */}
+                  {/* ── Bloc média ── */}
+                  <button
+                    type="button"
+                    onClick={() => setPreview(item)}
+                    className="relative order-1 h-full min-h-0 overflow-hidden rounded-t-2xl bg-black text-left md:order-2 md:rounded-2xl lg:rounded-l-none"
+                    style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 10px 50px' }}
+                  >
+                    {/* Barre de progression — jauge du slide, se remplit sur SLIDE_DELAY ms */}
                     <span className="absolute left-0 right-0 top-0 z-20 h-1.5 bg-black/20">
-                      <span className="block h-full origin-left transition-[width] duration-100 ease-linear" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#0B8F3A 0%,#C8102E 50%,#F7C600 100%)' }} />
+                      <span
+                        className="block h-full origin-left"
+                        style={{
+                          width: `${progress}%`,
+                          background: 'linear-gradient(90deg,#0B8F3A 0%,#C8102E 50%,#F7C600 100%)',
+                          transition: 'width 100ms linear',
+                        }}
+                      />
                     </span>
                     <Media item={item} active={itemIndex === activeIndex && !preview} playbackId={'slide-' + item._id} onPlaybackChange={handlePlaybackChange} />
                     <span className="absolute right-4 top-4 z-30 grid h-10 w-10 place-items-center rounded-full border border-white/30 bg-black/70 text-white shadow-lg backdrop-blur transition hover:scale-105 hover:bg-black/85" aria-hidden="true">
