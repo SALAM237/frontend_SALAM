@@ -83,15 +83,13 @@ export function MemberCard({ member, printable = false }: { member: MemberCardDa
               <div className="flex items-start gap-1.5 sm:gap-2">
                 <Image src="/images/logo/logo_salam_96.webp" alt="SALAM" width={36} height={36} className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-white/20 sm:h-9 sm:w-9" />
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    <p className="text-[10px] font-black tracking-[0.22em] text-white sm:text-[11px]">SALAM</p>
-                    <span className="inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[6px] font-black uppercase tracking-[0.14em] text-emerald-300 sm:px-2 sm:text-[8px]">
-                      Carte de membre
-                    </span>
-                  </div>
+                  <p className="text-[10px] font-black tracking-[0.22em] text-white sm:text-[11px]">SALAM</p>
                   <p className="mt-0.5 whitespace-nowrap text-[5.7px] font-semibold tracking-[0.03em] text-white/52 sm:text-[7.2px]">
                     Solidaire Associative des Lauréats du Maroc
                   </p>
+                  <span className="mt-1 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[6px] font-black uppercase tracking-[0.14em] text-emerald-300 sm:px-2 sm:text-[8px]">
+                    Carte de membre
+                  </span>
                 </div>
               </div>
             </div>
