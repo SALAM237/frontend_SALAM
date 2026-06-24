@@ -11,10 +11,14 @@ export function HomeScrollExperience({ children }: { children: React.ReactNode }
   const root = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reducedMotion) return;
-
     const scenes = gsap.utils.toArray<HTMLElement>('[data-scroll-scene]');
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) {
+      // Révéler immédiatement toutes les scenes (CSS les cache par défaut)
+      gsap.set(scenes, { autoAlpha: 1 });
+      return;
+    }
     const media = gsap.matchMedia();
 
     media.add('(min-width: 768px)', () => {
@@ -96,5 +100,11 @@ export function HomeScrollExperience({ children }: { children: React.ReactNode }
     };
   }, { scope: root });
 
-  return <div ref={root}>{children}</div>;
+  return (
+    <div ref={root}>
+      {/* Cache les scenes dès le premier paint (avant GSAP) pour éviter le flash */}
+      <style>{`[data-scroll-scene]{opacity:0;visibility:hidden}@media(prefers-reduced-motion:reduce){[data-scroll-scene]{opacity:1!important;visibility:visible!important}}`}</style>
+      {children}
+    </div>
+  );
 }
