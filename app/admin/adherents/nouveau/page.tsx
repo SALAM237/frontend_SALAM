@@ -53,11 +53,21 @@ function norm(s: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
-/** Cherche la valeur d'un champ parmi plusieurs variantes de headers */
+/** Cherche la valeur d'un champ parmi plusieurs variantes de headers.
+ *  Passe 1 — correspondance exacte (+ pluriel en 's') : "prenom" → "prenom" / "prenoms"
+ *  Passe 2 — startsWith : "emailaddress", "prenom_epouse", etc.
+ *  includes() est volontairement évité : "prenom".includes("nom") = true → faux positif. */
 function detect(row: CsvRawRow, variants: string[]): string {
+  const norms = variants.map(norm);
+  // Passe 1 : exact ou exact + 's'
   for (const [key, value] of Object.entries(row)) {
     const k = norm(key);
-    if (variants.some(v => k.includes(norm(v)))) return String(value ?? '').trim();
+    if (norms.some(nv => k === nv || k === nv + 's')) return String(value ?? '').trim();
+  }
+  // Passe 2 : le header commence par la variante
+  for (const [key, value] of Object.entries(row)) {
+    const k = norm(key);
+    if (norms.some(nv => k.startsWith(nv))) return String(value ?? '').trim();
   }
   return '';
 }
@@ -70,8 +80,8 @@ function cleanGenericBureauTitle(value?: string | null) {
 }
 
 function mapRow(row: CsvRawRow): MappedRow {
-  const firstName    = detect(row, ['prenom', 'firstname', 'first_name', 'prénom', 'given']);
-  const lastName     = detect(row, ['nom', 'lastname', 'last_name', 'family_name', 'surname']);
+  const firstName    = detect(row, ['prenom', 'firstname', 'first_name', 'given']);
+  const lastName     = detect(row, ['nom', 'nomdefamille', 'lastname', 'last_name', 'family_name', 'familyname', 'surname', 'name']);
   const email        = detect(row, ['email', 'mail', 'courriel', 'e-mail']);
   const phone        = detect(row, ['telephone', 'tel', 'phone', 'portable', 'mobile', 'whatsapp']);
   const bureauPoste  = cleanGenericBureauTitle(detect(row, ['poste', 'fonction', 'role', 'position', 'titre', 'bureau']));
