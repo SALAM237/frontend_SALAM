@@ -3,7 +3,7 @@
 import { useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { ArrowLeft, CreditCard, Search, Loader2, Users } from 'lucide-react';
+import { ArrowLeft, ChevronDown, CreditCard, Search, Loader2, Users } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
@@ -27,7 +27,11 @@ export default function CartesPage() {
   const [search,   setSearch]   = useState('');
   const [filter,   setFilter]   = useState<'all' | 'active' | 'pending'>('all');
   const [selected, setSelected] = useState<MemberListItem | null>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
+
+  /* Ref desktop (panel sticky) — utilisé pour le téléchargement sur écran large */
+  const desktopCardRef = useRef<HTMLDivElement>(null);
+  /* Ref mobile (accordéon) — utilisé pour le téléchargement sur mobile */
+  const mobileCardRef  = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useAdminMembers({ limit: 200 });
   const members = useMemo<MemberListItem[]>(() => data?.data?.data ?? [], [data]);
@@ -46,14 +50,18 @@ export default function CartesPage() {
   const pending = members.filter(m => m.memberStatus === 'pending').length;
 
   const handleDownloadCard = async () => {
-    if (!selected || !cardRef.current) return;
+    if (!selected) return;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    const el = isMobile ? mobileCardRef.current : desktopCardRef.current;
+    if (!el) return;
     try {
-      await downloadElementAsPng(cardRef.current, `carte-salam-${selected.memberId}.png`, toCardData(selected));
-      toast.success('Carte telechargee');
+      await downloadElementAsPng(el, `carte-salam-${selected.memberId}.png`, toCardData(selected));
+      toast.success('Carte téléchargée');
     } catch {
-      toast.error('Impossible de telecharger la carte. Reessayez sans photo distante si besoin.');
+      toast.error('Impossible de télécharger la carte. Réessayez sans photo distante si besoin.');
     }
   };
+
   return (
     <div className="mx-auto max-w-6xl space-y-5">
 
@@ -137,41 +145,87 @@ export default function CartesPage() {
             )}
 
             {!isLoading && filtered.length > 0 && (
-              <ul className="divide-y divide-neutral-50">
+              <ul className="divide-y divide-neutral-100">
                 {filtered.map(m => {
                   const isSelected = selected?._id === m._id;
                   const isActive   = m.memberStatus === 'active';
-                  const photoUrl = memberPhotoUrl(m);
+                  const photoUrl   = memberPhotoUrl(m);
                   return (
-                    <li key={m._id}>
+                    <li key={m._id} className="overflow-hidden">
+
+                      {/* ── Ligne / header accordéon ───────────────────── */}
                       <button
                         onClick={() => setSelected(isSelected ? null : m)}
-                        className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${isSelected ? 'bg-emerald-50/60' : 'hover:bg-neutral-50/60'}`}
+                        className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${isSelected ? 'bg-emerald-50' : 'hover:bg-neutral-50/60'}`}
                       >
                         {/* Avatar */}
                         {photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={photoUrl} alt={formatFullName(m.firstName, m.lastName)} className={`h-9 w-9 shrink-0 rounded-full border-2 object-cover ${memberAvatarBorderClass(m.gender)}`} />
+                          <img
+                            src={photoUrl}
+                            alt={formatFullName(m.firstName, m.lastName)}
+                            className={`h-9 w-9 shrink-0 rounded-full border-2 object-cover ${memberAvatarBorderClass(m.gender)}`}
+                          />
                         ) : (
                           <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white ${memberInitialsClass(m.gender)}`}>
                             {formatInitials(m.firstName, m.lastName)}
                           </div>
                         )}
 
-                        {/* Info */}
+                        {/* Nom + ID */}
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold text-sm text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
+                          <p className="truncate text-sm font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
                           <p className="font-mono text-[11px] text-neutral-400">{m.memberId}</p>
                         </div>
 
-                        {/* Status */}
+                        {/* Badge statut */}
                         <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ${isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-yellow-50 text-yellow-700'}`}>
                           {isActive ? 'Actif' : 'En attente'}
                         </span>
 
-                        {/* CreditCard icon */}
-                        <CreditCard size={14} className={`shrink-0 ${isSelected ? 'text-emerald-600' : 'text-neutral-300'}`} />
+                        {/* Icône accordéon mobile / carte desktop */}
+                        <CreditCard size={14} className={`hidden shrink-0 lg:block ${isSelected ? 'text-emerald-600' : 'text-neutral-300'}`} />
+                        <ChevronDown
+                          size={15}
+                          className={`shrink-0 text-neutral-400 transition-transform duration-200 lg:hidden ${isSelected ? 'rotate-180 text-emerald-600' : ''}`}
+                        />
                       </button>
+
+                      {/* ── Corps accordéon — mobile uniquement ────────── */}
+                      {isSelected && (
+                        <div className="lg:hidden border-t border-emerald-100 bg-emerald-50/60 px-4 pb-5 pt-4">
+                          <p className="mb-3 text-[11px] font-black uppercase tracking-[0.08em] text-emerald-800">
+                            Aperçu carte
+                          </p>
+
+                          {/* Carte membre */}
+                          <div ref={mobileCardRef} className="mx-auto w-full max-w-[340px]">
+                            <MemberCard member={toCardData(m)} />
+                          </div>
+
+                          {/* Actions */}
+                          <div className="mt-4 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={handleDownloadCard}
+                              className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-white text-xs font-bold text-emerald-700 transition hover:bg-emerald-50"
+                            >
+                              <CreditCard size={13} /> Télécharger
+                            </button>
+                            <a
+                              href={memberCardMailto(
+                                m.email,
+                                formatFullName(m.firstName, m.lastName),
+                                m.memberId,
+                                m.cardVerifyToken,
+                              )}
+                              className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white transition hover:bg-emerald-700"
+                            >
+                              Envoyer par email
+                            </a>
+                          </div>
+                        </div>
+                      )}
                     </li>
                   );
                 })}
@@ -180,36 +234,51 @@ export default function CartesPage() {
           </div>
         </div>
 
-        {/* Preview panel */}
-        <div className="sticky top-20 h-fit rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
-          {selected ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-black text-neutral-900">Aperçu carte</p>
-                <span className="font-mono text-xs text-neutral-400">{selected.memberId}</span>
+        {/* ── Panel preview — desktop uniquement ────────────────────── */}
+        <div className="hidden lg:block">
+          <div className="sticky top-20 h-fit rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
+            {selected ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-black text-neutral-900">Aperçu carte</p>
+                  <span className="font-mono text-xs text-neutral-400">{selected.memberId}</span>
+                </div>
+                <div ref={desktopCardRef} className="mx-auto w-full max-w-[380px]">
+                  <MemberCard member={toCardData(selected)} />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleDownloadCard}
+                    className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:border-neutral-300"
+                  >
+                    <CreditCard size={13} /> Télécharger
+                  </button>
+                  <a
+                    href={memberCardMailto(
+                      selected.email,
+                      formatFullName(selected.firstName, selected.lastName),
+                      selected.memberId,
+                      selected.cardVerifyToken,
+                    )}
+                    className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700"
+                  >
+                    Envoyer par email
+                  </a>
+                </div>
               </div>
-              <div ref={cardRef} className="mx-auto w-full max-w-[380px]">
-                <MemberCard member={toCardData(selected)} />
+            ) : (
+              <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 text-center">
+                <CreditCard size={40} className="text-neutral-200" />
+                <div>
+                  <p className="text-sm font-semibold text-neutral-400">Sélectionnez un membre</p>
+                  <p className="mt-0.5 text-xs text-neutral-300">pour prévisualiser sa carte</p>
+                </div>
               </div>
-              <div className="flex gap-2 pt-2">
-                <button type="button" onClick={handleDownloadCard} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-bold text-neutral-600 hover:border-neutral-300">
-                  <CreditCard size={13} /> Télécharger
-                </button>
-                <a href={memberCardMailto(selected.email, formatFullName(selected.firstName, selected.lastName), selected.memberId, selected.cardVerifyToken)} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-black text-white hover:bg-emerald-700">
-                  Envoyer par email
-                </a>
-              </div>
-            </div>
-          ) : (
-            <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 text-center">
-              <CreditCard size={40} className="text-neutral-200" />
-              <div>
-                <p className="text-sm font-semibold text-neutral-400">Sélectionnez un membre</p>
-                <p className="mt-0.5 text-xs text-neutral-300">pour prévisualiser sa carte</p>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
       </div>
     </div>
   );
