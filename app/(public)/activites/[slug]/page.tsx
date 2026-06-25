@@ -37,10 +37,12 @@ const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
 };
 
 function fmt(d: string, time = false) {
-  const date = new Date(d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  // timeZone: 'UTC' obligatoire — les heures sont stockées en UTC "tel quel"
+  // (ce que l'admin a tapé est stocké sans conversion fuseau) → afficher sans conversion.
+  const date = new Date(d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
   if (!time) return date;
-  const t = new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  return `${date} · ${t}`;
+  const t = new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+  return `${date} · ${t} (Heure du Cameroun)`;
 }
 
 function tryShare(title: string) {

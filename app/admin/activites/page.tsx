@@ -72,7 +72,7 @@ function ActivityForm({
   const [externalGuests, setExternalGuests] = useState<ExternalGuest[]>([{ id: 'guest-initial', firstName: '', lastName: '', email: '', phone: '' }]);
   const [rsvpMode, setRsvpMode] = useState<'required' | 'optional'>('optional');
   const [rsvpDeadline, setRsvpDeadline] = useState('');
-  const membersQuery = useAdminMembers({ status: 'active', limit: 500 });
+  const membersQuery = useAdminMembers({ limit: 500 });
   const clientsQuery = useInvoiceClients();
   const members = membersQuery.data?.data?.data ?? [];
   const clients = clientsQuery.data?.data ?? [];
@@ -711,9 +711,9 @@ export default function AdminActivitesPage() {
                       {a.location && <span className="flex items-center gap-1"><MapPin size={11} /> {a.location}</span>}
                       {a.capacity && <span className="flex items-center gap-1"><Users size={11} /> {a.capacity} places</span>}
                       {a.startDate && (
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1" title="Heure du Cameroun">
                           <CalendarDays size={11} />
-                          {new Date(a.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          {new Date(a.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}
                         </span>
                       )}
                     </div>

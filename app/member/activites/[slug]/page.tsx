@@ -124,10 +124,11 @@ export default function MemberActivityDetailPage({ params }: { params: Promise<{
                     <CalendarDays size={15} className="shrink-0 text-emerald-600" />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-neutral-800">
-                        {new Date(activity.startDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        {new Date(activity.startDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}
                       </p>
                       <p className="text-[11px] text-neutral-400">
-                        {new Date(activity.startDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(activity.startDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}
+                        <span className="ml-1 text-[9px] font-semibold uppercase tracking-wide text-neutral-300">(Heure du Cameroun)</span>
                       </p>
                     </div>
                   </div>
@@ -176,7 +177,7 @@ export default function MemberActivityDetailPage({ params }: { params: Promise<{
                 <p className="mt-0.5 text-xs text-neutral-500">
                   {activity.myInvitation.rsvpRequired ? 'Réponse obligatoire' : 'Indiquez votre disponibilité pour aider l\'organisation.'}
                   {activity.myInvitation.rsvpDeadline
-                    ? ` · avant ${new Date(activity.myInvitation.rsvpDeadline).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}`
+                    ? ` · avant ${new Date(activity.myInvitation.rsvpDeadline).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })} (Heure du Cameroun)`
                     : ''}
                 </p>
                 <div className="mt-3 grid grid-cols-3 gap-2">
@@ -276,10 +277,11 @@ export default function MemberActivityDetailPage({ params }: { params: Promise<{
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-neutral-950 px-5 py-4 text-white">
                 <div className="space-y-0.5">
                   <p className="text-sm font-black capitalize">
-                    {new Date(activity.startDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    {new Date(activity.startDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}
                   </p>
                   <p className="text-xs text-neutral-400">
-                    {new Date(activity.startDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(activity.startDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}
+                    <span className="ml-1 text-[9px] font-semibold uppercase tracking-wide text-neutral-600">(Heure du Cameroun)</span>
                     {activity.venue && ` · ${activity.venue}`}
                     {activity.city && ` · ${activity.city}`}
                   </p>
