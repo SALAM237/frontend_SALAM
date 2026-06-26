@@ -2,17 +2,11 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Calendar, MapPin, Users, ArrowRight } from 'lucide-react';
-import { usePublicActivities } from '@/lib/api/activities';
+import { usePublicActivities, ACTIVITY_CAT_STYLES } from '@/lib/api/activities';
 import { RichText } from '@/components/ui/RichText';
 import { trackEvent } from '@/lib/analytics';
 
-/* ── Category config ── */
-const CAT: Record<string, { label: string; text: string; bg: string; border: string }> = {
-  sport:     { label: 'Sport',      text: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-100' },
-  etude:     { label: 'Éducation',  text: 'text-purple-600',  bg: 'bg-purple-50',  border: 'border-purple-100' },
-  culture:   { label: 'Culture',    text: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-100' },
-  benevolat: { label: 'Bénévolat',  text: 'text-salam-green', bg: 'bg-green-50',   border: 'border-green-100' },
-};
+const DEFAULT_CAT = { label: 'Activité', bg: 'bg-neutral-100', text: 'text-neutral-600', border: 'border-neutral-200' };
 
 const TOPS = ['bg-salam-green', 'bg-salam-red', 'bg-salam-yellow'];
 
@@ -78,7 +72,7 @@ export function ActivityPreview() {
           className="flex snap-x gap-[clamp(1rem,2vw,1.5rem)] overflow-x-auto scroll-smooth pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {items.map((activity, i) => {
-            const cat = CAT[activity.category] ?? CAT.culture;
+            const cat = ACTIVITY_CAT_STYLES[activity.category] ?? DEFAULT_CAT;
             const formattedDate = new Date(activity.startDate ?? activity.createdAt).toLocaleDateString('fr-FR', {
               day: 'numeric', month: 'long', year: 'numeric',
             });

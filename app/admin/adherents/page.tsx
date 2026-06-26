@@ -106,6 +106,7 @@ export default function AdminAdherentsPage() {
   const [caurisReason,   setCaurisReason]   = useState('');
   const [cardSelected,   setCardSelected]   = useState<MemberListItem | null>(null);
   const [checkedIds,     setCheckedIds]     = useState<Set<string>>(new Set());
+  const [showCheckboxes, setShowCheckboxes] = useState(false);
   const [confirmModal,   setConfirmModal]   = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
   const [showGroupsPanel, setShowGroupsPanel] = useState(false);
   const [openGroupIds,    setOpenGroupIds]    = useState<Set<string>>(new Set());

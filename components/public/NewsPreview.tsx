@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowRight, Newspaper, Tag } from 'lucide-react';
-import { ARTICLE_CATEGORIES, articleHref, usePublicArticles } from '@/lib/api/content';
+import { ARTICLE_CATEGORIES, ARTICLE_CAT_STYLES, articleHref, usePublicArticles } from '@/lib/api/content';
 import { RichText } from '@/components/ui/RichText';
 import { articleImage } from '@/lib/article-image';
 import { trackEvent } from '@/lib/analytics';
@@ -36,7 +36,9 @@ export function NewsPreview() {
           <div className="flex snap-x gap-5 overflow-x-auto scroll-smooth pb-3 [-ms-overflow-style:none] [scrollbar-width:none] lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
             {articles.map((article: any) => {
               const image = articleImage(article);
-              const category = article.data?.category;
+              const category = article.data?.category as string | undefined;
+              const catStyle = ARTICLE_CAT_STYLES[category ?? ''] ?? ARTICLE_CAT_STYLES.general;
+              const catLabel = ARTICLE_CATEGORIES.find(c => c.value === category)?.label ?? category ?? 'Général';
               return (
                 <Link
                   key={article._id}
@@ -62,9 +64,9 @@ export function NewsPreview() {
                     )}
                   </div>
                   <div className="space-y-3 p-5">
-                    <span className="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+                    <span className={`inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${catStyle.bg} ${catStyle.text}`}>
                       <Tag size={10} />
-                      {ARTICLE_CATEGORIES.find(c => c.value === category)?.label ?? category ?? 'General'}
+                      {catLabel}
                     </span>
                     <h3 className="line-clamp-2 font-black leading-tight text-neutral-950 transition group-hover:text-emerald-700"><RichText value={article.title} /></h3>
                     {article.data?.excerpt && <p className="line-clamp-2 text-sm leading-relaxed text-neutral-500"><RichText value={article.data.excerpt} /></p>}

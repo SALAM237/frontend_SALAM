@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Newspaper, ArrowRight, Search, Tag, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
-import { articleHref, usePublicArticles, ARTICLE_CATEGORIES } from '@/lib/api/content';
+import { articleHref, usePublicArticles, ARTICLE_CATEGORIES, ARTICLE_CAT_STYLES } from '@/lib/api/content';
 import { RichText } from '@/components/ui/RichText';
 import { articleImage } from '@/lib/article-image';
 import { trackEvent } from '@/lib/analytics';
@@ -102,9 +102,10 @@ export default function ActualitesPage() {
                       <img src={image} alt={n.title} className="h-full w-full object-cover" />
                     )}
                   </div>
-                  <span className="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+                  {(() => { const cs = ARTICLE_CAT_STYLES[n.data?.category ?? ''] ?? ARTICLE_CAT_STYLES.general; return (
+                  <span className={`inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${cs.bg} ${cs.text}`}>
                     <Tag size={10} />{ARTICLE_CATEGORIES.find(c => c.value === n.data?.category)?.label ?? n.data?.category ?? 'Général'}
-                  </span>
+                  </span>); })()}
                   <h3 className="font-black text-neutral-900 line-clamp-2 group-hover:text-emerald-700 transition-colors"><RichText value={n.title} /></h3>
                   {n.data?.excerpt && <p className="text-xs text-neutral-500 line-clamp-2"><RichText value={n.data.excerpt} /></p>}
                   <div className="flex items-center justify-between">
