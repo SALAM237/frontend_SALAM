@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { assetUrl } from '@/lib/assets';
 
@@ -16,6 +16,8 @@ interface LightboxProps {
 
 export function Lightbox({ images, current, onClose, onPrev, onNext }: LightboxProps) {
   const img = images[current];
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
 
   const handleKey = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape')     onClose();
@@ -38,6 +40,15 @@ export function Lightbox({ images, current, onClose, onPrev, onNext }: LightboxP
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/92 backdrop-blur-sm"
       onClick={onClose}
+      onTouchStart={e => {
+        touchStartX.current = e.touches[0].clientX;
+        touchStartY.current = e.touches[0].clientY;
+      }}
+      onTouchEnd={e => {
+        const dx = touchStartX.current - e.changedTouches[0].clientX;
+        const dy = Math.abs(touchStartY.current - e.changedTouches[0].clientY);
+        if (Math.abs(dx) > 50 && Math.abs(dx) > dy) { dx > 0 ? onNext() : onPrev(); }
+      }}
     >
       <button
         className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/25"

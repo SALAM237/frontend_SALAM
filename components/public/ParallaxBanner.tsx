@@ -12,23 +12,10 @@ export function ParallaxBanner() {
     if (!el) return;
 
     const onScroll = () => {
-      /*
-        Correction :
-        Avant, le parallax JS était désactivé dès 768px.
-        Or les tablettes font souvent 768px, 820px, 834px ou 1024px.
-        Donc on garde le parallax JS actif jusqu'à 1024px.
-      */
-      if (window.innerWidth >= 1024) {
-        el.style.transform = "translateY(0)";
-        return;
-      }
-
       const section = el.parentElement;
       if (!section) return;
-
       const rect = section.getBoundingClientRect();
-      const offset = -(rect.top * 0.4);
-
+      const offset = -(rect.top * 0.35);
       el.style.transform = `translateY(${offset}px)`;
     };
 
@@ -102,20 +89,12 @@ export function ParallaxBanner() {
                   animation: puff-in-center 1.0s cubic-bezier(.47,0.000,.745,.715) both;
         }
       `}</style>
-      {/* Desktop lg+ : bg-fixed → parallax CSS natif */}
-      <div
-        className="absolute inset-0 hidden bg-cover bg-center bg-fixed lg:block"
-        style={{
-          backgroundImage: "url('/images/gallery/image_parallax_SALAM_1920.webp')",
-        }}
-      />
-
-      {/* Mobile + tablette : parallax JS via translateY */}
+      {/* Parallax JS via translateY — toutes tailles (bg-fixed cassé dans les containers transform) */}
       <div
         ref={mobileRef}
-        className="absolute inset-x-0 -top-[25%] bottom-[-25%] bg-cover bg-center will-change-transform lg:hidden"
+        className="absolute inset-x-0 -top-[30%] bottom-[-30%] bg-cover bg-center will-change-transform"
         style={{
-          backgroundImage: "url('/images/gallery/image_parallax_SALAM_1200.webp')",
+          backgroundImage: "url('/images/gallery/image_parallax_SALAM_1920.webp')",
         }}
       />
 

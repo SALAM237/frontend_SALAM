@@ -197,6 +197,9 @@ export function HeroCarousel() {
 
   const navBtn = 'grid place-items-center rounded-full border border-white/35 bg-black/30 text-white backdrop-blur-sm transition-all hover:border-white/70 hover:bg-white/10 active:scale-95';
 
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
   return (
     <section
       className="relative w-full overflow-hidden"
@@ -207,6 +210,15 @@ export function HeroCarousel() {
         boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px',
       }}
       aria-label="Carrousel SALAM"
+      onTouchStart={e => {
+        touchStartX.current = e.touches[0].clientX;
+        touchStartY.current = e.touches[0].clientY;
+      }}
+      onTouchEnd={e => {
+        const dx = touchStartX.current - e.changedTouches[0].clientX;
+        const dy = Math.abs(touchStartY.current - e.changedTouches[0].clientY);
+        if (Math.abs(dx) > 50 && Math.abs(dx) > dy) { dx > 0 ? next() : prev(); }
+      }}
     >
       {/* ── Animated background glow ── */}
       <AnimatePresence mode="wait">

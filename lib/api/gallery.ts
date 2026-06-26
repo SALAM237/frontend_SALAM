@@ -22,6 +22,7 @@ export interface AlbumDoc {
   tags: string[];
   images: AlbumImage[];
   createdAt: string;
+  order?: number;
 }
 
 /* ── Public (no auth) ──────────────────────────────────────── */
@@ -177,6 +178,40 @@ export function useRemoveImageFromAlbum(albumId: string) {
       qc.invalidateQueries({ queryKey: ['public-gallery'] });
       qc.invalidateQueries({ queryKey: ['member-gallery'] });
       toast.success((res as any).message ?? 'Photo supprimée');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useReorderAlbums() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (albumIds: string[]) =>
+      apiClient('/api/v1/admin/gallery/reorder', {
+        method: 'PUT', body: JSON.stringify({ albumIds }), token: token ?? '',
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-gallery'] });
+      qc.invalidateQueries({ queryKey: ['public-gallery'] });
+      qc.invalidateQueries({ queryKey: ['member-gallery'] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useReorderAlbumImages(albumId: string) {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (newOrder: number[]) =>
+      apiClient(`/api/v1/admin/gallery/${albumId}/images/reorder`, {
+        method: 'PUT', body: JSON.stringify({ newOrder }), token: token ?? '',
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-gallery'] });
+      qc.invalidateQueries({ queryKey: ['public-gallery'] });
+      qc.invalidateQueries({ queryKey: ['member-gallery'] });
     },
     onError: (err: Error) => toast.error(err.message),
   });

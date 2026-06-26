@@ -7,17 +7,18 @@ import {
   UserPlus, CheckCircle2, CreditCard, ArrowLeft,
   Upload, FileSpreadsheet, AlertTriangle, Loader2,
   CheckSquare2, Square, Users, MailCheck, MailX, SkipForward,
-  UserCheck,
+  UserCheck, FolderPlus, Search, X,
 } from 'lucide-react';
 import Papa from 'papaparse';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
-import { useAdminMember, useCreateMember, useImportMembersCSV, useUpdateMember, type CsvImportMember, type ImportResult } from '@/lib/api/members';
+import { useAdminMember, useAdminMembers, useCreateMember, useImportMembersCSV, useUpdateMember, type CsvImportMember, type ImportResult, type MemberListItem } from '@/lib/api/members';
 import { formatFirstName, formatFullName, formatLastName } from '@/lib/format-name';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { previewMemberNumber } from '@/lib/member-number';
+import { useCreateGroup } from '@/lib/api/groups';
 
 /* ─── Types ─────────────────────────────────────────────── */
-type Mode      = 'single' | 'csv';
+type Mode      = 'single' | 'csv' | 'group';
 type FormState = {
   gender: string;
   firstName: string; lastName: string; email: string; phone: string;
@@ -185,6 +186,16 @@ export default function NouveauAdherentPage() {
   const csvTableScrollRef = useRef<HTMLDivElement>(null);
   const importCSV    = useImportMembersCSV();
   const csvTableMinWidth = 280 + csvHeaders.length * 150;
+
+  /* ── Group states ────────────────────────────── */
+  const [groupName,        setGroupName]        = useState('');
+  const [groupSearch,      setGroupSearch]      = useState('');
+  const [groupStatusFilter, setGroupStatusFilter] = useState<'all' | 'active' | 'pending'>('all');
+  const [groupSelectedIds, setGroupSelectedIds] = useState<Set<string>>(new Set());
+
+  const { data: allMembersData } = useAdminMembers({ limit: 500 });
+  const allMembers: MemberListItem[] = (allMembersData as any)?.data?.data ?? [];
+  const createGroup = useCreateGroup();
 
   const syncCsvScroll = (source: 'top' | 'table') => {
     const top = csvTopScrollRef.current;
@@ -476,12 +487,14 @@ export default function NouveauAdherentPage() {
       <AnimatedTabBar
         value={mode}
         onChange={(value) => {
-          setMode(value);
+          setMode(value as Mode);
           if (value === 'csv') resetCsv();
+          if (value === 'group') { setGroupName(''); setGroupSearch(''); setGroupSelectedIds(new Set()); }
         }}
         items={[
           { value: 'single', label: 'Saisie manuelle', icon: UserPlus },
-          { value: 'csv', label: 'Importer CSV', icon: FileSpreadsheet },
+          { value: 'csv',    label: 'Importer CSV',    icon: FileSpreadsheet },
+          { value: 'group',  label: 'Créer un groupe', icon: FolderPlus },
         ]}
       />
       )}
@@ -745,6 +758,149 @@ export default function NouveauAdherentPage() {
           )}
         </div>
       )}
+
+      {/* ─── Mode Créer un groupe ──────────────── */}
+      {mode === 'group' && (() => {
+        const q = groupSearch.trim().toLowerCase();
+        const filtered = allMembers.filter(m => {
+          if (groupStatusFilter !== 'all' && m.memberStatus !== groupStatusFilter) return false;
+          if (!q) return true;
+          return (
+            m.firstName.toLowerCase().includes(q) ||
+            m.lastName.toLowerCase().includes(q) ||
+            m.email.toLowerCase().includes(q) ||
+            (m.activitySector ?? '').toLowerCase().includes(q)
+          );
+        });
+
+        const toggleGroupMember = (id: string) =>
+          setGroupSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+        const toggleAllFiltered = () => {
+          const ids = filtered.map(m => m._id);
+          const allChecked = ids.every(id => groupSelectedIds.has(id));
+          setGroupSelectedIds(prev => {
+            const n = new Set(prev);
+            allChecked ? ids.forEach(id => n.delete(id)) : ids.forEach(id => n.add(id));
+            return n;
+          });
+        };
+
+        const handleCreateGroup = async () => {
+          if (!groupName.trim()) return;
+          if (groupSelectedIds.size === 0) return;
+          await createGroup.mutateAsync({ name: groupName.trim(), memberIds: [...groupSelectedIds] });
+          setGroupName('');
+          setGroupSelectedIds(new Set());
+        };
+
+        const allFilteredChecked = filtered.length > 0 && filtered.every(m => groupSelectedIds.has(m._id));
+
+        return (
+          <div className="space-y-4">
+            {/* Nom du groupe */}
+            <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
+              <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+                Nom du groupe <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={groupName}
+                onChange={e => setGroupName(e.target.value)}
+                placeholder="Ex : Promotion 2023, Équipe Casablanca…"
+                className="h-10 w-full rounded-xl border border-neutral-200 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+              />
+            </div>
+
+            {/* Filtres + recherche */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[160px]">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                <input
+                  type="text"
+                  value={groupSearch}
+                  onChange={e => setGroupSearch(e.target.value)}
+                  placeholder="Rechercher un membre…"
+                  className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-8 pr-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none"
+                />
+                {groupSearch && (
+                  <button onClick={() => setGroupSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600">
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+              {(['all', 'active', 'pending'] as const).map(s => (
+                <button key={s} onClick={() => setGroupStatusFilter(s)}
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-black transition ${groupStatusFilter === s ? 'bg-emerald-600 text-white' : 'border border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300'}`}>
+                  {s === 'all' ? 'Tous' : s === 'active' ? 'Actifs' : 'En attente'}
+                </button>
+              ))}
+              <span className="shrink-0 text-xs text-neutral-500">
+                {groupSelectedIds.size} sélectionné{groupSelectedIds.size !== 1 ? 's' : ''}
+              </span>
+            </div>
+
+            {/* Liste des membres */}
+            <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+              {/* Sélectionner tout */}
+              <div className="flex items-center gap-3 border-b border-neutral-100 px-4 py-2.5">
+                <input type="checkbox" checked={allFilteredChecked} onChange={toggleAllFiltered}
+                  className="h-4 w-4 rounded border-neutral-300 accent-emerald-600" />
+                <span className="text-xs font-black text-neutral-600">{filtered.length} membre{filtered.length !== 1 ? 's' : ''} affichés</span>
+              </div>
+
+              <div className="max-h-[420px] divide-y divide-neutral-50 overflow-y-auto">
+                {filtered.length === 0 && (
+                  <p className="py-8 text-center text-sm text-neutral-400">Aucun membre trouvé.</p>
+                )}
+                {filtered.map(m => {
+                  const isChecked = groupSelectedIds.has(m._id);
+                  const cotisLabel = m.cotisationStatus === 'paid' ? 'Cotisant' : m.cotisationStatus === 'exempt' ? 'Exonéré' : 'Non cotisant';
+                  const cotisColor = m.cotisationStatus === 'paid' ? 'text-emerald-700 bg-emerald-50' : m.cotisationStatus === 'exempt' ? 'text-blue-700 bg-blue-50' : 'text-red-700 bg-red-50';
+                  return (
+                    <div key={m._id} onClick={() => toggleGroupMember(m._id)}
+                      className={`flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors ${isChecked ? 'bg-emerald-50/60' : 'hover:bg-neutral-50/40'}`}>
+                      <input type="checkbox" checked={isChecked} onChange={() => toggleGroupMember(m._id)}
+                        onClick={e => e.stopPropagation()}
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-neutral-300 accent-emerald-600" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-black text-sm text-neutral-900">{m.firstName} {m.lastName}</span>
+                          <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-black ${cotisColor}`}>{cotisLabel}</span>
+                          {m.memberStatus !== 'active' && (
+                            <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-black text-amber-700">
+                              {m.memberStatus === 'pending' ? 'En attente' : m.memberStatus}
+                            </span>
+                          )}
+                          {m.profileComplete === false && (
+                            <span className="rounded-full bg-red-50 px-1.5 py-0.5 text-[9px] font-black text-red-600">Profil incomplet</span>
+                          )}
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0 text-[11px] text-neutral-500">
+                          {m.activitySector && <span>{m.activitySector}</span>}
+                          <span className="text-neutral-300">·</span>
+                          <span>{new Date(m.createdAt).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bouton créer */}
+            <button
+              onClick={handleCreateGroup}
+              disabled={!groupName.trim() || groupSelectedIds.size === 0 || createGroup.isPending}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20 disabled:opacity-50">
+              {createGroup.isPending
+                ? <><Loader2 size={15} className="animate-spin" /> Création…</>
+                : <><FolderPlus size={15} /> Créer le groupe "{groupName || '…'}" ({groupSelectedIds.size} membres)</>
+              }
+            </button>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -85,7 +85,7 @@ export function OpportunityPreview() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: index * 0.04 }}
               viewport={{ once: true }}
-              className="group flex min-w-[84%] snap-start flex-col rounded-3xl border border-white bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl sm:min-w-[48%] lg:min-w-[31%]"
+              className="group flex min-w-[84%] snap-start flex-col rounded-3xl border border-neutral-200 bg-white p-5 shadow-md transition hover:-translate-y-1 hover:border-amber-400 hover:shadow-xl hover:ring-2 hover:ring-amber-400/20 sm:min-w-[48%] lg:min-w-[31%]"
             >
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">

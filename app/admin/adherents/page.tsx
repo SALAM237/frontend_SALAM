@@ -7,6 +7,7 @@ import {
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
   Plus, Minus, SlidersHorizontal, X, Bell, Banknote,
   Send, CalendarDays, AlertTriangle, Users, ChevronLeft,
+  FolderOpen, Folders, ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -18,6 +19,7 @@ import {
   useSendUnpaidInvoiceRelance, type AdminCotisationRow, type CotisationStatus,
 } from '@/lib/api/cotisations';
 import { useActivities, useActivityInvitations, useRemindActivityInvitations, type ActivityDoc } from '@/lib/api/activities';
+import { useAdminGroups, useDeleteGroup, type MemberGroup } from '@/lib/api/groups';
 import { useAdjustMemberCauris } from '@/lib/api/cauris';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName, formatInitials } from '@/lib/format-name';
@@ -105,6 +107,8 @@ export default function AdminAdherentsPage() {
   const [cardSelected,   setCardSelected]   = useState<MemberListItem | null>(null);
   const [checkedIds,     setCheckedIds]     = useState<Set<string>>(new Set());
   const [confirmModal,   setConfirmModal]   = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+  const [showGroupsPanel, setShowGroupsPanel] = useState(false);
+  const [openGroupIds,    setOpenGroupIds]    = useState<Set<string>>(new Set());
 
   /* ── Existing state ──────────────────────────────────────── */
   const [search,          setSearch]          = useState('');
@@ -154,6 +158,11 @@ export default function AdminAdherentsPage() {
     }
     return ids;
   }, [presenceInvitData]);
+
+  /* ── Groups data ─────────────────────────────────────────── */
+  const { data: groupsData } = useAdminGroups();
+  const groups: MemberGroup[] = groupsData?.data ?? [];
+  const deleteGroup = useDeleteGroup();
 
   /* ── Mutations ─────────────────────────────────────────── */
   const hardDelete       = useHardDeleteMember();
@@ -258,7 +267,7 @@ export default function AdminAdherentsPage() {
 
   /* ── Action handlers ────────────────────────────────────── */
   const handleDelete      = (id: string) => { if (confirmDeleteId !== id) { setConfirmDeleteId(id); return; } hardDelete.mutate(id, { onSettled: () => setConfirmDeleteId(null) }); };
-  const handleResend      = (e: React.MouseEvent, id: string) => { e.preventDefault(); e.stopPropagation(); resendInvitation.mutate(id); };
+  const handleResend      = (e: React.MouseEvent, id: string) => { e.preventDefault(); e.stopPropagation(); setConfirmModal({ title: "Renvoyer l'invitation", message: "Confirmer l'envoi du mail d'invitation à ce membre ?", onConfirm: () => resendInvitation.mutate(id) }); };
   const handleDeleteClick = (e: React.MouseEvent, id: string) => { e.preventDefault(); e.stopPropagation(); handleDelete(id); };
 
   const handleCotisChange = (userId: string, status: CotisationStatus) => {
@@ -321,17 +330,17 @@ export default function AdminAdherentsPage() {
 
   /* ── Tab button class (3 states) ────────────────────────── */
   const tabBtnCls = (tab: ActiveTab): string => {
-    const THEME: Record<string, { active: string; inactive: string; icon: string }> = {
-      relance: { active: 'border-orange-500 bg-orange-600 text-white',  inactive: 'border-orange-300 bg-orange-50 text-orange-600',  icon: 'text-orange-600' },
-      frais:   { active: 'border-blue-500 bg-blue-600 text-white',      inactive: 'border-blue-300 bg-blue-50 text-blue-600',         icon: 'text-blue-600'   },
-      cauris:  { active: 'border-amber-500 bg-amber-500 text-white',    inactive: 'border-amber-300 bg-amber-50 text-amber-600',      icon: 'text-amber-600'  },
-      cartes:  { active: 'border-yellow-400 bg-yellow-400 text-neutral-900', inactive: 'border-yellow-300 bg-yellow-50 text-yellow-700', icon: 'text-yellow-600' },
+    const THEME: Record<string, { active: string; inactive: string; desktop: string }> = {
+      relance: { active: 'border-orange-500 bg-orange-600 text-white',       inactive: 'border-orange-300 bg-orange-50 text-orange-600 lg:bg-white',   desktop: 'lg:border-orange-300 lg:text-orange-600'  },
+      frais:   { active: 'border-blue-500 bg-blue-600 text-white',           inactive: 'border-blue-300 bg-blue-50 text-blue-600 lg:bg-white',          desktop: 'lg:border-blue-300 lg:text-blue-600'      },
+      cauris:  { active: 'border-amber-500 bg-amber-500 text-white',         inactive: 'border-amber-300 bg-amber-50 text-amber-600 lg:bg-white',       desktop: 'lg:border-amber-300 lg:text-amber-600'    },
+      cartes:  { active: 'border-yellow-400 bg-yellow-400 text-neutral-900', inactive: 'border-yellow-300 bg-yellow-50 text-yellow-700 lg:bg-white',    desktop: 'lg:border-yellow-300 lg:text-yellow-700'  },
     };
     const t = THEME[tab as string];
     if (!t) return '';
     if (activeTab === tab)   return `border ${t.active}`;
     if (activeTab !== null)  return `border ${t.inactive}`;
-    return `border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50`;
+    return `border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 ${t.desktop}`;
   };
 
   /* Icon color when button is NOT active (inherits white when active from parent text-white) */
@@ -359,7 +368,7 @@ export default function AdminAdherentsPage() {
         </p>
 
         {/* Tab buttons row — flex-nowrap to stay on one line on all breakpoints */}
-        <div className="mt-3 flex items-center gap-1 overflow-x-auto lg:gap-2">
+        <div className="mt-3 flex items-center gap-1 overflow-x-auto lg:gap-2 lg:justify-end">
           {/* Arrow KPI toggle — visible only when tab active */}
           <div className={`shrink-0 overflow-hidden transition-[max-width,opacity] duration-200 ${activeTab ? 'max-w-[30px] opacity-100 lg:max-w-[40px]' : 'max-w-0 opacity-0 pointer-events-none'}`}>
             <button type="button" onClick={() => setShowKpis(v => !v)} title={showKpis ? 'Masquer les statistiques' : 'Afficher les statistiques'}
@@ -372,7 +381,7 @@ export default function AdminAdherentsPage() {
           <button type="button" onClick={() => handleTabClick('relance')}
             className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('relance')}`}>
             <Bell size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('relance')}`} />
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'relance' ? 'max-w-[50px] ml-0.5 lg:max-w-[72px]' : 'max-w-0'}`}>
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'relance' ? 'max-w-[50px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
               Relance
             </span>
           </button>
@@ -381,7 +390,7 @@ export default function AdminAdherentsPage() {
           <button type="button" onClick={() => handleTabClick('frais')}
             className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('frais')}`}>
             <Banknote size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('frais')}`} />
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'frais' ? 'max-w-[76px] ml-0.5 lg:max-w-[116px]' : 'max-w-0'}`}>
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'frais' ? 'max-w-[76px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
               Frais d&apos;adhésion
             </span>
           </button>
@@ -392,7 +401,7 @@ export default function AdminAdherentsPage() {
             <span className={`shrink-0 ${activeTab === 'cauris' ? '' : tabIconCls('cauris')}`}>
               <CauriImg size={12} />
             </span>
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cauris' ? 'max-w-[72px] ml-0.5 lg:max-w-[108px]' : 'max-w-0'}`}>
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cauris' ? 'max-w-[72px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
               Gestion cauris
             </span>
           </button>
@@ -401,7 +410,7 @@ export default function AdminAdherentsPage() {
           <button type="button" onClick={() => handleTabClick('cartes')}
             className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cartes')}`}>
             <CreditCard size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('cartes')}`} />
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cartes' ? 'max-w-[72px] ml-0.5 lg:max-w-[108px]' : 'max-w-0'}`}>
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cartes' ? 'max-w-[72px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
               Cartes membres
             </span>
           </button>
@@ -622,9 +631,9 @@ export default function AdminAdherentsPage() {
 
       {/* ── SEARCH + FILTERS + EXPORT ────────────────────────── */}
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
+        <div className="relative w-full sm:min-w-[140px] sm:max-w-[240px]">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-          <input type="text" placeholder="Rechercher un membre…" value={search} onChange={e => setSearch(e.target.value)}
+          <input type="text" placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)}
             className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-8 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10" />
           {search && (
             <button type="button" onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600">
@@ -845,8 +854,86 @@ export default function AdminAdherentsPage() {
             className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-600 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40 sm:px-4">
             <Download size={13} /> Exporter ({displayed.length})
           </button>
+          {/* Groupes */}
+          <button onClick={() => setShowGroupsPanel(v => !v)}
+            className={`flex h-9 shrink-0 items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all sm:px-4 ${showGroupsPanel ? 'border-violet-500 bg-violet-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-violet-400 hover:bg-violet-50 hover:text-violet-700'}`}>
+            <Folders size={13} /> Groupes{groups.length > 0 && <span className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-black ${showGroupsPanel ? 'bg-white text-violet-700' : 'bg-violet-100 text-violet-700'}`}>{groups.length}</span>}
+          </button>
         </div>
       </div>
+
+      {/* ── GROUPES PANEL ────────────────────────────────────── */}
+      {showGroupsPanel && (
+        <div className="overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-violet-100 bg-violet-50/60 px-5 py-3">
+            <div className="flex items-center gap-2">
+              <FolderOpen size={15} className="text-violet-600" />
+              <span className="text-sm font-black text-violet-800">Groupes SALAM</span>
+              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-black text-violet-700">{groups.length} groupe{groups.length !== 1 ? 's' : ''}</span>
+            </div>
+            <a href="/admin/adherents/nouveau?mode=group" className="text-xs font-black text-violet-600 hover:underline">
+              + Nouveau groupe
+            </a>
+          </div>
+
+          {groups.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-10 text-center">
+              <Folders size={28} className="text-neutral-200" />
+              <p className="text-sm font-semibold text-neutral-400">Aucun groupe créé.</p>
+              <a href="/admin/adherents/nouveau" className="text-xs font-black text-violet-600 hover:underline">Créer un groupe →</a>
+            </div>
+          ) : (
+            <div className="divide-y divide-neutral-100">
+              {groups.map(g => {
+                const isOpen = openGroupIds.has(g._id);
+                return (
+                  <div key={g._id}>
+                    <button
+                      onClick={() => setOpenGroupIds(prev => { const n = new Set(prev); n.has(g._id) ? n.delete(g._id) : n.add(g._id); return n; })}
+                      className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-violet-50/40">
+                      <ChevronRight size={14} className={`shrink-0 text-violet-400 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+                      <span className="flex-1 font-black text-neutral-900">{g.name}</span>
+                      <span className="shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-black text-violet-700">
+                        {g.members?.length ?? g.memberIds.length} membre{(g.members?.length ?? g.memberIds.length) !== 1 ? 's' : ''}
+                      </span>
+                      <button
+                        onClick={e => { e.stopPropagation(); setConfirmModal({ title: 'Supprimer le groupe', message: `Supprimer le groupe "${g.name}" ? Les membres ne seront pas supprimés.`, onConfirm: () => deleteGroup.mutate(g._id) }); }}
+                        className="ml-1 shrink-0 rounded-lg px-2 py-1 text-[10px] font-black text-red-400 hover:bg-red-50 hover:text-red-600">
+                        Supprimer
+                      </button>
+                    </button>
+
+                    {isOpen && (
+                      <div className="border-t border-neutral-50 bg-neutral-50/50 px-5 py-2">
+                        {(!g.members || g.members.length === 0) ? (
+                          <p className="py-3 text-xs text-neutral-400">Aucun membre dans ce groupe.</p>
+                        ) : (
+                          <div className="divide-y divide-neutral-100">
+                            {g.members.map(m => (
+                              <div key={m._id} className="flex items-center gap-3 py-2">
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[10px] font-black text-violet-700">
+                                  {m.firstName[0]}{m.lastName[0]}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-black text-neutral-900">{m.firstName} {m.lastName}</p>
+                                  <p className="truncate text-[11px] text-neutral-400">{m.activitySector || m.email}</p>
+                                </div>
+                                {m.bureauPoste && (
+                                  <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-black text-emerald-700">{m.bureauPoste}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── TABLE SECTION ────────────────────────────────────── */}
       <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">

@@ -10,12 +10,13 @@ import {
 } from '@/lib/api/activities';
 import { useAdminMembers } from '@/lib/api/members';
 import { useInvoiceClients } from '@/lib/api/invoices';
+import { useBureauMembers, useAdminGroups } from '@/lib/api/groups';
 import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
 type ExtraBlock    = { id: string; label: string; title: string; description: string };
 type ProgramStep   = { id: string; time: string; title: string };
-type GuestMode = 'none' | 'member' | 'client' | 'external';
+type GuestMode = 'none' | 'member' | 'bureau' | 'client' | 'external' | 'group';
 type ExternalGuest = { id: string; firstName: string; lastName: string; email: string; phone: string };
 
 const sCfg: Record<string, { label: string; cls: string }> = {
@@ -72,10 +73,15 @@ function ActivityForm({
   const [externalGuests, setExternalGuests] = useState<ExternalGuest[]>([{ id: 'guest-initial', firstName: '', lastName: '', email: '', phone: '' }]);
   const [rsvpMode, setRsvpMode] = useState<'required' | 'optional'>('optional');
   const [rsvpDeadline, setRsvpDeadline] = useState('');
+  const [selectedGroupId,    setSelectedGroupId]    = useState<string | null>(null);
   const membersQuery = useAdminMembers({ limit: 500 });
   const clientsQuery = useInvoiceClients();
-  const members = membersQuery.data?.data?.data ?? [];
-  const clients = clientsQuery.data?.data ?? [];
+  const bureauQuery  = useBureauMembers();
+  const groupsQuery  = useAdminGroups();
+  const members      = membersQuery.data?.data?.data ?? [];
+  const clients      = clientsQuery.data?.data ?? [];
+  const bureauMembers = bureauQuery.data?.data ?? [];
+  const groups        = groupsQuery.data?.data ?? [];
 
   const upd = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setF(p => ({ ...p, [k]: e.target.value }));
@@ -136,7 +142,13 @@ function ActivityForm({
       visibility: f.visibility, status: f.status,
       invitations: {
         guestMode,
-        memberIds: guestMode === 'member' ? selectedMemberIds : [],
+        memberIds: guestMode === 'member'
+          ? selectedMemberIds
+          : guestMode === 'bureau'
+            ? [...bureauMembers.map(b => b._id), ...selectedMemberIds]
+            : guestMode === 'group' && selectedGroupId
+              ? (groups.find(g => g._id === selectedGroupId)?.memberIds ?? [])
+              : [],
         clientIds: guestMode === 'client' ? selectedClientIds : [],
         externalGuests: guestMode === 'external' ? externalGuests.filter(g => g.email.trim() || g.phone.trim()).map(({ firstName, lastName, email, phone }) => ({ firstName, lastName, email, phone })) : [],
         rsvpRequired: rsvpMode === 'required',
@@ -293,28 +305,30 @@ function ActivityForm({
               <input type="tel" value={f.contactPhone} onChange={upd('contactPhone')} placeholder="+237 6 00 00 00 00" className={inp()} />
             </div>
           </div>
-          <div className="rounded-2xl border border-neutral-200 bg-neutral-50/60 p-4">
+          <div className="rounded-2xl border border-emerald-700 bg-emerald-700 p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.12em] text-neutral-700">Invité(s)</p>
-                <p className="text-[11px] text-neutral-500">Sélectionnez les personnes à inviter et le niveau de confirmation attendu.</p>
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-white">Invité(s)</p>
+                <p className="text-[11px] text-white/70">Sélectionnez les personnes à inviter et le niveau de confirmation attendu.</p>
               </div>
-              <label className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white px-3 py-1.5 text-[11px] font-black text-emerald-700">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3 py-1.5 text-[11px] font-black text-white">
                 <input type="checkbox" checked={rsvpMode === 'required'} onChange={e => setRsvpMode(e.target.checked ? 'required' : 'optional')} /> Présence obligatoire
               </label>
             </div>
             <div className="grid gap-3 sm:grid-cols-[1fr_1fr]">
               <div className="space-y-1.5">
-                <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Type d'invité</label>
-                <select value={guestMode} onChange={e => setGuestMode(e.target.value as GuestMode)} className={inp()}>
+                <label className="block text-xs font-black uppercase tracking-[0.12em] text-white/80">Type d'invité</label>
+                <select value={guestMode} onChange={e => { setGuestMode(e.target.value as GuestMode); setSelectedGroupId(null); setSelectedMemberIds([]); }} className={inp()}>
                   <option value="none">Aucun invité ciblé</option>
                   <option value="member">Membre</option>
+                  <option value="bureau">Bureau exécutif</option>
                   <option value="client">Clients externes</option>
                   <option value="external">Non membre</option>
+                  <option value="group">Groupe SALAM</option>
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date limite de confirmation</label>
+                <label className="block text-xs font-black uppercase tracking-[0.12em] text-white/80">Date limite de confirmation</label>
                 <input type="datetime-local" value={rsvpDeadline} onChange={e => setRsvpDeadline(e.target.value)} className={inp()} />
               </div>
             </div>
@@ -326,6 +340,59 @@ function ActivityForm({
                 onToggle={id => toggleId(id, selectedMemberIds, setSelectedMemberIds)}
                 onToggleAll={() => setAll(members.map(m => m._id), selectedMemberIds, setSelectedMemberIds)}
               />
+            )}
+            {guestMode === 'bureau' && (
+              <div className="mt-3 space-y-2">
+                {bureauMembers.length === 0 ? (
+                  <p className="py-3 text-xs text-white/60">Aucun membre du bureau trouvé.</p>
+                ) : (
+                  <GuestChecklist
+                    title={`Bureau exécutif (${bureauMembers.length} membres)`}
+                    items={bureauMembers.map(b => ({ id: b._id, label: `${b.firstName} ${b.lastName}`, detail: b.bureauPoste ?? b.email }))}
+                    selected={bureauMembers.map(b => b._id)}
+                    onToggle={() => {}}
+                    onToggleAll={() => {}}
+                    readOnly
+                  />
+                )}
+                <div className="mt-2">
+                  <p className="mb-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-white/80">+ Invités supplémentaires</p>
+                  <GuestChecklist
+                    title="Autres membres à ajouter"
+                    items={members.filter(m => !bureauMembers.some(b => b._id === m._id)).map(m => ({ id: m._id, label: `${m.firstName} ${m.lastName}`, detail: m.email }))}
+                    selected={selectedMemberIds}
+                    onToggle={id => toggleId(id, selectedMemberIds, setSelectedMemberIds)}
+                    onToggleAll={() => {}}
+                  />
+                </div>
+              </div>
+            )}
+            {guestMode === 'group' && (
+              <div className="mt-3 space-y-2">
+                <select
+                  value={selectedGroupId ?? ''}
+                  onChange={e => setSelectedGroupId(e.target.value || null)}
+                  className={inp()}>
+                  <option value="">— Choisir un groupe —</option>
+                  {groups.map(g => (
+                    <option key={g._id} value={g._id}>{g.name} ({g.memberIds.length} membres)</option>
+                  ))}
+                </select>
+                {selectedGroupId && (() => {
+                  const g = groups.find(gr => gr._id === selectedGroupId);
+                  const gMembers = g?.members ?? [];
+                  return gMembers.length > 0 ? (
+                    <GuestChecklist
+                      title={`Membres du groupe "${g?.name}"`}
+                      items={gMembers.map(m => ({ id: m._id, label: `${m.firstName} ${m.lastName}`, detail: m.activitySector ?? m.email }))}
+                      selected={gMembers.map(m => m._id)}
+                      onToggle={() => {}}
+                      onToggleAll={() => {}}
+                      readOnly
+                    />
+                  ) : <p className="py-2 text-xs text-white/60">Aucun membre dans ce groupe.</p>;
+                })()}
+              </div>
             )}
             {guestMode === 'client' && (
               <GuestChecklist
@@ -562,18 +629,19 @@ function PresenceModal({ activity, onClose }: { activity: ActivityDoc; onClose: 
     </div>
   );
 }
-function GuestChecklist({ title, items, selected, onToggle, onToggleAll }: { title: string; items: { id: string; label: string; detail?: string }[]; selected: string[]; onToggle: (id: string) => void; onToggleAll: () => void }) {
+function GuestChecklist({ title, items, selected, onToggle, onToggleAll, readOnly = false }: { title: string; items: { id: string; label: string; detail?: string }[]; selected: string[]; onToggle: (id: string) => void; onToggleAll: () => void; readOnly?: boolean }) {
   return (
     <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-200 bg-white">
       <div className="flex items-center justify-between gap-3 border-b border-neutral-100 px-3 py-2">
         <p className="text-xs font-black text-neutral-700">{title}</p>
-        <label className="inline-flex items-center gap-2 text-[11px] font-black text-emerald-700"><input type="checkbox" checked={items.length > 0 && selected.length === items.length} onChange={onToggleAll} /> Tout</label>
+        {!readOnly && <label className="inline-flex items-center gap-2 text-[11px] font-black text-emerald-700"><input type="checkbox" checked={items.length > 0 && selected.length === items.length} onChange={onToggleAll} /> Tout</label>}
+        {readOnly && <span className="text-[11px] font-black text-emerald-700">{items.length} invités</span>}
       </div>
       <div className="max-h-56 overflow-y-auto divide-y divide-neutral-50">
         {items.length === 0 && <p className="px-3 py-6 text-center text-xs font-semibold text-neutral-400">Aucun element disponible.</p>}
         {items.map(item => (
-          <label key={item.id} className="flex cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-emerald-50/40">
-            <input type="checkbox" checked={selected.includes(item.id)} onChange={() => onToggle(item.id)} />
+          <label key={item.id} className={`flex items-center gap-3 px-3 py-2.5 ${readOnly ? 'cursor-default' : 'cursor-pointer hover:bg-emerald-50/40'}`}>
+            <input type="checkbox" checked={readOnly ? true : selected.includes(item.id)} onChange={() => !readOnly && onToggle(item.id)} disabled={readOnly} />
             <span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold text-neutral-800">{item.label}</span>{item.detail && <span className="block truncate text-[11px] text-neutral-400">{item.detail}</span>}</span>
           </label>
         ))}

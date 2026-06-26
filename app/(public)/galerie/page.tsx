@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Images, ArrowRight, Lock, Loader2, EyeOff } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Images, ArrowRight, Lock, Loader2, EyeOff, GripVertical } from 'lucide-react';
 import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
-import { usePublicAlbums, type AlbumDoc } from '@/lib/api/gallery';
+import { usePublicAlbums, useReorderAlbums, useReorderAlbumImages, type AlbumDoc } from '@/lib/api/gallery';
 import { Lightbox, useLightbox } from '@/components/ui/Lightbox';
 import { assetUrl } from '@/lib/assets';
+import { useAuthStore } from '@/store/auth.store';
+import { hasAdminRole } from '@/lib/auth/roles';
 
 const COVERS = [
   'from-emerald-400 to-teal-600', 'from-blue-400 to-indigo-600',
@@ -14,9 +16,32 @@ const COVERS = [
   'from-red-400 to-rose-600',     'from-neutral-400 to-neutral-600',
 ];
 
-function AlbumModal({ album, onClose, coverIndex }: { album: AlbumDoc; onClose: () => void; coverIndex: number }) {
-  const images = album.images.filter(img => img.isPublished);
+/* ── Album modal (avec drag-drop photo si admin) ──────────── */
+function AlbumModal({ album, onClose, isAdmin }: { album: AlbumDoc; onClose: () => void; isAdmin: boolean }) {
+  const images = album.images.filter(img => img.isPublished !== false);
   const lb = useLightbox(images);
+  const reorderImg = useReorderAlbumImages(album._id);
+
+  const dragPhotoFrom = useRef<number | null>(null);
+  const dragPhotoTo   = useRef<number | null>(null);
+  const [draggingPhoto, setDraggingPhoto] = useState<number | null>(null);
+  const [dragOverPhoto, setDragOverPhoto] = useState<number | null>(null);
+
+  const handlePhotoDragStart = (i: number) => { dragPhotoFrom.current = i; setDraggingPhoto(i); };
+  const handlePhotoDragEnter = (i: number) => { dragPhotoTo.current = i; setDragOverPhoto(i); };
+  const handlePhotoDragEnd   = () => {
+    const from = dragPhotoFrom.current;
+    const to   = dragPhotoTo.current;
+    if (from !== null && to !== null && from !== to) {
+      const order = [...Array(images.length).keys()];
+      order.splice(to, 0, order.splice(from, 1)[0]);
+      reorderImg.mutate(order);
+    }
+    dragPhotoFrom.current = null;
+    dragPhotoTo.current   = null;
+    setDraggingPhoto(null);
+    setDragOverPhoto(null);
+  };
 
   return (
     <>
@@ -30,6 +55,11 @@ function AlbumModal({ album, onClose, coverIndex }: { album: AlbumDoc; onClose: 
             <h2 className="font-black text-neutral-900">{album.title}</h2>
             <p className="text-xs text-neutral-400">{images.length} photo{images.length !== 1 ? 's' : ''}</p>
           </div>
+          {isAdmin && images.length > 1 && (
+            <p className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+              <GripVertical size={12} /> Glisser pour réordonner
+            </p>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
@@ -41,14 +71,37 @@ function AlbumModal({ album, onClose, coverIndex }: { album: AlbumDoc; onClose: 
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
               {images.map((img, i) => (
-                <button
-                  key={i}
-                  onClick={() => lb.open(i)}
-                  className="group aspect-square overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={assetUrl(img.url)} alt={img.alt ?? ''} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                </button>
+                isAdmin ? (
+                  <div
+                    key={i}
+                    draggable
+                    onDragStart={() => handlePhotoDragStart(i)}
+                    onDragEnter={() => handlePhotoDragEnter(i)}
+                    onDragOver={e => e.preventDefault()}
+                    onDragEnd={handlePhotoDragEnd}
+                    className={`group relative aspect-square overflow-hidden rounded-xl transition-all cursor-grab active:cursor-grabbing ${
+                      draggingPhoto === i ? 'opacity-40'
+                        : dragOverPhoto === i && draggingPhoto !== null ? 'ring-2 ring-emerald-400 ring-offset-1'
+                        : ''
+                    }`}
+                    onClick={() => lb.open(i)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={assetUrl(img.url)} alt={img.alt ?? ''} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    <div className="absolute left-1.5 top-1.5 hidden h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white/70 group-hover:flex">
+                      <GripVertical size={11} />
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    key={i}
+                    onClick={() => lb.open(i)}
+                    className="group aspect-square overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={assetUrl(img.url)} alt={img.alt ?? ''} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                  </button>
+                )
               ))}
             </div>
           )}
@@ -63,15 +116,36 @@ function AlbumModal({ album, onClose, coverIndex }: { album: AlbumDoc; onClose: 
 }
 
 export default function GaleriePage() {
-  const [selectedAlbum, setSelectedAlbum] = useState<AlbumDoc | null>(null);
-  const [selectedIdx,   setSelectedIdx]   = useState(0);
+  const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
 
   const { data, isLoading } = usePublicAlbums();
-  const albums = data?.data ?? [];
+  const albums = (data?.data ?? []) as AlbumDoc[];
+  const selectedAlbum = albums.find(a => a._id === selectedAlbumId) ?? null;
 
-  const handleOpenAlbum = (album: AlbumDoc, idx: number) => {
-    setSelectedAlbum(album);
-    setSelectedIdx(idx);
+  const user    = useAuthStore(s => s.user);
+  const isAdmin = hasAdminRole(user);
+  const reorderAlbs = useReorderAlbums();
+
+  /* ── Drag-drop album reorder (admin only) ── */
+  const dragAlbumFrom   = useRef<number | null>(null);
+  const dragAlbumTo     = useRef<number | null>(null);
+  const [draggingAlbum, setDraggingAlbum] = useState<number | null>(null);
+  const [dragOverAlbum, setDragOverAlbum] = useState<number | null>(null);
+
+  const handleAlbumDragStart = (i: number) => { dragAlbumFrom.current = i; setDraggingAlbum(i); };
+  const handleAlbumDragEnter = (i: number) => { dragAlbumTo.current = i; setDragOverAlbum(i); };
+  const handleAlbumDragEnd   = () => {
+    const from = dragAlbumFrom.current;
+    const to   = dragAlbumTo.current;
+    if (from !== null && to !== null && from !== to) {
+      const reordered = [...albums];
+      reordered.splice(to, 0, reordered.splice(from, 1)[0]);
+      reorderAlbs.mutate(reordered.map(a => a._id));
+    }
+    dragAlbumFrom.current = null;
+    dragAlbumTo.current   = null;
+    setDraggingAlbum(null);
+    setDragOverAlbum(null);
   };
 
   return (
@@ -117,41 +191,89 @@ export default function GaleriePage() {
           )}
 
           {!isLoading && albums.length > 0 && (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {albums.map((album: AlbumDoc, i: number) => {
-                const cover = album.images.find(img => img.isPublished);
-                return (
-                  <button
-                    key={album._id}
-                    onClick={() => handleOpenAlbum(album, i)}
-                    className="group overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md text-left"
-                  >
-                    <div className={`relative h-44 bg-gradient-to-br ${COVERS[i % COVERS.length]} overflow-hidden`}>
-                      {cover && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={assetUrl(cover.url)} alt={cover.alt ?? ''} className="h-full w-full object-cover" />
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-black text-neutral-900">{album.title}</h3>
-                      <div className="mt-1 flex items-center justify-between">
-                        <p className="text-xs text-neutral-400">
-                          {album.images.filter(img => img.isPublished).length} photo{album.images.filter(img => img.isPublished).length !== 1 ? 's' : ''}
-                          {' · '}{new Date(album.createdAt).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}
-                        </p>
-                        {album.tags?.length > 0 && (
-                          <div className="flex gap-1">
-                            {album.tags.slice(0, 2).map(t => (
-                              <span key={t} className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-500">{t}</span>
-                            ))}
-                          </div>
+            <>
+              {isAdmin && albums.length > 1 && (
+                <p className="mb-4 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
+                  <GripVertical size={12} /> Glisser-déposer pour réordonner les albums (admin)
+                </p>
+              )}
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {albums.map((album: AlbumDoc, i: number) => {
+                  const cover = album.images.find(img => img.isPublished);
+                  return isAdmin ? (
+                    <div
+                      key={album._id}
+                      draggable
+                      onDragStart={() => handleAlbumDragStart(i)}
+                      onDragEnter={() => handleAlbumDragEnter(i)}
+                      onDragOver={e => e.preventDefault()}
+                      onDragEnd={handleAlbumDragEnd}
+                      onClick={() => setSelectedAlbumId(album._id)}
+                      className={`group overflow-hidden rounded-[1.5rem] border bg-white shadow-sm transition-all cursor-grab active:cursor-grabbing text-left ${
+                        draggingAlbum === i ? 'opacity-40 border-neutral-200'
+                          : dragOverAlbum === i && draggingAlbum !== null ? 'border-emerald-400 ring-2 ring-emerald-400/30 shadow-md'
+                          : 'border-neutral-200 hover:-translate-y-1 hover:shadow-md'
+                      }`}
+                    >
+                      <div className={`relative h-44 bg-gradient-to-br ${COVERS[i % COVERS.length]} overflow-hidden`}>
+                        {cover && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={assetUrl(cover.url)} alt={cover.alt ?? ''} className="h-full w-full object-cover" />
                         )}
+                        <div className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white/80">
+                          <GripVertical size={14} />
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-black text-neutral-900">{album.title}</h3>
+                        <div className="mt-1 flex items-center justify-between">
+                          <p className="text-xs text-neutral-400">
+                            {album.images.filter(img => img.isPublished !== false).length} photo{album.images.filter(img => img.isPublished !== false).length !== 1 ? 's' : ''}
+                            {' · '}{new Date(album.createdAt).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}
+                          </p>
+                          {album.tags?.length > 0 && (
+                            <div className="flex gap-1">
+                              {album.tags.slice(0, 2).map(t => (
+                                <span key={t} className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-500">{t}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </button>
-                );
-              })}
-            </div>
+                  ) : (
+                    <button
+                      key={album._id}
+                      onClick={() => setSelectedAlbumId(album._id)}
+                      className="group overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md text-left"
+                    >
+                      <div className={`relative h-44 bg-gradient-to-br ${COVERS[i % COVERS.length]} overflow-hidden`}>
+                        {cover && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={assetUrl(cover.url)} alt={cover.alt ?? ''} className="h-full w-full object-cover" />
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-black text-neutral-900">{album.title}</h3>
+                        <div className="mt-1 flex items-center justify-between">
+                          <p className="text-xs text-neutral-400">
+                            {album.images.filter(img => img.isPublished !== false).length} photo{album.images.filter(img => img.isPublished !== false).length !== 1 ? 's' : ''}
+                            {' · '}{new Date(album.createdAt).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}
+                          </p>
+                          {album.tags?.length > 0 && (
+                            <div className="flex gap-1">
+                              {album.tags.slice(0, 2).map(t => (
+                                <span key={t} className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-500">{t}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       </section>
@@ -181,7 +303,7 @@ export default function GaleriePage() {
       </section>
 
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} coverIndex={selectedIdx} onClose={() => setSelectedAlbum(null)} />
+        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbumId(null)} isAdmin={isAdmin} />
       )}
     </main>
   );

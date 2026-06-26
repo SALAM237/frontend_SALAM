@@ -166,7 +166,7 @@ export default function MemberDashboardPage() {
       </motion.div>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm">
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
             <h2 className="font-black text-neutral-900">Prochaines activites</h2>
             <Link href="/member/activites" className="flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700">
@@ -195,7 +195,7 @@ export default function MemberDashboardPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-black text-neutral-900">{activity.title}</p>
-                    <p className="mt-1 text-xs font-semibold text-neutral-500">
+                    <p className="mt-1 truncate text-xs font-semibold text-neutral-500">
                       {activity.startDate ? new Date(activity.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Date a confirmer'}
                       {activity.location ? ` - ${activity.location}` : ''}
                     </p>
@@ -207,7 +207,7 @@ export default function MemberDashboardPage() {
           )}
         </div>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <div className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-black text-neutral-900">Ma carte membre</p>
@@ -215,7 +215,7 @@ export default function MemberDashboardPage() {
                 Voir <ArrowRight className="inline" size={10} />
               </Link>
             </div>
-            <div className="mx-auto" style={{ maxWidth: 288 }}>
+            <div className="mx-auto w-full max-w-[288px]">
               <MemberCard member={memberCardData} />
             </div>
           </div>

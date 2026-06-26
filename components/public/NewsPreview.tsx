@@ -49,7 +49,7 @@ export function NewsPreview() {
                     source: 'home_preview',
                     action: 'card_click',
                   })}
-                  className="group min-w-[84%] snap-start overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md sm:min-w-[48%] lg:min-w-0"
+                  className="group min-w-[84%] snap-start overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white shadow-md transition hover:-translate-y-1 hover:border-emerald-500 hover:shadow-xl hover:ring-2 hover:ring-emerald-500/20 sm:min-w-[48%] lg:min-w-0"
                 >
                   <div className="aspect-[16/10] bg-gradient-to-br from-emerald-100 to-emerald-50">
                     {image ? (

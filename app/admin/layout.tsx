@@ -22,12 +22,12 @@ import { NotificationCenter } from '@/components/portal/NotificationCenter';
 import { CauriBadge } from '@/components/member/CauriWallet';
 import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
 
-type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; permissions?: string[] };
+type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; permissions?: string[]; hidden?: boolean };
 
 const BASE_NAV: NavItem[] = [
   { label: 'Tableau de bord',   href: '/admin/dashboard',         icon: LayoutDashboard },
   { label: 'Adhérents',         href: '/admin/adherents',         icon: Users },
-  { label: "Frais d'adhésion",  href: '/admin/cotisations',       icon: Banknote },
+  { label: "Frais d'adhésion",  href: '/admin/cotisations',       icon: Banknote, hidden: true },
   { label: 'Facturation',       href: '/admin/facturation',       icon: FileText },
   { label: 'Tresorerie',        href: '/admin/tresorerie',        icon: Banknote, permissions: ['treasury.read', 'treasury.create', 'treasury.update', 'treasury.delete'] },
   { label: 'Activités',         href: '/admin/activites',         icon: CalendarDays },
@@ -313,6 +313,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const SA  = isSuperAdmin(user);
   const nav = BASE_NAV.filter(n => {
+    if (n.hidden) return false;
     if (n.superAdminOnly && !SA) return false;
     if (n.permissions && !hasAnyPermission(user, n.permissions)) return false;
     return true;

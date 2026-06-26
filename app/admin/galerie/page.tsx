@@ -3,11 +3,12 @@
 import { useState, useRef } from 'react';
 import {
   Images, Plus, X, Eye, EyeOff, Loader2, Trash2, Edit3,
-  Upload, ImagePlus, CheckSquare2, Square,
+  Upload, ImagePlus, CheckSquare2, Square, GripVertical,
 } from 'lucide-react';
 import {
   useAlbums, useCreateAlbum, useUpdateAlbum, useDeleteAlbum,
   useAddImagesToAlbum, useRemoveImageFromAlbum, useReplaceImageInAlbum,
+  useReorderAlbumImages, useReorderAlbums,
   type AlbumDoc,
 } from '@/lib/api/gallery';
 import { Lightbox, useLightbox } from '@/components/ui/Lightbox';
@@ -89,15 +90,38 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
   const { data } = useAlbums();
   const album    = (data?.data ?? [] as AlbumDoc[]).find((a: AlbumDoc) => a._id === albumId);
 
-  const fileRef   = useRef<HTMLInputElement>(null);
+  const fileRef    = useRef<HTMLInputElement>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
-  const addImages = useAddImagesToAlbum(albumId);
-  const removeImg = useRemoveImageFromAlbum(albumId);
+  const addImages  = useAddImagesToAlbum(albumId);
+  const removeImg  = useRemoveImageFromAlbum(albumId);
   const replaceImg = useReplaceImageInAlbum(albumId);
-  const images    = album?.images ?? [];
-  const lb        = useLightbox(images);
+  const reorderImg = useReorderAlbumImages(albumId);
+  const images     = album?.images ?? [];
+  const lb         = useLightbox(images);
   const [selectMode, setSelectMode] = useState(false);
-  const [selected, setSelected] = useState<number[]>([]);
+  const [selected,   setSelected]   = useState<number[]>([]);
+
+  /* ── Drag-drop photo reorder ── */
+  const dragPhotoFrom = useRef<number | null>(null);
+  const dragPhotoTo   = useRef<number | null>(null);
+  const [draggingPhoto, setDraggingPhoto] = useState<number | null>(null);
+  const [dragOverPhoto, setDragOverPhoto] = useState<number | null>(null);
+
+  const handlePhotoDragStart = (i: number) => { dragPhotoFrom.current = i; setDraggingPhoto(i); };
+  const handlePhotoDragEnter = (i: number) => { dragPhotoTo.current = i; setDragOverPhoto(i); };
+  const handlePhotoDragEnd   = () => {
+    const from = dragPhotoFrom.current;
+    const to   = dragPhotoTo.current;
+    if (from !== null && to !== null && from !== to) {
+      const order = [...Array(images.length).keys()];
+      order.splice(to, 0, order.splice(from, 1)[0]);
+      reorderImg.mutate(order);
+    }
+    dragPhotoFrom.current = null;
+    dragPhotoTo.current   = null;
+    setDraggingPhoto(null);
+    setDragOverPhoto(null);
+  };
 
   if (!album) return null;
 
@@ -207,34 +231,59 @@ function AlbumDetail({ albumId, onClose }: { albumId: string; onClose: () => voi
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {images.map((img, i) => (
-                <div key={i} className={`group relative aspect-square overflow-hidden rounded-xl border shadow-sm ${selected.includes(i) ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-neutral-100'}`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={assetUrl(img.url)} alt={img.alt ?? ''}
-                    className="h-full w-full cursor-pointer object-cover transition-transform duration-300 group-hover:scale-105"
-                    onClick={() => selectMode ? toggleSelection(i) : lb.open(i)} />
-                  {selectMode && (
-                    <button onClick={() => toggleSelection(i)}
-                      className="absolute left-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-emerald-700 shadow-sm">
-                      {selected.includes(i) ? <CheckSquare2 size={16} /> : <Square size={16} />}
-                    </button>
-                  )}
-                  {!selectMode && (
-                    <button
-                      onClick={() => {
-                        if (!confirm('Supprimer cette photo ??')) return;
-                        removeImg.mutate(i);
-                      }}
-                      className="absolute right-1.5 top-1.5 hidden h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white/80 transition hover:bg-red-600/90 hover:text-white group-hover:flex"
-                      title="Supprimer"
-                    >
-                      <Trash2 size={11} />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+            <>
+              {!selectMode && images.length > 1 && (
+                <p className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400">
+                  <GripVertical size={12} className="text-neutral-300" /> Glisser-déposer pour réordonner les photos
+                </p>
+              )}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                {images.map((img, i) => (
+                  <div
+                    key={i}
+                    draggable={!selectMode}
+                    onDragStart={() => handlePhotoDragStart(i)}
+                    onDragEnter={() => handlePhotoDragEnter(i)}
+                    onDragOver={e => e.preventDefault()}
+                    onDragEnd={handlePhotoDragEnd}
+                    className={`group relative aspect-square overflow-hidden rounded-xl border shadow-sm transition-all ${
+                      selected.includes(i) ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                        : draggingPhoto === i ? 'opacity-40 border-neutral-200'
+                        : dragOverPhoto === i && draggingPhoto !== null ? 'border-emerald-400 ring-2 ring-emerald-400/30'
+                        : 'border-neutral-100'
+                    } ${!selectMode ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={assetUrl(img.url)} alt={img.alt ?? ''}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      onClick={() => selectMode ? toggleSelection(i) : lb.open(i)} />
+                    {!selectMode && (
+                      <div className="absolute left-1.5 top-1.5 hidden h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white/70 group-hover:flex">
+                        <GripVertical size={11} />
+                      </div>
+                    )}
+                    {selectMode && (
+                      <button onClick={() => toggleSelection(i)}
+                        className="absolute left-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-emerald-700 shadow-sm">
+                        {selected.includes(i) ? <CheckSquare2 size={16} /> : <Square size={16} />}
+                      </button>
+                    )}
+                    {!selectMode && (
+                      <button
+                        onClick={() => {
+                          if (!confirm('Supprimer cette photo ??')) return;
+                          removeImg.mutate(i);
+                        }}
+                        className="absolute right-1.5 top-1.5 hidden h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white/80 transition hover:bg-red-600/90 hover:text-white group-hover:flex"
+                        title="Supprimer"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -263,10 +312,33 @@ export default function AdminGaleriePage() {
   const [detailAlbumId, setDetailAlbumId] = useState<string | null>(null);
 
   const { data, isLoading } = useAlbums();
-  const createAlbum = useCreateAlbum();
-  const deleteAlbum = useDeleteAlbum();
+  const createAlbum  = useCreateAlbum();
+  const deleteAlbum  = useDeleteAlbum();
+  const reorderAlbs  = useReorderAlbums();
 
   const albums = (data?.data ?? []) as AlbumDoc[];
+
+  /* ── Drag-drop album reorder ── */
+  const dragAlbumFrom   = useRef<number | null>(null);
+  const dragAlbumTo     = useRef<number | null>(null);
+  const [draggingAlbum, setDraggingAlbum] = useState<number | null>(null);
+  const [dragOverAlbum, setDragOverAlbum] = useState<number | null>(null);
+
+  const handleAlbumDragStart = (i: number) => { dragAlbumFrom.current = i; setDraggingAlbum(i); };
+  const handleAlbumDragEnter = (i: number) => { dragAlbumTo.current = i; setDragOverAlbum(i); };
+  const handleAlbumDragEnd   = () => {
+    const from = dragAlbumFrom.current;
+    const to   = dragAlbumTo.current;
+    if (from !== null && to !== null && from !== to) {
+      const reordered = [...albums];
+      reordered.splice(to, 0, reordered.splice(from, 1)[0]);
+      reorderAlbs.mutate(reordered.map(a => a._id));
+    }
+    dragAlbumFrom.current = null;
+    dragAlbumTo.current   = null;
+    setDraggingAlbum(null);
+    setDragOverAlbum(null);
+  };
 
   const handleDelete = (id: string, title: string) => {
     if (!confirm(`Supprimer l'album "${title}" ?? Toutes les photos seront perdues.`)) return;
@@ -294,6 +366,12 @@ export default function AdminGaleriePage() {
       )}
 
       {!isLoading && (
+        <>
+          {albums.length > 1 && (
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400">
+              <GripVertical size={12} className="text-neutral-300" /> Glisser-déposer pour réordonner les albums
+            </p>
+          )}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <button onClick={() => setShowCreate(true)}
             className="flex aspect-auto min-h-[160px] flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-neutral-200 text-neutral-400 transition-all hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50/30">
@@ -302,7 +380,19 @@ export default function AdminGaleriePage() {
           </button>
 
           {albums.map((a: AlbumDoc, i: number) => (
-            <div key={a._id} className="group overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
+            <div
+              key={a._id}
+              draggable
+              onDragStart={() => handleAlbumDragStart(i)}
+              onDragEnter={() => handleAlbumDragEnter(i)}
+              onDragOver={e => e.preventDefault()}
+              onDragEnd={handleAlbumDragEnd}
+              className={`group overflow-hidden rounded-2xl border bg-white shadow-sm transition-all cursor-grab active:cursor-grabbing ${
+                draggingAlbum === i ? 'opacity-40 border-neutral-100'
+                  : dragOverAlbum === i && draggingAlbum !== null ? 'border-emerald-400 ring-2 ring-emerald-400/30 shadow-md'
+                  : 'border-neutral-100 hover:shadow-md'
+              }`}
+            >
               <div
                 className={`relative h-32 bg-gradient-to-br ${COVERS[i % COVERS.length]} cursor-pointer overflow-hidden`}
                 onClick={() => setDetailAlbumId(a._id)}
@@ -355,6 +445,7 @@ export default function AdminGaleriePage() {
             </div>
           ))}
         </div>
+        </>
       )}
 
       {!isLoading && albums.length === 0 && (
