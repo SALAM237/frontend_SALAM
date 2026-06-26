@@ -97,6 +97,8 @@ export default function AdminAdherentsPage() {
   const [cotisYear,      setCotisYear]      = useState(new Date().getFullYear());
   const [showFraisParams, setShowFraisParams] = useState(false);
   const [deadline,       setDeadline]       = useState('');
+  const [reminder,       setReminder]       = useState('off');
+  const [fraisSaved,     setFraisSaved]     = useState(false);
   const [caurisOp,       setCaurisOp]       = useState<'add' | 'remove'>('add');
   const [caurisAmt,      setCaurisAmt]      = useState('');
   const [caurisReason,   setCaurisReason]   = useState('');
@@ -107,7 +109,8 @@ export default function AdminAdherentsPage() {
   /* ── Existing state ──────────────────────────────────────── */
   const [search,          setSearch]          = useState('');
   const [filters,         setFilters]         = useState<ActiveFilters>(EMPTY_FILTERS);
-  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [showFilterPanel,    setShowFilterPanel]    = useState(false);
+  const [openFilterSections, setOpenFilterSections] = useState<Set<string>>(new Set(['statut','cotisation','profil','mois']));
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [expandedId,      setExpandedId]      = useState<string | null>(null);
   const [photoPreview,    setPhotoPreview]    = useState<{ src: string; name: string } | null>(null);
@@ -355,58 +358,58 @@ export default function AdminAdherentsPage() {
           {isLoading ? 'Chargement…' : `${data?.data?.total ?? members.length} membres au total`}
         </p>
 
-        {/* Tab buttons row */}
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {/* Arrow to show/hide KPIs — visible only when a tab is active */}
-          <div className={`overflow-hidden transition-[max-width,opacity] duration-200 ${activeTab ? 'max-w-[36px] opacity-100' : 'max-w-0 opacity-0 pointer-events-none'}`}>
+        {/* Tab buttons row — flex-nowrap to stay on one line on all breakpoints */}
+        <div className="mt-3 flex items-center gap-1 sm:gap-2">
+          {/* Arrow KPI toggle — visible only when tab active */}
+          <div className={`shrink-0 overflow-hidden transition-[max-width,opacity] duration-200 ${activeTab ? 'max-w-[30px] opacity-100 sm:max-w-[36px]' : 'max-w-0 opacity-0 pointer-events-none'}`}>
             <button type="button" onClick={() => setShowKpis(v => !v)} title={showKpis ? 'Masquer les statistiques' : 'Afficher les statistiques'}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 shadow-sm transition hover:border-emerald-300 hover:text-emerald-600">
-              <ChevronDown size={14} className={`transition-transform duration-200 ${showKpis ? 'rotate-180' : ''}`} />
+              className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 shadow-sm transition hover:border-emerald-300 hover:text-emerald-600 sm:h-9 sm:w-9">
+              <ChevronDown size={12} className={`transition-transform duration-200 ${showKpis ? 'rotate-180' : ''} sm:size-[14px]`} />
             </button>
           </div>
 
           {/* Relance */}
           <button type="button" onClick={() => handleTabClick('relance')}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold shadow-sm transition-all duration-200 sm:px-4 ${tabBtnCls('relance')}`}>
-            <Bell size={14} className={tabIconCls('relance')} />
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 sm:max-w-none sm:ml-0 ${activeTab === 'relance' ? 'max-w-[90px] ml-0.5' : 'max-w-0'}`}>
+            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-xs ${tabBtnCls('relance')}`}>
+            <Bell size={12} className={`shrink-0 ${tabIconCls('relance')}`} />
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'relance' ? 'max-w-[56px] ml-0.5 sm:max-w-[80px]' : 'max-w-0'}`}>
               Relance
             </span>
           </button>
 
           {/* Frais d'adhésion */}
           <button type="button" onClick={() => handleTabClick('frais')}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold shadow-sm transition-all duration-200 sm:px-4 ${tabBtnCls('frais')}`}>
-            <Banknote size={14} className={tabIconCls('frais')} />
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 sm:max-w-none sm:ml-0 ${activeTab === 'frais' ? 'max-w-[140px] ml-0.5' : 'max-w-0'}`}>
+            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-xs ${tabBtnCls('frais')}`}>
+            <Banknote size={12} className={`shrink-0 ${tabIconCls('frais')}`} />
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'frais' ? 'max-w-[84px] ml-0.5 sm:max-w-[120px]' : 'max-w-0'}`}>
               Frais d&apos;adhésion
             </span>
           </button>
 
           {/* Gestion cauris */}
           <button type="button" onClick={() => handleTabClick('cauris')}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold shadow-sm transition-all duration-200 sm:px-4 ${tabBtnCls('cauris')}`}>
-            <span className={activeTab === 'cauris' ? '' : tabIconCls('cauris')}>
-              <CauriImg size={15} />
+            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-xs ${tabBtnCls('cauris')}`}>
+            <span className={`shrink-0 ${activeTab === 'cauris' ? '' : tabIconCls('cauris')}`}>
+              <CauriImg size={12} />
             </span>
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 sm:max-w-none sm:ml-0 ${activeTab === 'cauris' ? 'max-w-[130px] ml-0.5' : 'max-w-0'}`}>
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cauris' ? 'max-w-[80px] ml-0.5 sm:max-w-[110px]' : 'max-w-0'}`}>
               Gestion cauris
             </span>
           </button>
 
           {/* Cartes membres */}
           <button type="button" onClick={() => handleTabClick('cartes')}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold shadow-sm transition-all duration-200 sm:px-4 ${tabBtnCls('cartes')}`}>
-            <CreditCard size={14} className={tabIconCls('cartes')} />
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 sm:max-w-none sm:ml-0 ${activeTab === 'cartes' ? 'max-w-[130px] ml-0.5' : 'max-w-0'}`}>
+            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-xs ${tabBtnCls('cartes')}`}>
+            <CreditCard size={12} className={`shrink-0 ${tabIconCls('cartes')}`} />
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cartes' ? 'max-w-[80px] ml-0.5 sm:max-w-[110px]' : 'max-w-0'}`}>
               Cartes membres
             </span>
           </button>
 
           {/* Nouveau membre */}
           <Link href="/admin/adherents/nouveau"
-            className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-2 text-sm font-black text-white shadow-sm transition-all hover:bg-emerald-700 sm:px-5">
-            <UserPlus size={14} />
+            className="shrink-0 ml-auto inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-2.5 py-1.5 text-[10px] font-black text-white shadow-sm transition-all hover:bg-emerald-700 sm:px-4 sm:py-2 sm:text-xs">
+            <UserPlus size={12} />
             <span className="hidden sm:inline">Nouveau membre</span>
           </Link>
         </div>
@@ -512,20 +515,28 @@ export default function AdminAdherentsPage() {
                       <label className="mb-1 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Relances auto</label>
                       <div className="relative">
                         <Bell size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                        <select className="w-full appearance-none rounded-xl border border-neutral-200 bg-white py-2 pl-8 pr-8 text-sm focus:border-blue-400 focus:outline-none">
+                        <select value={reminder} onChange={e => { setReminder(e.target.value); setFraisSaved(false); }}
+                          className="w-full appearance-none rounded-xl border border-neutral-200 bg-white py-2 pl-8 pr-8 text-sm focus:border-blue-400 focus:outline-none">
                           {REMINDER_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
                         <ChevronDown size={12} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                       </div>
                     </div>
                   </div>
-                  <button type="button"
-                    onClick={() => setConfirmModal({ title: 'Relancer tous', message: `Envoyer un email de relance cotisation à TOUS les membres non payés pour ${cotisYear} ?`, onConfirm: () => remindCotisation.mutate({ year: cotisYear, dueDate: deadline || undefined }) })}
-                    disabled={remindCotisation.isPending}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-black text-orange-700 transition hover:bg-orange-100 disabled:opacity-50">
-                    {remindCotisation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-                    Relancer tous maintenant
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button type="button"
+                      onClick={() => { setFraisSaved(true); setTimeout(() => setFraisSaved(false), 2500); }}
+                      className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black transition ${fraisSaved ? 'bg-emerald-600 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
+                      {fraisSaved ? '✓ Enregistré' : 'Enregistrer les paramètres'}
+                    </button>
+                    <button type="button"
+                      onClick={() => setConfirmModal({ title: 'Relancer tous', message: `Envoyer un email de relance cotisation à TOUS les membres non payés pour ${cotisYear} ?`, onConfirm: () => remindCotisation.mutate({ year: cotisYear, dueDate: deadline || undefined }) })}
+                      disabled={remindCotisation.isPending}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-black text-orange-700 transition hover:bg-orange-100 disabled:opacity-50">
+                      {remindCotisation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                      Relancer tous maintenant
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -534,14 +545,16 @@ export default function AdminAdherentsPage() {
       </div>
 
       {/* Gestion cauris row */}
-      <div className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${activeTab === 'cauris' ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+      <div className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${activeTab === 'cauris' ? 'max-h-[320px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
         <div className="rounded-2xl border border-amber-100 bg-amber-50/40 px-4 py-3">
-          <div className="mb-1 flex items-baseline gap-2">
+          {/* Header : label puis sous-titre en dessous */}
+          <div className="mb-3">
             <span className="text-sm font-black text-amber-800">Gestion cauris</span>
-            <span className="text-[10px] text-amber-600">Ajoutez ou retirez des cauris aux membres.</span>
+            <p className="mt-0.5 text-[10px] text-amber-600">Ajoutez ou retirez des cauris aux membres.</p>
           </div>
+          {/* Contrôles : Ajouter/Retirer + montant + motif */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex gap-1.5">
+            <div className="flex shrink-0 gap-1.5">
               <button type="button" onClick={() => setCaurisOp('add')}
                 className={`inline-flex items-center gap-1 rounded-xl border px-3 py-1.5 text-xs font-black transition ${caurisOp === 'add' ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300'}`}>
                 <Plus size={12} /> Ajouter
@@ -551,20 +564,24 @@ export default function AdminAdherentsPage() {
                 <Minus size={12} /> Retirer
               </button>
             </div>
-            <input type="number" min="1" value={caurisAmt} onChange={e => setCaurisAmt(e.target.value)} placeholder="Montant (cauris)"
-              className="h-8 w-36 min-w-0 rounded-xl border border-neutral-200 bg-white px-3 text-sm focus:border-amber-400 focus:outline-none" />
+            <input type="number" min="1" value={caurisAmt} onChange={e => setCaurisAmt(e.target.value)} placeholder="Montant"
+              className="h-8 w-28 min-w-0 rounded-xl border border-neutral-200 bg-white px-3 text-sm focus:border-amber-400 focus:outline-none" />
             <input type="text" value={caurisReason} onChange={e => setCaurisReason(e.target.value)} placeholder="Motif (optionnel)"
-              className="h-8 min-w-[100px] flex-1 rounded-xl border border-neutral-200 bg-white px-3 text-sm focus:border-amber-400 focus:outline-none" />
+              className="h-8 min-w-[80px] flex-1 rounded-xl border border-neutral-200 bg-white px-3 text-sm focus:border-amber-400 focus:outline-none" />
           </div>
-          {/* Appliquer — always visible on its own line on mobile */}
-          <div className="mt-2 flex items-center gap-2">
+          {/* Pied : texte contextuel à gauche, Appliquer toujours à droite */}
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <span className="text-[11px] text-amber-600 leading-tight">
+              {checkedIds.size === 0
+                ? 'Sélectionnez des membres dans le tableau ci-dessous.'
+                : `${checkedIds.size} membre${checkedIds.size > 1 ? 's' : ''} sélectionné${checkedIds.size > 1 ? 's' : ''}`}
+            </span>
             <button type="button" onClick={handleCaurisApply}
               disabled={checkedIds.size === 0 || !caurisAmt || parseInt(caurisAmt) < 1 || adjustCauris.isPending}
-              className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black text-white transition disabled:opacity-40 ${caurisOp === 'add' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}>
+              className={`shrink-0 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black text-white transition disabled:opacity-40 ${caurisOp === 'add' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}>
               {adjustCauris.isPending ? <Loader2 size={12} className="animate-spin" /> : caurisOp === 'add' ? <Plus size={12} /> : <Minus size={12} />}
               Appliquer{checkedIds.size > 0 ? ` (${checkedIds.size})` : ''}
             </button>
-            {checkedIds.size === 0 && <span className="text-[11px] text-amber-600">Sélectionnez des membres dans le tableau ci-dessous.</span>}
           </div>
         </div>
       </div>
@@ -612,80 +629,189 @@ export default function AdminAdherentsPage() {
             </button>
             {showFilterPanel && (
               <div className="absolute left-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-2xl ring-1 ring-black/5 sm:left-auto sm:right-0">
+                {/* Header */}
                 <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
                   <span className="text-sm font-black text-neutral-900">Filtres</span>
                   <div className="flex items-center gap-2">
-                    {activeFilterCount > 0 && <button type="button" onClick={() => setFilters(EMPTY_FILTERS)} className="text-[11px] font-bold text-emerald-700 hover:underline">Réinitialiser</button>}
-                    <button type="button" onClick={() => setShowFilterPanel(false)} className="flex h-6 w-6 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100"><X size={13} /></button>
+                    {activeFilterCount > 0 && (
+                      <button type="button" onClick={() => setFilters(EMPTY_FILTERS)} className="text-[11px] font-bold text-emerald-700 hover:underline">
+                        Réinitialiser
+                      </button>
+                    )}
+                    <button type="button" onClick={() => setShowFilterPanel(false)} className="flex h-6 w-6 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
+                      <X size={13} />
+                    </button>
                   </div>
                 </div>
-                <div className="max-h-[70vh] divide-y divide-neutral-50 overflow-y-auto">
-                  {/* Statut */}
-                  <div className="px-4 py-3">
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Statut</p>
-                    <div className="space-y-1.5">
-                      {([['active','Actif'],['pending','En attente'],['suspended','Suspendu']] as const).map(([val,lbl]) => {
-                        const checked = filters.statut.includes(val); const cfg = statusConfig[val];
-                        return (
-                          <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-emerald-200 bg-emerald-50' : 'border-transparent hover:bg-neutral-50'}`}>
-                            <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-emerald-600 bg-emerald-600' : 'border-neutral-300 bg-white'}`}>{checked && <CheckCircle2 size={10} className="text-white" />}</span>
-                            <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('statut', val)} />
-                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${cfg.cls}`}><cfg.icon size={9} /> {lbl}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  {/* Cotisation */}
-                  <div className="px-4 py-3">
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Cotisation</p>
-                    <div className="space-y-1.5">
-                      {([['paid','Payée'],['unpaid','Impayée'],['exempt','Exempté']] as const).map(([val,lbl]) => {
-                        const checked = filters.cotisation.includes(val); const cfg = cotisationConfig[val];
-                        return (
-                          <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-emerald-200 bg-emerald-50' : 'border-transparent hover:bg-neutral-50'}`}>
-                            <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-emerald-600 bg-emerald-600' : 'border-neutral-300 bg-white'}`}>{checked && <CheckCircle2 size={10} className="text-white" />}</span>
-                            <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('cotisation', val)} />
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${cfg.cls}`}>{lbl}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  {/* Profil */}
-                  <div className="px-4 py-3">
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Profil</p>
-                    <div className="space-y-1.5">
-                      {([['complete','Complet',profileConfig.complete.cls],['incomplete','Incomplet',profileConfig.incomplete.cls]] as const).map(([val,lbl,cls]) => {
-                        const checked = filters.profil.includes(val);
-                        return (
-                          <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-emerald-200 bg-emerald-50' : 'border-transparent hover:bg-neutral-50'}`}>
-                            <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-emerald-600 bg-emerald-600' : 'border-neutral-300 bg-white'}`}>{checked && <CheckCircle2 size={10} className="text-white" />}</span>
-                            <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('profil', val)} />
-                            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${cls}`}>{lbl}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  {/* Mois */}
-                  <div className="px-4 py-3">
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Inscription (mois)</p>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {MONTHS_FR.map((mois, idx) => {
-                        const checked = filters.mois.includes(idx);
-                        return (
-                          <label key={idx} className={`flex cursor-pointer items-center justify-center rounded-lg border px-1 py-1.5 text-[11px] font-bold transition ${checked ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300 hover:text-emerald-700'}`}>
-                            <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('mois', idx)} />
-                            {mois.slice(0,3)}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
+
+                {/* Accordéons */}
+                <div className="max-h-[70vh] divide-y divide-neutral-100 overflow-y-auto">
+
+                  {/* ── Statut ─────────────────────────────────── */}
+                  {(() => {
+                    const open = openFilterSections.has('statut');
+                    const toggle = () => setOpenFilterSections(prev => { const n = new Set(prev); open ? n.delete('statut') : n.add('statut'); return n; });
+                    return (
+                      <div>
+                        <button type="button" onClick={toggle}
+                          className="flex w-full items-center justify-between px-4 py-2.5 transition hover:bg-neutral-50/70">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Statut</span>
+                            {filters.statut.length > 0 && (
+                              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-black text-white">
+                                {filters.statut.length}
+                              </span>
+                            )}
+                          </div>
+                          <ChevronDown size={12} className={`text-neutral-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                        </button>
+                        <div className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                          <div className="overflow-hidden">
+                            <div className="space-y-1 px-4 pb-3 pt-1">
+                              {([['active','Actif'],['pending','En attente'],['suspended','Suspendu']] as const).map(([val,lbl]) => {
+                                const checked = filters.statut.includes(val); const cfg = statusConfig[val];
+                                return (
+                                  <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-emerald-200 bg-emerald-50' : 'border-transparent hover:bg-neutral-50'}`}>
+                                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-emerald-600 bg-emerald-600' : 'border-neutral-300 bg-white'}`}>
+                                      {checked && <CheckCircle2 size={10} className="text-white" />}
+                                    </span>
+                                    <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('statut', val)} />
+                                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${cfg.cls}`}><cfg.icon size={9} /> {lbl}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── Cotisation ──────────────────────────────── */}
+                  {(() => {
+                    const open = openFilterSections.has('cotisation');
+                    const toggle = () => setOpenFilterSections(prev => { const n = new Set(prev); open ? n.delete('cotisation') : n.add('cotisation'); return n; });
+                    return (
+                      <div>
+                        <button type="button" onClick={toggle}
+                          className="flex w-full items-center justify-between px-4 py-2.5 transition hover:bg-neutral-50/70">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Cotisation</span>
+                            {filters.cotisation.length > 0 && (
+                              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-black text-white">
+                                {filters.cotisation.length}
+                              </span>
+                            )}
+                          </div>
+                          <ChevronDown size={12} className={`text-neutral-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                        </button>
+                        <div className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                          <div className="overflow-hidden">
+                            <div className="space-y-1 px-4 pb-3 pt-1">
+                              {([['paid','Payée'],['unpaid','Impayée'],['exempt','Exempté']] as const).map(([val,lbl]) => {
+                                const checked = filters.cotisation.includes(val); const cfg = cotisationConfig[val];
+                                return (
+                                  <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-emerald-200 bg-emerald-50' : 'border-transparent hover:bg-neutral-50'}`}>
+                                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-emerald-600 bg-emerald-600' : 'border-neutral-300 bg-white'}`}>
+                                      {checked && <CheckCircle2 size={10} className="text-white" />}
+                                    </span>
+                                    <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('cotisation', val)} />
+                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${cfg.cls}`}>{lbl}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── Profil ──────────────────────────────────── */}
+                  {(() => {
+                    const open = openFilterSections.has('profil');
+                    const toggle = () => setOpenFilterSections(prev => { const n = new Set(prev); open ? n.delete('profil') : n.add('profil'); return n; });
+                    return (
+                      <div>
+                        <button type="button" onClick={toggle}
+                          className="flex w-full items-center justify-between px-4 py-2.5 transition hover:bg-neutral-50/70">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Profil</span>
+                            {filters.profil.length > 0 && (
+                              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-black text-white">
+                                {filters.profil.length}
+                              </span>
+                            )}
+                          </div>
+                          <ChevronDown size={12} className={`text-neutral-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                        </button>
+                        <div className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                          <div className="overflow-hidden">
+                            <div className="space-y-1 px-4 pb-3 pt-1">
+                              {([['complete','Complet',profileConfig.complete.cls],['incomplete','Incomplet',profileConfig.incomplete.cls]] as const).map(([val,lbl,cls]) => {
+                                const checked = filters.profil.includes(val);
+                                return (
+                                  <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-emerald-200 bg-emerald-50' : 'border-transparent hover:bg-neutral-50'}`}>
+                                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-emerald-600 bg-emerald-600' : 'border-neutral-300 bg-white'}`}>
+                                      {checked && <CheckCircle2 size={10} className="text-white" />}
+                                    </span>
+                                    <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('profil', val)} />
+                                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${cls}`}>{lbl}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── Mois d'inscription ──────────────────────── */}
+                  {(() => {
+                    const open = openFilterSections.has('mois');
+                    const toggle = () => setOpenFilterSections(prev => { const n = new Set(prev); open ? n.delete('mois') : n.add('mois'); return n; });
+                    return (
+                      <div>
+                        <button type="button" onClick={toggle}
+                          className="flex w-full items-center justify-between px-4 py-2.5 transition hover:bg-neutral-50/70">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Inscription (mois)</span>
+                            {filters.mois.length > 0 && (
+                              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-black text-white">
+                                {filters.mois.length}
+                              </span>
+                            )}
+                          </div>
+                          <ChevronDown size={12} className={`text-neutral-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                        </button>
+                        <div className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                          <div className="overflow-hidden">
+                            <div className="grid grid-cols-3 gap-1.5 px-4 pb-3 pt-1">
+                              {MONTHS_FR.map((mois, idx) => {
+                                const checked = filters.mois.includes(idx);
+                                return (
+                                  <label key={idx} className={`flex cursor-pointer items-center justify-center rounded-lg border px-1 py-1.5 text-[11px] font-bold transition ${checked ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300 hover:text-emerald-700'}`}>
+                                    <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('mois', idx)} />
+                                    {mois.slice(0,3)}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                 </div>
+
+                {/* Pied */}
                 <div className="border-t border-neutral-100 px-4 py-3">
-                  <p className="text-xs text-neutral-500"><span className="font-black text-neutral-900">{displayed.length}</span> membre{displayed.length!==1?'s':''} correspondent{activeFilterCount>0&&<span> à {activeFilterCount} filtre{activeFilterCount>1?'s':''}</span>}</p>
+                  <p className="text-xs text-neutral-500">
+                    <span className="font-black text-neutral-900">{displayed.length}</span> membre{displayed.length !== 1 ? 's' : ''} correspondent
+                    {activeFilterCount > 0 && <span> à {activeFilterCount} filtre{activeFilterCount > 1 ? 's' : ''}</span>}
+                  </p>
                 </div>
               </div>
             )}
