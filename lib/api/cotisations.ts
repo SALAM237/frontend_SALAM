@@ -139,6 +139,20 @@ export function useResendCotisationReceipt() {
   });
 }
 
+export function useSendUnpaidInvoiceRelance() {
+  const token = useAuthStore(s => s.accessToken);
+  return useMutation({
+    mutationFn: (vars: { userIds?: string[] }) =>
+      apiClient<{ sent: number }>('/api/v1/admin/invoices/relance', {
+        method: 'POST',
+        body: JSON.stringify(vars),
+        token: token ?? '',
+      }),
+    onSuccess: res => toast.success(`${(res.data as any)?.sent ?? 0} relance(s) envoyée(s)`),
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 export function useCotisationLogs() {
   const token = useAuthStore(s => s.accessToken);
   return useQuery({

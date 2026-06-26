@@ -473,3 +473,31 @@ export function useRequestAccountDeletion() {
     onError: (err: Error) => toast.error(err.message),
   });
 }
+
+export function useRemindIncompleteProfiles() {
+  const token = useAuthStore(s => s.accessToken);
+  return useMutation({
+    mutationFn: (vars: { userIds?: string[] }) =>
+      apiClient<{ sent: number }>('/api/v1/admin/members/remind-profile', {
+        method: 'POST',
+        body: JSON.stringify(vars),
+        token: token ?? '',
+      }),
+    onSuccess: res => toast.success(`${(res.data as any)?.sent ?? 0} relance(s) envoyée(s)`),
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useSendInternalMessageBulk() {
+  const token = useAuthStore(s => s.accessToken);
+  return useMutation({
+    mutationFn: (vars: { userIds: string[]; subject: string; content: string }) =>
+      apiClient<{ sent: number }>('/api/v1/admin/messages/bulk', {
+        method: 'POST',
+        body: JSON.stringify(vars),
+        token: token ?? '',
+      }),
+    onSuccess: res => toast.success(`${(res.data as any)?.sent ?? 0} message(s) envoyé(s)`),
+    onError: (err: Error) => toast.error(err.message),
+  });
+}

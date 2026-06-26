@@ -5,20 +5,18 @@ import Link from 'next/link';
 import {
   UserPlus, CreditCard, Search, Eye, CheckCircle2, Clock, XCircle,
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
-  ShieldCheck, Plus, Minus, SlidersHorizontal, X,
+  Plus, Minus, SlidersHorizontal, X, Bell, Banknote,
+  MessageSquare, Send,
 } from 'lucide-react';
 import {
   useAdminMembers,
   useHardDeleteMember,
-  useMemberCardChangeRequests,
-  useMemberProfileValidationPolicy,
-  useUpdateMemberProfileValidationPolicy,
   useResendInvitation,
-  useReviewMemberCardChangeRequest,
-  type MemberCardChangeRequest,
-  type MemberProfileValidationField,
+  useRemindIncompleteProfiles,
   type MemberListItem,
 } from '@/lib/api/members';
+import { useAdminCotisations, useUpdateCotisationStatus, useSendReminders, useSendUnpaidInvoiceRelance, type AdminCotisationRow } from '@/lib/api/cotisations';
+import { useActivities, useRemindActivityInvitations, type ActivityDoc } from '@/lib/api/activities';
 import { useAdjustMemberCauris } from '@/lib/api/cauris';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName, formatInitials } from '@/lib/format-name';
@@ -83,8 +81,10 @@ export default function AdminAdherentsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<{ src: string; name: string } | null>(null);
-  const [showCardRequests, setShowCardRequests] = useState(false);
   const [showCaurisManager, setShowCaurisManager] = useState(false);
+  const [showFraisAdhesion, setShowFraisAdhesion] = useState(false);
+  const [showRelance, setShowRelance] = useState(false);
+  const [relanceSelected, setRelanceSelected] = useState<Set<string>>(new Set());
 
   const user        = useAuthStore(s => s.user);
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
@@ -102,10 +102,8 @@ export default function AdminAdherentsPage() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showFilterPanel]);
-  const { data: cardRequestsData, isError: cardRequestsError } = useMemberCardChangeRequests('pending');
   const hardDelete           = useHardDeleteMember();
   const resendInvitation     = useResendInvitation();
-  const pendingCardRequests = cardRequestsData?.data?.pending ?? 0;
 
   const members = useMemo<MemberListItem[]>(() => data?.data?.data ?? [], [data]);
 
@@ -194,18 +192,29 @@ export default function AdminAdherentsPage() {
             {isLoading ? 'Chargement…' : `${data?.data?.total ?? members.length} membres au total`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Valider modifications — icône seule sur mobile */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Relance */}
           <button
             type="button"
-            onClick={() => setShowCardRequests(true)}
-            className="relative inline-flex h-9 items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 text-sm font-semibold text-emerald-700 transition-all hover:border-emerald-400 hover:bg-emerald-50 sm:px-4"
+            onClick={() => setShowRelance(true)}
+            className="relative inline-flex h-9 items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 text-sm font-semibold text-orange-700 transition-all hover:bg-orange-100 sm:px-4"
           >
-            <ShieldCheck size={14} />
-            <span className="hidden sm:inline">Valider modifications</span>
-            <span className="absolute -right-1.5 -top-2 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-black text-white ring-2 ring-white">
-              {cardRequestsError ? '!' : pendingCardRequests}
-            </span>
+            <Bell size={14} />
+            <span className="hidden sm:inline">Relance</span>
+            {relanceSelected.size > 0 && (
+              <span className="absolute -right-1.5 -top-2 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-orange-600 px-1.5 text-[10px] font-black text-white ring-2 ring-white">
+                {relanceSelected.size}
+              </span>
+            )}
+          </button>
+          {/* Frais d'adhésion */}
+          <button
+            type="button"
+            onClick={() => setShowFraisAdhesion(true)}
+            className="inline-flex h-9 items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 transition-all hover:bg-blue-100 sm:px-4"
+          >
+            <Banknote size={14} />
+            <span className="hidden sm:inline">Frais d&apos;adhésion</span>
           </button>
           {/* Gestion cauris */}
           <button
@@ -216,12 +225,12 @@ export default function AdminAdherentsPage() {
             <CauriImg size={16} />
             <span className="hidden sm:inline">Gestion cauris</span>
           </button>
-          {/* Cartes membres — icône seule sur mobile */}
+          {/* Cartes membres */}
           <Link href="/admin/cartes" className="inline-flex h-9 items-center gap-2 rounded-full border border-yellow-300 bg-yellow-200 px-3 text-sm font-semibold text-yellow-800 transition-all hover:bg-yellow-300 sm:px-4">
             <CreditCard size={14} />
             <span className="hidden sm:inline">Cartes membres</span>
           </Link>
-          {/* Nouveau membre — icône seule sur mobile */}
+          {/* Nouveau membre */}
           <Link href="/admin/adherents/nouveau" className="inline-flex h-9 items-center gap-2 rounded-full bg-emerald-600 px-3 text-sm font-black text-white transition-all hover:bg-emerald-700 sm:px-5">
             <UserPlus size={14} />
             <span className="hidden sm:inline">Nouveau membre</span>
@@ -431,19 +440,37 @@ export default function AdminAdherentsPage() {
             <div className="hidden lg:block">
               <table className="w-full table-fixed text-[11px]">
                 <colgroup>
-                  <col className="w-[17%]" />
+                  <col className="w-[4%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[15%]" />
                   <col className="w-[8%]" />
-                  <col className="w-[16%]" />
-                  <col className="w-[9%]" />
                   <col className="w-[7%]" />
                   <col className="w-[7%]" />
-                  <col className="w-[8%]" />
+                  <col className="w-[7%]" />
                   <col className="w-[8%]" />
                   <col className="w-[9%]" />
-                  <col className="w-[11%]" />
+                  <col className="w-[9%]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-neutral-100 bg-neutral-50/60">
+                    <th className="px-2 py-3">
+                      <input
+                        type="checkbox"
+                        title="Tout sélectionner pour relance"
+                        checked={displayed.length > 0 && displayed.every(m => relanceSelected.has(m._id))}
+                        onChange={() => {
+                          const allSelected = displayed.every(m => relanceSelected.has(m._id));
+                          setRelanceSelected(prev => {
+                            const next = new Set(prev);
+                            if (allSelected) { displayed.forEach(m => next.delete(m._id)); }
+                            else { displayed.forEach(m => next.add(m._id)); }
+                            return next;
+                          });
+                        }}
+                        className="h-3.5 w-3.5 rounded border-neutral-300 accent-orange-500"
+                      />
+                    </th>
                     <th className="px-3 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Membre</th>
                     <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">N° ID</th>
                     <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Email</th>
@@ -464,7 +491,19 @@ export default function AdminAdherentsPage() {
                     const isConfirming = confirmDeleteId === m._id;
                     const photoUrl = memberPhotoUrl(m);
                     return (
-                      <tr key={m._id} className="group transition-colors hover:bg-neutral-50/55">
+                      <tr key={m._id} className={`group transition-colors hover:bg-neutral-50/55 ${relanceSelected.has(m._id) ? 'bg-orange-50/40' : ''}`}>
+                        <td className="px-2 py-3">
+                          <input
+                            type="checkbox"
+                            checked={relanceSelected.has(m._id)}
+                            onChange={() => setRelanceSelected(prev => {
+                              const next = new Set(prev);
+                              next.has(m._id) ? next.delete(m._id) : next.add(m._id);
+                              return next;
+                            })}
+                            className="h-3.5 w-3.5 rounded border-neutral-300 accent-orange-500"
+                          />
+                        </td>
                         <td className="px-3 py-3">
                           <div className="flex min-w-0 items-center gap-2">
                             <button
@@ -574,7 +613,18 @@ export default function AdminAdherentsPage() {
                 const isExpanded = expandedId === m._id;
                 const photoUrl = memberPhotoUrl(m);
                 return (
-                  <div key={m._id} className="px-3 py-3 transition-colors hover:bg-neutral-50/60 sm:px-4">
+                  <div key={m._id} className={`px-3 py-3 transition-colors hover:bg-neutral-50/60 sm:px-4 ${relanceSelected.has(m._id) ? 'bg-orange-50/40' : ''}`}>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={relanceSelected.has(m._id)}
+                        onChange={() => setRelanceSelected(prev => {
+                          const next = new Set(prev);
+                          next.has(m._id) ? next.delete(m._id) : next.add(m._id);
+                          return next;
+                        })}
+                        className="h-4 w-4 shrink-0 rounded border-neutral-300 accent-orange-500"
+                      />
                     <button
                       type="button"
                       onClick={event => {
@@ -584,7 +634,7 @@ export default function AdminAdherentsPage() {
                         }
                         setExpandedId(isExpanded ? null : m._id);
                       }}
-                      className="flex w-full items-center gap-3 rounded-2xl text-left transition active:scale-[0.995]"
+                      className="flex flex-1 items-center gap-3 rounded-2xl text-left transition active:scale-[0.995]"
                     >
                       {photoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -612,6 +662,7 @@ export default function AdminAdherentsPage() {
                       </div>
                       <ChevronDown size={15} className={`shrink-0 text-neutral-300 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-emerald-600' : ''}`} />
                     </button>
+                    </div>
 
                     <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                       <div className="overflow-hidden">
@@ -695,215 +746,19 @@ export default function AdminAdherentsPage() {
       </div>
     </div>
       {photoPreview && <ControlledAvatarDialog src={photoPreview.src} alt={photoPreview.name} onClose={() => setPhotoPreview(null)} />}
-      {showCardRequests && <CardChangeRequestsModal onClose={() => setShowCardRequests(false)} />}
       {showCaurisManager && <CaurisManagementModal members={members} onClose={() => setShowCaurisManager(false)} />}
+      {showFraisAdhesion && <FraisAdhesionModal onClose={() => setShowFraisAdhesion(false)} />}
+      {showRelance && (
+        <RelanceModal
+          members={members}
+          preSelected={relanceSelected}
+          onClose={() => setShowRelance(false)}
+        />
+      )}
     </>
   );
 }
 
-function CardChangeRequestsModal({ onClose }: { onClose: () => void }) {
-  const [showConfig, setShowConfig] = useState(false);
-  const { data, isLoading, isError, error } = useMemberCardChangeRequests('pending');
-  const { data: policyData } = useMemberProfileValidationPolicy();
-  const review = useReviewMemberCardChangeRequest();
-  const requests = data?.data?.data ?? [];
-  const availableFields = policyData?.data?.availableFields ?? [];
-  const labels = new Map(availableFields.map(field => [field.key, field.label]));
-
-  const submit = (request: MemberCardChangeRequest, action: 'approve' | 'reject') => {
-    review.mutate({ id: request._id, action });
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Validation admin</p>
-            <h2 className="text-lg font-black text-neutral-900">
-              {showConfig ? 'Champs soumis à validation' : 'Modifications sensibles à valider'}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowConfig(value => !value)}
-              className="inline-flex h-9 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-100"
-            >
-              <Plus size={13} />
-              {showConfig ? 'Voir les demandes' : 'Ajouter des validations'}
-            </button>
-            <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
-              <XCircle size={16} />
-            </button>
-          </div>
-        </div>
-
-        <div className="max-h-[70vh] overflow-y-auto p-5">
-          {showConfig ? (
-            <ValidationFieldsConfigurator />
-          ) : (
-            <>
-              {isLoading && <div className="flex justify-center py-12"><Loader2 size={22} className="animate-spin text-emerald-600" /></div>}
-              {!isLoading && isError && (
-                <div role="alert" className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-                  {error instanceof Error ? error.message : 'Impossible de charger les demandes.'}
-                </div>
-              )}
-              {!isLoading && !isError && requests.length === 0 && (
-                <div className="py-12 text-center">
-                  <ShieldCheck size={32} className="mx-auto mb-3 text-neutral-200" />
-                  <p className="text-sm font-semibold text-neutral-400">Aucune modification en attente.</p>
-                </div>
-              )}
-              {!isLoading && !isError && requests.length > 0 && (
-                <div className="space-y-3">
-                  {requests.map(request => {
-                    const member = request.userId;
-                    const changes = request.changes?.length
-                      ? request.changes
-                      : [
-                          ...(request.currentGender !== request.requestedGender
-                            ? [{ field: 'gender', previousValue: request.currentGender, requestedValue: request.requestedGender }]
-                            : []),
-                          ...(request.currentPromotionYear !== request.requestedPromotionYear
-                            ? [{ field: 'promotionYear', previousValue: request.currentPromotionYear, requestedValue: request.requestedPromotionYear }]
-                            : []),
-                        ];
-                    return (
-                      <div key={request._id} className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-black text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
-                            <p className="font-mono text-[11px] text-neutral-400">{member.memberNumber ?? '-'}</p>
-                            <p className="mt-0.5 text-xs text-neutral-500">{member.email}</p>
-                          </div>
-                          <p className="text-[11px] font-semibold text-neutral-400">
-                            {new Date(request.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </p>
-                        </div>
-
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                          {changes.map(change => (
-                            <ChangeBox
-                              key={change.field}
-                              label={labels.get(change.field) ?? change.field}
-                              field={change.field}
-                              before={change.previousValue}
-                              after={change.requestedValue}
-                            />
-                          ))}
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap justify-end gap-2">
-                          <button type="button" onClick={() => submit(request, 'reject')} disabled={review.isPending}
-                            className="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 px-4 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:opacity-60">
-                            Refuser
-                          </button>
-                          <button type="button" onClick={() => submit(request, 'approve')} disabled={review.isPending}
-                            className="inline-flex h-9 items-center justify-center rounded-xl bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-60">
-                            Valider les modifications
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ValidationFieldsConfigurator() {
-  const { data, isLoading, isError, error } = useMemberProfileValidationPolicy();
-  const update = useUpdateMemberProfileValidationPolicy();
-  const policy = data?.data;
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (policy?.fields) setSelected(new Set(policy.fields));
-  }, [policy?.fields]);
-
-  const grouped = useMemo(() => {
-    const groups = new Map<string, MemberProfileValidationField[]>();
-    for (const field of policy?.availableFields ?? []) {
-      groups.set(field.group, [...(groups.get(field.group) ?? []), field]);
-    }
-    return [...groups.entries()];
-  }, [policy?.availableFields]);
-
-  const toggle = (field: MemberProfileValidationField) => {
-    if (field.required || policy?.requiredFields.includes(field.key)) return;
-    setSelected(previous => {
-      const next = new Set(previous);
-      next.has(field.key) ? next.delete(field.key) : next.add(field.key);
-      return next;
-    });
-  };
-
-  if (isLoading) return <div className="flex justify-center py-12"><Loader2 size={22} className="animate-spin text-emerald-600" /></div>;
-  if (isError) return <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">{error instanceof Error ? error.message : 'Configuration indisponible.'}</div>;
-
-  return (
-    <div className="space-y-5">
-      <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-        <p className="text-sm font-black text-amber-900">Validation avant mise à jour</p>
-        <p className="mt-1 text-xs leading-5 text-amber-700">
-          Toute modification d’un champ sélectionné sera stockée en attente et ne modifiera le profil qu’après approbation d’un administrateur.
-        </p>
-      </div>
-
-      {grouped.map(([group, fields]) => (
-        <section key={group}>
-          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">{group}</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {fields.map(field => {
-              const checked = selected.has(field.key);
-              const required = field.required || policy?.requiredFields.includes(field.key);
-              const buttonClass = 'flex min-h-12 items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition '
-                + (checked ? 'border-emerald-300 bg-emerald-50' : 'border-neutral-200 bg-white hover:border-emerald-200');
-              const checkboxClass = 'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border '
-                + (checked ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-neutral-300 bg-white');
-              return (
-                <button key={field.key} type="button" onClick={() => toggle(field)} className={buttonClass}>
-                  <div>
-                    <p className={checked ? 'text-xs font-black text-emerald-800' : 'text-xs font-black text-neutral-700'}>{field.label}</p>
-                    {required && <p className="mt-0.5 text-[10px] font-semibold text-amber-600">Validation obligatoire</p>}
-                  </div>
-                  <span className={checkboxClass}>{checked && <CheckCircle2 size={12} />}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ))}
-
-      <div className="sticky bottom-0 flex justify-end border-t border-neutral-100 bg-white pt-4">
-        <button type="button" onClick={() => update.mutate([...selected])} disabled={update.isPending}
-          className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-60">
-          {update.isPending && <Loader2 size={14} className="animate-spin" />}
-          Enregistrer les validations
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function displayChangeValue(field: string, value: unknown) {
-  if (value === null || value === undefined || value === '') return '-';
-  if (field === 'gender') return value === 'femme' ? 'Madame' : 'Monsieur';
-  if (field === 'birthDate') {
-    const date = new Date(String(value));
-    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('fr-FR');
-  }
-  if (Array.isArray(value)) return value.length ? value.join(', ') : '-';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
-}
 
 function CaurisManagementModal({ members, onClose }: { members: MemberListItem[]; onClose: () => void }) {
   const [operation, setOperation] = useState<'add' | 'remove'>('add');
@@ -1091,15 +946,490 @@ function CaurisManagementModal({ members, onClose }: { members: MemberListItem[]
   );
 }
 
-function ChangeBox({ label, field, before, after }: { label: string; field: string; before: unknown; after: unknown }) {
+/* ══════════════════════════════════════════════════════════
+   FRAIS D'ADHÉSION MODAL
+══════════════════════════════════════════════════════════ */
+const YEARS_LIST = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+const COTI_STATUS_CFG = {
+  paid:   { label: 'Payé',     cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  unpaid: { label: 'Non payé', cls: 'bg-red-50 text-red-700 border-red-200' },
+  exempt: { label: 'Exempté',  cls: 'bg-neutral-50 text-neutral-500 border-neutral-200' },
+} as const;
+
+function FraisAdhesionModal({ onClose }: { onClose: () => void }) {
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [search, setSearch] = useState('');
+  const { data, isLoading } = useAdminCotisations(year);
+  const updateStatus = useUpdateCotisationStatus();
+  const sendReminders = useSendReminders();
+  const sendInvoiceRelance = useSendUnpaidInvoiceRelance();
+
+  const rows: AdminCotisationRow[] = data?.data ?? [];
+
+  const filtered = useMemo(() =>
+    rows.filter(r => `${r.user.firstName} ${r.user.lastName} ${r.user.email}`
+      .toLowerCase().includes(search.toLowerCase())),
+  [rows, search]);
+
+  const unpaidIds = filtered.filter(r => r.cotisation.status === 'unpaid').map(r => r.user._id);
+
   return (
-    <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3">
-      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">{label}</p>
-      <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-xs">
-        <span className="break-words font-semibold text-neutral-500">{displayChangeValue(field, before)}</span>
-        <ChevronDown size={13} className="-rotate-90 text-neutral-300" />
-        <span className="break-words text-right font-black text-neutral-900">{displayChangeValue(field, after)}</span>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
+      <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5" style={{ maxHeight: '92vh' }}>
+        {/* Header */}
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
+              <Banknote size={18} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Adhérents</p>
+              <h2 className="text-lg font-black text-neutral-900">Frais d&apos;adhésion {year}</h2>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={year}
+              onChange={e => setYear(Number(e.target.value))}
+              className="h-9 rounded-xl border border-neutral-200 bg-white px-3 text-sm font-bold text-neutral-700 focus:border-emerald-400 focus:outline-none"
+            >
+              {YEARS_LIST.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
+              <XCircle size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Actions rapides */}
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/60 px-5 py-3">
+          <div className="relative flex-1 min-w-[160px]">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Rechercher…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="h-8 w-full rounded-lg border border-neutral-200 bg-white pl-8 pr-3 text-sm focus:border-blue-400 focus:outline-none"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={unpaidIds.length === 0 || sendReminders.isPending}
+            onClick={() => sendReminders.mutate({ year, userIds: unpaidIds })}
+            className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3 text-xs font-black text-orange-700 transition hover:bg-orange-100 disabled:opacity-40"
+          >
+            {sendReminders.isPending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+            Relancer non payés ({unpaidIds.length})
+          </button>
+          <button
+            type="button"
+            disabled={filtered.length === 0 || sendInvoiceRelance.isPending}
+            onClick={() => sendInvoiceRelance.mutate({ userIds: filtered.map(r => r.user._id) })}
+            className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:opacity-40"
+          >
+            {sendInvoiceRelance.isPending ? <Loader2 size={12} className="animate-spin" /> : <MessageSquare size={12} />}
+            Relancer factures
+          </button>
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading && (
+            <div className="flex justify-center py-12"><Loader2 size={22} className="animate-spin text-blue-500" /></div>
+          )}
+          {!isLoading && (
+            <div className="divide-y divide-neutral-50">
+              {filtered.length === 0 && (
+                <p className="py-10 text-center text-sm text-neutral-400">Aucun résultat</p>
+              )}
+              {filtered.map(row => {
+                const u = row.user;
+                const coti = row.cotisation;
+                const cfg = COTI_STATUS_CFG[coti.status] ?? COTI_STATUS_CFG.unpaid;
+                const photoUrl = u.avatar
+                  ? (u.avatar.startsWith('http') ? u.avatar : `${process.env.NEXT_PUBLIC_BACKEND_URL ?? ''}${u.avatar}`)
+                  : null;
+                return (
+                  <div key={u._id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 hover:bg-neutral-50/60">
+                    <div className="flex min-w-0 items-center gap-3">
+                      {photoUrl
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={photoUrl} alt="" className="h-8 w-8 shrink-0 rounded-full border-2 object-cover border-neutral-200" />
+                        : <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${memberInitialsClass(u.gender)}`}>{formatInitials(u.firstName, u.lastName)}</div>
+                      }
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-neutral-900">{formatFullName(u.firstName, u.lastName)}</p>
+                        <p className="truncate text-[11px] text-neutral-400">{u.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-black ${cfg.cls}`}>{cfg.label}</span>
+                      {coti.status !== 'paid' && (
+                        <button
+                          type="button"
+                          disabled={updateStatus.isPending}
+                          onClick={() => updateStatus.mutate({ userId: u._id, year, status: 'paid' })}
+                          className="inline-flex h-7 items-center gap-1 rounded-lg bg-emerald-600 px-2.5 text-[11px] font-black text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          <CheckCircle2 size={11} /> Marquer payé
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex shrink-0 items-center justify-between border-t border-neutral-100 px-5 py-3">
+          <p className="text-xs text-neutral-400">{filtered.length} membre{filtered.length > 1 ? 's' : ''}</p>
+          <button type="button" onClick={onClose} className="text-sm font-semibold text-neutral-500 hover:text-neutral-700">
+            Fermer
+          </button>
+        </div>
       </div>
     </div>
   );
 }
+
+/* ══════════════════════════════════════════════════════════
+   RELANCE MODAL — 3 étapes
+══════════════════════════════════════════════════════════ */
+type RelanceType = 'cotisation' | 'facture' | 'profil' | 'presence';
+type RelanceChannel = 'email' | 'whatsapp' | 'message';
+
+const RELANCE_TYPES: { id: RelanceType; emoji: string; label: string; desc: string; color: string }[] = [
+  { id: 'cotisation', emoji: '💰', label: 'Cotisation impayée', desc: 'Rappel de règlement annuel', color: 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100' },
+  { id: 'facture',    emoji: '🧾', label: 'Facture',            desc: 'Facture en attente',         color: 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100' },
+  { id: 'profil',     emoji: '👤', label: 'Profil incomplet',   desc: 'Complétion de profil',       color: 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100' },
+  { id: 'presence',   emoji: '📍', label: 'Présence activité',  desc: 'Confirmation de présence',   color: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' },
+];
+
+const CHANNELS: { id: RelanceChannel; emoji: string; label: string; desc: string }[] = [
+  { id: 'email',    emoji: '📧', label: 'Email',            desc: 'Envoi via Resend (recommandé)' },
+  { id: 'whatsapp', emoji: '💬', label: 'WhatsApp',         desc: 'Lien pré-rempli à envoyer' },
+  { id: 'message',  emoji: '✉️',  label: 'Message interne', desc: 'Messagerie du portail' },
+];
+
+function RelanceModal({
+  members,
+  preSelected,
+  onClose,
+}: {
+  members: MemberListItem[];
+  preSelected: Set<string>;
+  onClose: () => void;
+}) {
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [type, setType] = useState<RelanceType | null>(null);
+  const [channel, setChannel] = useState<RelanceChannel | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(preSelected));
+  const [activityId, setActivityId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [isSending, setIsSending] = useState(false);
+
+  const { data: activitiesData } = useActivities({ status: 'published' });
+  const activities: ActivityDoc[] = activitiesData?.data?.activities ?? [];
+
+  const remindCotisation  = useSendReminders();
+  const remindInvoice     = useSendUnpaidInvoiceRelance();
+  const remindProfil      = useRemindIncompleteProfiles();
+  const remindPresence    = useRemindActivityInvitations();
+
+  const filtered = useMemo(() =>
+    members.filter(m => `${m.firstName} ${m.lastName} ${m.email}`
+      .toLowerCase().includes(search.toLowerCase())),
+  [members, search]);
+
+  const allSelected = filtered.length > 0 && filtered.every(m => selectedIds.has(m._id));
+
+  const toggleAll = () => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (allSelected) { filtered.forEach(m => next.delete(m._id)); }
+      else { filtered.forEach(m => next.add(m._id)); }
+      return next;
+    });
+  };
+
+  const toggleOne = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleSend = async () => {
+    if (!type || !channel) return;
+    setIsSending(true);
+    try {
+      const ids = [...selectedIds];
+
+      if (channel === 'email') {
+        if (type === 'cotisation') {
+          await remindCotisation.mutateAsync({ year: new Date().getFullYear(), userIds: ids });
+        } else if (type === 'facture') {
+          await remindInvoice.mutateAsync({ userIds: ids });
+        } else if (type === 'profil') {
+          await remindProfil.mutateAsync({ userIds: ids });
+        } else if (type === 'presence' && activityId) {
+          await remindPresence.mutateAsync(activityId);
+        }
+      } else if (channel === 'whatsapp') {
+        const msgs = {
+          cotisation: 'Bonjour, nous vous rappelons que votre cotisation annuelle SALAM est toujours en attente de règlement. Merci de régulariser votre situation.',
+          facture:    'Bonjour, vous avez une facture en attente de règlement dans votre espace membre SALAM. Merci de la régulariser.',
+          profil:     'Bonjour, votre profil membre SALAM est incomplet. Merci de le compléter sur votre espace membre.',
+          presence:   'Bonjour, merci de confirmer votre présence à l\'activité SALAM en vous connectant à votre espace membre.',
+        };
+        const msg = encodeURIComponent(msgs[type]);
+        const selected = members.filter(m => selectedIds.has(m._id) && m.phone);
+        for (const m of selected) {
+          const phone = m.phone!.replace(/\D/g, '');
+          window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+        }
+        const noPhone = members.filter(m => selectedIds.has(m._id) && !m.phone).length;
+        if (noPhone > 0) {
+          alert(`${noPhone} membre(s) sans numéro de téléphone — ignoré(s).`);
+        }
+      } else if (channel === 'message') {
+        const subjects = {
+          cotisation: 'Rappel — Cotisation annuelle',
+          facture:    'Rappel — Facture en attente',
+          profil:     'Rappel — Profil incomplet',
+          presence:   'Rappel — Confirmation de présence',
+        };
+        const contents = {
+          cotisation: 'Bonjour, votre cotisation annuelle SALAM est toujours en attente. Merci de régulariser votre situation depuis votre espace membre.',
+          facture:    'Bonjour, vous avez une facture en attente dans votre espace membre. Merci de la régler.',
+          profil:     'Bonjour, votre profil est incomplet. Merci de le compléter depuis votre espace membre.',
+          presence:   'Bonjour, merci de confirmer votre présence à l\'activité depuis votre espace membre.',
+        };
+        for (const id of ids) {
+          await fetch('/api/v1/admin/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${document.cookie.match(/token=([^;]+)/)?.[1] ?? ''}` },
+            body: JSON.stringify({ recipientId: id, subject: subjects[type], content: contents[type] }),
+          }).catch(() => {});
+        }
+      }
+      onClose();
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
+      <div className="flex w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5" style={{ maxHeight: '92vh' }}>
+        {/* Header */}
+        <div className="flex shrink-0 items-center justify-between border-b border-neutral-100 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50">
+              <Bell size={16} className="text-orange-600" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-600">Adhérents</p>
+              <h2 className="text-base font-black text-neutral-900">
+                {step === 1 ? 'Choisir le type de relance' : step === 2 ? (type === 'presence' ? 'Choisir l\'activité' : 'Choisir les destinataires') : 'Canal d\'envoi'}
+              </h2>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
+            <XCircle size={16} />
+          </button>
+        </div>
+
+        {/* Steps indicator */}
+        <div className="flex shrink-0 items-center gap-1 border-b border-neutral-100 bg-neutral-50/60 px-5 py-2">
+          {[1, 2, 3].map(s => (
+            <div key={s} className={`h-1.5 flex-1 rounded-full transition-all ${s <= step ? 'bg-orange-500' : 'bg-neutral-200'}`} />
+          ))}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-5">
+          {/* STEP 1 — Type */}
+          {step === 1 && (
+            <div className="grid grid-cols-2 gap-3">
+              {RELANCE_TYPES.map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => { setType(t.id); setStep(2); }}
+                  className={`flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition ${t.color}`}
+                >
+                  <span className="text-2xl">{t.emoji}</span>
+                  <div>
+                    <p className="text-sm font-black">{t.label}</p>
+                    <p className="mt-0.5 text-[11px] opacity-70">{t.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* STEP 2 — Activité (presence) ou Membres */}
+          {step === 2 && type === 'presence' && (
+            <div className="space-y-2">
+              <p className="mb-3 text-xs font-semibold text-neutral-500">Sélectionnez l&apos;activité pour laquelle envoyer la relance de présence :</p>
+              {activities.length === 0 && <p className="text-sm text-neutral-400">Aucune activité publiée.</p>}
+              {activities.map(a => (
+                <button
+                  key={a._id}
+                  type="button"
+                  onClick={() => { setActivityId(a._id); setStep(3); }}
+                  className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${activityId === a._id ? 'border-emerald-400 bg-emerald-50' : 'border-neutral-200 bg-white hover:border-emerald-300'}`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-neutral-900">{a.title}</p>
+                    {a.startDate && (
+                      <p className="text-[11px] text-neutral-400">
+                        {new Date(a.startDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                      </p>
+                    )}
+                  </div>
+                  <span className="shrink-0 text-[11px] font-semibold text-neutral-400">
+                    {a.invitationSummary?.total ?? 0} invités
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {step === 2 && type !== 'presence' && (
+            <div className="space-y-3">
+              <div className="relative">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un membre…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="h-9 w-full rounded-lg border border-neutral-200 bg-white pl-8 pr-3 text-sm focus:border-orange-400 focus:outline-none"
+                />
+              </div>
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1 hover:bg-neutral-50">
+                <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                  className="h-4 w-4 rounded border-neutral-300 accent-orange-500" />
+                <span className="text-xs font-bold text-neutral-600">
+                  Tout sélectionner ({filtered.length})
+                </span>
+                {selectedIds.size > 0 && (
+                  <span className="ml-auto rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-black text-orange-700">
+                    {selectedIds.size} sélectionné{selectedIds.size > 1 ? 's' : ''}
+                  </span>
+                )}
+              </label>
+              <div className="divide-y divide-neutral-50">
+                {filtered.map(m => {
+                  const photoUrl = memberPhotoUrl(m);
+                  const isChecked = selectedIds.has(m._id);
+                  return (
+                    <label key={m._id} className={`flex cursor-pointer items-center gap-3 py-2.5 transition ${isChecked ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}>
+                      <input type="checkbox" checked={isChecked} onChange={() => toggleOne(m._id)}
+                        className="h-4 w-4 shrink-0 rounded border-neutral-300 accent-orange-500" />
+                      {photoUrl
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={photoUrl} alt="" className={`h-8 w-8 shrink-0 rounded-full border-2 object-cover ${memberAvatarBorderClass(m.gender)}`} />
+                        : <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${memberInitialsClass(m.gender)}`}>
+                            {formatInitials(m.firstName, m.lastName)}
+                          </div>
+                      }
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
+                        <p className="truncate text-[11px] text-neutral-400">{m.email}</p>
+                      </div>
+                      {type === 'whatsapp' as string && !m.phone && (
+                        <span className="shrink-0 text-[10px] text-neutral-300">Pas de tél.</span>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3 — Canal */}
+          {step === 3 && (
+            <div className="space-y-3">
+              <p className="mb-1 text-xs font-semibold text-neutral-500">
+                {type === 'presence'
+                  ? `Envoyer la relance de présence via :`
+                  : `Envoyer la relance à ${selectedIds.size} membre${selectedIds.size > 1 ? 's' : ''} via :`}
+              </p>
+              {CHANNELS.map(ch => (
+                <button
+                  key={ch.id}
+                  type="button"
+                  onClick={() => setChannel(ch.id)}
+                  className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition ${channel === ch.id ? 'border-orange-400 bg-orange-50' : 'border-neutral-200 bg-white hover:border-orange-200 hover:bg-orange-50/40'}`}
+                >
+                  <span className="text-xl">{ch.emoji}</span>
+                  <div>
+                    <p className="text-sm font-black text-neutral-900">{ch.label}</p>
+                    <p className="text-[11px] text-neutral-400">{ch.desc}</p>
+                  </div>
+                  <div className={`ml-auto h-4 w-4 shrink-0 rounded-full border-2 transition ${channel === ch.id ? 'border-orange-500 bg-orange-500' : 'border-neutral-300'}`} />
+                </button>
+              ))}
+              {channel === 'whatsapp' && type !== 'presence' && (
+                <div className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  <strong>Note :</strong> Un onglet WhatsApp s&apos;ouvrira pour chaque membre sélectionné avec un numéro de téléphone. Les membres sans numéro seront ignorés.
+                </div>
+              )}
+              {channel === 'message' && (
+                <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                  Un message sera créé dans la messagerie interne pour chaque destinataire.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex shrink-0 items-center justify-between border-t border-neutral-100 px-5 py-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (step === 1) { onClose(); return; }
+              setStep(s => (s - 1) as 1 | 2 | 3);
+              if (step === 2) { setType(null); setActivityId(null); }
+              if (step === 3) { setChannel(null); }
+            }}
+            className="text-sm font-semibold text-neutral-500 hover:text-neutral-700"
+          >
+            {step === 1 ? 'Annuler' : '← Retour'}
+          </button>
+
+          {step === 2 && type !== 'presence' && (
+            <button
+              type="button"
+              disabled={selectedIds.size === 0}
+              onClick={() => setStep(3)}
+              className="inline-flex h-9 items-center gap-2 rounded-xl bg-orange-500 px-5 text-sm font-black text-white transition hover:bg-orange-600 disabled:opacity-40"
+            >
+              Suivant →
+            </button>
+          )}
+
+          {step === 3 && (
+            <button
+              type="button"
+              disabled={!channel || isSending}
+              onClick={handleSend}
+              className="inline-flex h-9 items-center gap-2 rounded-xl bg-orange-500 px-5 text-sm font-black text-white transition hover:bg-orange-600 disabled:opacity-40"
+            >
+              {isSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+              Envoyer la relance
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
