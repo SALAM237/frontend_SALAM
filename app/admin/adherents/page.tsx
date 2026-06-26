@@ -359,65 +359,66 @@ export default function AdminAdherentsPage() {
         </p>
 
         {/* Tab buttons row — flex-nowrap to stay on one line on all breakpoints */}
-        <div className="mt-3 flex items-center gap-1 sm:gap-2">
+        <div className="mt-3 flex items-center gap-1 overflow-x-auto lg:gap-2">
           {/* Arrow KPI toggle — visible only when tab active */}
-          <div className={`shrink-0 overflow-hidden transition-[max-width,opacity] duration-200 ${activeTab ? 'max-w-[30px] opacity-100 sm:max-w-[36px]' : 'max-w-0 opacity-0 pointer-events-none'}`}>
+          <div className={`shrink-0 overflow-hidden transition-[max-width,opacity] duration-200 ${activeTab ? 'max-w-[30px] opacity-100 lg:max-w-[40px]' : 'max-w-0 opacity-0 pointer-events-none'}`}>
             <button type="button" onClick={() => setShowKpis(v => !v)} title={showKpis ? 'Masquer les statistiques' : 'Afficher les statistiques'}
-              className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 shadow-sm transition hover:border-emerald-300 hover:text-emerald-600 sm:h-9 sm:w-9">
-              <ChevronDown size={12} className={`transition-transform duration-200 ${showKpis ? 'rotate-180' : ''} sm:size-[14px]`} />
+              className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 shadow-sm transition hover:border-emerald-300 hover:text-emerald-600 lg:h-9 lg:w-9">
+              <ChevronDown size={12} className={`transition-transform duration-200 ${showKpis ? 'rotate-180' : ''} lg:size-[14px]`} />
             </button>
           </div>
 
           {/* Relance */}
           <button type="button" onClick={() => handleTabClick('relance')}
-            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-xs ${tabBtnCls('relance')}`}>
-            <Bell size={12} className={`shrink-0 ${tabIconCls('relance')}`} />
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'relance' ? 'max-w-[56px] ml-0.5 sm:max-w-[80px]' : 'max-w-0'}`}>
+            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('relance')}`}>
+            <Bell size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('relance')}`} />
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'relance' ? 'max-w-[50px] ml-0.5 lg:max-w-[72px]' : 'max-w-0'}`}>
               Relance
             </span>
           </button>
 
           {/* Frais d'adhésion */}
           <button type="button" onClick={() => handleTabClick('frais')}
-            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-xs ${tabBtnCls('frais')}`}>
-            <Banknote size={12} className={`shrink-0 ${tabIconCls('frais')}`} />
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'frais' ? 'max-w-[84px] ml-0.5 sm:max-w-[120px]' : 'max-w-0'}`}>
+            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('frais')}`}>
+            <Banknote size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('frais')}`} />
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'frais' ? 'max-w-[76px] ml-0.5 lg:max-w-[116px]' : 'max-w-0'}`}>
               Frais d&apos;adhésion
             </span>
           </button>
 
           {/* Gestion cauris */}
           <button type="button" onClick={() => handleTabClick('cauris')}
-            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-xs ${tabBtnCls('cauris')}`}>
+            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cauris')}`}>
             <span className={`shrink-0 ${activeTab === 'cauris' ? '' : tabIconCls('cauris')}`}>
               <CauriImg size={12} />
             </span>
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cauris' ? 'max-w-[80px] ml-0.5 sm:max-w-[110px]' : 'max-w-0'}`}>
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cauris' ? 'max-w-[72px] ml-0.5 lg:max-w-[108px]' : 'max-w-0'}`}>
               Gestion cauris
             </span>
           </button>
 
           {/* Cartes membres */}
           <button type="button" onClick={() => handleTabClick('cartes')}
-            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 sm:gap-1.5 sm:px-3 sm:py-2 sm:text-xs ${tabBtnCls('cartes')}`}>
-            <CreditCard size={12} className={`shrink-0 ${tabIconCls('cartes')}`} />
-            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cartes' ? 'max-w-[80px] ml-0.5 sm:max-w-[110px]' : 'max-w-0'}`}>
+            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cartes')}`}>
+            <CreditCard size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('cartes')}`} />
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cartes' ? 'max-w-[72px] ml-0.5 lg:max-w-[108px]' : 'max-w-0'}`}>
               Cartes membres
             </span>
           </button>
 
           {/* Nouveau membre */}
           <Link href="/admin/adherents/nouveau"
-            className="shrink-0 ml-auto inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-2.5 py-1.5 text-[10px] font-black text-white shadow-sm transition-all hover:bg-emerald-700 sm:px-4 sm:py-2 sm:text-xs">
-            <UserPlus size={12} />
+            className="shrink-0 ml-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-2.5 py-1.5 text-[10px] font-black text-white shadow-sm transition-all hover:bg-emerald-700 lg:ml-3 lg:px-4 lg:py-2 lg:text-xs">
+            <UserPlus size={12} className="lg:size-[13px]" />
             <span className="hidden sm:inline">Nouveau membre</span>
           </Link>
         </div>
       </div>
 
-      {/* ── TAB CONTROL ROWS (smooth transition via max-height) ─ */}
+      {/* ── TAB CONTROL ROWS — un seul conteneur pour éviter les mt parasites des rows cachées ── */}
+      <div>
       {/* Relance row */}
-      <div className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${activeTab === 'relance' ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+      <div className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-out ${activeTab === 'relance' ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
         <div className="rounded-2xl border border-orange-100 bg-orange-50/60 px-4 py-3">
           <div className="flex flex-wrap items-center gap-3">
             <span className="shrink-0 text-sm font-black text-orange-800">Relance</span>
@@ -434,6 +435,15 @@ export default function AdminAdherentsPage() {
               </select>
               <ChevronDown size={12} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
             </div>
+            {relanceSub && (
+              <span className="w-full shrink-0 text-[11px] font-semibold text-orange-600 sm:w-auto">
+                {relanceSub === 'presence'
+                  ? selectedAct
+                    ? `${pendingInviteeIds.size} invité${pendingInviteeIds.size !== 1 ? 's' : ''} en attente`
+                    : 'Choisissez une activité'
+                  : `${displayed.length} membre${displayed.length !== 1 ? 's' : ''} concerné${displayed.length !== 1 ? 's' : ''}`}
+              </span>
+            )}
             {relanceSub === 'presence' && (
               selectedAct ? (
                 <span className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-white px-2.5 py-1 text-xs font-bold text-orange-700">
@@ -552,8 +562,8 @@ export default function AdminAdherentsPage() {
             <span className="text-sm font-black text-amber-800">Gestion cauris</span>
             <p className="mt-0.5 text-[10px] text-amber-600">Ajoutez ou retirez des cauris aux membres.</p>
           </div>
-          {/* Contrôles : Ajouter/Retirer + montant + motif */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Contrôles : Ajouter/Retirer seuls sur leur ligne (mobile) puis montant+motif */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <div className="flex shrink-0 gap-1.5">
               <button type="button" onClick={() => setCaurisOp('add')}
                 className={`inline-flex items-center gap-1 rounded-xl border px-3 py-1.5 text-xs font-black transition ${caurisOp === 'add' ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300'}`}>
@@ -564,10 +574,12 @@ export default function AdminAdherentsPage() {
                 <Minus size={12} /> Retirer
               </button>
             </div>
-            <input type="number" min="1" value={caurisAmt} onChange={e => setCaurisAmt(e.target.value)} placeholder="Montant"
-              className="h-8 w-28 min-w-0 rounded-xl border border-neutral-200 bg-white px-3 text-sm focus:border-amber-400 focus:outline-none" />
-            <input type="text" value={caurisReason} onChange={e => setCaurisReason(e.target.value)} placeholder="Motif (optionnel)"
-              className="h-8 min-w-[80px] flex-1 rounded-xl border border-neutral-200 bg-white px-3 text-sm focus:border-amber-400 focus:outline-none" />
+            <div className="flex items-center gap-2">
+              <input type="number" min="1" value={caurisAmt} onChange={e => setCaurisAmt(e.target.value)} placeholder="Montant"
+                className="h-8 w-28 min-w-0 rounded-xl border border-neutral-200 bg-white px-3 text-sm focus:border-amber-400 focus:outline-none sm:w-32" />
+              <input type="text" value={caurisReason} onChange={e => setCaurisReason(e.target.value)} placeholder="Motif (optionnel)"
+                className="h-8 min-w-0 flex-1 rounded-xl border border-neutral-200 bg-white px-3 text-sm focus:border-amber-400 focus:outline-none" />
+            </div>
           </div>
           {/* Pied : texte contextuel à gauche, Appliquer toujours à droite */}
           <div className="mt-3 flex items-center justify-between gap-2">
@@ -585,6 +597,7 @@ export default function AdminAdherentsPage() {
           </div>
         </div>
       </div>
+      </div>{/* end TAB CONTROL ROWS wrapper */}
 
       {/* ── KPI CARDS (toggle via arrow) ─────────────────────── */}
       <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${showKpis ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>

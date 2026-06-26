@@ -200,7 +200,7 @@ function CreatePasswordContent() {
     );
   }
 
-  const validate = () => {
+  const validate = (): { ok: boolean; firstKey?: string } => {
     const nextErrors: FormErrors = {};
     if (!passwordChecks.every(check => check.ok)) nextErrors.password = 'Le mot de passe ne respecte pas toutes les conditions.';
     if (form.password !== form.confirm) nextErrors.confirm = 'Les mots de passe ne correspondent pas.';
@@ -216,7 +216,8 @@ function CreatePasswordContent() {
     if (!form.skills.length) nextErrors.skills = 'Ajoutez au moins une competence.';
     if (!form.expertiseDomains.length) nextErrors.expertiseDomains = "Ajoutez au moins un domaine d'expertise.";
     setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    const firstKey = Object.keys(nextErrors)[0];
+    return { ok: Object.keys(nextErrors).length === 0, firstKey };
   };
 
   const submitToServer = async () => {
@@ -268,7 +269,15 @@ function CreatePasswordContent() {
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (!validate()) return;
+    const { ok, firstKey } = validate();
+    if (!ok) {
+      if (firstKey) {
+        setTimeout(() => {
+          document.getElementById(`field-${firstKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 50);
+      }
+      return;
+    }
     setConfirmOpen(true);
   };
 
@@ -289,8 +298,8 @@ function CreatePasswordContent() {
 
       <form onSubmit={handleSubmit} className="space-y-7" noValidate>
         <Section title="Informations personnelles">
-          <PasswordInput label="Mot de passe" required value={form.password} show={showPwd} onToggle={() => setShowPwd(v => !v)} onChange={value => setField('password')(value)} error={errors.password} />
-          <PasswordInput label="Confirmer mot de passe" required value={form.confirm} show={showConf} onToggle={() => setShowConf(v => !v)} onChange={value => setField('confirm')(value)} error={errors.confirm} />
+          <PasswordInput id="field-password" label="Mot de passe" required value={form.password} show={showPwd} onToggle={() => setShowPwd(v => !v)} onChange={value => setField('password')(value)} error={errors.password} />
+          <PasswordInput id="field-confirm" label="Confirmer mot de passe" required value={form.confirm} show={showConf} onToggle={() => setShowConf(v => !v)} onChange={value => setField('confirm')(value)} error={errors.confirm} />
 
           {form.password && (
             <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4 sm:col-span-2">
@@ -312,26 +321,26 @@ function CreatePasswordContent() {
             </div>
           )}
 
-          <SelectInput label="Civilite" required value={form.gender} onChange={value => setField('gender')(value as ActivationForm['gender'])} error={errors.gender} options={[[ '', 'Choisir' ], [ 'homme', 'Monsieur' ], [ 'femme', 'Madame' ]]} />
-          <TextInput icon={User} label="Prenom" required value={form.firstName} onChange={value => setField('firstName')(value)} error={errors.firstName} />
-          <TextInput icon={User} label="Nom" required value={form.lastName} onChange={value => setField('lastName')(value)} error={errors.lastName} />
-          <TextInput icon={Mail} label="Email" required type="email" value={form.email} onChange={value => setField('email')(value)} error={errors.email} placeholder="email utilise par l'administrateur" />
-          <TextInput icon={Phone} label="Telephone" required value={form.phone} onChange={value => setField('phone')(value)} error={errors.phone} />
+          <SelectInput id="field-gender" className="sm:col-span-2" label="Civilite" required value={form.gender} onChange={value => setField('gender')(value as ActivationForm['gender'])} error={errors.gender} options={[[ '', 'Choisir' ], [ 'homme', 'Monsieur' ], [ 'femme', 'Madame' ]]} />
+          <TextInput id="field-firstName" icon={User} label="Prenom" required value={form.firstName} onChange={value => setField('firstName')(value)} error={errors.firstName} />
+          <TextInput id="field-lastName" icon={User} label="Nom" required value={form.lastName} onChange={value => setField('lastName')(value)} error={errors.lastName} />
+          <TextInput id="field-email" icon={Mail} label="Email" required type="email" value={form.email} onChange={value => setField('email')(value)} error={errors.email} placeholder="email utilise par l'administrateur" />
+          <TextInput id="field-phone" icon={Phone} label="Telephone" required value={form.phone} onChange={value => setField('phone')(value)} error={errors.phone} />
           <TextInput icon={Phone} label="Contact de recuperation" value={form.recoveryContact} onChange={value => setField('recoveryContact')(value)} placeholder="07070708" />
-          <TextInput label="Date de naissance" required type="date" value={form.birthDate} onChange={value => setField('birthDate')(value)} error={errors.birthDate} />
+          <TextInput id="field-birthDate" label="Date de naissance" required type="date" value={form.birthDate} onChange={value => setField('birthDate')(value)} error={errors.birthDate} />
           <TextInput icon={MapPin} label="Ville de residence" value={form.residenceCity} onChange={value => setField('residenceCity')(value)} placeholder="Test town" />
           <TextInput icon={MapPin} label="Pays" value={form.country} onChange={value => setField('country')(value)} placeholder="Country test" />
-          <TextInput label="Promotionnaire" required type="number" min="1970" max="2100" value={form.promotionYear} onChange={value => setField('promotionYear')(value)} error={errors.promotionYear} placeholder="2000" />
+          <TextInput id="field-promotionYear" label="Promotionnaire" required type="number" min="1970" max="2100" value={form.promotionYear} onChange={value => setField('promotionYear')(value)} error={errors.promotionYear} placeholder="2000" />
           <SelectInput label="Antenne SALAM" value={form.antenne} onChange={value => setField('antenne')(value)} options={[[ '', 'Selectionner une antenne' ], ...ANTENNE_OPTIONS.map(item => [item, item] as [string, string])]} />
           {form.antenne === 'Autre' && <TextInput label="Precisez l'antenne" value={form.antenneAutre} onChange={value => setField('antenneAutre')(value)} />}
         </Section>
 
         <Section title="Parcours et expertises">
-          <SelectInput label="Secteur d'activite" required value={form.activitySector} onChange={value => setField('activitySector')(value)} error={errors.activitySector} options={[[ '', 'Selectionner' ], ...ACTIVITY_SECTORS.map(item => [item, item] as [string, string])]} />
-          {form.activitySector === 'Autre' && <TextInput label="Precisez le secteur" required value={form.activitySectorProposal} onChange={value => setField('activitySectorProposal')(value)} error={errors.activitySectorProposal} />}
+          <SelectInput id="field-activitySector" label="Secteur d'activite" required value={form.activitySector} onChange={value => setField('activitySector')(value)} error={errors.activitySector} options={[[ '', 'Selectionner' ], ...ACTIVITY_SECTORS.map(item => [item, item] as [string, string])]} />
+          {form.activitySector === 'Autre' && <TextInput id="field-activitySectorProposal" label="Precisez le secteur" required value={form.activitySectorProposal} onChange={value => setField('activitySectorProposal')(value)} error={errors.activitySectorProposal} />}
           <TextInput icon={MapPin} label="Ville d'origine au Maroc" value={form.city} onChange={value => setField('city')(value)} placeholder="Testtown" />
-          <TagInput icon={Tag} label="Competences" required help="Saisissez des mots-cles separes par une virgule." value={form.skills} onChange={value => setField('skills')(value)} error={errors.skills} placeholder="Ex: React, gestion de projet..." />
-          <TagInput icon={Briefcase} label="Domaines d'expertise" required help="Saisissez des mots-cles separes par une virgule." value={form.expertiseDomains} onChange={value => setField('expertiseDomains')(value)} error={errors.expertiseDomains} placeholder="Ex: finance, communication..." />
+          <TagInput id="field-skills" icon={Tag} label="Competences" required help="Saisissez des mots-cles separes par une virgule." value={form.skills} onChange={value => setField('skills')(value)} error={errors.skills} placeholder="Ex: React, gestion de projet..." />
+          <TagInput id="field-expertiseDomains" icon={Briefcase} label="Domaines d'expertise" required help="Saisissez des mots-cles separes par une virgule." value={form.expertiseDomains} onChange={value => setField('expertiseDomains')(value)} error={errors.expertiseDomains} placeholder="Ex: finance, communication..." />
         </Section>
 
         {errors.global && (
@@ -391,7 +400,8 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function TextInput({ icon: Icon, label, value, onChange, error, required, type = 'text', placeholder, min, max }: {
+function TextInput({ id, icon: Icon, label, value, onChange, error, required, type = 'text', placeholder, min, max, className }: {
+  id?: string;
   icon?: IconType;
   label: string;
   value: string;
@@ -402,9 +412,10 @@ function TextInput({ icon: Icon, label, value, onChange, error, required, type =
   placeholder?: string;
   min?: string;
   max?: string;
+  className?: string;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div id={id} className={`space-y-1.5 ${className ?? ''}`}>
       <label className="block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label} {required && <span className="text-red-500">*</span>}</label>
       <div className="relative">
         {Icon && <Icon size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />}
@@ -415,7 +426,8 @@ function TextInput({ icon: Icon, label, value, onChange, error, required, type =
   );
 }
 
-function PasswordInput({ label, value, onChange, show, onToggle, error, required }: {
+function PasswordInput({ id, label, value, onChange, show, onToggle, error, required }: {
+  id?: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -425,7 +437,7 @@ function PasswordInput({ label, value, onChange, show, onToggle, error, required
   required?: boolean;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div id={id} className="space-y-1.5">
       <label className="block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label} {required && <span className="text-red-500">*</span>}</label>
       <div className="relative">
         <input type={show ? 'text' : 'password'} autoComplete="new-password" value={value} onChange={event => onChange(event.target.value)} placeholder="••••••••" className={`h-11 w-full rounded-xl border bg-white py-3 pl-4 pr-11 text-sm text-neutral-900 outline-none placeholder:text-neutral-300 transition-all focus:ring-2 ${error ? 'border-red-300 focus:border-red-400 focus:ring-red-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`} />
@@ -438,16 +450,18 @@ function PasswordInput({ label, value, onChange, show, onToggle, error, required
   );
 }
 
-function SelectInput({ label, value, onChange, options, error, required }: {
+function SelectInput({ id, label, value, onChange, options, error, required, className }: {
+  id?: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
   options: [string, string][];
   error?: string;
   required?: boolean;
+  className?: string;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div id={id} className={`space-y-1.5 ${className ?? ''}`}>
       <label className="block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label} {required && <span className="text-red-500">*</span>}</label>
       <div className="relative">
         <select value={value} onChange={event => onChange(event.target.value)} className={`h-11 w-full appearance-none rounded-xl border bg-white px-3 pr-9 text-sm text-neutral-900 outline-none transition focus:ring-2 ${error ? 'border-red-300 focus:border-red-400 focus:ring-red-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`}>
@@ -460,7 +474,8 @@ function SelectInput({ label, value, onChange, options, error, required }: {
   );
 }
 
-function TagInput({ icon: Icon, label, help, value, onChange, placeholder, error, required }: {
+function TagInput({ id, icon: Icon, label, help, value, onChange, placeholder, error, required }: {
+  id?: string;
   icon: IconType;
   label: string;
   help: string;
@@ -481,7 +496,7 @@ function TagInput({ icon: Icon, label, help, value, onChange, placeholder, error
   };
 
   return (
-    <div className="space-y-1.5 sm:col-span-2">
+    <div id={id} className="space-y-1.5 sm:col-span-2">
       <label className="block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label} {required && <span className="text-red-500">*</span>}</label>
       <p className="text-xs text-neutral-400">{help}</p>
       <div className={`rounded-xl border bg-white px-3 py-2 transition focus-within:ring-2 ${error ? 'border-red-300 focus-within:border-red-400 focus-within:ring-red-500/15' : 'border-neutral-200 focus-within:border-emerald-500 focus-within:ring-emerald-500/15'}`}>

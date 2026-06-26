@@ -4,10 +4,10 @@ import Image from 'next/image';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
 
       {/* Panneau gauche - identite SALAM */}
-      <div className="relative hidden w-[480px] shrink-0 flex-col overflow-hidden bg-gradient-to-b from-[#05120b] via-[#07190f] to-[#061009] lg:flex xl:w-[520px]">
+      <div className="relative hidden w-[320px] shrink-0 flex-col overflow-hidden bg-gradient-to-b from-[#05120b] via-[#07190f] to-[#061009] lg:flex xl:w-[360px]">
 
         {/* Texture subtile */}
         <div className="pointer-events-none absolute inset-0 opacity-[0.04]"
@@ -76,7 +76,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* Panneau droit - formulaire */}
-      <div className="flex flex-1 flex-col bg-[#f7f8f6]">
+      <div className="relative flex flex-1 flex-col overflow-y-auto bg-[#f7f8f6]">
+        {/* Motif ndop subtil */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.035]"
+          style={{ backgroundImage: "url('/images/placeholders/ndop motif WBG.png')", backgroundSize: '360px', backgroundRepeat: 'repeat' }} />
 
         {/* Mobile header */}
         <div className="flex items-center gap-3 border-b border-neutral-200/80 bg-white px-5 py-4 lg:hidden">
@@ -104,8 +107,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           </Link>
         </div>
 
-        <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
-          <div className="w-full max-w-md">
+        <div className="relative flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
+          <div className="w-full max-w-2xl">
             {children}
           </div>
         </div>
