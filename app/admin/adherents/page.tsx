@@ -17,7 +17,7 @@ import {
   useAdminCotisations, useUpdateCotisationStatus, useSendReminders,
   useSendUnpaidInvoiceRelance, type AdminCotisationRow, type CotisationStatus,
 } from '@/lib/api/cotisations';
-import { useActivities, useRemindActivityInvitations, type ActivityDoc } from '@/lib/api/activities';
+import { useActivities, useActivityInvitations, useRemindActivityInvitations, type ActivityDoc } from '@/lib/api/activities';
 import { useAdjustMemberCauris } from '@/lib/api/cauris';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName, formatInitials } from '@/lib/format-name';
@@ -123,6 +123,10 @@ export default function AdminAdherentsPage() {
   const { data, isLoading }      = useAdminMembers({ search: '', limit: 200 });
   const { data: cotisData }      = useAdminCotisations(cotisYear);
   const { data: activitiesData } = useActivities({ status: 'published' });
+  /* Fetch invitations only when presence relance is active + activity chosen */
+  const { data: presenceInvitData } = useActivityInvitations(
+    activeTab === 'relance' && relanceSub === 'presence' && selectedAct ? selectedAct._id : undefined,
+  );
 
   const members: MemberListItem[]       = useMemo(() => data?.data?.data ?? [], [data]);
   const cotisRows: AdminCotisationRow[] = useMemo(() => cotisData?.data ?? [], [cotisData]);
@@ -133,6 +137,20 @@ export default function AdminAdherentsPage() {
     cotisRows.forEach(r => map.set(String(r.user._id), r.cotisation.status));
     return map;
   }, [cotisRows]);
+
+  /* IDs des membres avec invitation pending/unsure pour l'activité choisie */
+  const pendingInviteeIds = useMemo(() => {
+    const invitations = presenceInvitData?.data?.invitations ?? [];
+    const ids = new Set<string>();
+    for (const inv of invitations) {
+      if (inv.rsvpStatus !== 'pending' && inv.rsvpStatus !== 'unsure') continue;
+      const mId = typeof inv.memberId === 'string'
+        ? inv.memberId
+        : (inv.memberId as { _id?: string })?._id;
+      if (mId) ids.add(mId);
+    }
+    return ids;
+  }, [presenceInvitData]);
 
   /* ── Mutations ─────────────────────────────────────────── */
   const hardDelete       = useHardDeleteMember();
@@ -156,6 +174,15 @@ export default function AdminAdherentsPage() {
   useEffect(() => {
     if (activeTab === 'cartes') setCardSelected(prev => prev ?? members[0] ?? null);
   }, [activeTab, members]);
+
+  /* ── Auto-sélection des invités en attente quand une activité est choisie ── */
+  useEffect(() => {
+    if (activeTab === 'relance' && relanceSub === 'presence' && selectedAct) {
+      /* Sélectionne automatiquement tous les membres avec invitation pending/unsure */
+      setCheckedIds(new Set(pendingInviteeIds));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingInviteeIds, selectedAct?._id]);
 
   /* ── KPIs ───────────────────────────────────────────────── */
   const kpis = useMemo(() => ({
@@ -183,9 +210,17 @@ export default function AdminAdherentsPage() {
       if (relanceSub === 'cotisation')  list = list.filter(m => m.cotisationStatus === 'unpaid');
       if (relanceSub === 'inscription') list = list.filter(m => m.memberStatus === 'pending');
       if (relanceSub === 'profil')      list = list.filter(m => !m.profileComplete);
+      /* Présence : restreint aux seuls membres réellement invités (pending/unsure) à l'activité */
+      if (relanceSub === 'presence' && selectedAct) {
+        if (pendingInviteeIds.size > 0) {
+          list = list.filter(m => pendingInviteeIds.has(m._id));
+        } else {
+          list = []; /* activité chargée mais 0 invité en attente */
+        }
+      }
     }
     return list;
-  }, [members, search, filters, activeTab, relanceSub]);
+  }, [members, search, filters, activeTab, relanceSub, selectedAct, pendingInviteeIds]);
 
   const activeFilterCount = filters.statut.length + filters.cotisation.length + filters.profil.length + filters.mois.length;
 
@@ -400,7 +435,12 @@ export default function AdminAdherentsPage() {
               selectedAct ? (
                 <span className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-white px-2.5 py-1 text-xs font-bold text-orange-700">
                   📍 {selectedAct.title}
-                  <button type="button" onClick={() => { setSelectedAct(null); setShowActPicker(true); }} className="text-orange-400 hover:text-orange-600"><X size={11} /></button>
+                  {pendingInviteeIds.size > 0 && (
+                    <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-black text-orange-600">
+                      {pendingInviteeIds.size} en attente
+                    </span>
+                  )}
+                  <button type="button" onClick={() => { setSelectedAct(null); setCheckedIds(new Set()); setShowActPicker(true); }} className="text-orange-400 hover:text-orange-600"><X size={11} /></button>
                 </span>
               ) : (
                 <button type="button" onClick={() => setShowActPicker(true)} className="rounded-xl border border-orange-200 bg-white px-2.5 py-1 text-xs font-bold text-orange-700 hover:bg-orange-50">
@@ -415,7 +455,15 @@ export default function AdminAdherentsPage() {
               </button>
             )}
           </div>
-          {checkedIds.size > 0 && (
+          {relanceSub === 'presence' && selectedAct && pendingInviteeIds.size === 0 && presenceInvitData && (
+            <p className="mt-2 text-[11px] font-medium text-neutral-400">Aucun invité en attente pour cette activité.</p>
+          )}
+          {relanceSub === 'presence' && selectedAct && checkedIds.size > 0 && (
+            <p className="mt-2 text-[11px] font-medium text-orange-600">
+              {checkedIds.size} membre{checkedIds.size > 1 ? 's' : ''} sélectionné{checkedIds.size > 1 ? 's' : ''} — le mail sera envoyé uniquement à ces {checkedIds.size} personne{checkedIds.size > 1 ? 's' : ''}.
+            </p>
+          )}
+          {relanceSub !== 'presence' && checkedIds.size > 0 && (
             <p className="mt-2 text-[11px] font-medium text-orange-600">{checkedIds.size} membre{checkedIds.size > 1 ? 's' : ''} sélectionné{checkedIds.size > 1 ? 's' : ''}</p>
           )}
         </div>
