@@ -295,10 +295,12 @@ export function useRemindActivityInvitations() {
   const token = useAuthStore(s => s.accessToken);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (activityId: string) => apiClient<{ sent: number; total: number }>(`/api/v1/admin/activities/${activityId}/invitations/remind`, {
-      method: 'POST',
-      token: token ?? '',
-    }),
+    mutationFn: ({ activityId, userIds }: { activityId: string; userIds?: string[] }) =>
+      apiClient<{ sent: number; total: number }>(`/api/v1/admin/activities/${activityId}/invitations/remind`, {
+        method: 'POST',
+        body: JSON.stringify({ userIds }),
+        token: token ?? '',
+      }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-activities'] });
       qc.invalidateQueries({ queryKey: ['activity-invitations'] });

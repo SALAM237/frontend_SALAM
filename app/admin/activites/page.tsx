@@ -742,7 +742,7 @@ export default function AdminActivitesPage() {
                         className="inline-flex h-7 items-center gap-1 rounded-lg border border-emerald-100 px-2 text-[11px] font-black text-emerald-700 transition hover:bg-emerald-50 whitespace-nowrap">
                         <Users size={11} /> Présences
                       </button>
-                      <button onClick={() => remindInvitations.mutate(a._id)}
+                      <button onClick={() => remindInvitations.mutate({ activityId: a._id })}
                         disabled={remindInvitations.isPending || !hasSummary || (a.invitationSummary!.pending + a.invitationSummary!.unsure) === 0}
                         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 border-amber-300 text-amber-500 transition hover:border-amber-500 hover:bg-amber-50 disabled:opacity-40"
                         title="Relancer">
