@@ -8,6 +8,8 @@ import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { RichText } from '@/components/ui/RichText';
 import { trackEvent } from '@/lib/analytics';
 import { useMarkMemberDashboardItemRead } from '@/lib/api/member-dashboard';
+import { useUnreadByHref, useMarkHrefRead } from '@/lib/api/notifications';
+import { UnreadCorner } from '@/components/ui/UnreadCorner';
 
 const statusCls: Record<string, string> = {
   published: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -57,7 +59,9 @@ export default function OpportunitesPage() {
   const submit = useSubmitOpportunity();
   const update = useUpdateOpportunity();
   const reply = useReplyOpportunity();
-  const markItemRead = useMarkMemberDashboardItemRead();
+  const markItemRead  = useMarkMemberDashboardItemRead();
+  const unreadHrefs   = useUnreadByHref('member');
+  const markHrefRead  = useMarkHrefRead('member');
   const items = tab === 'mine' ? mine.data?.data?.items ?? [] : published.data?.data?.items ?? [];
   const loading = tab === 'mine' ? mine.isLoading : published.isLoading;
 
@@ -312,8 +316,12 @@ export default function OpportunitesPage() {
             <p className="text-sm font-semibold text-neutral-400">Aucune opportunite pour le moment.</p>
           </div>
         )}
-        {items.map(item => (
-          <article key={item._id} className="rounded-3xl border border-neutral-100 bg-white p-4 shadow-sm transition hover:border-emerald-100 hover:shadow-md sm:p-5">
+        {items.map(item => {
+          const oppHref = `/member/opportunites/${item.slug}`;
+          const isUnread = tab === 'published' && [...unreadHrefs].some(h => h.startsWith(oppHref));
+          return (
+          <article key={item._id} className="relative rounded-3xl border border-neutral-100 bg-white p-4 shadow-sm transition hover:border-emerald-100 hover:shadow-md sm:p-5">
+            {isUnread && <UnreadCorner />}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -325,7 +333,7 @@ export default function OpportunitesPage() {
                 <RichText value={item.description} className="mt-1 text-sm leading-6 text-neutral-600" block />
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-2">
-                <button onClick={() => openOpportunityDetail(item, 'view_button_click')} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" title="Visualiser">
+                <button onClick={() => { openOpportunityDetail(item, 'view_button_click'); if (item.status === 'published') { markItemRead.mutate({ type: 'opportunity', id: item._id }); markHrefRead(oppHref); } }} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" title="Visualiser">
                   <Eye size={14} />
                 </button>
                 {tab === 'mine' && item.status !== 'published' && (
@@ -355,7 +363,8 @@ export default function OpportunitesPage() {
               </div>
             )}
           </article>
-        ))}
+          );
+        })}
       </div>
 
       {replyFor && (

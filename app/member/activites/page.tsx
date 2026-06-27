@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { CalendarDays, Search, MapPin, Users, Loader2, Eye, X, CheckCircle2, HelpCircle, XCircle } from 'lucide-react';
 import { useMemberActivities, useRespondActivityInvitation, ACTIVITY_CATEGORIES } from '@/lib/api/activities';
 import { trackEvent } from '@/lib/analytics';
+import { useUnreadByHref, useMarkHrefRead } from '@/lib/api/notifications';
+import { UnreadCorner } from '@/components/ui/UnreadCorner';
 
 const CAT_COLORS: Record<string, string> = {
   sport: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -128,12 +130,17 @@ function ActivityCard({ a }: { a: any }) {
   const sCls     = a.status === 'published' ? 'bg-emerald-500 text-white' : a.status === 'finished' ? 'bg-neutral-400 text-white' : a.status === 'cancelled' ? 'bg-red-500 text-white' : 'bg-yellow-400 text-white';
   const sLabel   = a.status === 'published' ? 'Ouverte' : a.status === 'finished' ? 'Passée' : a.status === 'cancelled' ? 'Annulée' : 'Brouillon';
 
-  const respond  = useRespondActivityInvitation(a._id, a.slug);
-  const currentRsvp = a.myInvitation?.rsvpStatus;
-  const hasRsvp  = !!a.myInvitation;
+  const respond      = useRespondActivityInvitation(a._id, a.slug);
+  const currentRsvp  = a.myInvitation?.rsvpStatus;
+  const hasRsvp      = !!a.myInvitation;
+  const unreadHrefs  = useUnreadByHref('member');
+  const markHrefRead = useMarkHrefRead('member');
+  const activityHref = `/member/activites/${a.slug}`;
+  const isUnread     = [...unreadHrefs].some(h => h.startsWith(activityHref));
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
+    <article className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
+      {isUnread && <UnreadCorner />}
       {/* Bannière */}
       <div className="relative flex h-32 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700">
         {a.imageUrl ? (
@@ -191,8 +198,8 @@ function ActivityCard({ a }: { a: any }) {
 
         <div className="border-t border-neutral-100 pt-2">
           <Link
-            href={`/member/activites/${a.slug}`}
-            onClick={() => trackEvent('activity_click', { activity_id: a._id, activity_slug: a.slug, activity_title: a.title, category: a.category, status: a.status, source: 'member_list', action: 'view_button_click' })}
+            href={activityHref}
+            onClick={() => { trackEvent('activity_click', { activity_id: a._id, activity_slug: a.slug, activity_title: a.title, category: a.category, status: a.status, source: 'member_list', action: 'view_button_click' }); markHrefRead(activityHref); }}
             className="inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-[11px] font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
             <Eye size={11} /> Voir
           </Link>

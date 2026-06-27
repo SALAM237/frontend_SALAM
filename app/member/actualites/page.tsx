@@ -10,6 +10,8 @@ import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { RichText } from '@/components/ui/RichText';
 import { trackEvent } from '@/lib/analytics';
 import { useMarkMemberDashboardItemRead } from '@/lib/api/member-dashboard';
+import { useUnreadByHref, useMarkHrefRead } from '@/lib/api/notifications';
+import { UnreadCorner } from '@/components/ui/UnreadCorner';
 
 type ExtraBlock = { id: string; label: string; title: string; description: string };
 
@@ -18,7 +20,9 @@ export default function MemberActualitesPage() {
   const [cat, setCat]       = useState('all');
   const [selected, setSelected] = useState<any | null>(null);
   const [submitOpen, setSubmitOpen] = useState(false);
-  const markItemRead = useMarkMemberDashboardItemRead();
+  const markItemRead  = useMarkMemberDashboardItemRead();
+  const unreadHrefs   = useUnreadByHref('member');
+  const markHrefRead  = useMarkHrefRead('member');
 
   const { data, isLoading } = usePublicArticles();
   const articles = data?.data ?? [];
@@ -95,8 +99,11 @@ export default function MemberActualitesPage() {
               const catLabel   = ARTICLE_CATEGORIES.find(c => c.value === n.data?.category)?.label ?? 'Général';
               const isPublished = n.status === 'published';
               const href = articleHref(n).replace('/actualites/', '/member/actualites/');
+              const memberHref = articleHref(n).replace('/actualites/', '/member/actualites/');
+              const isUnread = [...unreadHrefs].some(h => h.startsWith(memberHref));
               return (
-                <article key={n._id} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex sm:items-stretch">
+                <article key={n._id} className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex sm:items-stretch">
+                  {isUnread && <UnreadCorner />}
                   {/* Image */}
                   <div className="relative h-44 shrink-0 overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 sm:h-auto sm:w-52">
                     {articleImage(n) ? (
@@ -140,6 +147,7 @@ export default function MemberActualitesPage() {
                         onClick={() => {
                           trackEvent('news_click', { article_id: n._id, article_slug: n.slug, article_title: n.title, category: n.data?.category, source: 'member_list', action: 'view_button_click' });
                           markItemRead.mutate({ type: 'news', id: n._id });
+                          markHrefRead(memberHref);
                         }}
                         className="inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-[11px] font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
                         <Eye size={11} /> Lire

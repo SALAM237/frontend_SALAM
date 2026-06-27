@@ -17,6 +17,7 @@ import {
 } from '@/lib/api/messages';
 import type { MembersListResponse } from '@/lib/api/members';
 import { formatFullName } from '@/lib/format-name';
+import { UnreadCorner } from '@/components/ui/UnreadCorner';
 
 type Recipient = { id: string; name: string; email: string };
 type Mailbox = 'inbox' | 'sent';
@@ -294,14 +295,14 @@ export function MessagingPage({ space }: { space: MessageSpace }) {
               </div>
             )}
             {rows.map(row => (
-              <button type="button" key={row.conversation._id} onClick={() => open(row)} className={`w-full border-b border-neutral-50 p-4 text-left hover:bg-neutral-50 ${selectedId === row.conversation._id ? 'bg-emerald-50/70' : ''}`}>
+              <button type="button" key={row.conversation._id} onClick={() => open(row)} className={`relative w-full overflow-hidden border-b border-neutral-50 p-4 text-left hover:bg-neutral-50 ${selectedId === row.conversation._id ? 'bg-emerald-50/70' : ''}`}>
+                {row.unread && <UnreadCorner />}
                 <div className="flex items-start justify-between gap-2">
                   <span className={`min-w-0 truncate text-sm ${row.unread ? 'font-black text-neutral-950' : 'font-bold text-neutral-600'}`}>{row.title}</span>
                   <span className="shrink-0 text-[10px] text-neutral-400">{row.date}</span>
                 </div>
                 <p className={`mt-1 truncate text-xs ${row.unread ? 'font-bold text-neutral-800' : 'font-semibold text-neutral-500'}`}>{row.subject}</p>
                 <div className="mt-1 flex items-center gap-2">
-                  {row.unread && <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />}
                   <p className="min-w-0 truncate text-xs text-neutral-400">{row.preview}</p>
                 </div>
               </button>

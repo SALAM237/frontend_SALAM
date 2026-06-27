@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useUnreadByHref, useMarkHrefRead } from '@/lib/api/notifications';
+import { UnreadCorner } from '@/components/ui/UnreadCorner';
 import Link from 'next/link';
 import { CalendarDays, ImagePlus, Plus, X, MapPin, Users, Loader2, Trash2, Edit3, PlusCircle, Send, Eye, Tag, CheckCircle2, XCircle, HelpCircle, Clock, ChevronDown } from 'lucide-react';
 import {
@@ -704,7 +706,9 @@ export default function AdminActivitesPage() {
   const createActivity = useCreateActivity();
   const remindInvitations = useRemindActivityInvitations();
 
-  const activities = data?.data?.activities ?? [];
+  const activities   = data?.data?.activities ?? [];
+  const unreadHrefs  = useUnreadByHref('admin');
+  const markHrefRead = useMarkHrefRead('admin');
   const stats = {
     published: activities.filter(a => a.status === 'published').length,
     draft:     activities.filter(a => a.status === 'draft').length,
@@ -767,11 +771,14 @@ export default function AdminActivitesPage() {
         {!isLoading && activities.length > 0 && (
           <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
             {[...activities].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((a: ActivityDoc) => {
-              const cfg      = sCfg[a.status] ?? sCfg.draft;
-              const catLabel = ACTIVITY_CATEGORIES.find(c => c.value === a.category)?.label ?? a.category;
+              const cfg        = sCfg[a.status] ?? sCfg.draft;
+              const catLabel   = ACTIVITY_CATEGORIES.find(c => c.value === a.category)?.label ?? a.category;
               const hasSummary = a.invitationSummary && a.invitationSummary.total > 0;
+              const actHref    = `/activites/${a.slug}`;
+              const isUnread   = [...unreadHrefs].some(h => h.includes(a.slug ?? a._id));
               return (
-                <article key={a._id} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
+                <article key={a._id} className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
+                  {isUnread && <UnreadCorner />}
                   {/* Bannière catégorie */}
                   <div className="relative flex h-36 items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700">
                     {a.imageUrl ? (
@@ -831,7 +838,8 @@ export default function AdminActivitesPage() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-1.5">
-                      <Link href={`/activites/${a.slug}`} target="_blank" rel="noopener noreferrer"
+                      <Link href={actHref} target="_blank" rel="noopener noreferrer"
+                        onClick={() => markHrefRead(actHref)}
                         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700"
                         title="Voir l'activité">
                         <Eye size={11} />

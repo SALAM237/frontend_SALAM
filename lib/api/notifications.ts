@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, type ApiResponse } from './client';
 import { useAuthStore } from '@/store/auth.store';
@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth.store';
 export type PortalSpace = 'admin' | 'member';
 export interface PortalNotification {
   _id: string;
+  sourceId?: string;
   kind: string;
   title: string;
   message: string;
@@ -40,6 +41,15 @@ export function useReadAllNotifications(space: PortalSpace) {
     mutationFn: () => apiClient('/api/v1/notifications/read-all', { method: 'PATCH', body: JSON.stringify({ space }), token: token ?? '' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications', space] }),
   });
+}
+
+/** Retourne un Set de tous les href qui ont au moins une notification non lue. */
+export function useUnreadByHref(space: PortalSpace): Set<string> {
+  const { data } = useNotifications(space);
+  return useMemo(
+    () => new Set((data?.data?.items ?? []).filter(n => !n.readAt).map(n => n.href)),
+    [data],
+  );
 }
 
 /** Marque comme lues toutes les notifications dont le href commence par `hrefPrefix`.

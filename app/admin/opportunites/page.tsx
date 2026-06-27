@@ -10,6 +10,8 @@ import { OPPORTUNITY_TYPES, useAdminOpportunities, type OpportunityDoc, type Opp
 import { formatFullName } from '@/lib/format-name';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { RichText } from '@/components/ui/RichText';
+import { useUnreadByHref, useMarkHrefRead } from '@/lib/api/notifications';
+import { UnreadCorner } from '@/components/ui/UnreadCorner';
 
 const statusTabs: { value: OpportunityStatus | 'all'; label: string }[] = [
   { value: 'pending', label: 'En attente' },
@@ -48,7 +50,9 @@ export default function AdminOpportunitesPage() {
   const [status, setStatus] = useState<OpportunityStatus | 'all'>('pending');
   const [viewOpportunity, setViewOpportunity] = useState<OpportunityDoc | null>(null);
   const opportunities = useAdminOpportunities(status);
-  const items = opportunities.data?.data?.items ?? [];
+  const items         = opportunities.data?.data?.items ?? [];
+  const unreadHrefs   = useUnreadByHref('admin');
+  const markHrefRead  = useMarkHrefRead('admin');
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -84,8 +88,10 @@ export default function AdminOpportunitesPage() {
             const statusCfg = STATUS_CFG[item.status] ?? STATUS_CFG.draft;
             const expired   = isExpired(item.expiresAt);
             const expiring  = !expired && isExpiringSoon(item.expiresAt);
+            const isUnread  = [...unreadHrefs].some(h => h.includes(item.slug ?? item._id));
             return (
-              <article key={item._id} className="flex flex-col overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
+              <article key={item._id} className="relative flex flex-col overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md">
+                {isUnread && <UnreadCorner />}
                 {/* Header bloc */}
                 <div className="border-b border-neutral-50 bg-gradient-to-br from-emerald-800 to-emerald-950 px-4 py-3">
                   <div className="flex flex-wrap items-center gap-1.5 mb-2">
@@ -163,7 +169,7 @@ export default function AdminOpportunitesPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 border-t border-neutral-50 px-4 py-3">
-                  <button onClick={() => setViewOpportunity(item)}
+                  <button onClick={() => { setViewOpportunity(item); markHrefRead(`/admin/opportunites/${item.slug ?? item._id}`); }}
                     className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-neutral-200 px-2.5 text-[11px] font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
                     <Eye size={11} /> Voir
                   </button>

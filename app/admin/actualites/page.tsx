@@ -17,6 +17,8 @@ import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { DesignEditorField } from '@/components/admin/DesignEditorField';
 import { RichText } from '@/components/ui/RichText';
 import { FeaturedManager } from '@/components/admin/FeaturedManager';
+import { useUnreadByHref, useMarkHrefRead } from '@/lib/api/notifications';
+import { UnreadCorner } from '@/components/ui/UnreadCorner';
 
 type DesignStyle = {
   x: number;
@@ -394,9 +396,11 @@ export default function AdminActualitesPage() {
   const createArticle = useCreateArticle();
   const deleteArticle = useDeleteArticle();
 
-  const articles  = data?.data ?? [];
-  const published = articles.filter((a: ArticleDoc) => a.status === 'published').length;
-  const drafts    = articles.filter((a: ArticleDoc) => a.status === 'draft').length;
+  const articles     = data?.data ?? [];
+  const published    = articles.filter((a: ArticleDoc) => a.status === 'published').length;
+  const drafts       = articles.filter((a: ArticleDoc) => a.status === 'draft').length;
+  const unreadHrefs  = useUnreadByHref('admin');
+  const markHrefRead = useMarkHrefRead('admin');
 
   const handleDelete = (id: string, title: string) => {
     if (!confirm(`Supprimer "${title}" ??`)) return;
@@ -448,10 +452,13 @@ export default function AdminActualitesPage() {
         {!isLoading && articles.length > 0 && (
           <div className="grid gap-3 p-4">
             {[...articles].sort((a: ArticleDoc, b: ArticleDoc) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((a: ArticleDoc) => {
-              const catLabel = ARTICLE_CATEGORIES.find(c => c.value === a.data?.category)?.label ?? 'Général';
+              const catLabel    = ARTICLE_CATEGORIES.find(c => c.value === a.data?.category)?.label ?? 'Général';
               const isPublished = a.status === 'published';
+              const artHref     = articleHref(a);
+              const isUnread    = [...unreadHrefs].some(h => h.includes(a.slug ?? a._id));
               return (
-                <article key={a._id} className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex sm:items-stretch">
+                <article key={a._id} className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex sm:items-stretch">
+                  {isUnread && <UnreadCorner />}
                   {/* Image — pleine largeur mobile, colonne gauche desktop */}
                   <div className="relative h-44 shrink-0 overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 sm:h-auto sm:w-52">
                     {articleImage(a) ? (
@@ -498,7 +505,8 @@ export default function AdminActualitesPage() {
 
                     {/* Actions */}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <Link href={articleHref(a)} target="_blank" rel="noopener noreferrer"
+                      <Link href={artHref} target="_blank" rel="noopener noreferrer"
+                        onClick={() => markHrefRead(artHref)}
                         className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-neutral-200 px-3.5 text-xs font-black text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
                         <Eye size={13} /> Voir
                       </Link>

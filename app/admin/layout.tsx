@@ -21,6 +21,9 @@ import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
 import { NotificationCenter } from '@/components/portal/NotificationCenter';
 import { CauriBadge } from '@/components/member/CauriWallet';
 import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
+import { usePendingValidations } from '@/lib/api/validations';
+import { useAdminStats } from '@/lib/api/dashboard';
+import { useNotifications } from '@/lib/api/notifications';
 
 type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; permissions?: string[]; hidden?: boolean };
 
@@ -103,6 +106,19 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
   const searchParams = useSearchParams();
   const currentTab = searchParams.get('tab');
 
+  const { data: validationsData } = usePendingValidations();
+  const { data: statsData }       = useAdminStats();
+  const { data: notifData }       = useNotifications('admin');
+
+  const pendingValidations = validationsData?.data?.total ?? 0;
+  const pendingMembers     = statsData?.data?.members?.pending ?? 0;
+  const unreadMessages     = notifData?.data?.unread ?? 0;
+
+  const adminBadges: Record<string, number> = {};
+  if (pendingValidations > 0) adminBadges['/admin/validations'] = pendingValidations;
+  if (pendingMembers > 0)     adminBadges['/admin/adherents']   = pendingMembers;
+  if (unreadMessages > 0)     adminBadges['/admin/messages']    = unreadMessages;
+
   return (
     <>
       {/* Overlay mobile */}
@@ -162,6 +178,11 @@ function AdminSidebar({ open, onClose, initials, displayName, adminRole, bureauP
                   >
                     <Icon size={16} className={active ? 'text-emerald-400' : 'text-white/30 group-hover:text-white/60'} />
                     <span className="flex-1">{label}</span>
+                    {adminBadges[hrefPath] > 0 && !active && (
+                      <span className="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500/80 px-1 text-[9px] font-black text-white shadow-sm">
+                        {adminBadges[hrefPath] > 99 ? '99+' : adminBadges[hrefPath]}
+                      </span>
+                    )}
                     {active && <ChevronRight size={12} className="text-emerald-400/60" />}
                   </Link>
                 </li>

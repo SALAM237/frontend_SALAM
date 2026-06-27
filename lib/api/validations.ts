@@ -48,7 +48,7 @@ export function useReviewPendingValidation() {
         body: JSON.stringify({ action }),
         token: token ?? '',
       }),
-    onSuccess: res => {
+    onSuccess: (res, variables) => {
       qc.invalidateQueries({ queryKey: ['admin-pending-validations'] });
       qc.invalidateQueries({ queryKey: ['admin-content'] });
       qc.invalidateQueries({ queryKey: ['admin-gallery'] });
@@ -58,8 +58,11 @@ export function useReviewPendingValidation() {
       qc.invalidateQueries({ queryKey: ['member-opportunities'] });
       qc.invalidateQueries({ queryKey: ['public-opportunities'] });
       qc.invalidateQueries({ queryKey: ['admin-opportunities'] });
-      qc.invalidateQueries({ queryKey: ['admin-members'] });
-      qc.invalidateQueries({ queryKey: ['admin-stats'] });
+      /* N'invalider les adhérents que si c'est une suppression de compte */
+      if (variables.type === 'memberDeletion') {
+        qc.invalidateQueries({ queryKey: ['admin-members'] });
+        qc.invalidateQueries({ queryKey: ['admin-stats'] });
+      }
       qc.invalidateQueries({ queryKey: MEMBER_DASHBOARD_KPIS_QUERY_KEY });
       toast.success((res as any).message ?? 'Validation mise a jour');
     },
