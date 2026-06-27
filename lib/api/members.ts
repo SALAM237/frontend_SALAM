@@ -489,6 +489,19 @@ export function useRemindIncompleteProfiles() {
   });
 }
 
+export function useBackfillLastLogin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiClient<{ updated: number }>('/api/v1/admin/members/backfill-last-login', { method: 'POST' }),
+    onSuccess: res => {
+      toast.success(`${res.data?.updated ?? 0} membre(s) mis à jour`);
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 export function useSendInternalMessageBulk() {
   const token = useAuthStore(s => s.accessToken);
   return useMutation({
