@@ -37,7 +37,7 @@ function countValues(members: NetworkingMember[], getter: (m: NetworkingMember) 
   return [...map.entries()].sort((a, b) => b[1] - a[1]);
 }
 
-function KeywordSection({ title, items, tone }: { title: string; items: string[]; tone: 'green' | 'amber' | 'violet' }) {
+function KeywordSection({ title, items, tone, action }: { title: string; items: string[]; tone: 'green' | 'amber' | 'violet'; action?: React.ReactNode }) {
   const cls = {
     green:  'bg-emerald-50 text-emerald-700 ring-emerald-100',
     amber:  'bg-amber-50  text-amber-700  ring-amber-100',
@@ -45,7 +45,10 @@ function KeywordSection({ title, items, tone }: { title: string; items: string[]
   }[tone];
   return (
     <div>
-      <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">{title}</p>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">{title}</p>
+        {action}
+      </div>
       <div className="flex flex-wrap gap-1.5">
         {items.length === 0
           ? <span className="rounded-full bg-neutral-50 px-2 py-1 text-[10px] font-black text-neutral-400 ring-1 ring-neutral-100">Non renseigné</span>
@@ -222,23 +225,14 @@ function MemberNetworkingCard({
         <div className="min-w-0 flex-1">
           <button type="button" onClick={() => onOpen(member)} className="block w-full truncate text-left text-sm font-black text-neutral-900 transition hover:text-emerald-700">{name}</button>
 
-          {/* Secteur + compteur + bouton ajout — pas de wrap, secteur tronqué */}
+          {/* Secteur + compteur */}
           <div className="mt-0.5 flex items-center gap-2">
             <p className="min-w-0 flex-1 truncate text-xs font-semibold text-emerald-700">{member.activitySector || 'Secteur non renseigné'}</p>
-            <div className="flex shrink-0 items-center gap-1">
-              {savedCount > 0 && (
-                <span title={`Ajouté ${savedCount} fois dans des répertoires SALAM`} className="shrink-0 text-[9px] font-bold text-neutral-400">
-                  ✦ {savedCount}×
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => onAddToDirectory(member)}
-                className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-black text-emerald-700 transition hover:bg-emerald-100 active:scale-95"
-              >
-                <Plus size={9} /> Ajouter à mon répertoire
-              </button>
-            </div>
+            {savedCount > 0 && (
+              <span title={`Ajouté ${savedCount} fois dans des répertoires SALAM`} className="shrink-0 text-[9px] font-bold text-neutral-400">
+                ✦ {savedCount}×
+              </span>
+            )}
           </div>
 
           {location && <p className="mt-1 flex items-center gap-1 truncate text-[11px] font-semibold text-neutral-400"><MapPin size={11} /> {location}</p>}
@@ -248,7 +242,20 @@ function MemberNetworkingCard({
       {member.bio && <p className="mt-3 line-clamp-2 text-xs leading-5 text-neutral-500">{member.bio}</p>}
 
       <div className="mt-3 space-y-3">
-        <KeywordSection title="Compétences"          items={(member.skills ?? []).slice(0, 6)} tone="amber" />
+        <KeywordSection
+          title="Compétences"
+          items={(member.skills ?? []).slice(0, 6)}
+          tone="amber"
+          action={
+            <button
+              type="button"
+              onClick={() => onAddToDirectory(member)}
+              className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-black text-emerald-700 transition hover:bg-emerald-100 active:scale-95"
+            >
+              <Plus size={9} /> Ajouter à mon répertoire
+            </button>
+          }
+        />
         <KeywordSection title="Domaines d'expertise" items={(member.expertiseDomains ?? []).slice(0, 5)} tone="violet" />
       </div>
 
@@ -489,8 +496,8 @@ export default function NetworkingPage() {
 
           {results.length > 0 && (
             <>
-              <div className="mt-6 grid gap-2 sm:grid-cols-3 sm:gap-3">
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 sm:p-4"><div className="flex items-center gap-1.5 text-emerald-700"><Users size={14} className="sm:hidden" /><Users size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Profils trouvés</p></div><p className="mt-2 text-xl font-black text-emerald-900 sm:mt-3 sm:text-2xl">{results.length}</p><p className="mt-0.5 text-[10px] font-semibold text-emerald-900/60 sm:mt-1 sm:text-xs">{completeProfiles} profils bien renseignés</p></div>
+              <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+                <div className="col-span-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 sm:col-span-1 sm:p-4"><div className="flex items-center gap-1.5 text-emerald-700"><Users size={14} className="sm:hidden" /><Users size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Profils trouvés</p></div><p className="mt-2 text-xl font-black text-emerald-900 sm:mt-3 sm:text-2xl">{results.length}</p><p className="mt-0.5 text-[10px] font-semibold text-emerald-900/60 sm:mt-1 sm:text-xs">{completeProfiles} profils bien renseignés</p></div>
                 <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-3 sm:p-4"><div className="flex items-center gap-1.5 text-amber-700"><Tags size={14} className="sm:hidden" /><Tags size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Compétences</p></div><p className="mt-2 text-xl font-black text-amber-900 sm:mt-3 sm:text-2xl">{skills.length}</p><p className="mt-0.5 text-[10px] font-semibold text-amber-900/60 sm:mt-1 sm:text-xs">mots-clés dominants</p></div>
                 <div className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-3 sm:p-4"><div className="flex items-center gap-1.5 text-neutral-700"><Handshake size={14} className="sm:hidden" /><Handshake size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Secteurs</p></div><p className="mt-2 text-xl font-black text-neutral-900 sm:mt-3 sm:text-2xl">{sectors.length}</p><p className="mt-0.5 text-[10px] font-semibold text-neutral-500 sm:mt-1 sm:text-xs">secteurs détectés</p></div>
               </div>
