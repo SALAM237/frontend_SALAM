@@ -34,13 +34,14 @@ const tabs: { value: TabValue; label: string }[] = [
 ];
 
 const sourceLabels: Record<TreasurySource, string> = {
-  adhesion: "Frais d'adhesion",
-  don: 'Dons',
-  crowdfunding: 'Crowdfunding',
-  activity: 'Activites',
-  subvention: 'Subventions',
-  partner: 'Partenaires',
-  other: 'Autres',
+  adhesion:            "Frais d'adhesion",
+  cotisation_annuelle: 'Cotisation annuelle',
+  don:                 'Dons',
+  crowdfunding:        'Crowdfunding',
+  activity:            'Activites',
+  subvention:          'Subventions',
+  partner:             'Partenaires',
+  other:               'Autres',
 };
 
 const sourceColors = ['#059669', '#2563eb', '#f59e0b', '#7c3aed', '#dc2626', '#0f766e', '#64748b'];
