@@ -83,7 +83,7 @@ function MemberProfileModal({ member, onClose }: { member: NetworkingMember; onC
             <div className="mt-4 flex flex-wrap gap-2">
               <a href={`mailto:${member.email}`} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700"><Mail size={12} /> Email</a>
               {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-2.5 text-xs font-black text-green-700 transition hover:bg-green-100">WhatsApp</a>}
-              <Link href={msgHref} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-black text-emerald-700 transition hover:bg-emerald-100"><MessageSquare size={12} /> Message</Link>
+              <Link href={msgHref} className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-emerald-600 px-2.5 text-xs font-black text-white transition hover:bg-emerald-700"><MessageSquare size={12} /> Message</Link>
             </div>
           </div>
         </div>
@@ -250,7 +250,7 @@ function MemberNetworkingCard({
             <button
               type="button"
               onClick={() => onAddToDirectory(member)}
-              className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-black text-emerald-700 transition hover:bg-emerald-100 active:scale-95"
+              className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-black text-white transition hover:bg-emerald-700 active:scale-95"
             >
               <Plus size={9} /> Ajouter à mon répertoire
             </button>
@@ -262,7 +262,7 @@ function MemberNetworkingCard({
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-neutral-100 pt-3">
         <a href={`mailto:${member.email}`} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700"><Mail size={12} /> Email</a>
         {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-2.5 text-xs font-black text-green-700 transition hover:bg-green-100">WhatsApp</a>}
-        <Link href={msgHref} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-black text-emerald-700 transition hover:bg-emerald-100"><MessageSquare size={12} /> Message</Link>
+        <Link href={msgHref} className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-emerald-600 px-2.5 text-xs font-black text-white transition hover:bg-emerald-700"><MessageSquare size={12} /> Message</Link>
         {member.antenne && <span className="text-[11px] font-bold text-neutral-400">Antenne {member.antenne}</span>}
       </div>
     </article>
@@ -497,9 +497,9 @@ export default function NetworkingPage() {
           {results.length > 0 && (
             <>
               <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-                <div className="col-span-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 sm:col-span-1 sm:p-4"><div className="flex items-center gap-1.5 text-emerald-700"><Users size={14} className="sm:hidden" /><Users size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Profils trouvés</p></div><p className="mt-2 text-xl font-black text-emerald-900 sm:mt-3 sm:text-2xl">{results.length}</p><p className="mt-0.5 text-[10px] font-semibold text-emerald-900/60 sm:mt-1 sm:text-xs">{completeProfiles} profils bien renseignés</p></div>
-                <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-3 sm:p-4"><div className="flex items-center gap-1.5 text-amber-700"><Tags size={14} className="sm:hidden" /><Tags size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Compétences</p></div><p className="mt-2 text-xl font-black text-amber-900 sm:mt-3 sm:text-2xl">{skills.length}</p><p className="mt-0.5 text-[10px] font-semibold text-amber-900/60 sm:mt-1 sm:text-xs">mots-clés dominants</p></div>
-                <div className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-3 sm:p-4"><div className="flex items-center gap-1.5 text-neutral-700"><Handshake size={14} className="sm:hidden" /><Handshake size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Secteurs</p></div><p className="mt-2 text-xl font-black text-neutral-900 sm:mt-3 sm:text-2xl">{sectors.length}</p><p className="mt-0.5 text-[10px] font-semibold text-neutral-500 sm:mt-1 sm:text-xs">secteurs détectés</p></div>
+                <div className="col-span-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-center sm:col-span-1 sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-emerald-700 sm:justify-start"><Users size={14} className="sm:hidden" /><Users size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Profils trouvés</p></div><p className="mt-2 text-xl font-black text-emerald-900 sm:mt-3 sm:text-2xl">{results.length}</p><p className="mt-0.5 text-[10px] font-semibold text-emerald-900/60 sm:mt-1 sm:text-xs">{completeProfiles} profils bien renseignés</p></div>
+                <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-3 text-center sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-amber-700 sm:justify-start"><Tags size={14} className="sm:hidden" /><Tags size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Compétences</p></div><p className="mt-2 text-xl font-black text-amber-900 sm:mt-3 sm:text-2xl">{skills.length}</p><p className="mt-0.5 text-[10px] font-semibold text-amber-900/60 sm:mt-1 sm:text-xs">mots-clés dominants</p></div>
+                <div className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-3 text-center sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-neutral-700 sm:justify-start"><Handshake size={14} className="sm:hidden" /><Handshake size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Secteurs</p></div><p className="mt-2 text-xl font-black text-neutral-900 sm:mt-3 sm:text-2xl">{sectors.length}</p><p className="mt-0.5 text-[10px] font-semibold text-neutral-500 sm:mt-1 sm:text-xs">secteurs détectés</p></div>
               </div>
               <div className="mt-4 grid gap-2 sm:mt-5 sm:gap-3 lg:grid-cols-3">
                 {[
