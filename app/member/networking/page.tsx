@@ -212,36 +212,36 @@ function MemberNetworkingCard({
   const savedCount = member.savedCount ?? 0;
 
   return (
-    <article className="w-full overflow-hidden rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-100 hover:shadow-md sm:p-4">
-      <div className="flex min-w-0 items-start gap-2 sm:gap-3">
+    <article className="w-full overflow-hidden rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-100 hover:shadow-md">
+      <div className="flex min-w-0 items-start gap-3">
         {photo ? (
-          <AvatarLightbox src={photo} alt={name} className={'h-10 w-10 shrink-0 rounded-full border-2 object-cover sm:h-12 sm:w-12 ' + memberAvatarBorderClass(member.gender)} />
+          <AvatarLightbox src={photo} alt={name} className={'h-12 w-12 shrink-0 rounded-full border-2 object-cover ' + memberAvatarBorderClass(member.gender)} />
         ) : (
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-black text-white sm:h-12 sm:w-12 sm:text-sm ${memberInitialsClass(member.gender)}`}>{formatInitials(member.firstName, member.lastName, 'M')}</div>
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${memberInitialsClass(member.gender)}`}>{formatInitials(member.firstName, member.lastName, 'M')}</div>
         )}
         <div className="min-w-0 flex-1">
-          <button type="button" onClick={() => onOpen(member)} className="block w-full truncate text-left text-xs font-black text-neutral-900 transition hover:text-emerald-700 sm:text-sm">{name}</button>
+          <button type="button" onClick={() => onOpen(member)} className="block w-full truncate text-left text-sm font-black text-neutral-900 transition hover:text-emerald-700">{name}</button>
 
-          {/* Secteur + compteur + bouton ajout */}
-          <div className="mt-0.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-            <p className="min-w-0 truncate text-[11px] font-semibold text-emerald-700 sm:text-xs">{member.activitySector || 'Secteur non renseigné'}</p>
+          {/* Secteur + compteur + bouton ajout — pas de wrap, secteur tronqué */}
+          <div className="mt-0.5 flex items-center gap-2">
+            <p className="min-w-0 flex-1 truncate text-xs font-semibold text-emerald-700">{member.activitySector || 'Secteur non renseigné'}</p>
             <div className="flex shrink-0 items-center gap-1">
               {savedCount > 0 && (
-                <span title={`Ajouté ${savedCount} fois dans des répertoires SALAM`} className="text-[9px] font-bold text-neutral-400">
+                <span title={`Ajouté ${savedCount} fois dans des répertoires SALAM`} className="shrink-0 text-[9px] font-bold text-neutral-400">
                   ✦ {savedCount}×
                 </span>
               )}
               <button
                 type="button"
                 onClick={() => onAddToDirectory(member)}
-                className="inline-flex items-center gap-0.5 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-black text-emerald-700 transition hover:bg-emerald-100 active:scale-95"
+                className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-black text-emerald-700 transition hover:bg-emerald-100 active:scale-95"
               >
                 <Plus size={9} /> Ajouter à mon répertoire
               </button>
             </div>
           </div>
 
-          {location && <p className="mt-1 flex items-center gap-1 truncate text-[10px] font-semibold text-neutral-400 sm:text-[11px]"><MapPin size={10} /> {location}</p>}
+          {location && <p className="mt-1 flex items-center gap-1 truncate text-[11px] font-semibold text-neutral-400"><MapPin size={11} /> {location}</p>}
         </div>
       </div>
 
