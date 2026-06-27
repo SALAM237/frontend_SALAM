@@ -100,9 +100,9 @@ function mapRow(row: CsvRawRow): MappedRow {
 }
 
 /* ─── Sub-components ────────────────────────────────────── */
-function Field({ label, value, onChange, placeholder, type = 'text', required = false }: {
+function Field({ label, value, onChange, placeholder, type = 'text', required = false, error }: {
   label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string; type?: string; required?: boolean;
+  placeholder?: string; type?: string; required?: boolean; error?: string;
 }) {
   return (
     <div>
@@ -111,8 +111,9 @@ function Field({ label, value, onChange, placeholder, type = 'text', required = 
       </label>
       <input
         type={type} value={value} onChange={onChange} placeholder={placeholder} required={required}
-        className="h-10 w-full rounded-xl border border-neutral-200 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+        className={`h-10 w-full rounded-xl border px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 ${error ? 'border-red-400 focus:border-red-400 focus:ring-red-500/10' : 'border-neutral-200 focus:border-emerald-400 focus:ring-emerald-500/10'}`}
       />
+      {error && <p role="alert" className="mt-1 text-[11px] font-semibold text-red-500">{error}</p>}
     </div>
   );
 }
@@ -182,6 +183,7 @@ export default function NouveauAdherentPage() {
   const [csvError,      setCsvError]      = useState<string | null>(null);
   const [importResult,  setImportResult]  = useState<ImportResult | null>(null);
   const [createdCardVerifyToken, setCreatedCardVerifyToken] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const csvTopScrollRef = useRef<HTMLDivElement>(null);
   const csvTableScrollRef = useRef<HTMLDivElement>(null);
@@ -222,7 +224,14 @@ export default function NouveauAdherentPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.gender || !form.firstName || !form.lastName || !form.email || !form.promotionYear) return;
+    const errs: Record<string, string> = {};
+    if (!form.gender)       errs.gender       = 'Veuillez sélectionner une civilité';
+    if (!form.firstName.trim()) errs.firstName = 'Le prénom est requis';
+    if (!form.lastName.trim())  errs.lastName  = 'Le nom est requis';
+    if (!form.email.trim())     errs.email     = "L'email est requis";
+    if (!form.promotionYear)    errs.promotionYear = "L'année promotionnaire est requise";
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     setStep('preview');
   };
 
@@ -516,22 +525,23 @@ export default function NouveauAdherentPage() {
               <div className="flex gap-3">
                 {([{ value: 'homme', label: 'Monsieur' }, { value: 'femme', label: 'Madame' }] as const).map(opt => (
                   <button key={opt.value} type="button"
-                    onClick={() => setForm(prev => ({ ...prev, gender: opt.value }))}
+                    onClick={() => { setForm(prev => ({ ...prev, gender: opt.value })); setFieldErrors(prev => ({ ...prev, gender: '' })); }}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-black transition ${
                       form.gender === opt.value
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
-                        : 'border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700'
+                        : fieldErrors.gender ? 'border-red-400 text-neutral-500' : 'border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700'
                     }`}>
                     <UserCheck size={14} className={form.gender === opt.value ? 'text-emerald-600' : 'text-neutral-400'} />
                     {opt.label}
                   </button>
                 ))}
               </div>
+              {fieldErrors.gender && <p role="alert" className="mt-1 text-[11px] font-semibold text-red-500">{fieldErrors.gender}</p>}
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Prénom *"         value={form.firstName}    onChange={set('firstName')}    placeholder="Jean"              required />
-              <Field label="Nom *"            value={form.lastName}     onChange={set('lastName')}     placeholder="Kamga"             required />
-              <Field label="Email *"          value={form.email}        onChange={set('email')}        placeholder="jean@email.com"    type="email" required />
+              <Field label="Prénom *"         value={form.firstName}    onChange={e => { set('firstName')(e); setFieldErrors(p => ({ ...p, firstName: '' })); }}    placeholder="Jean"           required error={fieldErrors.firstName} />
+              <Field label="Nom *"            value={form.lastName}     onChange={e => { set('lastName')(e);  setFieldErrors(p => ({ ...p, lastName: '' })); }}     placeholder="Kamga"          required error={fieldErrors.lastName} />
+              <Field label="Email *"          value={form.email}        onChange={e => { set('email')(e);     setFieldErrors(p => ({ ...p, email: '' })); }}         placeholder="jean@email.com" type="email" required error={fieldErrors.email} />
               <div>
                 <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Téléphone</label>
                 <PhoneField
@@ -551,10 +561,11 @@ export default function NouveauAdherentPage() {
                   maxLength={4}
                   required
                   value={form.promotionYear}
-                  onChange={e => setForm(prev => ({ ...prev, promotionYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                  onChange={e => { setForm(prev => ({ ...prev, promotionYear: e.target.value.replace(/\D/g, '').slice(0, 4) })); setFieldErrors(p => ({ ...p, promotionYear: '' })); }}
                   placeholder={String(new Date().getFullYear())}
-                  className="h-10 w-full rounded-xl border border-neutral-200 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                  className={`h-10 w-full rounded-xl border px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 ${fieldErrors.promotionYear ? 'border-red-400 focus:border-red-400 focus:ring-red-500/10' : 'border-neutral-200 focus:border-emerald-400 focus:ring-emerald-500/10'}`}
                 />
+                {fieldErrors.promotionYear && <p role="alert" className="mt-1 text-[11px] font-semibold text-red-500">{fieldErrors.promotionYear}</p>}
               </div>
               <Field label="Ville"            value={form.city}         onChange={set('city')}         placeholder="Yaoundé" />
               <Field label="Pays"             value={form.country}      onChange={set('country')}      placeholder="Cameroun" />

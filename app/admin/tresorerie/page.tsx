@@ -42,6 +42,7 @@ interface ImportRow {
   occurredAt: string;
   counterparty?: string;
   reference?: string;
+  description?: string;
   error?: string;
 }
 
@@ -259,16 +260,17 @@ export default function AdminTresoreriePage() {
         return '';
       };
       /* Chercher toutes les colonnes texte non mappées pour le libellé */
-      const mappedCols = new Set(['type', 'kind', 'type_operation', 'source', 'montant', 'amount', 'valeur', 'date', 'occurred_at', 'occurredat', 'date_operation', 'tiers', 'counterparty', 'contrepartie', 'reference', 'référence', 'ref']);
+      const mappedCols = new Set(['type', 'kind', 'type_operation', 'source', 'montant', 'amount', 'valeur', 'date', 'occurred_at', 'occurredat', 'date_operation', 'tiers', 'counterparty', 'contrepartie', 'reference', 'référence', 'ref', 'description', 'notes', 'note', 'commentaire', 'remarque', 'detail', 'détail']);
       const autoLabel = () => Object.entries(r).find(([k, v]) => !mappedCols.has(k.trim().toLowerCase()) && String(v ?? '').trim())?.[1]?.trim() ?? '';
 
-      const rawKind   = col(['type', 'kind', 'type_operation', 'nature', 'operation', 'opération', 'sens']);
-      const rawSource = col(['source', 'categorie', 'catégorie', 'category', 'origine', 'provenance', 'objet']);
-      const rawLabel  = col(['libelle', 'libellé', 'label', 'designation', 'désignation', 'motif', 'description', 'intitule', 'intitulé', 'objet', 'detail', 'détail', 'notes', 'note', 'commentaire']);
-      const rawAmount = col(['montant', 'amount', 'valeur', 'somme', 'total']);
-      const rawDate   = col(['date', 'occurred_at', 'occurredAt', 'date_operation', 'date_transaction', 'datevaleur', 'date_valeur']);
-      const rawTiers  = col(['tiers', 'counterparty', 'contrepartie', 'beneficiaire', 'bénéficiaire', 'emetteur', 'émetteur', 'donateur', 'payeur']);
-      const rawRef    = col(['reference', 'référence', 'ref', 'numero', 'numéro', 'no']);
+      const rawKind        = col(['type', 'kind', 'type_operation', 'nature', 'operation', 'opération', 'sens']);
+      const rawSource      = col(['source', 'categorie', 'catégorie', 'category', 'origine', 'provenance', 'objet']);
+      const rawLabel       = col(['libelle', 'libellé', 'label', 'designation', 'désignation', 'motif', 'intitule', 'intitulé', 'objet']);
+      const rawAmount      = col(['montant', 'amount', 'valeur', 'somme', 'total']);
+      const rawDate        = col(['date', 'occurred_at', 'occurredAt', 'date_operation', 'date_transaction', 'datevaleur', 'date_valeur']);
+      const rawTiers       = col(['tiers', 'counterparty', 'contrepartie', 'beneficiaire', 'bénéficiaire', 'emetteur', 'émetteur', 'donateur', 'payeur']);
+      const rawRef         = col(['reference', 'référence', 'ref', 'numero', 'numéro', 'no']);
+      const rawDescription = col(['description', 'notes', 'note', 'commentaire', 'remarque', 'detail', 'détail']);
 
       const kind   = KIND_ALIASES[(rawKind || '').toLowerCase()] as TreasuryKind | undefined;
       const source = SOURCE_ALIASES[(rawSource || '').toLowerCase()] as TreasurySource | undefined;
@@ -289,8 +291,9 @@ export default function AdminTresoreriePage() {
         label,
         amount:       isNaN(amount) ? 0 : amount,
         occurredAt:   date || new Date().toISOString().slice(0, 10),
-        counterparty: rawTiers   || undefined,
-        reference:    rawRef     || undefined,
+        counterparty: rawTiers       || undefined,
+        reference:    rawRef         || undefined,
+        description:  rawDescription || undefined,
         error:        errors.length ? errors.join(', ') : undefined,
       };
     });
@@ -323,6 +326,7 @@ export default function AdminTresoreriePage() {
           date: new Date(item.occurredAt).toLocaleDateString('fr-FR'),
           tiers: item.counterparty ?? '',
           reference: item.reference ?? '',
+          description: item.description ?? '',
         }));
 
     const header = Object.keys(rows[0] ?? { export: 'Aucune donnee' });
@@ -580,6 +584,7 @@ export default function AdminTresoreriePage() {
                 occurredAt: row.occurredAt,
                 counterparty: row.counterparty,
                 reference: row.reference,
+                description: row.description,
                 visibility: 'members',
               } as Partial<TreasuryTransaction>);
             }
@@ -681,6 +686,7 @@ function TransactionList({ title, items, kind, loading, onDelete, deletingId }: 
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-black text-neutral-900">{item.label || 'Operation'}</p>
               <p className="truncate text-xs text-neutral-400">{sourceLabels[item.source] ?? item.category ?? 'Operation'} - {new Date(item.occurredAt).toLocaleDateString('fr-FR')}</p>
+              {item.description && <p className="truncate text-xs italic text-neutral-400 mt-0.5">{item.description}</p>}
             </div>
             <p className={`shrink-0 text-sm font-black ${item.kind === 'expense' ? 'text-red-600' : 'text-emerald-700'}`}>{formatFcfa(item.amount)}</p>
             {onDelete && (
@@ -839,7 +845,8 @@ function CsvImportModal({
                 <span className="font-mono">montant</span> ·{' '}
                 <span className="font-mono">date</span> (JJ/MM/AAAA) ·{' '}
                 <span className="font-mono">tiers</span> ·{' '}
-                <span className="font-mono">reference</span>
+                <span className="font-mono">reference</span> ·{' '}
+                <span className="font-mono">description</span> (texte libre)
               </p>
             </div>
 
@@ -848,7 +855,7 @@ function CsvImportModal({
               <table className="w-full min-w-[640px] border-collapse text-xs">
                 <thead>
                   <tr className="sticky top-0 bg-neutral-50">
-                    {['Type', 'Source', 'Libellé', 'Montant', 'Date', 'Tiers', 'Statut'].map(h => (
+                    {['Type', 'Source', 'Libellé', 'Montant', 'Date', 'Tiers', 'Description', 'Statut'].map(h => (
                       <th key={h} className="border-b border-neutral-100 px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.1em] text-neutral-500">{h}</th>
                     ))}
                   </tr>
@@ -868,6 +875,7 @@ function CsvImportModal({
                       </td>
                       <td className="border-b border-neutral-50 px-3 py-2 text-neutral-500">{row.occurredAt}</td>
                       <td className="border-b border-neutral-50 px-3 py-2 text-neutral-400">{row.counterparty ?? '—'}</td>
+                      <td className="border-b border-neutral-50 px-3 py-2 text-neutral-400 max-w-[120px] truncate" title={row.description ?? ''}>{row.description ?? '—'}</td>
                       <td className="border-b border-neutral-50 px-3 py-2">
                         {row.error ? (
                           <span className="flex items-center gap-1 text-red-600"><XCircle size={11} /> {row.error}</span>
