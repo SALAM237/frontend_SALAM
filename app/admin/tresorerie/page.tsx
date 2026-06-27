@@ -54,13 +54,14 @@ const tabs: { value: TabValue; label: string }[] = [
 ];
 
 const sourceOptions: { value: TreasurySource; label: string }[] = [
-  { value: 'adhesion', label: "Frais d'adhesion" },
-  { value: 'don', label: 'Dons' },
-  { value: 'crowdfunding', label: 'Crowdfunding' },
-  { value: 'activity', label: 'Activites' },
-  { value: 'subvention', label: 'Subventions' },
-  { value: 'partner', label: 'Partenaires' },
-  { value: 'other', label: 'Autres' },
+  { value: 'adhesion',           label: "Frais d'adhesion" },
+  { value: 'cotisation_annuelle', label: 'Cotisation annuelle' },
+  { value: 'don',                label: 'Dons' },
+  { value: 'crowdfunding',       label: 'Crowdfunding' },
+  { value: 'activity',           label: 'Activites' },
+  { value: 'subvention',         label: 'Subventions' },
+  { value: 'partner',            label: 'Partenaires' },
+  { value: 'other',              label: 'Autres' },
 ];
 
 const sourceLabels = Object.fromEntries(sourceOptions.map(s => [s.value, s.label])) as Record<TreasurySource, string>;
@@ -226,6 +227,7 @@ export default function AdminTresoreriePage() {
   };
   const SOURCE_ALIASES: Record<string, TreasurySource> = {
     adhesion: 'adhesion', adhésion: 'adhesion', cotisation: 'adhesion',
+    'cotisation annuelle': 'cotisation_annuelle', cotisationannuelle: 'cotisation_annuelle', cotisation_annuelle: 'cotisation_annuelle',
     don: 'don', donation: 'don', dons: 'don',
     crowdfunding: 'crowdfunding',
     activity: 'activity', activite: 'activity', activité: 'activity', evenement: 'activity', événement: 'activity',

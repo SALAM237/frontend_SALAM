@@ -4,7 +4,7 @@ import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
 
 export type TreasuryKind = 'income' | 'expense';
-export type TreasurySource = 'adhesion' | 'don' | 'crowdfunding' | 'activity' | 'subvention' | 'partner' | 'other';
+export type TreasurySource = 'adhesion' | 'cotisation_annuelle' | 'don' | 'crowdfunding' | 'activity' | 'subvention' | 'partner' | 'other';
 
 export interface TreasuryTransaction {
   _id: string;
