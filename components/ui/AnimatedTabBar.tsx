@@ -104,7 +104,7 @@ export function AnimatedTabBar<T extends string>({
                   href={item.href}
                   data-animated-tab
                   onClick={() => slideTo(item.value)}
-                  className={`${baseClass} ${active ? activeClass : inactiveClass} ${itemClassName}`}
+                  className={`${baseClass} whitespace-nowrap ${active ? activeClass : inactiveClass} ${itemClassName}`}
                 >
                   {content}
                 </Link>
@@ -120,7 +120,7 @@ export function AnimatedTabBar<T extends string>({
                   onChange?.(item.value);
                   slideTo(item.value);
                 }}
-                className={`${baseClass} ${active ? activeClass : inactiveClass} ${itemClassName}`}
+                className={`${baseClass} whitespace-nowrap ${active ? activeClass : inactiveClass} ${itemClassName}`}
               >
                 {content}
               </button>
