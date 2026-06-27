@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore } from '@/store/auth.store';
+import { PhoneField } from '@/components/ui/PhoneField';
 
 const ANTENNE_OPTIONS = [
   'Yaounde',
@@ -115,10 +116,7 @@ const emptyForm: ActivationForm = {
 };
 
 const emailOk = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-const yearOk = (value: string) => {
-  const year = Number(value);
-  return Number.isInteger(year) && year >= 1970 && year <= 2100;
-};
+const yearOk = (value: string) => /^\d{4}$/.test(value) && Number(value) >= 1970 && Number(value) <= 2100;
 
 function CreatePasswordContent() {
   const searchParams = useSearchParams();
@@ -325,12 +323,19 @@ function CreatePasswordContent() {
           <TextInput id="field-firstName" icon={User} label="Prenom" required value={form.firstName} onChange={value => setField('firstName')(value)} error={errors.firstName} />
           <TextInput id="field-lastName" icon={User} label="Nom" required value={form.lastName} onChange={value => setField('lastName')(value)} error={errors.lastName} />
           <TextInput id="field-email" icon={Mail} label="Email" required type="email" value={form.email} onChange={value => setField('email')(value)} error={errors.email} placeholder="email utilise par l'administrateur" />
-          <TextInput id="field-phone" icon={Phone} label="Telephone" required value={form.phone} onChange={value => setField('phone')(value)} error={errors.phone} />
-          <TextInput icon={Phone} label="Contact de recuperation" value={form.recoveryContact} onChange={value => setField('recoveryContact')(value)} placeholder="07070708" />
+          <div id="field-phone" className="space-y-1.5">
+            <label className="block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Telephone <span className="text-red-500">*</span></label>
+            <PhoneField value={form.phone} onChange={setField('phone')} size="lg" required error={!!errors.phone} defaultCountry="CM" />
+            {errors.phone && <p className="text-[11px] text-red-500">{errors.phone}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Contact de recuperation</label>
+            <PhoneField value={form.recoveryContact} onChange={setField('recoveryContact')} size="lg" defaultCountry="CM" placeholder="+237 6 00 00 00" />
+          </div>
           <TextInput id="field-birthDate" label="Date de naissance" required type="date" value={form.birthDate} onChange={value => setField('birthDate')(value)} error={errors.birthDate} />
           <TextInput icon={MapPin} label="Ville de residence" value={form.residenceCity} onChange={value => setField('residenceCity')(value)} placeholder="Test town" />
           <TextInput icon={MapPin} label="Pays" value={form.country} onChange={value => setField('country')(value)} placeholder="Country test" />
-          <TextInput id="field-promotionYear" label="Promotionnaire" required type="number" min="1970" max="2100" value={form.promotionYear} onChange={value => setField('promotionYear')(value)} error={errors.promotionYear} placeholder="2000" />
+          <TextInput id="field-promotionYear" label="Promotionnaire" required inputMode="numeric" maxLength={4} value={form.promotionYear} onChange={value => setField('promotionYear')(value.replace(/\D/g, '').slice(0, 4))} error={errors.promotionYear} placeholder="2000" />
           <SelectInput label="Antenne SALAM" value={form.antenne} onChange={value => setField('antenne')(value)} options={[[ '', 'Selectionner une antenne' ], ...ANTENNE_OPTIONS.map(item => [item, item] as [string, string])]} />
           {form.antenne === 'Autre' && <TextInput label="Precisez l'antenne" value={form.antenneAutre} onChange={value => setField('antenneAutre')(value)} />}
         </Section>
@@ -400,7 +405,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function TextInput({ id, icon: Icon, label, value, onChange, error, required, type = 'text', placeholder, min, max, className }: {
+function TextInput({ id, icon: Icon, label, value, onChange, error, required, type = 'text', placeholder, min, max, inputMode, maxLength, className }: {
   id?: string;
   icon?: IconType;
   label: string;
@@ -412,6 +417,8 @@ function TextInput({ id, icon: Icon, label, value, onChange, error, required, ty
   placeholder?: string;
   min?: string;
   max?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  maxLength?: number;
   className?: string;
 }) {
   return (
@@ -419,7 +426,7 @@ function TextInput({ id, icon: Icon, label, value, onChange, error, required, ty
       <label className="block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label} {required && <span className="text-red-500">*</span>}</label>
       <div className="relative">
         {Icon && <Icon size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />}
-        <input type={type} value={value} min={min} max={max} onChange={event => onChange(event.target.value)} placeholder={placeholder} className={`h-11 w-full rounded-xl border bg-white ${Icon ? 'pl-9' : 'pl-3'} pr-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-300 transition focus:ring-2 ${error ? 'border-red-300 focus:border-red-400 focus:ring-red-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`} />
+        <input type={type} value={value} min={min} max={max} inputMode={inputMode} maxLength={maxLength} onChange={event => onChange(event.target.value)} placeholder={placeholder} className={`h-11 w-full rounded-xl border bg-white ${Icon ? 'pl-9' : 'pl-3'} pr-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-300 transition focus:ring-2 ${error ? 'border-red-300 focus:border-red-400 focus:ring-red-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`} />
       </div>
       {error && <p className="text-[11px] text-red-500">{error}</p>}
     </div>

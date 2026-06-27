@@ -361,7 +361,18 @@ export default function ProfilPage() {
                 defaultCountry="CM"
               />
             </div>
-            <F icon={Phone} label="Contact de recuperation" value={form.recoveryContact} onChange={set('recoveryContact')} placeholder="Email ou numero secondaire" />
+            <div>
+              <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">
+                Contact de recuperation
+              </label>
+              <PhoneField
+                value={form.recoveryContact}
+                onChange={val => setForm(prev => ({ ...prev, recoveryContact: val }))}
+                size="sm"
+                defaultCountry="CM"
+                placeholder="+237 6 00 00 00"
+              />
+            </div>
             <F icon={Calendar} label="Date de naissance" value={form.birthDate} onChange={set('birthDate')} type="date" required />
             <F icon={MapPin} label="Ville de résidence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." />
             <F icon={MapPin} label="Pays" value={form.country} onChange={set('country')} placeholder="Cameroun, Maroc..." />
