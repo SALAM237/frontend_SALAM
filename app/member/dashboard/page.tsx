@@ -122,7 +122,7 @@ export default function MemberDashboardPage() {
           <p className="text-[10px] font-semibold text-white/50 sm:text-sm">
             {civility ? `Bienvenue, ${civility}` : 'Bienvenue,'}
           </p>
-          <p className="font-mono text-[7px] font-bold text-emerald-400 sm:text-[10px]">{memberId}</p>
+          <p className="font-mono text-[8.5px] font-bold text-emerald-400 sm:text-[10px]">{memberId}</p>
         </div>
         <h1 className="mt-0.5 flex items-center gap-1.5 text-base font-black tracking-[-0.03em] sm:mt-1 sm:gap-2 sm:text-2xl">
           <GenderIcon gender={gender} size={16} />
