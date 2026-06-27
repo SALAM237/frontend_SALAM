@@ -55,6 +55,7 @@ export interface DirectoryMember {
   memberId: string;
   memberNumber?: string;
   cardVerifyToken?: string | null;
+  savedCount?: number;
 }
 
 export interface UpdateProfilePayload {

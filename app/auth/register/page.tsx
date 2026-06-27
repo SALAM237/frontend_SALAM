@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Eye, EyeOff, ArrowRight, Loader2, ChevronDown, Mail } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { trackEvent, trackFormStart, trackFormSubmit, trackGenerateLead } from '@/lib/analytics';
+import { PhoneField } from '@/components/ui/PhoneField';
 
 const PAYS = [
   'Maroc', 'Cameroun', 'France', 'Belgique', 'Canada', 'Espagne',
@@ -56,9 +57,9 @@ export default function RegisterPage() {
     if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = 'E-mail invalide';
     if (!form.pays)    e.pays    = 'Sélectionnez un pays';
     if (!form.filiere) e.filiere = 'Sélectionnez une filière';
-    const py = Number(form.promotionYear);
-    if (!form.promotionYear.trim() || isNaN(py) || py < 1970 || py > 2100)
-      e.promotionYear = 'Année invalide (ex : 2022)';
+    const py = form.promotionYear.trim();
+    if (!/^\d{4}$/.test(py) || Number(py) < 1970 || Number(py) > 2100)
+      e.promotionYear = 'Année invalide — 4 chiffres (ex : 2022)';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -251,9 +252,12 @@ export default function RegisterPage() {
           </Field>
 
           <Field label="Téléphone (optionnel)">
-            <input type="tel" autoComplete="tel"
-              value={form.phone} onChange={e => set('phone', e.target.value)}
-              placeholder="+212 6 00 00 00 00" className={inputCls(false)} />
+            <PhoneField
+              value={form.phone}
+              onChange={val => set('phone', val)}
+              size="lg"
+              defaultCountry="CM"
+            />
           </Field>
 
           <Field label="Pays de résidence" error={errors.pays} required>
@@ -279,10 +283,16 @@ export default function RegisterPage() {
           </Field>
 
           <Field label="Promotionnaire (année)" error={errors.promotionYear} required>
-            <input type="number" min="1970" max="2100" required
-              value={form.promotionYear} onChange={e => set('promotionYear', e.target.value)}
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={4}
+              required
+              value={form.promotionYear}
+              onChange={e => set('promotionYear', e.target.value.replace(/\D/g, '').slice(0, 4))}
               placeholder={String(new Date().getFullYear())}
-              className={inputCls(!!errors.promotionYear)} />
+              className={inputCls(!!errors.promotionYear)}
+            />
           </Field>
 
           <button type="submit"

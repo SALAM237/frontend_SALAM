@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { PageHero } from '@/components/public/PageHero';
 import { useAdhesionForm } from '@/lib/api/public';
 import { trackEvent, trackFormStart, trackFormSubmit, trackGenerateLead } from '@/lib/analytics';
+import { PhoneField } from '@/components/ui/PhoneField';
 
 // export const revalidate = 3600; // désactivé : 'use client' — non supporté, cause une erreur Vercel build
 
@@ -242,7 +243,12 @@ export default function AdhesionPage() {
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-black uppercase tracking-widest text-neutral-400">Téléphone</label>
-                    <input value={form.phone} onChange={set('phone')} placeholder="+237 6 XX XX XX XX" className={inputCls} />
+                    <PhoneField
+                      value={form.phone}
+                      onChange={val => setForm(f => ({ ...f, phone: val }))}
+                      size="lg"
+                      defaultCountry="CM"
+                    />
                   </div>
                 </div>
 

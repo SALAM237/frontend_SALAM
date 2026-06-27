@@ -133,6 +133,8 @@ export function MemberCard({ member, printable = false }: { member: MemberCardDa
             <p className="pr-10 text-sm font-black text-neutral-950">QR code de verification</p>
             <p className="mt-1 text-xs text-neutral-500">Agrandissement de la carte membre SALAM.</p>
             <img src={qrPreviewSrc} alt="QR code agrandi" width={320} height={320} className="mx-auto mt-5 rounded-2xl bg-[#07140d] p-2" crossOrigin="anonymous" />
+            <p className="mt-4 text-center text-sm font-black text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
+            <p className="mt-0.5 text-center text-[11px] text-neutral-400">Titulaire de la carte membre SALAM</p>
           </div>
         </div>
       )}

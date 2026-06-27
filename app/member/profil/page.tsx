@@ -29,6 +29,7 @@ import { assetUrl } from '@/lib/assets';
 import { displayMemberNumber } from '@/lib/member-number';
 import { AvatarLightbox } from '@/components/portal/AvatarLightbox';
 import { CauriBadge, CauriWalletPanel } from '@/components/member/CauriWallet';
+import { PhoneField } from '@/components/ui/PhoneField';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
@@ -348,12 +349,36 @@ export default function ProfilPage() {
             <F icon={User} label="Prenom" value={form.firstName} onChange={set('firstName')} required />
             <F icon={User} label="Nom" value={form.lastName} onChange={set('lastName')} required />
             <F icon={Mail} label="Email" value={form.email} onChange={set('email')} type="email" readOnly />
-            <F icon={Phone} label="Telephone" value={form.phone} onChange={set('phone')} placeholder="+237 6 00 00 00 00" required />
+            <div>
+              <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">
+                Telephone<span className="ml-0.5 text-red-500">*</span>
+              </label>
+              <PhoneField
+                value={form.phone}
+                onChange={val => setForm(prev => ({ ...prev, phone: val }))}
+                size="sm"
+                required
+                defaultCountry="CM"
+              />
+            </div>
             <F icon={Phone} label="Contact de recuperation" value={form.recoveryContact} onChange={set('recoveryContact')} placeholder="Email ou numero secondaire" />
             <F icon={Calendar} label="Date de naissance" value={form.birthDate} onChange={set('birthDate')} type="date" required />
             <F icon={MapPin} label="Ville de résidence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." />
             <F icon={MapPin} label="Pays" value={form.country} onChange={set('country')} placeholder="Cameroun, Maroc..." />
-            <F icon={User} label="Promotionnaire" value={form.promotionYear} onChange={set('promotionYear')} type="number" placeholder="2026" />
+            <div>
+              <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">
+                Promotionnaire
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                value={form.promotionYear}
+                onChange={e => setForm(prev => ({ ...prev, promotionYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                placeholder="2026"
+                className="h-8 w-full rounded-xl border border-neutral-200 px-3 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:text-sm"
+              />
+            </div>
             <div className="space-y-2">
               <Select
                 label="Antenne"

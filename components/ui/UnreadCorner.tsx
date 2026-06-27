@@ -1,32 +1,19 @@
 /**
- * Badge "Pli de page" affiché en haut à droite d'une carte pour signaler un élément non lu.
- * Le parent doit avoir `position: relative` (et idéalement `overflow: hidden`).
+ * Ruban "pli de coin" en haut à droite d'une carte non lue.
+ * Le parent doit avoir `position: relative` (overflow:hidden non requis — clipping interne).
  */
 export function UnreadCorner({ label = 'Non lue' }: { label?: string }) {
   return (
-    <span
+    <div
       aria-label={label}
-      className="pointer-events-none absolute right-0 top-0 z-10"
-      style={{
-        width: 0,
-        height: 0,
-        borderStyle: 'solid',
-        borderWidth: '0 48px 48px 0',
-        borderColor: 'transparent #ef4444 transparent transparent',
-      }}
+      className="pointer-events-none absolute right-0 top-0 z-10 size-14 overflow-hidden"
     >
-      <span
+      <p
         aria-hidden="true"
-        className="absolute select-none whitespace-nowrap text-[7px] font-black uppercase leading-none tracking-wide text-white"
-        style={{
-          top: 6,
-          left: -42,
-          transform: 'rotate(45deg)',
-          transformOrigin: 'left top',
-        }}
+        className="absolute -right-[18px] top-[11px] w-[80px] rotate-45 bg-red-500 py-[3.5px] text-center text-[7px] font-black uppercase tracking-[0.1em] text-white shadow-sm"
       >
         {label}
-      </span>
-    </span>
+      </p>
+    </div>
   );
 }

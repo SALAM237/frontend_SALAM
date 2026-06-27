@@ -486,9 +486,19 @@ export default function ScannerPage() {
       const video = videoRef.current!;
       video.srcObject = stream;
       await video.play().catch(() => {});
+
+      // Attendre que la vidéo ait de vrais frames (readyState >= HAVE_CURRENT_DATA)
+      // sans ça, sur mobile la caméra s'affiche mais le décodeur ne lit rien
+      await new Promise<void>(resolve => {
+        if (video.readyState >= 2 && video.videoWidth > 0) { resolve(); return; }
+        const onReady = () => { video.removeEventListener('canplay', onReady); resolve(); };
+        video.addEventListener('canplay', onReady);
+        setTimeout(resolve, 3000); // fallback si canplay ne se déclenche pas
+      });
+
       setScannerReady(true);
 
-      const controls = await reader.decodeFromVideoElement(video, (result) => {
+      const controls = await reader.decodeFromVideoElement(video, (result, _err) => {
         if (result && !processingRef.current) {
           const text = result.getText();
           void (async () => { await stopScanner(); await processCode(text); })();

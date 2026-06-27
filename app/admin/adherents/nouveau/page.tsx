@@ -16,6 +16,7 @@ import { formatFirstName, formatFullName, formatLastName } from '@/lib/format-na
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { previewMemberNumber } from '@/lib/member-number';
 import { useCreateGroup } from '@/lib/api/groups';
+import { PhoneField } from '@/components/ui/PhoneField';
 
 /* ─── Types ─────────────────────────────────────────────── */
 type Mode      = 'single' | 'csv' | 'group';
@@ -531,8 +532,30 @@ export default function NouveauAdherentPage() {
               <Field label="Prénom *"         value={form.firstName}    onChange={set('firstName')}    placeholder="Jean"              required />
               <Field label="Nom *"            value={form.lastName}     onChange={set('lastName')}     placeholder="Kamga"             required />
               <Field label="Email *"          value={form.email}        onChange={set('email')}        placeholder="jean@email.com"    type="email" required />
-              <Field label="Téléphone"        value={form.phone}        onChange={set('phone')}        placeholder="+237 6 00 00 00 00" />
-              <Field label="Promotionnaire *" value={form.promotionYear} onChange={set('promotionYear')} placeholder={String(new Date().getFullYear())} type="number" required />
+              <div>
+                <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Téléphone</label>
+                <PhoneField
+                  value={form.phone}
+                  onChange={val => setForm(prev => ({ ...prev, phone: val }))}
+                  size="md"
+                  defaultCountry="CM"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">
+                  Promotionnaire <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  required
+                  value={form.promotionYear}
+                  onChange={e => setForm(prev => ({ ...prev, promotionYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                  placeholder={String(new Date().getFullYear())}
+                  className="h-10 w-full rounded-xl border border-neutral-200 px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
+                />
+              </div>
               <Field label="Ville"            value={form.city}         onChange={set('city')}         placeholder="Yaoundé" />
               <Field label="Pays"             value={form.country}      onChange={set('country')}      placeholder="Cameroun" />
             </div>

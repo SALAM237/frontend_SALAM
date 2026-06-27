@@ -6,6 +6,7 @@ import { PageHero } from '@/components/public/PageHero';
 import Link from 'next/link';
 import { useContactForm } from '@/lib/api/public';
 import { trackFormStart, trackFormSubmit, trackGenerateLead, trackEvent } from '@/lib/analytics';
+import { PhoneField } from '@/components/ui/PhoneField';
 
 // export const revalidate = 3600; // désactivé : 'use client' — non supporté, cause une erreur Vercel build
 
@@ -133,6 +134,16 @@ export default function ContactPage() {
                         <label className="text-[11px] font-black uppercase tracking-widest text-neutral-400">Email *</label>
                         <input required type="email" value={form.email} onChange={set('email')} placeholder="jean@example.com" className={inputCls} />
                       </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-black uppercase tracking-widest text-neutral-400">Téléphone <span className="normal-case font-normal text-neutral-300">(optionnel)</span></label>
+                      <PhoneField
+                        value={form.phone}
+                        onChange={val => setForm(f => ({ ...f, phone: val }))}
+                        size="lg"
+                        defaultCountry="CM"
+                      />
                     </div>
 
                     <div className="flex flex-col gap-1.5">

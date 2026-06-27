@@ -2,6 +2,7 @@ import type { Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
+import 'react-phone-number-input/style.css';
 import { ConditionalHeader } from '@/components/layout/ConditionalHeader';
 import { ConditionalFooter } from '@/components/layout/ConditionalFooter';
 import { Providers } from '@/components/shared/Providers';
