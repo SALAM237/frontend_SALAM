@@ -102,7 +102,7 @@ function AddToDirectoryModal({ member, onClose }: { member: NetworkingMember; on
   const [creating, setCreating] = useState(false);
 
   const { data: dirsData, isLoading } = useMyDirectories();
-  const directories = dirsData?.data?.data?.directories ?? [];
+  const directories = dirsData?.data?.directories ?? [];
   const addMut    = useAddToDirectory();
   const createMut = useCreateDirectory();
 
@@ -346,8 +346,8 @@ function MonRepertoireSection({ onViewCompetences }: { onViewCompetences: () => 
   const [showCreate, setShowCreate] = useState(false);
   const [expanded, setExpanded]     = useState<string | null>(null);
 
-  const { data: dirsData, isLoading } = useMyDirectories();
-  const directories = dirsData?.data?.data?.directories ?? [];
+  const { data: dirsData, isLoading, isError, refetch } = useMyDirectories();
+  const directories = dirsData?.data?.directories ?? [];
 
   const createMut = useCreateDirectory();
   const deleteMut = useDeleteDirectory();
@@ -402,7 +402,16 @@ function MonRepertoireSection({ onViewCompetences }: { onViewCompetences: () => 
         </div>
       )}
 
-      {!isLoading && directories.length === 0 && (
+      {isError && !isLoading && (
+        <div className="flex flex-col items-center rounded-2xl border border-red-100 bg-red-50 py-8 text-center">
+          <p className="text-sm font-black text-red-600">Impossible de charger les répertoires.</p>
+          <button type="button" onClick={() => refetch()} className="mt-3 text-xs font-semibold text-red-500 underline underline-offset-2 hover:text-red-700">
+            Réessayer
+          </button>
+        </div>
+      )}
+
+      {!isLoading && !isError && directories.length === 0 && (
         <div className="flex flex-col items-center rounded-2xl border border-dashed border-neutral-200 bg-white py-14 text-center">
           <BookOpen size={36} className="mb-3 text-neutral-200" />
           <p className="text-sm font-black text-neutral-500">Aucun répertoire créé.</p>

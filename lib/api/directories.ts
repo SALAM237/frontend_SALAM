@@ -27,22 +27,25 @@ const DIRS_KEY = ['member-directories'] as const;
 
 /* ── GET /member/directories ─────────────────────────────── */
 export function useMyDirectories() {
-  const token = useAuthStore(s => s.accessToken);
+  const isLoggedIn = useAuthStore(s => !!s.accessToken);
   return useQuery({
     queryKey: DIRS_KEY,
-    queryFn: () => apiClient<{ data: { directories: ContactDirectory[] } }>('/api/v1/member/directories', { token: token ?? '' }),
-    enabled: !!token,
+    // apiClient.currentAccessToken() lit getState() directement → toujours frais
+    queryFn: () => apiClient<{ directories: ContactDirectory[] }>('/api/v1/member/directories'),
+    enabled: isLoggedIn,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 }
 
 /* ── POST /member/directories ────────────────────────────── */
 export function useCreateDirectory() {
-  const token = useAuthStore(s => s.accessToken);
-  const qc    = useQueryClient();
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (name: string) =>
-      apiClient<{ data: { directory: ContactDirectory } }>('/api/v1/member/directories', {
-        method: 'POST', token: token ?? '', body: JSON.stringify({ name }),
+      apiClient<{ directory: ContactDirectory }>('/api/v1/member/directories', {
+        method: 'POST', body: JSON.stringify({ name }),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: DIRS_KEY });
@@ -53,11 +56,10 @@ export function useCreateDirectory() {
 
 /* ── DELETE /member/directories/:id ──────────────────────── */
 export function useDeleteDirectory() {
-  const token = useAuthStore(s => s.accessToken);
-  const qc    = useQueryClient();
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      apiClient('/api/v1/member/directories/' + id, { method: 'DELETE', token: token ?? '' }),
+      apiClient('/api/v1/member/directories/' + id, { method: 'DELETE' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: DIRS_KEY });
       toast.success('Répertoire supprimé');
@@ -68,13 +70,10 @@ export function useDeleteDirectory() {
 
 /* ── POST /member/directories/:id/members/:memberId ─────── */
 export function useAddToDirectory() {
-  const token = useAuthStore(s => s.accessToken);
-  const qc    = useQueryClient();
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ directoryId, memberId }: { directoryId: string; memberId: string }) =>
-      apiClient(`/api/v1/member/directories/${directoryId}/members/${memberId}`, {
-        method: 'POST', token: token ?? '',
-      }),
+      apiClient(`/api/v1/member/directories/${directoryId}/members/${memberId}`, { method: 'POST' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: DIRS_KEY });
     },
@@ -84,13 +83,10 @@ export function useAddToDirectory() {
 
 /* ── DELETE /member/directories/:id/members/:memberId ────── */
 export function useRemoveFromDirectory() {
-  const token = useAuthStore(s => s.accessToken);
-  const qc    = useQueryClient();
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ directoryId, memberId }: { directoryId: string; memberId: string }) =>
-      apiClient(`/api/v1/member/directories/${directoryId}/members/${memberId}`, {
-        method: 'DELETE', token: token ?? '',
-      }),
+      apiClient(`/api/v1/member/directories/${directoryId}/members/${memberId}`, { method: 'DELETE' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: DIRS_KEY });
       toast.success('Contact retiré');
