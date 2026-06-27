@@ -212,20 +212,20 @@ function MemberNetworkingCard({
   const savedCount = member.savedCount ?? 0;
 
   return (
-    <article className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-100 hover:shadow-md">
-      <div className="flex items-start gap-3">
+    <article className="w-full overflow-hidden rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-100 hover:shadow-md sm:p-4">
+      <div className="flex min-w-0 items-start gap-2 sm:gap-3">
         {photo ? (
-          <AvatarLightbox src={photo} alt={name} className={'h-12 w-12 shrink-0 rounded-full border-2 object-cover ' + memberAvatarBorderClass(member.gender)} />
+          <AvatarLightbox src={photo} alt={name} className={'h-10 w-10 shrink-0 rounded-full border-2 object-cover sm:h-12 sm:w-12 ' + memberAvatarBorderClass(member.gender)} />
         ) : (
-          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${memberInitialsClass(member.gender)}`}>{formatInitials(member.firstName, member.lastName, 'M')}</div>
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-black text-white sm:h-12 sm:w-12 sm:text-sm ${memberInitialsClass(member.gender)}`}>{formatInitials(member.firstName, member.lastName, 'M')}</div>
         )}
         <div className="min-w-0 flex-1">
-          <button type="button" onClick={() => onOpen(member)} className="block max-w-full truncate text-left text-sm font-black text-neutral-900 transition hover:text-emerald-700">{name}</button>
+          <button type="button" onClick={() => onOpen(member)} className="block w-full truncate text-left text-xs font-black text-neutral-900 transition hover:text-emerald-700 sm:text-sm">{name}</button>
 
           {/* Secteur + compteur + bouton ajout */}
-          <div className="mt-0.5 flex items-center justify-between gap-2">
-            <p className="truncate text-xs font-semibold text-emerald-700">{member.activitySector || 'Secteur non renseigné'}</p>
-            <div className="flex shrink-0 items-center gap-1.5">
+          <div className="mt-0.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+            <p className="min-w-0 truncate text-[11px] font-semibold text-emerald-700 sm:text-xs">{member.activitySector || 'Secteur non renseigné'}</p>
+            <div className="flex shrink-0 items-center gap-1">
               {savedCount > 0 && (
                 <span title={`Ajouté ${savedCount} fois dans des répertoires SALAM`} className="text-[9px] font-bold text-neutral-400">
                   ✦ {savedCount}×
@@ -236,12 +236,12 @@ function MemberNetworkingCard({
                 onClick={() => onAddToDirectory(member)}
                 className="inline-flex items-center gap-0.5 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-black text-emerald-700 transition hover:bg-emerald-100 active:scale-95"
               >
-                <Plus size={9} /> Répertoire
+                <Plus size={9} /> Ajouter à mon répertoire
               </button>
             </div>
           </div>
 
-          {location && <p className="mt-1 flex items-center gap-1 truncate text-[11px] font-semibold text-neutral-400"><MapPin size={11} /> {location}</p>}
+          {location && <p className="mt-1 flex items-center gap-1 truncate text-[10px] font-semibold text-neutral-400 sm:text-[11px]"><MapPin size={10} /> {location}</p>}
         </div>
       </div>
 
@@ -489,21 +489,21 @@ export default function NetworkingPage() {
 
           {results.length > 0 && (
             <>
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4"><div className="flex items-center gap-2 text-emerald-700"><Users size={18} /><p className="text-sm font-black">Profils trouvés</p></div><p className="mt-3 text-2xl font-black text-emerald-900">{results.length}</p><p className="mt-1 text-xs font-semibold text-emerald-900/60">{completeProfiles} profils bien renseignés</p></div>
-                <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-4"><div className="flex items-center gap-2 text-amber-700"><Tags size={18} /><p className="text-sm font-black">Compétences</p></div><p className="mt-3 text-2xl font-black text-amber-900">{skills.length}</p><p className="mt-1 text-xs font-semibold text-amber-900/60">mots-clés dominants</p></div>
-                <div className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-4"><div className="flex items-center gap-2 text-neutral-700"><Handshake size={18} /><p className="text-sm font-black">Secteurs</p></div><p className="mt-3 text-2xl font-black text-neutral-900">{sectors.length}</p><p className="mt-1 text-xs font-semibold text-neutral-500">secteurs détectés</p></div>
+              <div className="mt-6 grid gap-2 sm:grid-cols-3 sm:gap-3">
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 sm:p-4"><div className="flex items-center gap-1.5 text-emerald-700"><Users size={14} className="sm:hidden" /><Users size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Profils trouvés</p></div><p className="mt-2 text-xl font-black text-emerald-900 sm:mt-3 sm:text-2xl">{results.length}</p><p className="mt-0.5 text-[10px] font-semibold text-emerald-900/60 sm:mt-1 sm:text-xs">{completeProfiles} profils bien renseignés</p></div>
+                <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-3 sm:p-4"><div className="flex items-center gap-1.5 text-amber-700"><Tags size={14} className="sm:hidden" /><Tags size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Compétences</p></div><p className="mt-2 text-xl font-black text-amber-900 sm:mt-3 sm:text-2xl">{skills.length}</p><p className="mt-0.5 text-[10px] font-semibold text-amber-900/60 sm:mt-1 sm:text-xs">mots-clés dominants</p></div>
+                <div className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-3 sm:p-4"><div className="flex items-center gap-1.5 text-neutral-700"><Handshake size={14} className="sm:hidden" /><Handshake size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Secteurs</p></div><p className="mt-2 text-xl font-black text-neutral-900 sm:mt-3 sm:text-2xl">{sectors.length}</p><p className="mt-0.5 text-[10px] font-semibold text-neutral-500 sm:mt-1 sm:text-xs">secteurs détectés</p></div>
               </div>
-              <div className="mt-5 grid gap-3 lg:grid-cols-3">
+              <div className="mt-4 grid gap-2 sm:mt-5 sm:gap-3 lg:grid-cols-3">
                 {[
                   { title: 'Top secteurs',    items: sectors, cls: 'bg-emerald-50 text-emerald-700 ring-emerald-100' },
                   { title: 'Top compétences', items: skills,  cls: 'bg-amber-50  text-amber-700  ring-amber-100'  },
                   { title: 'Top domaines',    items: domains, cls: 'bg-violet-50 text-violet-700 ring-violet-100' },
                 ].map(block => (
-                  <div key={block.title} className="rounded-2xl border border-neutral-100 p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.14em] text-neutral-400">{block.title}</p>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {block.items.map(([label, count]) => <span key={label} className={`rounded-full px-2.5 py-1 text-[10px] font-black ring-1 ${block.cls}`}>{label} · {count}</span>)}
+                  <div key={block.title} className="rounded-2xl border border-neutral-100 p-3 sm:p-4">
+                    <p className="text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400 sm:text-xs sm:tracking-[0.14em]">{block.title}</p>
+                    <div className="mt-2 flex flex-wrap gap-1 sm:mt-3 sm:gap-1.5">
+                      {block.items.map(([label, count]) => <span key={label} className={`rounded-full px-2 py-0.5 text-[9px] font-black ring-1 sm:px-2.5 sm:py-1 sm:text-[10px] ${block.cls}`}>{label} · {count}</span>)}
                     </div>
                   </div>
                 ))}
