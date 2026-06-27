@@ -85,7 +85,6 @@ function MemberProfileModal({ member, onClose }: { member: NetworkingMember; onC
           </div>
         </div>
         <div className="space-y-5 p-5">
-          <KeywordSection title="Secteur d'activité"    items={member.activitySector ? [member.activitySector] : []} tone="green" />
           <KeywordSection title="Compétences"           items={member.skills ?? []} tone="amber" />
           <KeywordSection title="Domaines d'expertise"  items={member.expertiseDomains ?? []} tone="violet" />
           {member.bio && <div><p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">Biographie</p><p className="text-sm leading-6 text-neutral-600">{member.bio}</p></div>}
@@ -249,7 +248,6 @@ function MemberNetworkingCard({
       {member.bio && <p className="mt-3 line-clamp-2 text-xs leading-5 text-neutral-500">{member.bio}</p>}
 
       <div className="mt-3 space-y-3">
-        <KeywordSection title="Secteur d'activité"   items={member.activitySector ? [member.activitySector] : []} tone="green" />
         <KeywordSection title="Compétences"          items={(member.skills ?? []).slice(0, 6)} tone="amber" />
         <KeywordSection title="Domaines d'expertise" items={(member.expertiseDomains ?? []).slice(0, 5)} tone="violet" />
       </div>
