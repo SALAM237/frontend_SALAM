@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, BriefcaseBusiness, CalendarClock, MapPin } from 'lucide-react';
@@ -11,6 +12,7 @@ import { trackEvent } from '@/lib/analytics';
 const typeLabel = Object.fromEntries(OPPORTUNITY_TYPES.map(t => [t.value, t.label]));
 
 export function OpportunityPreview() {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { data, isLoading } = usePublicOpportunities();
   const accessToken = useAuthStore(s => s.accessToken);
   const items = data?.data?.items ?? [];
@@ -59,7 +61,7 @@ export function OpportunityPreview() {
           </Link>
         </div>
 
-        <div className="flex snap-x gap-4 overflow-x-auto scroll-smooth pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div ref={scrollRef} className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {!isLoading && items.length === 0 && (
             <article className="min-w-full rounded-3xl border border-dashed border-emerald-200 bg-white p-6 text-center shadow-sm">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
@@ -85,6 +87,15 @@ export function OpportunityPreview() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: index * 0.04 }}
               viewport={{ once: true }}
+              onClickCapture={e => {
+                const container = scrollRef.current;
+                if (!container) return;
+                const cRect = container.getBoundingClientRect();
+                const kRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                if (kRect.left >= cRect.left - 2 && kRect.right <= cRect.right + 2) return;
+                e.stopPropagation();
+                container.scrollTo({ left: container.scrollLeft + kRect.left - cRect.left, behavior: 'smooth' });
+              }}
               className="group flex min-w-[84%] snap-start flex-col rounded-3xl border border-neutral-200 bg-white p-5 shadow-md transition hover:-translate-y-1 hover:border-amber-400 hover:shadow-xl hover:ring-2 hover:ring-amber-400/20 sm:min-w-[48%] lg:min-w-[31%]"
             >
               <div className="mb-4 flex items-start justify-between gap-3">

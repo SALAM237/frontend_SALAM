@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Newspaper, Tag } from 'lucide-react';
 import { ARTICLE_CATEGORIES, ARTICLE_CAT_STYLES, articleHref, usePublicArticles } from '@/lib/api/content';
@@ -8,6 +9,7 @@ import { articleImage } from '@/lib/article-image';
 import { trackEvent } from '@/lib/analytics';
 
 export function NewsPreview() {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { data, isLoading } = usePublicArticles();
   const articles = (data?.data ?? []).slice(0, 3);
 
@@ -33,7 +35,7 @@ export function NewsPreview() {
         )}
 
         {!isLoading && articles.length > 0 && (
-          <div className="flex snap-x gap-5 overflow-x-auto scroll-smooth pb-3 [-ms-overflow-style:none] [scrollbar-width:none] lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
+          <div ref={scrollRef} className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] lg:grid lg:grid-cols-3 lg:snap-none lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
             {articles.map((article: any) => {
               const image = articleImage(article);
               const category = article.data?.category as string | undefined;
@@ -43,14 +45,26 @@ export function NewsPreview() {
                 <Link
                   key={article._id}
                   href={articleHref(article)}
-                  onClick={() => trackEvent('news_click', {
-                    article_id: article._id,
-                    article_slug: article.slug,
-                    article_title: article.title,
-                    category,
-                    source: 'home_preview',
-                    action: 'card_click',
-                  })}
+                  onClick={e => {
+                    const container = scrollRef.current;
+                    if (container) {
+                      const cRect = container.getBoundingClientRect();
+                      const kRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      if (kRect.left < cRect.left - 2 || kRect.right > cRect.right + 2) {
+                        e.preventDefault();
+                        container.scrollTo({ left: container.scrollLeft + kRect.left - cRect.left, behavior: 'smooth' });
+                        return;
+                      }
+                    }
+                    trackEvent('news_click', {
+                      article_id: article._id,
+                      article_slug: article.slug,
+                      article_title: article.title,
+                      category,
+                      source: 'home_preview',
+                      action: 'card_click',
+                    });
+                  }}
                   className="group min-w-[84%] snap-start overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white shadow-md transition hover:-translate-y-1 hover:border-emerald-500 hover:shadow-xl hover:ring-2 hover:ring-emerald-500/20 sm:min-w-[48%] lg:min-w-0"
                 >
                   <div className="aspect-[16/10] bg-gradient-to-br from-emerald-100 to-emerald-50">

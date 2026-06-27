@@ -1,4 +1,5 @@
 'use client';
+import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Calendar, MapPin, Users, ArrowRight } from 'lucide-react';
@@ -18,6 +19,7 @@ const card = {
 };
 
 export function ActivityPreview() {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { data } = usePublicActivities();
   const today = Date.now();
   const activities = data?.data?.activities ?? [];
@@ -69,7 +71,8 @@ export function ActivityPreview() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-60px' }}
-          className="flex snap-x gap-[clamp(1rem,2vw,1.5rem)] overflow-x-auto scroll-smooth pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          ref={scrollRef as React.RefObject<HTMLDivElement>}
+          className="flex snap-x snap-mandatory gap-[clamp(1rem,2vw,1.5rem)] overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {items.map((activity, i) => {
             const cat = ACTIVITY_CAT_STYLES[activity.category] ?? DEFAULT_CAT;
@@ -81,6 +84,15 @@ export function ActivityPreview() {
               <motion.article
                 key={activity._id}
                 variants={card}
+                onClickCapture={e => {
+                  const container = scrollRef.current;
+                  if (!container) return;
+                  const cRect = container.getBoundingClientRect();
+                  const kRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  if (kRect.left >= cRect.left - 2 && kRect.right <= cRect.right + 2) return;
+                  e.stopPropagation();
+                  container.scrollTo({ left: container.scrollLeft + kRect.left - cRect.left, behavior: 'smooth' });
+                }}
                 className="card-salam group flex min-w-[82%] snap-start flex-col overflow-hidden sm:min-w-[48%] lg:min-w-[31%]"
               >
                 {/* Cover image or color bar */}

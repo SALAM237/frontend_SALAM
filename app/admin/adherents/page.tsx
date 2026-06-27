@@ -123,6 +123,8 @@ export default function AdminAdherentsPage() {
   const filterRef      = useRef<HTMLDivElement>(null);
   const desktopCardRef = useRef<HTMLDivElement>(null);
   const mobileCardRef  = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasLongPress   = useRef(false);
 
   const user         = useAuthStore(s => s.user);
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
@@ -246,6 +248,10 @@ export default function AdminAdherentsPage() {
     });
   };
 
+  /* Checkboxes visibles sur mobile : long-press, items déjà cochés, ou relance avec sous-type choisi */
+  const showCheckboxesMobile = showCheckboxes || checkedIds.size > 0 ||
+    (activeTab === 'relance' && relanceSub !== null);
+
   const allChecked = displayed.length > 0 && displayed.every(m => checkedIds.has(m._id));
   const toggleAll  = () => setCheckedIds(prev => {
     const next = new Set(prev);
@@ -260,8 +266,8 @@ export default function AdminAdherentsPage() {
 
   /* ── Tab switching ─────────────────────────────────────── */
   const handleTabClick = (tab: ActiveTab) => {
-    if (activeTab === tab) { setActiveTab(null); setShowKpis(true);  setCheckedIds(new Set()); return; }
-    setActiveTab(tab); setShowKpis(false); setCheckedIds(new Set());
+    if (activeTab === tab) { setActiveTab(null); setShowKpis(true); setCheckedIds(new Set()); setShowCheckboxes(false); return; }
+    setActiveTab(tab); setShowKpis(false); setCheckedIds(new Set()); setShowCheckboxes(false);
     if (tab !== 'relance') setRelanceSub(null);
     if (tab !== 'frais')   setShowFraisParams(false);
   };
@@ -369,7 +375,7 @@ export default function AdminAdherentsPage() {
         </p>
 
         {/* Tab buttons row — flex-nowrap to stay on one line on all breakpoints */}
-        <div className="mt-3 flex items-center gap-1 overflow-x-auto lg:gap-2 lg:justify-end">
+        <div className="mt-3 flex items-center justify-end gap-1 overflow-x-auto lg:gap-2">
           {/* Arrow KPI toggle — visible only when tab active */}
           <div className={`shrink-0 overflow-hidden transition-[max-width,opacity] duration-200 ${activeTab ? 'max-w-[30px] opacity-100 lg:max-w-[40px]' : 'max-w-0 opacity-0 pointer-events-none'}`}>
             <button type="button" onClick={() => setShowKpis(v => !v)} title={showKpis ? 'Masquer les statistiques' : 'Afficher les statistiques'}
@@ -1058,11 +1064,16 @@ export default function AdminAdherentsPage() {
               <div className="lg:hidden">
                 {/* Select-all header on mobile */}
                 <div className="flex items-center gap-2 border-b border-neutral-100 bg-neutral-50/60 px-3 py-2">
-                  <input type="checkbox" checked={allChecked} onChange={toggleAll} title={`${checkedIds.size > 0 ? checkedIds.size + ' sélectionné(s)' : 'Tout sélectionner'}`}
-                    className="h-3.5 w-3.5 rounded border-neutral-300 accent-orange-500" />
+                  {showCheckboxesMobile && (
+                    <input type="checkbox" checked={allChecked} onChange={toggleAll} title={`${checkedIds.size > 0 ? checkedIds.size + ' sélectionné(s)' : 'Tout sélectionner'}`}
+                      className="h-3.5 w-3.5 rounded border-neutral-300 accent-orange-500" />
+                  )}
                   <span className="text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">
                     {checkedIds.size > 0 ? `${checkedIds.size} sélectionné${checkedIds.size > 1 ? 's' : ''}` : `${displayed.length} membre${displayed.length !== 1 ? 's' : ''}`}
                   </span>
+                  {!showCheckboxesMobile && (
+                    <span className="ml-1 text-[9px] text-neutral-300">(Maintenir le doigt pour sélectionner)</span>
+                  )}
                 </div>
                 <div className="divide-y divide-neutral-50">
                   {displayed.map(m => {
@@ -1074,12 +1085,30 @@ export default function AdminAdherentsPage() {
                     const photoUrl     = memberPhotoUrl(m);
                     const isChecked    = checkedIds.has(m._id);
                     return (
-                      <div key={m._id} className={`px-3 py-2.5 transition-colors hover:bg-neutral-50/60 sm:px-4 ${isChecked ? 'bg-orange-50/40' : ''}`}>
+                      <div key={m._id}
+                        className={`select-none px-3 py-2.5 transition-colors hover:bg-neutral-50/60 sm:px-4 ${isChecked ? 'bg-orange-50/40' : ''}`}
+                        onPointerDown={() => {
+                          longPressTimer.current = setTimeout(() => {
+                            wasLongPress.current = true;
+                            setShowCheckboxes(true);
+                            toggleOne(m._id);
+                            if (typeof navigator !== 'undefined') navigator.vibrate?.(50);
+                          }, 500);
+                        }}
+                        onPointerUp={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+                        onPointerLeave={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+                        onPointerCancel={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+                        onContextMenu={e => e.preventDefault()}
+                      >
                         <div className="flex items-center gap-2">
-                          <input type="checkbox" checked={isChecked} onChange={() => toggleOne(m._id)} className="h-3.5 w-3.5 shrink-0 rounded border-neutral-300 accent-orange-500" />
+                          {showCheckboxesMobile && (
+                            <input type="checkbox" checked={isChecked} onChange={() => toggleOne(m._id)} className="h-3.5 w-3.5 shrink-0 rounded border-neutral-300 accent-orange-500" />
+                          )}
                           <button type="button"
                             onClick={event => {
+                              if (wasLongPress.current) { wasLongPress.current = false; return; }
                               if ((event.target as HTMLElement).closest('[data-profile-photo]') && photoUrl) { setPhotoPreview({ src: photoUrl, name: formatFullName(m.firstName, m.lastName) }); return; }
+                              if (showCheckboxesMobile) { toggleOne(m._id); return; }
                               if (activeTab === 'cartes') { setCardSelected(m); }
                               setExpandedId(isExpanded ? null : m._id);
                             }}

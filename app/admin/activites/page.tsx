@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { CalendarDays, ImagePlus, Plus, X, MapPin, Users, Loader2, Trash2, Edit3, PlusCircle, Send, Eye, Tag, CheckCircle2, XCircle, HelpCircle, Clock, ChevronDown } from 'lucide-react';
 import {
@@ -82,6 +82,28 @@ function ActivityForm({
   const clients      = clientsQuery.data?.data ?? [];
   const bureauMembers = bureauQuery.data?.data ?? [];
   const groups        = groupsQuery.data?.data ?? [];
+
+  /* ── Invitations existantes pour cette activité (edit uniquement) ── */
+  const existingInvitQuery = useActivityInvitations(initial?._id);
+  const existingInvitations = existingInvitQuery.data?.data?.invitations ?? [];
+  const alreadyInvitedMemberIds = useMemo(() => {
+    const ids = new Set<string>();
+    existingInvitations.forEach(inv => {
+      if (inv.guestType !== 'member') return;
+      const mid = typeof inv.memberId === 'string'
+        ? inv.memberId
+        : (inv.memberId as { _id?: string } | undefined)?._id;
+      if (mid) ids.add(mid);
+    });
+    return ids;
+  }, [existingInvitations]);
+
+  /* Listes filtrées — membres non encore invités */
+  const availableMembers         = members.filter(m => !alreadyInvitedMemberIds.has(m._id));
+  const availableBureauMembers   = bureauMembers.filter(b => !alreadyInvitedMemberIds.has(b._id));
+  const availableNonBureauMembers = members.filter(
+    m => !bureauMembers.some(b => b._id === m._id) && !alreadyInvitedMemberIds.has(m._id),
+  );
 
   const upd = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setF(p => ({ ...p, [k]: e.target.value }));
@@ -334,22 +356,24 @@ function ActivityForm({
             </div>
             {guestMode === 'member' && (
               <GuestChecklist
-                title="Membres actifs"
-                items={members.map(m => ({ id: m._id, label: `${m.firstName} ${m.lastName}`, detail: m.email }))}
+                title={`Membres actifs${alreadyInvitedMemberIds.size > 0 ? ` (${alreadyInvitedMemberIds.size} déjà invité${alreadyInvitedMemberIds.size > 1 ? 's' : ''})` : ''}`}
+                items={availableMembers.map(m => ({ id: m._id, label: `${m.firstName} ${m.lastName}`, detail: m.email }))}
                 selected={selectedMemberIds}
                 onToggle={id => toggleId(id, selectedMemberIds, setSelectedMemberIds)}
-                onToggleAll={() => setAll(members.map(m => m._id), selectedMemberIds, setSelectedMemberIds)}
+                onToggleAll={() => setAll(availableMembers.map(m => m._id), selectedMemberIds, setSelectedMemberIds)}
               />
             )}
             {guestMode === 'bureau' && (
               <div className="mt-3 space-y-2">
-                {bureauMembers.length === 0 ? (
-                  <p className="py-3 text-xs text-white/60">Aucun membre du bureau trouvé.</p>
+                {availableBureauMembers.length === 0 ? (
+                  <p className="py-3 text-xs text-white/60">
+                    {bureauMembers.length === 0 ? 'Aucun membre du bureau trouvé.' : 'Tous les membres du bureau ont déjà été invités.'}
+                  </p>
                 ) : (
                   <GuestChecklist
-                    title={`Bureau exécutif (${bureauMembers.length} membres)`}
-                    items={bureauMembers.map(b => ({ id: b._id, label: `${b.firstName} ${b.lastName}`, detail: b.bureauPoste ?? b.email }))}
-                    selected={bureauMembers.map(b => b._id)}
+                    title={`Bureau exécutif (${availableBureauMembers.length} membre${availableBureauMembers.length > 1 ? 's' : ''}${bureauMembers.length > availableBureauMembers.length ? `, ${bureauMembers.length - availableBureauMembers.length} déjà invité${bureauMembers.length - availableBureauMembers.length > 1 ? 's' : ''}` : ''})`}
+                    items={availableBureauMembers.map(b => ({ id: b._id, label: `${b.firstName} ${b.lastName}`, detail: b.bureauPoste ?? b.email }))}
+                    selected={availableBureauMembers.map(b => b._id)}
                     onToggle={() => {}}
                     onToggleAll={() => {}}
                     readOnly
@@ -359,7 +383,7 @@ function ActivityForm({
                   <p className="mb-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-white/80">+ Invités supplémentaires</p>
                   <GuestChecklist
                     title="Autres membres à ajouter"
-                    items={members.filter(m => !bureauMembers.some(b => b._id === m._id)).map(m => ({ id: m._id, label: `${m.firstName} ${m.lastName}`, detail: m.email }))}
+                    items={availableNonBureauMembers.map(m => ({ id: m._id, label: `${m.firstName} ${m.lastName}`, detail: m.email }))}
                     selected={selectedMemberIds}
                     onToggle={id => toggleId(id, selectedMemberIds, setSelectedMemberIds)}
                     onToggleAll={() => {}}
@@ -381,16 +405,22 @@ function ActivityForm({
                 {selectedGroupId && (() => {
                   const g = groups.find(gr => gr._id === selectedGroupId);
                   const gMembers = g?.members ?? [];
-                  return gMembers.length > 0 ? (
+                  const availableGMembers = gMembers.filter(m => !alreadyInvitedMemberIds.has(m._id));
+                  const alreadyCount = gMembers.length - availableGMembers.length;
+                  return availableGMembers.length > 0 ? (
                     <GuestChecklist
-                      title={`Membres du groupe "${g?.name}"`}
-                      items={gMembers.map(m => ({ id: m._id, label: `${m.firstName} ${m.lastName}`, detail: m.activitySector ?? m.email }))}
-                      selected={gMembers.map(m => m._id)}
+                      title={`Membres du groupe "${g?.name}"${alreadyCount > 0 ? ` (${alreadyCount} déjà invité${alreadyCount > 1 ? 's' : ''})` : ''}`}
+                      items={availableGMembers.map(m => ({ id: m._id, label: `${m.firstName} ${m.lastName}`, detail: m.activitySector ?? m.email }))}
+                      selected={availableGMembers.map(m => m._id)}
                       onToggle={() => {}}
                       onToggleAll={() => {}}
                       readOnly
                     />
-                  ) : <p className="py-2 text-xs text-white/60">Aucun membre dans ce groupe.</p>;
+                  ) : (
+                    <p className="py-2 text-xs text-white/60">
+                      {gMembers.length === 0 ? 'Aucun membre dans ce groupe.' : 'Tous les membres de ce groupe ont déjà été invités.'}
+                    </p>
+                  );
                 })()}
               </div>
             )}
