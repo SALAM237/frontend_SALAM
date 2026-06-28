@@ -686,13 +686,12 @@ function TransactionList({ title, items, kind, loading, onDelete, deletingId }: 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 min-w-0">
                 <p className="truncate text-sm font-black text-neutral-900">{item.label || 'Operation'}</p>
-                {item.readonly && <span className="shrink-0 rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-neutral-400">auto</span>}
               </div>
               <p className="truncate text-xs text-neutral-400">{sourceLabels[item.source] ?? item.category ?? 'Operation'} - {new Date(item.occurredAt).toLocaleDateString('fr-FR')}</p>
               {item.description && <p className="truncate text-xs italic text-neutral-400 mt-0.5">{item.description}</p>}
             </div>
             <p className={`shrink-0 text-sm font-black ${item.kind === 'expense' ? 'text-red-600' : 'text-emerald-700'}`}>{formatFcfa(item.amount)}</p>
-            {onDelete && !item.readonly && (
+            {onDelete && (
               <button
                 type="button"
                 onClick={() => onDelete(item._id)}

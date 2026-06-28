@@ -20,7 +20,6 @@ export interface TreasuryTransaction {
   reference?: string;
   counterparty?: string;
   visibility: 'members' | 'private';
-  readonly?: boolean;
 }
 
 export interface TreasuryAsset {
