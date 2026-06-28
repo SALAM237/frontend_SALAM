@@ -20,6 +20,7 @@ export interface TreasuryTransaction {
   reference?: string;
   counterparty?: string;
   visibility: 'members' | 'private';
+  readonly?: boolean;
 }
 
 export interface TreasuryAsset {
@@ -77,6 +78,8 @@ export function useTreasuryOverview(admin = false) {
     queryKey: [admin ? 'admin-treasury-overview' : 'member-treasury-overview'],
     queryFn: () => apiClient<TreasuryOverview>(`/api/v1/${admin ? 'admin' : 'member'}/treasury/overview`, { token: token ?? '' }),
     enabled: !!token,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -90,6 +93,8 @@ export function useTreasuryTransactions(kind?: TreasuryKind, admin = false, sour
     queryKey: [admin ? 'admin-treasury-transactions' : 'member-treasury-transactions', kind, source],
     queryFn: () => apiClient<{ items: TreasuryTransaction[]; total: number }>(`/api/v1/${admin ? 'admin' : 'member'}/treasury/transactions${qs}`, { token: token ?? '' }),
     enabled: !!token,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -99,6 +104,8 @@ export function useTreasuryAssets(admin = false) {
     queryKey: [admin ? 'admin-treasury-assets' : 'member-treasury-assets'],
     queryFn: () => apiClient<{ items: TreasuryAsset[]; total: number }>(`/api/v1/${admin ? 'admin' : 'member'}/treasury/assets`, { token: token ?? '' }),
     enabled: !!token,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 }
 
