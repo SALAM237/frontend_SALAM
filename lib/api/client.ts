@@ -6,6 +6,11 @@ export interface ApiResponse<T = unknown> {
   data: T;
 }
 
+type ValidationIssue = {
+  path?: Array<string | number>;
+  message?: string;
+};
+
 let _refreshing: Promise<string | null> | null = null;
 let _refreshFailures = 0;
 let _nextPeriodicRefreshAt = 0;
@@ -14,6 +19,29 @@ let _sessionUncertain = false;
 const BASE_REFRESH_BACKOFF_MS = 60_000;
 const MAX_REFRESH_BACKOFF_MS = 5 * 60 * 1000;
 const PROACTIVE_REFRESH_BEFORE_MS = 2 * 60 * 1000;
+
+const FIELD_LABELS: Record<string, string> = {
+  token: 'Lien d invitation',
+  password: 'Mot de passe',
+  gender: 'Civilite',
+  firstName: 'Prenom',
+  lastName: 'Nom',
+  email: 'Email',
+  phone: 'Telephone',
+  recoveryContact: 'Contact de recuperation',
+  birthDate: 'Date de naissance',
+  residenceCity: 'Ville de residence',
+  country: 'Pays',
+  promotionYear: 'Annee de promotion',
+  antenne: 'Antenne SALAM',
+  activitySector: 'Secteur d activite',
+  activitySectorProposal: 'Precision du secteur',
+  city: 'Ville d origine',
+  skills: 'Competences',
+  expertiseDomains: 'Domaines d expertise',
+  bio: 'Biographie',
+  motivation: 'Motivation',
+};
 
 type RefreshAuthOptions = {
   reason?: 'periodic' | 'api_401';
@@ -28,6 +56,19 @@ class RefreshError extends Error {
 
 function canAttemptRefresh(path: string): boolean {
   return !path.includes('/auth/');
+}
+
+function validationMessage(json: unknown): string | null {
+  const payload = json as { details?: ValidationIssue[]; message?: string };
+  const issue = Array.isArray(payload?.details) ? payload.details[0] : null;
+  if (!issue) return null;
+
+  const path = issue.path ?? [];
+  const field = [...path].reverse().find(part => typeof part === 'string' && part !== 'body' && part !== 'params' && part !== 'query');
+  const label = typeof field === 'string' ? FIELD_LABELS[field] ?? field : 'Champ';
+  const message = issue.message || payload.message || 'Valeur invalide';
+
+  return `${label} : ${message}`;
 }
 
 function jwtExpiresInMs(token?: string | null): number | null {
@@ -178,6 +219,7 @@ export async function apiClient<T = unknown>(
     throw new Error(res.ok
       ? 'Le serveur a renvoye une reponse illisible'
       : 'Erreur serveur (' + res.status + '). Verifiez le format et la taille du fichier.');
-  }  if (!res.ok) throw new Error((json as any)?.message ?? 'Erreur serveur');
+  }
+  if (!res.ok) throw new Error(validationMessage(json) ?? (json as any)?.message ?? 'Erreur serveur');
   return json;
 }

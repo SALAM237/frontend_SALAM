@@ -45,6 +45,7 @@ const ANTENNE_OPTIONS = [
 ] as const;
 
 const ANTENNE_KNOWN = new Set<string>(ANTENNE_OPTIONS.filter(a => a !== 'Autre'));
+const BIO_MAX_LENGTH = 500;
 
 const ACTIVITY_SECTORS = [
   'Administration publique',
@@ -185,6 +186,13 @@ export default function ProfilPage() {
       return;
     }
     e.preventDefault();
+
+    const bioLength = form.bio.trim().length;
+    if (bioLength > BIO_MAX_LENGTH) {
+      toast.error(`Biographie trop longue : maximum ${BIO_MAX_LENGTH} caracteres (${bioLength} saisis).`);
+      return;
+    }
+
     const sensitiveChanged =
       form.gender !== (user?.gender ?? '')
       || Number(form.promotionYear || 0) !== Number(user?.promotionYear || 0);
@@ -428,7 +436,7 @@ export default function ProfilPage() {
             <TagInput icon={Briefcase} label="Domaines d'expertise" help="Saisissez des mots-cles separes par une virgule." value={form.expertiseDomains} onChange={expertiseDomains => setForm(prev => ({ ...prev, expertiseDomains }))} placeholder="Ex: finance, communication..." />
           </div>
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            <TextArea label="Biographie" value={form.bio} onChange={set('bio')} placeholder="Parlez de vous en quelques mots..." />
+            <TextArea label="Biographie" value={form.bio} onChange={set('bio')} placeholder="Parlez de vous en quelques mots..." limit={BIO_MAX_LENGTH} />
             <TextArea label="Motivation" value={form.motivation} onChange={set('motivation')} placeholder="Ce que vous souhaitez apporter a SALAM..." />
           </div>
         </Section>
@@ -546,15 +554,19 @@ function Select({ label, value, onChange, options, readOnly, required }: {
   );
 }
 
-function TextArea({ label, value, onChange, placeholder }: {
+function TextArea({ label, value, onChange, placeholder, limit }: {
   label: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   placeholder?: string;
+  limit?: number;
 }) {
   return (
     <div>
-      <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">{label}</label>
+      <div className="mb-1 flex items-center justify-between gap-3 sm:mb-1.5">
+        <label className="block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:text-[10px]">{label}</label>
+        {limit && <span className={`text-[10px] font-bold ${value.trim().length > limit ? 'text-red-500' : 'text-neutral-400'}`}>{value.trim().length}/{limit}</span>}
+      </div>
       <textarea
         value={value}
         onChange={onChange}

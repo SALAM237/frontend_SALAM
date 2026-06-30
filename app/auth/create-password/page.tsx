@@ -66,6 +66,7 @@ const ACTIVITY_SECTORS = [
 ];
 
 const PASSWORD_SPECIAL = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/;
+const TAG_MAX_LENGTH = 500;
 
 type ActivationForm = {
   password: string;
@@ -212,7 +213,15 @@ function CreatePasswordContent() {
     if (!form.activitySector) nextErrors.activitySector = "Secteur d'activite obligatoire.";
     if (form.activitySector === 'Autre' && !form.activitySectorProposal.trim()) nextErrors.activitySectorProposal = 'Precisez le secteur.';
     if (!form.skills.length) nextErrors.skills = 'Ajoutez au moins une competence.';
+    else {
+      const tooLongSkill = form.skills.find(item => item.length > TAG_MAX_LENGTH);
+      if (tooLongSkill) nextErrors.skills = `Une competence depasse ${TAG_MAX_LENGTH} caracteres (${tooLongSkill.length}). Raccourcissez cette entree.`;
+    }
     if (!form.expertiseDomains.length) nextErrors.expertiseDomains = "Ajoutez au moins un domaine d'expertise.";
+    else {
+      const tooLongDomain = form.expertiseDomains.find(item => item.length > TAG_MAX_LENGTH);
+      if (tooLongDomain) nextErrors.expertiseDomains = `Un domaine d'expertise depasse ${TAG_MAX_LENGTH} caracteres (${tooLongDomain.length}). Raccourcissez cette entree.`;
+    }
     setErrors(nextErrors);
     const firstKey = Object.keys(nextErrors)[0];
     return { ok: Object.keys(nextErrors).length === 0, firstKey };
