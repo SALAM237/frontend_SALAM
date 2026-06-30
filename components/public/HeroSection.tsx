@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, UserRound } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { getPostLoginRedirect } from '@/lib/auth/roles';
@@ -212,13 +212,23 @@ export function HeroSection() {
             </div>
           </Link>
 
-          {/* Donate button — centered on mobile */}
-          <Link
-            href="/demo"
-            className="absolute left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[0.68rem] font-bold text-white/90 backdrop-blur-sm transition hover:bg-white/20 lg:hidden"
-          >
-            <SparklesIcon className="h-3 w-3" /> Demo
-          </Link>
+          {/* Mobile/tablet: demo + connexion */}
+          <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1.5 lg:hidden">
+            <Link
+              href="/demo"
+              className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[0.68rem] font-bold text-white/90 backdrop-blur-sm transition hover:bg-white/20"
+            >
+              <SparklesIcon className="h-3 w-3" /> Demo
+            </Link>
+            <Link
+              href={user ? getPostLoginRedirect(user) : '/auth/login'}
+              aria-label={user ? 'Ouvrir mon espace' : 'Se connecter'}
+              title={user ? 'Mon espace' : 'Connexion'}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white/90 backdrop-blur-sm transition hover:bg-white/20"
+            >
+              <UserRound size={13} strokeWidth={2} />
+            </Link>
+          </div>
 
           <nav className="hidden items-center gap-5 text-[0.92rem] font-semibold text-white/80 lg:flex" aria-label="Navigation principale">
             {navItems.map((item) => (
