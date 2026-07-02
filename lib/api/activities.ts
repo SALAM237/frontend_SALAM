@@ -306,12 +306,14 @@ export function useRespondActivityInvitation(activityId: string, slug?: string) 
   });
 }
 
+type RelanceResult = { sent: number; total: number; failed: { name: string; email: string; reason: string }[] };
+
 export function useRemindActivityInvitations() {
   const token = useAuthStore(s => s.accessToken);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ activityId, userIds }: { activityId: string; userIds?: string[] }) =>
-      apiClient<{ sent: number; total: number }>(`/api/v1/admin/activities/${activityId}/invitations/remind`, {
+      apiClient<RelanceResult>(`/api/v1/admin/activities/${activityId}/invitations/remind`, {
         method: 'POST',
         body: JSON.stringify({ userIds }),
         token: token ?? '',
@@ -319,8 +321,16 @@ export function useRemindActivityInvitations() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-activities'] });
       qc.invalidateQueries({ queryKey: ['activity-invitations'] });
-      toast.success((res as any).message ?? 'Relance envoyee');
+      const sent   = res.data?.sent   ?? 0;
+      const failed = res.data?.failed ?? [];
+      if (failed.length === 0) {
+        toast.success(`${sent} relance(s) envoyée(s) avec succès`);
+      } else if (sent === 0) {
+        toast.error('Aucun email n\'a pu être envoyé', { description: failed[0]?.reason });
+      } else {
+        toast.warning(`${sent} envoyé(s), ${failed.length} échec(s)`, { description: failed[0]?.reason });
+      }
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => toast.error(`Envoi impossible : ${err.message}`),
   });
 }

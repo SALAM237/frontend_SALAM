@@ -12,7 +12,7 @@ import {
 import { toast } from 'sonner';
 import {
   useAdminMembers, useHardDeleteMember, useResendInvitation,
-  useRemindIncompleteProfiles, useBackfillLastLogin, type MemberListItem,
+  useRemindIncompleteProfiles, useRemindPendingInscriptions, useBackfillLastLogin, type MemberListItem,
 } from '@/lib/api/members';
 import {
   useAdminCotisations, useUpdateCotisationStatus, useSendReminders,
@@ -170,11 +170,12 @@ export default function AdminAdherentsPage() {
   /* ── Mutations ─────────────────────────────────────────── */
   const hardDelete       = useHardDeleteMember();
   const resendInvitation = useResendInvitation();
-  const remindCotisation = useSendReminders();
-  const remindInvoice    = useSendUnpaidInvoiceRelance();
-  const remindProfil     = useRemindIncompleteProfiles();
-  const backfillLogin    = useBackfillLastLogin();
-  const remindPresence   = useRemindActivityInvitations();
+  const remindCotisation   = useSendReminders();
+  const remindInvoice      = useSendUnpaidInvoiceRelance();
+  const remindProfil       = useRemindIncompleteProfiles();
+  const remindInscription  = useRemindPendingInscriptions();
+  const backfillLogin      = useBackfillLastLogin();
+  const remindPresence     = useRemindActivityInvitations();
   const updateCotisation = useUpdateCotisationStatus();
   const adjustCauris     = useAdjustMemberCauris();
 
@@ -293,6 +294,7 @@ export default function AdminAdherentsPage() {
       onConfirm: async () => {
         try {
           if      (relanceSub === 'cotisation')               await remindCotisation.mutateAsync({ year: new Date().getFullYear(), userIds: ids });
+          else if (relanceSub === 'inscription')               await remindInscription.mutateAsync({ userIds: ids });
           else if (relanceSub === 'facture')                  await remindInvoice.mutateAsync({ userIds: ids });
           else if (relanceSub === 'profil')                   await remindProfil.mutateAsync({ userIds: ids });
           else if (relanceSub === 'presence' && selectedAct)  await remindPresence.mutateAsync({ activityId: selectedAct._id, userIds: ids });

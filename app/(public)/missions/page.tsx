@@ -402,7 +402,7 @@ export default function MissionsPage() {
             const isEven = mi % 2 === 1;
             return (
               <motion.section
-                key={m.id}
+                key={m.id}  
                 initial={{ opacity: 0, x: 72 }}
                 animate={{ opacity: 1, x: 0, transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] } }}
                 exit={{ opacity: 0, x: -72, transition: { duration: 0.22, ease: [0.55, 0, 1, 0.45] } }}

@@ -475,17 +475,55 @@ export function useRequestAccountDeletion() {
   });
 }
 
+type RelanceResult = { sent: number; failed: { name: string; email: string; reason: string }[] };
+
+function toastRelanceResult(res: { data?: RelanceResult | null }) {
+  const sent   = res.data?.sent   ?? 0;
+  const failed = res.data?.failed ?? [];
+  if (failed.length === 0) {
+    toast.success(`${sent} relance(s) envoyée(s) avec succès`);
+  } else if (sent === 0) {
+    toast.error('Aucun email n\'a pu être envoyé', { description: failed[0]?.reason });
+  } else {
+    toast.warning(`${sent} envoyé(s), ${failed.length} échec(s)`, { description: failed[0]?.reason });
+  }
+}
+
 export function useRemindIncompleteProfiles() {
   const token = useAuthStore(s => s.accessToken);
   return useMutation({
     mutationFn: (vars: { userIds?: string[] }) =>
-      apiClient<{ sent: number }>('/api/v1/admin/members/remind-profile', {
+      apiClient<RelanceResult>('/api/v1/admin/members/remind-profile', {
         method: 'POST',
         body: JSON.stringify(vars),
         token: token ?? '',
       }),
-    onSuccess: res => toast.success(`${(res.data as any)?.sent ?? 0} relance(s) envoyée(s)`),
-    onError: (err: Error) => toast.error(err.message),
+    onSuccess: res => toastRelanceResult(res),
+    onError: (err: Error) => toast.error(`Envoi impossible : ${err.message}`),
+  });
+}
+
+export function useRemindPendingInscriptions() {
+  const token = useAuthStore(s => s.accessToken);
+  return useMutation({
+    mutationFn: (vars: { userIds?: string[] }) =>
+      apiClient<RelanceResult>('/api/v1/admin/members/remind-inscriptions', {
+        method: 'POST',
+        body: JSON.stringify(vars),
+        token: token ?? '',
+      }),
+    onSuccess: res => {
+      const sent   = res.data?.sent   ?? 0;
+      const failed = res.data?.failed ?? [];
+      if (failed.length === 0) {
+        toast.success(`${sent} invitation(s) renvoyée(s) avec succès`);
+      } else if (sent === 0) {
+        toast.error('Aucune invitation n\'a pu être envoyée', { description: failed[0]?.reason });
+      } else {
+        toast.warning(`${sent} envoyée(s), ${failed.length} échec(s)`, { description: failed[0]?.reason });
+      }
+    },
+    onError: (err: Error) => toast.error(`Envoi impossible : ${err.message}`),
   });
 }
 
