@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -228,14 +228,12 @@ export default function SalamChatbot() {
   const inputRef       = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastAssistRef  = useRef<HTMLDivElement>(null);
-  const scrollTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [open,       setOpen]      = useState(false);
-  const [messages,   setMessages]  = useState<ChatMessage[]>([WELCOME]);
-  const [input,      setInput]     = useState('');
-  const [loading,    setLoading]   = useState(false);
-  const [unread,     setUnread]    = useState(1);
-  const [scrollDate, setScrollDate] = useState('');
+  const [open,     setOpen]     = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
+  const [input,    setInput]    = useState('');
+  const [loading,  setLoading]  = useState(false);
+  const [unread,   setUnread]   = useState(1);
 
   /* Masquer sur admin / membre / auth / demo */
   const hidden = useMemo(() => {
@@ -260,19 +258,6 @@ export default function SalamChatbot() {
       setUnread(n => Math.min(n + 1, 9));
     }
   }, [messages, open]);
-
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const container = e.currentTarget;
-    const bubbles   = container.querySelectorAll<HTMLElement>('[data-sent-at]');
-    let current     = '';
-    bubbles.forEach(el => {
-      if (el.offsetTop <= container.scrollTop + 90) current = el.getAttribute('data-sent-at') ?? '';
-    });
-    if (!current) return;
-    setScrollDate(formatDay(current));
-    if (scrollTimer.current) clearTimeout(scrollTimer.current);
-    scrollTimer.current = setTimeout(() => setScrollDate(''), 1400);
-  }, []);
 
   if (hidden) return null;
 
@@ -376,31 +361,23 @@ export default function SalamChatbot() {
             </div>
 
             {/* Messages */}
-            <div
-              className="relative flex-1 space-y-3 overflow-y-auto px-3 py-4"
-              onScroll={handleScroll}
-            >
-              <AnimatePresence>
-                {scrollDate && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y:  0 }}
-                    exit={{   opacity: 0, y: -6 }}
-                    className="sticky top-0 z-10 mx-auto w-fit rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/70 backdrop-blur"
-                  >
-                    {scrollDate}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            <div className="relative flex-1 space-y-3 overflow-y-auto px-3 py-4">
 
               {messages.map((msg, idx) => {
                 const isLastAssistant = msg.role === 'assistant' && idx === messages.length - 1;
+                const prevMsg         = idx > 0 ? messages[idx - 1] : null;
+                const showDateSep     = !prevMsg || formatDay(msg.sentAt) !== formatDay(prevMsg.sentAt);
                 return (
                   <div
                     key={`${msg.sentAt}-${idx}`}
-                    data-sent-at={msg.sentAt}
                     ref={isLastAssistant ? lastAssistRef : undefined}
                   >
+                    {/* Séparateur de date — statique, entre groupes de jours différents */}
+                    {showDateSep && (
+                      <div className="mx-auto mb-3 w-fit rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/50">
+                        {formatDay(msg.sentAt)}
+                      </div>
+                    )}
                     {/* Bulle */}
                     <div className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       {msg.role === 'assistant' && (
