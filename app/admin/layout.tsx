@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, CalendarDays,
   Images, Newspaper, Settings, Menu, X, ChevronRight, Bell,
   Banknote, FileText, History, MessageSquare, Shield, Loader2, Globe, ShieldCheck,
-  Handshake, BriefcaseBusiness, Sparkles, Target, ScanLine,
+  Handshake, BriefcaseBusiness, Sparkles, Target, ScanLine, AlertTriangle,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
@@ -25,7 +25,8 @@ import { usePendingValidations } from '@/lib/api/validations';
 import { useAdminStats } from '@/lib/api/dashboard';
 import { useNotifications } from '@/lib/api/notifications';
 
-type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; permissions?: string[]; hidden?: boolean };
+const ERRORS_ALLOWED_EMAILS = ['salamcameroun237@gmail.com', 'vicklionel@yahoo.fr'];
+type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; permissions?: string[]; hidden?: boolean; allowedEmails?: string[] };
 
 const BASE_NAV: NavItem[] = [
   { label: 'Tableau de bord',   href: '/admin/dashboard',         icon: LayoutDashboard },
@@ -44,6 +45,7 @@ const BASE_NAV: NavItem[] = [
   { label: 'IDP/ISP',           href: '/admin/idp-isp',           icon: Target },
   { label: 'Validations',       href: '/admin/validations',       icon: ShieldCheck, permissions: ['content.publish', 'gallery.publish', 'networking.publish', 'opportunities.publish'] },
   { label: 'Historique',        href: '/admin/historique',        icon: History },
+  { label: 'Gestion Erreurs',   href: '/admin/erreurs',           icon: AlertTriangle, allowedEmails: ERRORS_ALLOWED_EMAILS },
   { label: 'Rôles & Accès',     href: '/admin/roles',             icon: Shield, superAdminOnly: true },
   { label: 'Bureau',            href: '/admin/bureau',            icon: Users },
   { label: 'Compte',            href: '/admin/parametres',        icon: Settings },
@@ -337,6 +339,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (n.hidden) return false;
     if (n.superAdminOnly && !SA) return false;
     if (n.permissions && !hasAnyPermission(user, n.permissions)) return false;
+    if (n.allowedEmails && !SA && !n.allowedEmails.includes(user?.email ?? '')) return false;
     return true;
   });
 

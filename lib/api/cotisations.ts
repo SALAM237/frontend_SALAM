@@ -107,17 +107,30 @@ export function useDeleteCotisation() {
   });
 }
 
-type RelanceResult = { sent: number; failed: { name: string; email: string; reason: string }[] };
+type RelanceResult = { sent: number; failed: { name: string; email: string; reason: string; code?: string }[]; stoppedEarly?: boolean };
+
+function buildFailedDescription(failed: RelanceResult['failed'], stoppedEarly?: boolean): string {
+  const cause  = failed[0]?.reason ?? 'Erreur inconnue';
+  const emails = failed.slice(0, 5).map(f => f.email).join(', ');
+  const more   = failed.length > 5 ? ` +${failed.length - 5} autre(s)` : '';
+  const stop   = stoppedEarly ? ' — envoi interrompu (limite atteinte)' : '';
+  return `${cause} — Adresses : ${emails}${more}${stop} — Voir « Gestion Erreurs » pour les détails`;
+}
 
 function toastRelanceResult(res: { data?: RelanceResult | null }) {
-  const sent   = res.data?.sent   ?? 0;
-  const failed = res.data?.failed ?? [];
+  const sent        = res.data?.sent        ?? 0;
+  const failed      = res.data?.failed      ?? [];
+  const stoppedEarly = res.data?.stoppedEarly;
   if (failed.length === 0) {
     toast.success(`${sent} relance(s) envoyée(s) avec succès`);
   } else if (sent === 0) {
-    toast.error('Aucun email n\'a pu être envoyé', { description: failed[0]?.reason });
+    toast.error(`Aucun email n'a pu être envoyé (${failed.length} échec(s))`, {
+      description: buildFailedDescription(failed, stoppedEarly),
+    });
   } else {
-    toast.warning(`${sent} envoyé(s), ${failed.length} échec(s)`, { description: failed[0]?.reason });
+    toast.warning(`${sent} envoyé(s) — ${failed.length} échec(s)`, {
+      description: buildFailedDescription(failed, stoppedEarly),
+    });
   }
 }
 

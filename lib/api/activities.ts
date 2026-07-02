@@ -306,7 +306,7 @@ export function useRespondActivityInvitation(activityId: string, slug?: string) 
   });
 }
 
-type RelanceResult = { sent: number; total: number; failed: { name: string; email: string; reason: string }[] };
+type RelanceResult = { sent: number; total: number; failed: { name: string; email: string; reason: string; code?: string }[]; stoppedEarly?: boolean };
 
 export function useRemindActivityInvitations() {
   const token = useAuthStore(s => s.accessToken);
@@ -321,14 +321,26 @@ export function useRemindActivityInvitations() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-activities'] });
       qc.invalidateQueries({ queryKey: ['activity-invitations'] });
-      const sent   = res.data?.sent   ?? 0;
-      const failed = res.data?.failed ?? [];
+      const sent        = res.data?.sent        ?? 0;
+      const failed      = res.data?.failed      ?? [];
+      const stoppedEarly = res.data?.stoppedEarly;
       if (failed.length === 0) {
         toast.success(`${sent} relance(s) envoyée(s) avec succès`);
       } else if (sent === 0) {
-        toast.error('Aucun email n\'a pu être envoyé', { description: failed[0]?.reason });
+        const cause  = failed[0]?.reason ?? 'Erreur inconnue';
+        const emails = failed.slice(0, 5).map(f => f.email).join(', ');
+        const more   = failed.length > 5 ? ` +${failed.length - 5} autre(s)` : '';
+        const stop   = stoppedEarly ? ' — envoi interrompu (limite atteinte)' : '';
+        toast.error(`Aucun email n'a pu être envoyé (${failed.length} échec(s))`, {
+          description: `${cause} — Adresses : ${emails}${more}${stop} — Voir « Gestion Erreurs »`,
+        });
       } else {
-        toast.warning(`${sent} envoyé(s), ${failed.length} échec(s)`, { description: failed[0]?.reason });
+        const emails = failed.slice(0, 5).map(f => f.email).join(', ');
+        const more   = failed.length > 5 ? ` +${failed.length - 5} autre(s)` : '';
+        const stop   = stoppedEarly ? ' — envoi interrompu (limite atteinte)' : '';
+        toast.warning(`${sent} envoyé(s) — ${failed.length} échec(s)`, {
+          description: `${failed[0]?.reason} — ${emails}${more}${stop} — Voir « Gestion Erreurs »`,
+        });
       }
     },
     onError: (err: Error) => toast.error(`Envoi impossible : ${err.message}`),
