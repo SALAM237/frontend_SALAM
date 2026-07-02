@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -225,15 +225,20 @@ const WELCOME: ChatMessage = {
 export default function SalamChatbot() {
   const pathname = usePathname();
 
-  const inputRef       = useRef<HTMLTextAreaElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const lastAssistRef  = useRef<HTMLDivElement>(null);
+  const inputRef         = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef   = useRef<HTMLDivElement>(null);
+  const lastAssistRef    = useRef<HTMLDivElement>(null);
+  /* Flag : vrai pendant un scroll programmatique — ignore les events onScroll */
+  const autoScrollingRef = useRef(false);
+  const lastScrollTopRef = useRef(0);
+  const scrollTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [open,     setOpen]     = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
-  const [input,    setInput]    = useState('');
-  const [loading,  setLoading]  = useState(false);
-  const [unread,   setUnread]   = useState(1);
+  const [open,       setOpen]      = useState(false);
+  const [messages,   setMessages]  = useState<ChatMessage[]>([WELCOME]);
+  const [input,      setInput]     = useState('');
+  const [loading,    setLoading]   = useState(false);
+  const [unread,     setUnread]    = useState(1);
+  const [scrollDate, setScrollDate] = useState('');
 
   /* Masquer sur admin / membre / auth / demo */
   const hidden = useMemo(() => {
@@ -249,15 +254,51 @@ export default function SalamChatbot() {
 
   useEffect(() => {
     const last = messages.at(-1);
+    /* Marquer le scroll comme programmatique AVANT de scroller */
+    autoScrollingRef.current = true;
     if (last?.role === 'assistant') {
       lastAssistRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
+    /* Lever le flag après la durée max d'un smooth scroll (~650 ms) */
+    const t = setTimeout(() => { autoScrollingRef.current = false; }, 700);
     if (!open && last?.role === 'assistant') {
       setUnread(n => Math.min(n + 1, 9));
     }
+    return () => clearTimeout(t);
   }, [messages, open]);
+
+  /* Scroll manuel uniquement : up → affiche la date, down → masque */
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (autoScrollingRef.current) return;          // ignorer les scrolls auto
+
+    const container = e.currentTarget;
+    const scrollTop = container.scrollTop;
+    const isNearBottom =
+      container.scrollHeight - scrollTop - container.clientHeight < 60;
+    const isScrollingUp = scrollTop < lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+
+    if (scrollTimer.current) clearTimeout(scrollTimer.current);
+
+    /* Scroll vers le bas ou proche du bas → masquer la barre */
+    if (!isScrollingUp || isNearBottom) {
+      setScrollDate('');
+      return;
+    }
+
+    /* Scroll vers le haut → trouver la date du premier message visible */
+    const bubbles = container.querySelectorAll<HTMLElement>('[data-sent-at]');
+    let current = '';
+    bubbles.forEach(el => {
+      if (el.offsetTop <= scrollTop + 80) current = el.getAttribute('data-sent-at') ?? '';
+    });
+    setScrollDate(formatDay(current || messages[0]?.sentAt || new Date().toISOString()));
+
+    /* Masquer après 2 s sans scroll */
+    scrollTimer.current = setTimeout(() => setScrollDate(''), 2000);
+  }, [messages]);
 
   if (hidden) return null;
 
@@ -361,7 +402,24 @@ export default function SalamChatbot() {
             </div>
 
             {/* Messages */}
-            <div className="relative flex-1 space-y-3 overflow-y-auto px-3 py-4">
+            <div
+              className="relative flex-1 space-y-3 overflow-y-auto px-3 py-4"
+              onScroll={handleScroll}
+            >
+              {/* Barre de date flottante — apparaît au scroll UP, disparaît au scroll DOWN */}
+              <AnimatePresence>
+                {scrollDate && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1,  y: 0   }}
+                    exit={{   opacity: 0,  y: -10  }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                    className="pointer-events-none sticky top-0 z-10 mx-auto mb-1 w-fit rounded-full border border-white/15 bg-black/50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/75 backdrop-blur-md"
+                  >
+                    {scrollDate}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {messages.map((msg, idx) => {
                 const isLastAssistant = msg.role === 'assistant' && idx === messages.length - 1;
@@ -370,11 +428,12 @@ export default function SalamChatbot() {
                 return (
                   <div
                     key={`${msg.sentAt}-${idx}`}
+                    data-sent-at={msg.sentAt}
                     ref={isLastAssistant ? lastAssistRef : undefined}
                   >
-                    {/* Séparateur de date — statique, entre groupes de jours différents */}
+                    {/* Séparateur statique entre groupes de jours */}
                     {showDateSep && (
-                      <div className="mx-auto mb-3 w-fit rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/50">
+                      <div className="mx-auto mb-3 w-fit rounded-full border border-white/8 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/35">
                         {formatDay(msg.sentAt)}
                       </div>
                     )}
