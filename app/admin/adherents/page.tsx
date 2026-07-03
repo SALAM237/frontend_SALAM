@@ -114,9 +114,10 @@ const TRANCHE_BADGE_CLS: Record<string, string> = {
   exempt: 'bg-neutral-50 text-neutral-400 border-neutral-200',
 };
 
-function TrancheCell({ userId, year, index, tranche, allTranches, annualFee }: {
+function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, variant = 'desktop', onFeedback }: {
   userId: string; year: number; index: number; tranche?: Tranche;
-  allTranches?: Tranche[]; annualFee: number;
+  allTranches?: Tranche[]; annualFee: number; variant?: 'desktop' | 'mobile';
+  onFeedback: (type: 'error' | 'warning' | 'success', message: string) => void;
 }) {
   const t = tranche ?? EMPTY_TRANCHE;
   /* Étapes : 'display' (montant + date déjà enregistrés) → 'amount' (saisie) → 'date' (choix date) */
@@ -125,6 +126,11 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee }: {
   const [draftDate, setDraftDate]     = useState(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
   const dateInputRef = useRef<HTMLInputElement>(null);
   const updateTranche = useUpdateTranche();
+
+  /* Tailles adaptées : sur mobile, badges réduits, montant/date agrandis pour la lisibilité */
+  const sizes = variant === 'mobile'
+    ? { badge: 'text-[7px]', amount: 'text-[12px]', date: 'text-[11px]' }
+    : { badge: 'text-[8px]', amount: 'text-[10px]', date: 'text-[9px]' };
 
   useEffect(() => {
     if (step !== 'display') return;
@@ -146,10 +152,20 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee }: {
 
   const commitStatus = (status: 'unpaid' | 'paid' | 'exempt') => {
     if (status === 'paid' && isLastTranche && (othersPaidSum + t.amount) < annualFee) {
-      toast.error(`La tranche 4 ne peut être marquée payée que si le total des 4 tranches atteint ${fmtNum(annualFee)} F.CFA.`);
+      onFeedback('warning', `La tranche 4 ne peut être marquée payée que si le total des 4 tranches atteint le montant de la cotisation annuelle (${fmtNum(annualFee)} F.CFA).`);
       return;
     }
-    updateTranche.mutate({ userId, year, trancheIndex: index, amount: t.amount, status, paidAt: t.paidAt ?? undefined });
+    updateTranche.mutate(
+      { userId, year, trancheIndex: index, amount: t.amount, status, paidAt: t.paidAt ?? undefined },
+      {
+        onSuccess: res => {
+          const warning = (res as any).invoiceWarning;
+          if (warning) onFeedback('warning', warning);
+          else onFeedback('success', (res as any).message ?? 'Statut mis à jour');
+        },
+        onError: (err: Error) => onFeedback('error', err.message),
+      },
+    );
   };
 
   /* Clic sur ✓ ou ✗ au-dessus du champ montant : les deux renvoient vers le choix de la date. */
@@ -161,7 +177,15 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee }: {
     const amount = Math.max(0, Number(draftAmount) || 0);
     updateTranche.mutate(
       { userId, year, trancheIndex: index, amount, status: amount > 0 ? 'paid' : 'unpaid', paidAt: nextDate },
-      { onSuccess: () => setStep('display') },
+      {
+        onSuccess: res => {
+          setStep('display');
+          const warning = (res as any).invoiceWarning;
+          if (warning) onFeedback('warning', warning);
+          else onFeedback('success', (res as any).message ?? 'Tranche mise à jour');
+        },
+        onError: (err: Error) => onFeedback('error', err.message),
+      },
     );
   };
 
@@ -171,7 +195,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee }: {
         value={t.status}
         onChange={e => commitStatus(e.target.value as 'unpaid' | 'paid' | 'exempt')}
         disabled={updateTranche.isPending}
-        className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center text-[8px] font-black outline-none disabled:cursor-wait ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
+        className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center font-black outline-none disabled:cursor-wait ${sizes.badge} ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
       >
         <option value="unpaid">Impayé</option>
         <option value="paid" disabled={lastTrancheBlocksPaid}>Payé</option>
@@ -182,38 +206,39 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee }: {
       )}
 
       {step === 'amount' && (
-        <div className="relative">
-          {/* Boutons flottants juste au-dessus du champ de saisie */}
-          <div className="absolute bottom-full left-0 z-20 mb-1 flex items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg">
-            <button type="button" onClick={confirmAmount} disabled={updateTranche.isPending} title="Valider le montant"
+        <div className="group relative">
+          {/* Boutons flottants juste au-dessus du champ de saisie : masqués par défaut, visibles uniquement au focus du champ */}
+          <div className="absolute bottom-full left-0 z-20 mb-1 hidden items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within:flex">
+            <button type="button" onMouseDown={e => e.preventDefault()} onClick={confirmAmount} disabled={updateTranche.isPending} title="Valider le montant"
               className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
               <Check size={11} />
             </button>
-            <button type="button" onClick={clearAmount} disabled={updateTranche.isPending} title="Effacer la saisie"
+            <button type="button" onMouseDown={e => e.preventDefault()} onClick={clearAmount} disabled={updateTranche.isPending} title="Effacer la saisie"
               className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 transition hover:bg-red-100 hover:text-red-500">
               <X size={11} />
             </button>
           </div>
           <input
-            type="number" min={0} value={draftAmount} autoFocus
+            type="number" min={0} value={draftAmount}
             onChange={e => setDraftAmount(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') confirmAmount(); }}
             placeholder="Montant"
-            className="w-full min-w-0 rounded-md border border-neutral-200 px-1 py-0.5 text-[10px] outline-none focus:border-emerald-400"
+            className={`w-full min-w-0 rounded-md border border-neutral-200 px-1 py-0.5 outline-none focus:border-emerald-400 ${sizes.amount}`}
           />
         </div>
       )}
 
       {step === 'date' && (
         <div className="flex flex-col gap-1">
-          <span className="truncate font-mono text-[10px] font-black text-neutral-700">
+          <span className={`truncate font-mono font-black text-neutral-700 ${sizes.amount}`}>
             {draftAmount ? `${fmtNum(Number(draftAmount))} F` : '0 F'}
           </span>
           <input
             ref={dateInputRef}
             type="date" value={draftDate} disabled={updateTranche.isPending}
             onChange={e => commitDate(e.target.value)}
-            className="w-full rounded-md border border-emerald-300 px-1 py-0.5 text-[9px] outline-none focus:border-emerald-500"
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitDate(draftDate); } }}
+            className={`w-full rounded-md border border-emerald-300 px-1 py-0.5 outline-none focus:border-emerald-500 ${sizes.date}`}
           />
         </div>
       )}
@@ -221,12 +246,12 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee }: {
       {step === 'display' && (
         <div className="flex flex-col items-start gap-0.5">
           <button type="button" onClick={() => setStep('amount')}
-            className="truncate text-left font-mono text-[10px] font-black text-neutral-700 transition hover:text-emerald-700 hover:underline">
+            className={`truncate text-left font-mono font-black text-neutral-700 transition hover:text-emerald-700 hover:underline ${sizes.amount}`}>
             {fmtNum(t.amount)} F
           </button>
           {t.paidAt && (
             <button type="button" onClick={() => setStep('date')} title="Modifier la date"
-              className="truncate text-left text-[9px] font-semibold text-neutral-400 transition hover:text-emerald-600 hover:underline">
+              className={`truncate text-left font-semibold text-neutral-400 transition hover:text-emerald-600 hover:underline ${sizes.date}`}>
               {fmtDate(t.paidAt)}
             </button>
           )}
@@ -244,6 +269,45 @@ function DetteCell({ tranches, annualFee }: { tranches?: Tranche[]; annualFee: n
     <span className={`font-mono text-xs font-black ${cleared ? 'text-emerald-600' : 'text-red-600'}`}>
       {fmtNum(dette)} F
     </span>
+  );
+}
+
+/* ── Popup de statut générique (erreur / avertissement / succès) ──
+   Remplace les toasts (top-right, peu visibles) par une modale centrée :
+   croix pour fermer, clic en dehors pour fermer, couleur selon le statut.
+   Les succès se ferment automatiquement (même délai que les toasts). */
+type StatusPopupType = 'error' | 'warning' | 'success';
+const STATUS_POPUP_THEME: Record<StatusPopupType, { border: string; iconBg: string; iconColor: string; textColor: string; Icon: React.ElementType }> = {
+  error:   { border: 'border-red-500',     iconBg: 'bg-red-50',     iconColor: 'text-red-600',    textColor: 'text-red-600',    Icon: AlertTriangle },
+  warning: { border: 'border-orange-500',  iconBg: 'bg-orange-50',  iconColor: 'text-orange-600',  textColor: 'text-orange-600', Icon: AlertTriangle },
+  success: { border: 'border-emerald-500', iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600',  textColor: 'text-emerald-700', Icon: CheckCircle2  },
+};
+
+function StatusPopup({ type, message, onClose }: { type: StatusPopupType; message: string; onClose: () => void }) {
+  const theme = STATUS_POPUP_THEME[type];
+  const Icon = theme.Icon;
+
+  useEffect(() => {
+    if (type !== 'success') return;
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [type, onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className={`relative w-full max-w-sm rounded-2xl border-2 bg-white p-6 shadow-2xl ${theme.border}`}>
+        <button type="button" onClick={onClose} title="Fermer"
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600">
+          <X size={16} />
+        </button>
+        <div className="flex flex-col items-center gap-3 pt-2 text-center">
+          <div className={`flex h-12 w-12 items-center justify-center rounded-full ${theme.iconBg}`}>
+            <Icon size={22} className={theme.iconColor} />
+          </div>
+          <p className={`text-sm font-black leading-relaxed ${theme.textColor}`}>{message}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -339,6 +403,8 @@ export default function AdminAdherentsPage() {
   const [showCheckboxes, setShowCheckboxes] = useState(false);
   const [confirmModal,   setConfirmModal]   = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
   const [invoiceRequiredModal, setInvoiceRequiredModal] = useState<{ member: MemberListItem; message: string; motif: 'cotisation' | 'cotisation_annuelle' } | null>(null);
+  const [statusPopup, setStatusPopup] = useState<{ type: 'error' | 'warning' | 'success'; message: string } | null>(null);
+  const showFeedback = (type: 'error' | 'warning' | 'success', message: string) => setStatusPopup({ type, message });
   const [showGroupsPanel, setShowGroupsPanel] = useState(false);
   const [openGroupIds,    setOpenGroupIds]    = useState<Set<string>>(new Set());
 
@@ -517,6 +583,17 @@ export default function AdminAdherentsPage() {
     if (tab !== 'cotisation-annuelle') setShowCotAnnuelleParams(false);
   };
 
+  /* Retour au tableau initial (liste complète) depuis n'importe quel onglet */
+  const handleBackToList = () => {
+    setActiveTab(null);
+    setShowKpis(true);
+    setCheckedIds(new Set());
+    setShowCheckboxes(false);
+    setRelanceSub(null);
+    setShowFraisParams(false);
+    setShowCotAnnuelleParams(false);
+  };
+
   /* ── Action handlers ────────────────────────────────────── */
   const handleDelete      = (id: string) => { if (confirmDeleteId !== id) { setConfirmDeleteId(id); return; } hardDelete.mutate(id, { onSettled: () => setConfirmDeleteId(null) }); };
   const handleResend      = (e: React.MouseEvent, id: string) => { e.preventDefault(); e.stopPropagation(); setConfirmModal({ title: "Renvoyer l'invitation", message: "Confirmer l'envoi du mail d'invitation à ce membre ?", onConfirm: () => resendInvitation.mutate(id) }); };
@@ -529,10 +606,13 @@ export default function AdminAdherentsPage() {
       onConfirm: () => updateCotisation.mutate(
         { userId, year: cotisYear, status },
         {
+          onSuccess: (res: any) => showFeedback('success', res?.message ?? 'Statut mis à jour'),
           onError: (err: Error) => {
             if (/Créez d'abord une facture/i.test(err.message)) {
               const member = members.find(m => m._id === userId);
               if (member) setInvoiceRequiredModal({ member, message: err.message, motif: 'cotisation' });
+            } else {
+              showFeedback('error', err.message);
             }
           },
         },
@@ -638,6 +718,14 @@ export default function AdminAdherentsPage() {
 
         {/* Tab buttons row — flex-nowrap to stay on one line on all breakpoints */}
         <div className="mt-3 flex items-center justify-end gap-1 overflow-x-auto lg:gap-2">
+          {/* Liste adhérents — display none par défaut, visible seulement dans un onglet */}
+          {activeTab && (
+            <button type="button" onClick={handleBackToList}
+              className="shrink-0 inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-1.5 text-[10px] font-semibold text-neutral-600 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:bg-neutral-50 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm">
+              <ChevronLeft size={12} className="shrink-0 lg:size-[14px]" />
+              Liste adhérents
+            </button>
+          )}
           {/* Arrow KPI toggle — visible only when tab active */}
           <div className={`shrink-0 overflow-hidden transition-[max-width,opacity] duration-200 ${activeTab ? 'max-w-[30px] opacity-100 lg:max-w-[40px]' : 'max-w-0 opacity-0 pointer-events-none'}`}>
             <button type="button" onClick={() => setShowKpis(v => !v)} title={showKpis ? 'Masquer les statistiques' : 'Afficher les statistiques'}
@@ -1436,7 +1524,7 @@ export default function AdminAdherentsPage() {
                             <>
                               {[0, 1, 2, 3].map(i => (
                                 <td key={i} className="px-1.5 py-1 align-top">
-                                  <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} />
+                                  <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} onFeedback={showFeedback} />
                                 </td>
                               ))}
                               <td className="px-2 py-3 align-top">
@@ -1596,8 +1684,8 @@ export default function AdminAdherentsPage() {
                                   <div className="grid grid-cols-2 gap-1.5">
                                     {[0, 1, 2, 3].map(i => (
                                       <div key={i} className="rounded-xl border border-violet-100 bg-white p-1.5">
-                                        <p className="mb-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-violet-400">Tranche {i + 1}</p>
-                                        <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} />
+                                        <p className="mb-0.5 text-[10px] font-black uppercase tracking-[0.1em] text-violet-400">Tranche {i + 1}</p>
+                                        <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} variant="mobile" onFeedback={showFeedback} />
                                       </div>
                                     ))}
                                   </div>
@@ -1682,6 +1770,9 @@ export default function AdminAdherentsPage() {
         onClose={() => setInvoiceRequiredModal(null)}
       />
     )}
+    {statusPopup && (
+      <StatusPopup type={statusPopup.type} message={statusPopup.message} onClose={() => setStatusPopup(null)} />
+    )}
     {showActPicker && (
       <ActivityPickerModal activities={activities}
         onSelect={a => { setSelectedAct(a); setShowActPicker(false); }}
@@ -1696,8 +1787,9 @@ export default function AdminAdherentsPage() {
 ══════════════════════════════════════════════════════════ */
 function ConfirmSendModal({ title, message, onConfirm, onClose }: { title: string; message: string; onConfirm: () => void; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+        <button type="button" onClick={onClose} title="Fermer" className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600"><X size={15} /></button>
         <div className="border-b border-neutral-100 px-5 py-4">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Confirmation</p>
           <h2 className="mt-0.5 text-base font-black text-neutral-900">{title}</h2>
@@ -1721,8 +1813,8 @@ function ActivityPickerModal({ activities, onSelect, onClose }: { activities: Ac
   const pickedActivity = withInvitees.find(a => a._id === picked) ?? null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
         <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-600">Relance présence</p>

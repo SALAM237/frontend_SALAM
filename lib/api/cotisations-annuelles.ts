@@ -206,17 +206,13 @@ export function useUpdateTranche() {
           token: token ?? '',
         },
       ),
-    onSuccess: (res, vars) => {
+    onSuccess: (_res, vars) => {
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles', vars.year] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
-      if ((res as any).invoiceWarning) {
-        toast.warning((res as any).invoiceWarning);
-      } else {
-        toast.success('Tranche mise à jour');
-      }
+      /* Le retour visuel (succès/avertissement) est géré au niveau de l'appelant
+         via la popup de statut centrée (TrancheCell), pas ici, pour éviter le doublon. */
     },
-    onError: (err: Error) => toast.error(err.message),
   });
 }
 
