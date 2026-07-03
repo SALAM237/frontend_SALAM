@@ -95,6 +95,9 @@ export function useCreateInvoice() {
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
+      qc.invalidateQueries({ queryKey: ['member-cotisations'] });
+      qc.invalidateQueries({ queryKey: ['member-cotisations-annuelles'] });
       toast.success((res as any).message ?? 'Facture créée');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -122,6 +125,8 @@ export function useUpdateInvoice() {
       qc.invalidateQueries({ queryKey: ['admin-invoices'] });
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
       toast.success((res as any).message ?? 'Facture mise a jour');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -141,6 +146,8 @@ export function useSendInvoice() {
       qc.invalidateQueries({ queryKey: ['admin-invoices'] });
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
       toast.success((res as any).message ?? 'Factures envoyées');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -162,6 +169,8 @@ export function useResendInvoiceRecipient() {
       qc.invalidateQueries({ queryKey: ['admin-invoices'] });
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
       toast.success((res as any).message ?? 'Facture renvoyee');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -186,6 +195,9 @@ export function useDeleteInvoice() {
       qc.invalidateQueries({ queryKey: ['member-treasury-transactions'] });
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
+      qc.invalidateQueries({ queryKey: ['member-cotisations-annuelles'] });
       toast.success((res as any).message ?? 'Facture supprimée');
     },
     onError: (err: Error) => toast.error(err.message),

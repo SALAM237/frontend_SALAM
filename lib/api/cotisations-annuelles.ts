@@ -88,6 +88,10 @@ export function useUpdateCotisationAnnuelleStatus() {
       qc.invalidateQueries({ queryKey: ['cotisation-annuelle-logs'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
       qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
+      qc.invalidateQueries({ queryKey: ['member-cotisations-annuelles'] });
+      qc.invalidateQueries({ queryKey: ['admin-invoices'] });
+      qc.invalidateQueries({ queryKey: ['member-invoices'] });
       toast.success((res as any).message ?? 'Statut mis à jour');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -108,6 +112,8 @@ export function useDeleteCotisationAnnuelle() {
       qc.invalidateQueries({ queryKey: ['cotisation-annuelle-logs'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
       qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
+      qc.invalidateQueries({ queryKey: ['member-cotisations-annuelles'] });
       toast.success((res as any).message ?? 'Cotisation supprimée');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -210,6 +216,11 @@ export function useUpdateTranche() {
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles', vars.year] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-cotisations-annuelles'] });
+      qc.invalidateQueries({ queryKey: ['admin-invoices'] });
+      qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['cotisation-annuelle-logs'] });
       /* Le retour visuel (succès/avertissement) est géré au niveau de l'appelant
          via la popup de statut centrée (TrancheCell), pas ici, pour éviter le doublon. */
     },

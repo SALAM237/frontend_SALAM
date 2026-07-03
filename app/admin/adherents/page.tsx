@@ -7,7 +7,7 @@ import {
   UserPlus, CreditCard, Search, Eye, CheckCircle2, Clock, XCircle,
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
   Plus, Minus, SlidersHorizontal, X, Bell, Banknote,
-  Send, CalendarDays, AlertTriangle, Users, ChevronLeft,
+  Send, CalendarDays, AlertTriangle, Users,
   FolderOpen, Folders, ChevronRight, Check, Wallet,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -114,10 +114,11 @@ const TRANCHE_BADGE_CLS: Record<string, string> = {
   exempt: 'bg-neutral-50 text-neutral-400 border-neutral-200',
 };
 
-function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, variant = 'desktop', onFeedback }: {
+function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, variant = 'desktop', onFeedback, onInvoiceRequired }: {
   userId: string; year: number; index: number; tranche?: Tranche;
   allTranches?: Tranche[]; annualFee: number; variant?: 'desktop' | 'mobile';
-  onFeedback: (type: 'error' | 'warning' | 'success', message: string) => void;
+  onFeedback: (type: 'error' | 'warning' | 'success', message: string, content?: React.ReactNode) => void;
+  onInvoiceRequired: (message: string) => void;
 }) {
   const t = tranche ?? EMPTY_TRANCHE;
   /* Étapes : 'display' (montant + date déjà enregistrés) → 'amount' (saisie) → 'date' (choix date) */
@@ -149,10 +150,21 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
     .filter((_, i) => i !== 3)
     .reduce((acc, tr) => acc + (tr.status === 'paid' ? (tr.amount ?? 0) : 0), 0);
   const lastTrancheBlocksPaid = isLastTranche && (othersPaidSum + t.amount) < annualFee;
+  const resteAvantTranche4 = Math.max(0, annualFee - othersPaidSum);
+
+  /* Dès que la dette totale (somme de tous les montants saisis) est soldée,
+     aucune des 4 tranches ne peut être repassée à "Impayé" (sécurité anti-incohérence). */
+  const totalEnteredSum = (allTranches ?? DEFAULT_TRANCHES).reduce((acc, tr) => acc + Number(tr.amount || 0), 0);
+  const isFullySettled = totalEnteredSum >= annualFee;
+
+  const handleMutationError = (err: Error) => {
+    if (/Créez une facture/i.test(err.message)) onInvoiceRequired(err.message);
+    else onFeedback('error', err.message);
+  };
 
   const commitStatus = (status: 'unpaid' | 'paid' | 'exempt') => {
     if (status === 'paid' && isLastTranche && (othersPaidSum + t.amount) < annualFee) {
-      onFeedback('warning', `La tranche 4 ne peut être marquée payée que si le total des 4 tranches atteint le montant de la cotisation annuelle (${fmtNum(annualFee)} F.CFA).`);
+      onFeedback('warning', 'Impossible de passer à Payé', lastTrancheBlockedContent(resteAvantTranche4));
       return;
     }
     updateTranche.mutate(
@@ -160,10 +172,10 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
       {
         onSuccess: res => {
           const warning = (res as any).invoiceWarning;
-          if (warning) onFeedback('warning', warning);
+          if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
           else onFeedback('success', (res as any).message ?? 'Statut mis à jour');
         },
-        onError: (err: Error) => onFeedback('error', err.message),
+        onError: handleMutationError,
       },
     );
   };
@@ -181,10 +193,10 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
         onSuccess: res => {
           setStep('display');
           const warning = (res as any).invoiceWarning;
-          if (warning) onFeedback('warning', warning);
+          if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
           else onFeedback('success', (res as any).message ?? 'Tranche mise à jour');
         },
-        onError: (err: Error) => onFeedback('error', err.message),
+        onError: err => { setStep('amount'); handleMutationError(err); },
       },
     );
   };
@@ -197,13 +209,10 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
         disabled={updateTranche.isPending}
         className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center font-black outline-none disabled:cursor-wait ${sizes.badge} ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
       >
-        <option value="unpaid">Impayé</option>
+        <option value="unpaid" disabled={isFullySettled}>Impayé</option>
         <option value="paid" disabled={lastTrancheBlocksPaid}>Payé</option>
         <option value="exempt">Exempté</option>
       </select>
-      {isLastTranche && (
-        <p className="text-[7px] font-semibold leading-tight text-amber-600">Doit boucler le solde total</p>
-      )}
 
       {step === 'amount' && (
         <div className="group relative">
@@ -257,6 +266,10 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
           )}
         </div>
       )}
+
+      {isLastTranche && (
+        <p className="text-[7px] font-semibold leading-tight text-amber-600">Doit boucler le solde total</p>
+      )}
     </div>
   );
 }
@@ -283,7 +296,7 @@ const STATUS_POPUP_THEME: Record<StatusPopupType, { border: string; iconBg: stri
   success: { border: 'border-emerald-500', iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600',  textColor: 'text-emerald-700', Icon: CheckCircle2  },
 };
 
-function StatusPopup({ type, message, onClose }: { type: StatusPopupType; message: string; onClose: () => void }) {
+function StatusPopup({ type, message, content, onClose }: { type: StatusPopupType; message?: string; content?: React.ReactNode; onClose: () => void }) {
   const theme = STATUS_POPUP_THEME[type];
   const Icon = theme.Icon;
 
@@ -304,9 +317,26 @@ function StatusPopup({ type, message, onClose }: { type: StatusPopupType; messag
           <div className={`flex h-12 w-12 items-center justify-center rounded-full ${theme.iconBg}`}>
             <Icon size={22} className={theme.iconColor} />
           </div>
-          <p className={`text-sm font-black leading-relaxed ${theme.textColor}`}>{message}</p>
+          {content ?? <p className={`text-sm font-black leading-relaxed ${theme.textColor}`}>{message}</p>}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* Contenu enrichi pour le blocage "tranche 4" : badge Payé (vert) + solde restant à combler */
+function lastTrancheBlockedContent(resteAPayer: number) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-black leading-relaxed text-orange-600">
+        Impossible de passer à{' '}
+        <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-black text-emerald-700">Payé</span>
+      </p>
+      <p className="text-sm font-semibold leading-relaxed text-neutral-700">
+        La dernière tranche (4ème) doit totalement solder la dette de{' '}
+        <span className="font-black text-orange-600">{fmtNum(resteAPayer)} F.CFA</span>.
+      </p>
+      <p className="text-xs font-black uppercase tracking-wide text-orange-700">Corrigez le montant</p>
     </div>
   );
 }
@@ -403,8 +433,8 @@ export default function AdminAdherentsPage() {
   const [showCheckboxes, setShowCheckboxes] = useState(false);
   const [confirmModal,   setConfirmModal]   = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
   const [invoiceRequiredModal, setInvoiceRequiredModal] = useState<{ member: MemberListItem; message: string; motif: 'cotisation' | 'cotisation_annuelle' } | null>(null);
-  const [statusPopup, setStatusPopup] = useState<{ type: 'error' | 'warning' | 'success'; message: string } | null>(null);
-  const showFeedback = (type: 'error' | 'warning' | 'success', message: string) => setStatusPopup({ type, message });
+  const [statusPopup, setStatusPopup] = useState<{ type: 'error' | 'warning' | 'success'; message?: string; content?: React.ReactNode } | null>(null);
+  const showFeedback = (type: 'error' | 'warning' | 'success', message: string, content?: React.ReactNode) => setStatusPopup({ type, message, content });
   const [showGroupsPanel, setShowGroupsPanel] = useState(false);
   const [openGroupIds,    setOpenGroupIds]    = useState<Set<string>>(new Set());
 
@@ -718,12 +748,14 @@ export default function AdminAdherentsPage() {
 
         {/* Tab buttons row — flex-nowrap to stay on one line on all breakpoints */}
         <div className="mt-3 flex items-center justify-end gap-1 overflow-x-auto lg:gap-2">
-          {/* Liste adhérents — display none par défaut, visible seulement dans un onglet */}
+          {/* Liste adhérents — display none par défaut, visible seulement dans un onglet ; icône seule sur mobile/tablette comme les autres onglets */}
           {activeTab && (
             <button type="button" onClick={handleBackToList}
               className="shrink-0 inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-1.5 text-[10px] font-semibold text-neutral-600 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:bg-neutral-50 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm">
-              <ChevronLeft size={12} className="shrink-0 lg:size-[14px]" />
-              Liste adhérents
+              <Users size={12} className="shrink-0 text-neutral-500 lg:size-[14px]" />
+              <span className="max-w-0 overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 lg:max-w-none lg:ml-0.5">
+                Liste adhérents
+              </span>
             </button>
           )}
           {/* Arrow KPI toggle — visible only when tab active */}
@@ -1524,7 +1556,7 @@ export default function AdminAdherentsPage() {
                             <>
                               {[0, 1, 2, 3].map(i => (
                                 <td key={i} className="px-1.5 py-1 align-top">
-                                  <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} onFeedback={showFeedback} />
+                                  <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} onFeedback={showFeedback} onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation_annuelle' })} />
                                 </td>
                               ))}
                               <td className="px-2 py-3 align-top">
@@ -1685,7 +1717,7 @@ export default function AdminAdherentsPage() {
                                     {[0, 1, 2, 3].map(i => (
                                       <div key={i} className="rounded-xl border border-violet-100 bg-white p-1.5">
                                         <p className="mb-0.5 text-[10px] font-black uppercase tracking-[0.1em] text-violet-400">Tranche {i + 1}</p>
-                                        <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} variant="mobile" onFeedback={showFeedback} />
+                                        <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} variant="mobile" onFeedback={showFeedback} onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation_annuelle' })} />
                                       </div>
                                     ))}
                                   </div>
@@ -1771,7 +1803,7 @@ export default function AdminAdherentsPage() {
       />
     )}
     {statusPopup && (
-      <StatusPopup type={statusPopup.type} message={statusPopup.message} onClose={() => setStatusPopup(null)} />
+      <StatusPopup type={statusPopup.type} message={statusPopup.message} content={statusPopup.content} onClose={() => setStatusPopup(null)} />
     )}
     {showActPicker && (
       <ActivityPickerModal activities={activities}
