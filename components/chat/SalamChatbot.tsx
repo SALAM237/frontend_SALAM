@@ -423,20 +423,12 @@ export default function SalamChatbot() {
 
               {messages.map((msg, idx) => {
                 const isLastAssistant = msg.role === 'assistant' && idx === messages.length - 1;
-                const prevMsg         = idx > 0 ? messages[idx - 1] : null;
-                const showDateSep     = !prevMsg || formatDay(msg.sentAt) !== formatDay(prevMsg.sentAt);
                 return (
                   <div
                     key={`${msg.sentAt}-${idx}`}
                     data-sent-at={msg.sentAt}
                     ref={isLastAssistant ? lastAssistRef : undefined}
                   >
-                    {/* Séparateur statique entre groupes de jours */}
-                    {showDateSep && (
-                      <div className="mx-auto mb-3 w-fit rounded-full border border-white/8 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/35">
-                        {formatDay(msg.sentAt)}
-                      </div>
-                    )}
                     {/* Bulle */}
                     <div className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       {msg.role === 'assistant' && (
