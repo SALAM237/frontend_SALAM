@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { CheckCircle2, XCircle, ShieldOff, Clock, Download, Eye, X } from 'lucide-react';
 import { useMemberCotisationsAnnuelles, type CotisationAnnuelleDoc, type CotisationAnnuelleStatus } from '@/lib/api/cotisations-annuelles';
+import { useMemberReceipts, type ReceiptDoc } from '@/lib/api/receipts';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName } from '@/lib/format-name';
 
@@ -125,6 +126,98 @@ function downloadAnnuelleReceiptPdf(cot: CotisationAnnuelleDoc, user: { firstNam
   win.document.close();
 }
 
+/* Reçu A4 dédié à UNE tranche (ou un paiement intégral) — avec tampon "ANNULÉ"
+   superposé en grand si le reçu a été annulé côté admin. */
+function downloadTrancheReceiptPdf(receipt: ReceiptDoc, user: { firstName: string; lastName: string; memberNumber?: string | null }) {
+  const memberName = formatFullName(user.firstName, user.lastName);
+  const memberId = user.memberNumber ?? '-';
+  const paidAt = fmt(receipt.paidAt);
+  const designation = receipt.trancheIndex != null
+    ? `Cotisation annuelle ${receipt.year} — Tranche ${receipt.trancheIndex + 1}`
+    : `Cotisation annuelle ${receipt.year}`;
+  const isCancelled = receipt.status === 'cancelled';
+  const html = `
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>${escReceipt(receipt.receiptNumber)}</title>
+  <style>
+    @page { size: A4 portrait; margin: 0; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { margin: 0; background: #e5e7eb; font-family: Arial, sans-serif; color: #0f172a; font-size: clamp(10px, 1.45vw, 13px); }
+    .page { width: min(100vw, 794px); min-height: min(1123px, calc(100vw * 1.414)); margin: 0 auto; background: white; padding: clamp(22px, 4.8vw, 42px); position: relative; overflow: hidden; }
+    .flag { position: absolute; left: 0; right: 0; top: 0; height: clamp(4px, .8vw, 7px); background: linear-gradient(90deg,#0B8F3A 0 33%,#C8102E 33% 66%,#F7C600 66%); }
+    .header { margin: calc(clamp(22px, 4.8vw, 42px) * -1) calc(clamp(22px, 4.8vw, 42px) * -1) clamp(18px, 3vw, 28px); padding: clamp(32px, 5vw, 42px) clamp(22px, 4.8vw, 42px) clamp(18px, 3vw, 26px); background: linear-gradient(135deg,#087348,#075f41 62%,#043d2d); color: white; }
+    .eyebrow { color: #fde68a; font-size: clamp(8px, 1.6vw, 11px); font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+    h1 { margin: clamp(8px, 2vw, 12px) 0 5px; font-size: clamp(22px, 5vw, 31px); line-height: 1; }
+    .muted { color: #64748b; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; background: #fff; }
+    .card h2 { margin: 0 0 14px; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: #64748b; }
+    table { width: 100%; border-collapse: collapse; margin-top: 24px; font-size: 13px; }
+    th { background: #0f172a; color: white; text-align: left; padding: 12px 10px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+    td { border-bottom: 1px solid #eef2f7; padding: 12px 10px; }
+    .right { text-align: right; }
+    .paid { display: inline-flex; align-items:center; justify-content:center; border: 2px solid #059669; color: #047857; border-radius: 999px; padding: 10px 28px; font-weight: 900; letter-spacing: .18em; margin: 26px auto; }
+    .thanks { margin-top: 24px; border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 18px; padding: 20px; color: #047857; font-weight: 700; line-height: 1.6; }
+    .footer { position: absolute; left: 48px; right: 48px; bottom: 30px; border-top: 1px solid #e5e7eb; padding-top: 14px; text-align: center; color: #64748b; font-size: 11px; }
+    .stamp { position: absolute; top: 42%; left: 50%; transform: translate(-50%,-50%) rotate(-18deg); font-size: 96px; font-weight: 900; letter-spacing: .1em; color: rgba(220,38,38,.35); border: 10px solid rgba(220,38,38,.35); border-radius: 24px; padding: 10px 40px; z-index: 20; pointer-events: none; }
+    @media print { body { background: white; font-size: 12px; } .page { width: 794px; min-height: 1123px; margin: 0; padding: 38px; } .header { margin: -38px -38px 26px; padding: 40px 38px 24px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="flag"></div>
+    ${isCancelled ? '<div class="stamp">ANNULÉ</div>' : ''}
+    <header class="header">
+      <div class="eyebrow">${escReceipt(RECEIPT_ASSOCIATION.name)}</div>
+      <p style="color:rgba(255,255,255,.72)">Solidaire Associative des Lauréats du Maroc</p>
+      <h1>Reçu de paiement</h1>
+      <p style="color:rgba(255,255,255,.72)">${escReceipt(receipt.receiptNumber)} · ${escReceipt(paidAt)}</p>
+    </header>
+    <section class="grid">
+      <div class="card">
+        <h2>Émetteur</h2>
+        <strong>${escReceipt(RECEIPT_ASSOCIATION.title)}</strong>
+        <p class="muted">${escReceipt(RECEIPT_ASSOCIATION.address)}</p>
+        <p class="muted">${escReceipt(RECEIPT_ASSOCIATION.registration)}</p>
+        <p class="muted">${escReceipt(RECEIPT_ASSOCIATION.email)} · ${escReceipt(RECEIPT_ASSOCIATION.phone)}</p>
+      </div>
+      <div class="card">
+        <h2>Membre</h2>
+        <strong>${escReceipt(memberName)}</strong>
+        <p class="muted">N° membre : ${escReceipt(memberId)}</p>
+        ${receipt.invoiceNumber ? `<p class="muted">Facture : ${escReceipt(receipt.invoiceNumber)}</p>` : ''}
+        ${receipt.reference ? `<p class="muted">Référence : ${escReceipt(receipt.reference)}</p>` : ''}
+      </div>
+    </section>
+    <div style="text-align:center"><span class="paid">${isCancelled ? 'ANNULÉ' : 'PAYÉ'}</span></div>
+    <table>
+      <thead><tr><th>Reçu</th><th>Désignation</th><th>Date de paiement</th><th class="right">Montant payé</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>${escReceipt(receipt.receiptNumber)}</td>
+          <td>${escReceipt(designation)}</td>
+          <td>${escReceipt(paidAt)}</td>
+          <td class="right"><strong>${escReceipt(formatCfa(receipt.amount))}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    ${receipt.modifiedAt ? `<p class="muted" style="margin-top:12px;font-size:11px;">Ce reçu a été modifié le ${escReceipt(fmt(receipt.modifiedAt))}.</p>` : ''}
+    ${receipt.notes ? `<div class="card" style="margin-top:24px"><h2>Commentaire</h2><p class="muted">${escReceipt(receipt.notes)}</p></div>` : ''}
+    <div class="thanks">Merci pour votre engagement au sein de SALAM. Votre contribution annuelle soutient les actions d'orientation, de solidarité et d'insertion portées par l'association.</div>
+    <footer class="footer">${escReceipt(RECEIPT_ASSOCIATION.title)} · ${escReceipt(RECEIPT_ASSOCIATION.email)} · ${escReceipt(RECEIPT_ASSOCIATION.phone)} · ${escReceipt(RECEIPT_ASSOCIATION.registration)}</footer>
+  </div>
+  <script>window.addEventListener('load', () => setTimeout(() => window.print(), 250));</script>
+</body>
+</html>`;
+  const win = window.open('', '_blank', 'width=900,height=1200');
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+}
+
 /* ─── Skeleton ───────────────────────────────────────────── */
 function Skeleton() {
   return (
@@ -149,23 +242,20 @@ function ReceiptModal({ cot, user, onClose }: {
   user: { firstName: string; lastName: string; memberNumber?: string | null };
   onClose: () => void;
 }) {
-  const receiptNum = `SALAM-CA-RECU-${cot.year}-${cot._id.slice(-6).toUpperCase()}`;
-  const memberId   = user.memberNumber ?? '-';
+  const memberId = user.memberNumber ?? '-';
+  const { data, isLoading } = useMemberReceipts({ type: 'cotisation_annuelle', year: cot.year });
+  /* Uniquement les tranches réellement réglées (montant > 0) — jamais celles à 0 */
+  const receipts = (data?.data ?? []).filter(r => r.amount > 0);
+  const activeTotal = receipts.filter(r => r.status !== 'cancelled').reduce((acc, r) => acc + r.amount, 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200 overflow-hidden">
         <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
-          <p className="text-sm font-black text-neutral-900">Reçu cotisation annuelle</p>
-          <div className="flex items-center gap-2">
-            <button onClick={() => downloadAnnuelleReceiptPdf(cot, user)}
-              className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-200 px-3 text-xs font-semibold text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
-              <Download size={12} /> Télécharger
-            </button>
-            <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700">
-              <X size={16} />
-            </button>
-          </div>
+          <p className="text-sm font-black text-neutral-900">Reçus cotisation annuelle {cot.year}</p>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700">
+            <X size={16} />
+          </button>
         </div>
 
         <div className="p-6">
@@ -178,42 +268,62 @@ function ReceiptModal({ cot, user, onClose }: {
                 <p className="text-[11px] text-white/40 mt-0.5">salam-cameroun.com</p>
               </div>
               <div className="text-right">
-                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/30">Reçu N°</p>
-                <p className="font-mono text-sm font-bold text-emerald-300">{receiptNum}</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/30">Adhérent</p>
+                <p className="text-sm font-bold text-emerald-300">{formatFullName(user.firstName, user.lastName)}</p>
+                <p className="font-mono text-[10px] text-white/40">{memberId}</p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between mb-5">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-neutral-500">Reçu de paiement</p>
-            <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-emerald-600 px-4 py-1 text-xs font-black text-emerald-700">
-              <CheckCircle2 size={13} /> PAYÉ
-            </span>
-          </div>
+          <p className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-neutral-500">
+            {receipts.length > 1 ? `Versements (${receipts.length})` : 'Versement'}
+          </p>
 
-          <div className="space-y-0 rounded-xl border border-neutral-100 overflow-hidden mb-5">
-            {[
-              { label: 'Adhérent',         value: formatFullName(user.firstName, user.lastName) },
-              { label: 'N° Membre',        value: memberId, mono: true },
-              { label: 'Produit',          value: `Cotisation annuelle — ${cot.year}` },
-              { label: 'Date de paiement', value: fmt(cot.paidAt) },
-              ...(cot.reference ? [{ label: 'Référence', value: cot.reference, mono: true }] : []),
-              ...(cot.notes ? [{ label: 'Commentaire', value: cot.notes }] : []),
-            ].map((row, i) => (
-              <div key={i} className="flex items-center justify-between border-b border-neutral-50 last:border-0 px-4 py-3">
-                <span className="text-xs font-semibold text-neutral-500">{row.label}</span>
-                <span className={`text-sm font-black text-neutral-900 ${'mono' in row && row.mono ? 'font-mono text-xs' : ''}`}>{row.value}</span>
-              </div>
-            ))}
+          {isLoading && <p className="py-6 text-center text-sm text-neutral-400">Chargement…</p>}
+
+          <div className="space-y-2 mb-5">
+            {!isLoading && receipts.length === 0 && (
+              <p className="py-4 text-center text-sm text-neutral-400">Aucun versement enregistré.</p>
+            )}
+            {!isLoading && receipts.map(r => {
+              const isCancelled = r.status === 'cancelled';
+              const label = r.trancheIndex != null ? `Tranche ${r.trancheIndex + 1}` : 'Paiement intégral';
+              return (
+                <div key={r._id} className={`relative overflow-hidden rounded-xl border px-4 py-3 ${isCancelled ? 'border-red-100 bg-red-50/40' : 'border-neutral-100'}`}>
+                  {isCancelled && (
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 -rotate-12 rounded border-2 border-red-400 px-2 py-0.5 text-[10px] font-black text-red-500 opacity-70">
+                      ANNULÉ
+                    </span>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-neutral-900">{label}</p>
+                      <p className="mt-0.5 font-mono text-[10px] text-neutral-400">{r.receiptNumber}</p>
+                      <p className="text-[11px] text-neutral-500">{fmt(r.paidAt)}</p>
+                      {r.modifiedAt && (
+                        <p className="mt-0.5 text-[10px] font-semibold text-amber-600">Modifié le {fmt(r.modifiedAt)}</p>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className={`text-sm font-black ${isCancelled ? 'text-neutral-400 line-through' : 'text-emerald-700'}`}>{formatCfa(r.amount)}</span>
+                      <button onClick={() => downloadTrancheReceiptPdf(r, user)} title="Télécharger ce reçu"
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 transition hover:border-emerald-300 hover:text-emerald-700">
+                        <Download size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-100 px-5 py-4">
-            <span className="text-sm font-semibold text-neutral-600">Montant total</span>
-            <span className="text-2xl font-black text-emerald-700">{formatCfa(cot.amount)}</span>
+            <span className="text-sm font-semibold text-neutral-600">Montant total réglé</span>
+            <span className="text-2xl font-black text-emerald-700">{formatCfa(activeTotal)}</span>
           </div>
 
           <p className="mt-4 text-center text-[10px] leading-relaxed text-neutral-400">
-            Ce reçu est un justificatif officiel de votre cotisation annuelle à l&apos;Association SALAM Cameroun.<br />
+            Ces reçus sont des justificatifs officiels de votre cotisation annuelle à l&apos;Association SALAM Cameroun.<br />
             Fondée le 20/02/2010 · contact@salam-cameroun.com
           </p>
         </div>

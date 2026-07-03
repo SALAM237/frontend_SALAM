@@ -7,7 +7,7 @@ import {
   CalendarDays, Banknote, FileText, CheckCircle2, Clock,
   Link as LinkIcon, Loader2, Trash2, Save, Download, Upload, Building2,
   CheckSquare, Square, UserPlus, Settings, ReceiptText, Pencil,
-  Palette, GripVertical, Bold, Italic,
+  Palette, GripVertical, Bold, Italic, Ban,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -17,6 +17,7 @@ import {
   useResendClientDocument, useResendInvoiceRecipient,
   type InvoiceClientDoc, type InvoiceDoc, type RecipientDoc,
 } from '@/lib/api/invoices';
+import { useAdminReceipts, useUpdateReceipt, useCancelReceipt, type ReceiptDoc } from '@/lib/api/receipts';
 import { useAdminMembers, useAdminMember, type MemberListItem } from '@/lib/api/members';
 import { formatFullName } from '@/lib/format-name';
 import { applyInlineTextStyle, captureTextSelection, sanitizeRichHtml, type StoredTextSelection } from '@/lib/rich-text';
@@ -1736,6 +1737,173 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
 }
 
 
+/* ─── Reçus de paiement ──────────────────────────────── */
+const RECEIPT_TYPE_LABEL: Record<string, string> = { cotisation: "Frais d'adhésion", cotisation_annuelle: 'Cotisation annuelle' };
+
+function receiptMemberName(r: ReceiptDoc) {
+  const u = typeof r.userId === 'object' ? r.userId : null;
+  return u ? formatFullName(u.firstName ?? '', u.lastName ?? '') : 'Membre';
+}
+
+function EditReceiptModal({ receipt, onClose }: { receipt: ReceiptDoc; onClose: () => void }) {
+  const updateReceipt = useUpdateReceipt();
+  const [amount, setAmount] = useState(String(receipt.amount));
+  const [paidAt, setPaidAt] = useState(receipt.paidAt.slice(0, 10));
+  const [notes, setNotes]   = useState(receipt.notes ?? '');
+
+  const submit = () => {
+    updateReceipt.mutate(
+      { id: receipt._id, body: { amount: Number(amount), paidAt, notes } },
+      { onSuccess: () => onClose() },
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className="w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">{receipt.receiptNumber}</p>
+            <h3 className="font-black text-neutral-900">Modifier le reçu</h3>
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
+        </div>
+        <div className="space-y-3 px-6 py-5">
+          <label className="block">
+            <span className="text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Montant (F.CFA)</span>
+            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+          </label>
+          <label className="block">
+            <span className="text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date de paiement</span>
+            <input type="date" value={paidAt} onChange={e => setPaidAt(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+          </label>
+          <label className="block">
+            <span className="text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Notes</span>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
+              className="mt-1 w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-400" />
+          </label>
+          <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
+            Toute modification laisse une trace visible ("Modifié le …") sur la fiche du reçu, y compris côté membre.
+          </p>
+        </div>
+        <div className="flex gap-3 border-t border-neutral-100 px-6 py-4">
+          <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 bg-white py-2.5 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300">Annuler</button>
+          <button onClick={submit} disabled={updateReceipt.isPending}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-60">
+            {updateReceipt.isPending && <Loader2 size={14} className="animate-spin" />} Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReceiptsTab() {
+  const [search,          setSearch]          = useState('');
+  const [typeFilter,      setTypeFilter]      = useState<'all' | 'cotisation' | 'cotisation_annuelle'>('all');
+  const [editing,         setEditing]         = useState<ReceiptDoc | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+
+  const { data, isLoading, isError } = useAdminReceipts(typeFilter === 'all' ? undefined : { type: typeFilter });
+  const cancelReceipt = useCancelReceipt();
+  const receipts = data?.data ?? [];
+
+  const filtered = receipts.filter(r => {
+    const name = receiptMemberName(r);
+    const searchable = `${r.receiptNumber} ${name} ${r.invoiceNumber ?? ''}`.toLowerCase();
+    return searchable.includes(search.toLowerCase());
+  });
+
+  const handleCancel = (id: string) => {
+    if (confirmCancelId !== id) {
+      setConfirmCancelId(id);
+      setTimeout(() => setConfirmCancelId(cur => (cur === id ? null : cur)), 3000);
+      return;
+    }
+    cancelReceipt.mutate(id, { onSettled: () => setConfirmCancelId(null) });
+  };
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-[200px] flex-1">
+          <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un reçu, un membre…"
+            className="h-10 w-full rounded-xl border border-neutral-200 bg-white pl-10 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" />
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {([['all', 'Tous'], ['cotisation', "Frais d'adhésion"], ['cotisation_annuelle', 'Cotisation annuelle']] as const).map(([val, lbl]) => (
+            <button key={val} onClick={() => setTypeFilter(val)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${typeFilter === val ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'}`}>
+              {lbl}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+        <div className="border-b border-neutral-100 px-5 py-3.5">
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-neutral-500">
+            {isLoading ? 'Chargement...' : `${filtered.length} reçu${filtered.length > 1 ? 's' : ''} (Reçus de paiement émis)`}
+          </p>
+        </div>
+        <div className="divide-y divide-neutral-50">
+          {isLoading && <Skeleton />}
+          {isError && <div role="alert" className="px-5 py-10 text-center text-sm text-red-500">Erreur de chargement.</div>}
+          {!isLoading && !isError && filtered.length === 0 && (
+            <div className="px-5 py-10 text-center text-sm text-neutral-400">Aucun reçu trouvé.</div>
+          )}
+          {!isLoading && !isError && filtered.map(r => {
+            const name = receiptMemberName(r);
+            const isCancelled = r.status === 'cancelled';
+            const trancheLabel = r.trancheIndex != null ? ` · Tranche ${r.trancheIndex + 1}` : '';
+            return (
+              <div key={r._id} className={`flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50/60 sm:flex-nowrap sm:gap-4 sm:px-5 sm:py-4 ${isCancelled ? 'opacity-60' : ''}`}>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50">
+                  <ReceiptText size={16} className="text-emerald-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-black text-sm text-neutral-900">{RECEIPT_TYPE_LABEL[r.type]}{trancheLabel} - {name}</p>
+                    {isCancelled && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-black text-red-700">
+                        <Ban size={10} /> ANNULÉ
+                      </span>
+                    )}
+                    {r.modifiedAt && !isCancelled && (
+                      <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-700">
+                        Modifié le {fmt(r.modifiedAt)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 truncate font-mono text-[11px] text-neutral-400">
+                    {r.receiptNumber}{r.invoiceNumber ? ` · Facture ${r.invoiceNumber}` : ''} · {fmt(r.paidAt)}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="font-black text-neutral-900">{fmtCfa(r.amount)}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button onClick={() => setEditing(r)} disabled={isCancelled} title="Modifier"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-50 text-neutral-500 transition hover:bg-yellow-400 hover:text-neutral-950 disabled:cursor-not-allowed disabled:opacity-40">
+                    <Pencil size={12} />
+                  </button>
+                  <button onClick={() => handleCancel(r._id)} disabled={isCancelled || cancelReceipt.isPending} title="Annuler le reçu"
+                    className={`flex h-8 items-center justify-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-40 ${confirmCancelId === r._id ? 'w-auto gap-1 bg-red-500 px-2 text-[10px] font-black text-white' : 'w-8 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white'}`}>
+                    {cancelReceipt.isPending && confirmCancelId === r._id ? <Loader2 size={12} className="animate-spin" /> : confirmCancelId === r._id ? 'Confirmer ?' : <Ban size={12} />}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {editing && <EditReceiptModal receipt={editing} onClose={() => setEditing(null)} />}
+    </>
+  );
+}
+
 /* ─── Page principale ─────────────────────────────────── */
 export default function FacturationAdminPage() {
   const router = useRouter();
@@ -1743,6 +1911,7 @@ export default function FacturationAdminPage() {
   const paymentFilter = searchParams.get('payment');
   const motifParam = searchParams.get('motif');
   const presetMemberId = searchParams.get('memberId') ?? undefined;
+  const [mainTab,     setMainTab]     = useState<'factures' | 'recus'>('factures');
   const [search,      setSearch]      = useState('');
   const [showMotifPicker, setShowMotifPicker] = useState(false);
   const [createMotif,     setCreateMotif]     = useState<InvoiceMotif | null>(null);
@@ -1794,17 +1963,33 @@ export default function FacturationAdminPage() {
           <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Facturation</h1>
           <p className="mt-1 text-sm text-neutral-500">Générer et envoyer des factures pour les événements de l&apos;association.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={() => setShowClients(true)}
-            className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-700 shadow-sm transition hover:bg-amber-100 active:scale-[0.98]">
-            <UserPlus size={15} /> Clients
-          </button>
-          <button onClick={() => setShowMotifPicker(true)}
-            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]">
-            <Plus size={15} /> Nouvelle facture
-          </button>
-        </div>
+        {mainTab === 'factures' && (
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setShowClients(true)}
+              className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-700 shadow-sm transition hover:bg-amber-100 active:scale-[0.98]">
+              <UserPlus size={15} /> Clients
+            </button>
+            <button onClick={() => setShowMotifPicker(true)}
+              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]">
+              <Plus size={15} /> Nouvelle facture
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Onglets */}
+      <div className="flex gap-1.5 rounded-2xl border border-neutral-100 bg-neutral-50/70 p-1.5">
+        <button onClick={() => setMainTab('factures')}
+          className={`flex-1 rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${mainTab === 'factures' ? 'bg-white text-emerald-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>
+          Factures
+        </button>
+        <button onClick={() => setMainTab('recus')}
+          className={`flex-1 rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${mainTab === 'recus' ? 'bg-white text-emerald-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>
+          Reçus de paiement
+        </button>
+      </div>
+
+      {mainTab === 'recus' ? <ReceiptsTab /> : <>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1834,7 +2019,7 @@ export default function FacturationAdminPage() {
       <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
         <div className="border-b border-neutral-100 px-5 py-3.5">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-neutral-500">
-            {isLoading ? 'Chargement...' : `${filtered.length} document${filtered.length > 1 ? 's' : ''}`}
+            {isLoading ? 'Chargement...' : `${filtered.length} document${filtered.length > 1 ? 's' : ''} (Facture émise)`}
           </p>
         </div>
         <div className="divide-y divide-neutral-50">
@@ -1937,6 +2122,7 @@ export default function FacturationAdminPage() {
           })}
         </div>
       </div>
+      </>}
 
       {showMotifPicker && (
         <MotifPickerModal
