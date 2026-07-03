@@ -54,7 +54,7 @@ const cotisationConfig: Record<string, { label: string; labelMobile?: string; cl
   exempt: { label: 'Exempté adhésion', cls: 'bg-neutral-50 text-neutral-400' },
 };
 const cotisAnnuelleConfig: Record<string, { label: string; labelMobile?: string; cls: string }> = {
-  paid:    { label: 'Cot. Payé',    labelMobile: 'Cotisation Payé',      cls: 'bg-violet-50 text-violet-700'  },
+  paid:    { label: 'Cot. Payé',    labelMobile: 'Cotisation Payé',      cls: 'bg-emerald-50 text-emerald-700'  },
   partiel: { label: 'Cot. Partiel', labelMobile: 'Cotisation Partielle', cls: 'bg-orange-50 text-orange-600'  },
   unpaid:  { label: 'Cot. Impayée', labelMobile: 'Cotisation Impayée',   cls: 'bg-red-50 text-red-600'        },
   exempt:  { label: 'Exempté cotisation', cls: 'bg-neutral-50 text-neutral-400' },
@@ -64,7 +64,7 @@ const EMPTY_TRANCHE: Tranche = { amount: 0, status: 'unpaid', paidAt: null, refe
 const DEFAULT_TRANCHES: Tranche[] = [EMPTY_TRANCHE, EMPTY_TRANCHE, EMPTY_TRANCHE, EMPTY_TRANCHE];
 const profileConfig = {
   complete:   { label: 'Complet',        labelMobile: undefined as string | undefined, cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
-  incomplete: { label: 'Pro. Incomplet', labelMobile: 'Profil Incomplet' as string | undefined, cls: 'bg-red-50 text-red-700 border-red-100' },
+  incomplete: { label: 'Pro.Incomp', labelMobile: 'Profil Incomplet' as string | undefined, cls: 'bg-red-50 text-red-700 border-red-100' },
 };
 const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const YEARS_LIST = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
@@ -1261,7 +1261,7 @@ export default function AdminAdherentsPage() {
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Statut</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Frais d&apos;adh.</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Cotis. annuelle</th>
-                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Reste à payer</th>
+                          <th className="px-2 py-3 text-left text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-400">Reste à payer cotisation</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Profil</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Dern. connexion</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Date inscr.</th>
@@ -1340,10 +1340,10 @@ export default function AdminAdherentsPage() {
                                 <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8px] font-black leading-none ${cAnnuelle.cls}`}>{cAnnuelle.label}</span>
                               </td>
                               <td className="px-2 py-3">
-                                <span className={`font-mono text-[10px] font-black ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</span>
+                                <span className={`inline-flex max-w-full items-center whitespace-nowrap text-[8px] font-black leading-none ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</span>
                               </td>
                               <td className="px-2 py-3">
-                                <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[8px] font-black leading-none ${m.profileComplete ? profileConfig.complete.cls : profileConfig.incomplete.cls}`}>
+                                <span className={`inline-flex max-w-full items-center overflow-hidden whitespace-nowrap text-ellipsis rounded-full border px-1.5 py-0.5 text-[8px] font-black leading-none ${m.profileComplete ? profileConfig.complete.cls : profileConfig.incomplete.cls}`}>
                                   {m.profileComplete ? profileConfig.complete.label : profileConfig.incomplete.label}
                                 </span>
                               </td>
@@ -1482,10 +1482,10 @@ export default function AdminAdherentsPage() {
                                 </div>
                               )}
                               <div className="grid grid-cols-2 gap-2 text-[9px] text-neutral-500">
-                                <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Téléphone</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{m.phone ?? 'Non renseigné'}</p></div>
-                                <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Connexion</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{fmtDate(m.lastLoginAt)}</p></div>
-                                <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Inscription</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{fmt(m.createdAt)}</p></div>
-                                <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Reste cot. annuelle</p><p className={`mt-0.5 truncate font-semibold ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</p></div>
+                                <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Tél.</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{m.phone ?? 'Non renseigné'}</p></div>
+                                <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Dern. connexion</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{fmtDate(m.lastLoginAt)}</p></div>
+                                <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Date inscr.</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{fmt(m.createdAt)}</p></div>
+                                <div><p className="truncate text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-300">Reste à payer cotisation</p><p className={`mt-0.5 truncate font-semibold ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</p></div>
                                 <div>
                                   <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Actions</p>
                                   <div className="mt-1 flex items-center gap-1">
