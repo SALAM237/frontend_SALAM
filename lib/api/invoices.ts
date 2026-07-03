@@ -20,9 +20,11 @@ export interface RecipientDoc {
   };
   clientId?: string | InvoiceClientDoc;
   invoiceNumber: string;
-  status: 'pending' | 'sent' | 'paid' | 'cancelled';
+  status: 'pending' | 'sent' | 'partiel' | 'paid' | 'cancelled';
   sentAt?: string;
   paidAt?: string;
+  /* Cotisation annuelle payée par tranches : index (0-3) de la dernière tranche validée */
+  lastPaidTranche?: number | null;
 }
 
 export interface InvoiceDoc {

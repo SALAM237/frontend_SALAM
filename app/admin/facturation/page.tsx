@@ -34,9 +34,20 @@ const STATUS_CONFIG: Record<InvoiceStatus, { badge: string; label: string; icon:
 const RECIPIENT_STATUS_CONFIG: Record<RecipientDoc['status'], { badge: string; label: string }> = {
   pending:   { badge: 'bg-neutral-50 text-neutral-600 border-neutral-200', label: 'A envoyer' },
   sent:      { badge: 'bg-blue-50 text-blue-700 border-blue-200', label: 'Envoyee' },
+  partiel:   { badge: 'bg-orange-50 text-orange-600 border-orange-200', label: 'Partiel' },
   paid:      { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Payee' },
   cancelled: { badge: 'bg-red-50 text-red-700 border-red-200', label: 'Annulee' },
 };
+
+/* "T1".."T4" — dernière tranche payée, affiché hors du badge "Partiel" */
+function trancheTag(lastPaidTranche?: number | null) {
+  if (lastPaidTranche === undefined || lastPaidTranche === null) return null;
+  return (
+    <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-100 px-1 text-[9px] font-black text-orange-700">
+      T{lastPaidTranche + 1}
+    </span>
+  );
+}
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -712,6 +723,7 @@ function RecipientInvoiceModal({ row, onClose }: { row: InvoiceRecipientRow; onC
               <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${recipientCfg.badge}`}>
                 {recipientCfg.label}
               </span>
+              {row.recipient.status === 'partiel' && trancheTag(row.recipient.lastPaidTranche)}
               <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-black ${row.isClient ? 'bg-amber-100 text-amber-700' : 'bg-violet-100 text-violet-700'}`}>
                 {row.isClient ? 'Client' : 'Membre'}
               </span>
@@ -1851,6 +1863,7 @@ export default function FacturationAdminPage() {
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black ${recipientCfg.badge}`}>
                       {recipientCfg.label}
                     </span>
+                    {row.recipient.status === 'partiel' && trancheTag(row.recipient.lastPaidTranche)}
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-black ${row.isClient ? 'bg-amber-100 text-amber-700' : 'bg-violet-100 text-violet-700'}`}>
                       {row.isClient ? 'Client' : 'Membre'}
                     </span>

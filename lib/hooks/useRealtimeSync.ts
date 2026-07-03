@@ -11,6 +11,7 @@ const DOMAIN_KEYS: Record<string, string[]> = {
   members:             ['admin-members', 'admin-stats', 'admin-admins', 'member-bureau', 'public-bureau'],
   invoices:            ['admin-invoices', 'member-invoices'],
   cotisations:         ['admin-cotisations', 'member-cotisations', 'cotisation-logs', 'admin-treasury-overview', 'member-treasury-overview'],
+  'cotisations-annuelles': ['admin-cotisations-annuelles', 'member-cotisations-annuelles', 'cotisation-annuelle-logs', 'admin-treasury-overview', 'member-treasury-overview', 'admin-members'],
   activities:          ['admin-activities', 'member-activities', 'public-activities', 'public-activity', 'member-activity', 'activity-invitations'],
   news:                ['admin-content', 'public-content', 'public-article', 'member-dashboard-kpis'],
   gallery:             ['admin-gallery', 'public-gallery'],

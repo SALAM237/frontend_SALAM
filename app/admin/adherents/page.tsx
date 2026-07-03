@@ -140,6 +140,12 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t.amount, t.paidAt, t.status]);
 
+  /* Le membre n'est pas tenu de régler en 4 fois : une tranche à 0 doit toujours
+     montrer le champ de saisie, jamais un "0 F" statique (peu importe d'où vient ce 0). */
+  useEffect(() => {
+    if (step === 'display' && !(t.amount > 0)) setStep('amount');
+  }, [step, t.amount]);
+
   useEffect(() => {
     if (step === 'date') dateInputRef.current?.focus();
   }, [step]);
@@ -163,6 +169,10 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
   };
 
   const commitStatus = (status: 'unpaid' | 'paid' | 'exempt') => {
+    if (status === 'unpaid' && (isFullySettled || t.amount > 0)) {
+      onFeedback('warning', "Un montant supérieur à 0 est déjà saisi pour cette tranche : cliquez sur le montant affiché pour le corriger si besoin, plutôt que de repasser en Impayé.");
+      return;
+    }
     if (status === 'paid' && isLastTranche && (othersPaidSum + t.amount) < annualFee) {
       onFeedback('warning', 'Impossible de passer à Payé', lastTrancheBlockedContent(resteAvantTranche4));
       return;
@@ -191,7 +201,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
       { userId, year, trancheIndex: index, amount, status: amount > 0 ? 'paid' : 'unpaid', paidAt: nextDate },
       {
         onSuccess: res => {
-          setStep('display');
+          setStep(amount > 0 ? 'display' : 'amount');
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
           else onFeedback('success', (res as any).message ?? 'Tranche mise à jour');
@@ -209,7 +219,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
         disabled={updateTranche.isPending}
         className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center font-black outline-none disabled:cursor-wait ${sizes.badge} ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
       >
-        <option value="unpaid" disabled={isFullySettled}>Impayé</option>
+        <option value="unpaid" disabled={isFullySettled || t.amount > 0}>Impayé</option>
         <option value="paid" disabled={lastTrancheBlocksPaid}>Payé</option>
         <option value="exempt">Exempté</option>
       </select>
