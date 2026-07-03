@@ -212,7 +212,34 @@ export function useUpdateTranche() {
           token: token ?? '',
         },
       ),
-    onSuccess: (_res, vars) => {
+    onSuccess: (res, vars) => {
+      /* Patch synchrone du cache AVANT l'invalidation : invalidateQueries ne fait que
+         planifier un refetch asynchrone, ce qui laisse une fenêtre (le temps du
+         round-trip réseau) où tranche/allTranches affichent encore l'ancienne donnée
+         (ex. montant à 0) alors que le serveur a déjà persisté la nouvelle valeur.
+         setQueryData applique immédiatement la réponse serveur (autoritative), donc
+         TrancheCell (montant/date affichés) et DetteCell (solde de la dette) reflètent
+         la bonne valeur dès ce même rendu, sans attendre le refetch. */
+      const updatedDoc = (res as any)?.data as CotisationAnnuelleDoc | undefined;
+      if (updatedDoc) {
+        qc.setQueryData<AdminCotisationAnnuelleRow[]>(['admin-cotisations-annuelles', vars.year], old =>
+          old?.map(row =>
+            String(row.user._id) === String(vars.userId)
+              ? {
+                  ...row,
+                  cotisation: {
+                    ...row.cotisation,
+                    tranches: updatedDoc.tranches,
+                    totalPaid: updatedDoc.totalPaid,
+                    status: updatedDoc.status,
+                    paidAt: updatedDoc.paidAt,
+                    reference: updatedDoc.reference,
+                  },
+                }
+              : row,
+          ),
+        );
+      }
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles', vars.year] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
