@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   UserPlus, CreditCard, Search, Eye, CheckCircle2, Clock, XCircle,
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
@@ -113,77 +114,123 @@ const TRANCHE_BADGE_CLS: Record<string, string> = {
   exempt: 'bg-neutral-50 text-neutral-400 border-neutral-200',
 };
 
-function TrancheCell({ userId, year, index, tranche }: {
+function TrancheCell({ userId, year, index, tranche, allTranches, annualFee }: {
   userId: string; year: number; index: number; tranche?: Tranche;
+  allTranches?: Tranche[]; annualFee: number;
 }) {
   const t = tranche ?? EMPTY_TRANCHE;
-  const [editing, setEditing]         = useState(!(t.amount > 0));
+  /* Étapes : 'display' (montant + date déjà enregistrés) → 'amount' (saisie) → 'date' (choix date) */
+  const [step, setStep]               = useState<'display' | 'amount' | 'date'>(t.amount > 0 ? 'display' : 'amount');
   const [draftAmount, setDraftAmount] = useState(t.amount > 0 ? String(t.amount) : '');
   const [draftDate, setDraftDate]     = useState(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const updateTranche = useUpdateTranche();
 
   useEffect(() => {
-    if (editing) return;
+    if (step !== 'display') return;
     setDraftAmount(t.amount > 0 ? String(t.amount) : '');
     setDraftDate(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t.amount, t.paidAt, t.status]);
 
+  useEffect(() => {
+    if (step === 'date') dateInputRef.current?.focus();
+  }, [step]);
+
+  /* Contrôle spécifique tranche 4 : elle doit boucler le solde total */
+  const isLastTranche = index === 3;
+  const othersPaidSum = (allTranches ?? DEFAULT_TRANCHES)
+    .filter((_, i) => i !== 3)
+    .reduce((acc, tr) => acc + (tr.status === 'paid' ? (tr.amount ?? 0) : 0), 0);
+  const lastTrancheBlocksPaid = isLastTranche && (othersPaidSum + t.amount) < annualFee;
+
   const commitStatus = (status: 'unpaid' | 'paid' | 'exempt') => {
+    if (status === 'paid' && isLastTranche && (othersPaidSum + t.amount) < annualFee) {
+      toast.error(`La tranche 4 ne peut être marquée payée que si le total des 4 tranches atteint ${fmtNum(annualFee)} F.CFA.`);
+      return;
+    }
     updateTranche.mutate({ userId, year, trancheIndex: index, amount: t.amount, status, paidAt: t.paidAt ?? undefined });
   };
 
-  const validate = () => {
+  /* Clic sur ✓ ou ✗ au-dessus du champ montant : les deux renvoient vers le choix de la date. */
+  const confirmAmount = () => setStep('date');
+  const clearAmount = () => { setDraftAmount(''); setStep('date'); };
+
+  const commitDate = (nextDate: string) => {
+    setDraftDate(nextDate);
     const amount = Math.max(0, Number(draftAmount) || 0);
     updateTranche.mutate(
-      { userId, year, trancheIndex: index, amount, status: amount > 0 ? 'paid' : 'unpaid', paidAt: draftDate },
-      { onSuccess: () => setEditing(false) },
+      { userId, year, trancheIndex: index, amount, status: amount > 0 ? 'paid' : 'unpaid', paidAt: nextDate },
+      { onSuccess: () => setStep('display') },
     );
   };
 
   return (
     <div className="flex flex-col gap-1 py-1" onClick={e => e.stopPropagation()}>
-      <div className="relative">
-        <select
-          value={t.status}
-          onChange={e => commitStatus(e.target.value as 'unpaid' | 'paid' | 'exempt')}
-          disabled={updateTranche.isPending}
-          className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center text-[8px] font-black outline-none ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
-        >
-          <option value="unpaid">Impayé</option>
-          <option value="paid">Payé</option>
-          <option value="exempt">Exempté</option>
-        </select>
-      </div>
+      <select
+        value={t.status}
+        onChange={e => commitStatus(e.target.value as 'unpaid' | 'paid' | 'exempt')}
+        disabled={updateTranche.isPending}
+        className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center text-[8px] font-black outline-none disabled:cursor-wait ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
+      >
+        <option value="unpaid">Impayé</option>
+        <option value="paid" disabled={lastTrancheBlocksPaid}>Payé</option>
+        <option value="exempt">Exempté</option>
+      </select>
+      {isLastTranche && (
+        <p className="text-[7px] font-semibold leading-tight text-amber-600">Doit boucler le solde total</p>
+      )}
 
-      {editing ? (
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-1">
-            <input
-              type="number" min={0} value={draftAmount}
-              onChange={e => setDraftAmount(e.target.value)}
-              placeholder="Montant"
-              className="w-14 min-w-0 rounded-md border border-neutral-200 px-1 py-0.5 text-[10px] outline-none focus:border-emerald-400"
-            />
-            <button type="button" onClick={validate} disabled={updateTranche.isPending} title="Valider"
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
+      {step === 'amount' && (
+        <div className="relative">
+          {/* Boutons flottants juste au-dessus du champ de saisie */}
+          <div className="absolute bottom-full left-0 z-20 mb-1 flex items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg">
+            <button type="button" onClick={confirmAmount} disabled={updateTranche.isPending} title="Valider le montant"
+              className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
               <Check size={11} />
             </button>
-            <button type="button" onClick={() => setEditing(false)} title="Annuler" disabled={!(t.amount > 0)}
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 transition hover:bg-red-100 hover:text-red-500 disabled:opacity-30">
+            <button type="button" onClick={clearAmount} disabled={updateTranche.isPending} title="Effacer la saisie"
+              className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 transition hover:bg-red-100 hover:text-red-500">
               <X size={11} />
             </button>
           </div>
           <input
-            type="date" value={draftDate} onChange={e => setDraftDate(e.target.value)}
-            className="w-full rounded-md border border-neutral-200 px-1 py-0.5 text-[9px] outline-none focus:border-emerald-400"
+            type="number" min={0} value={draftAmount} autoFocus
+            onChange={e => setDraftAmount(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') confirmAmount(); }}
+            placeholder="Montant"
+            className="w-full min-w-0 rounded-md border border-neutral-200 px-1 py-0.5 text-[10px] outline-none focus:border-emerald-400"
           />
         </div>
-      ) : (
-        <button type="button" onClick={() => setEditing(true)}
-          className="truncate text-left font-mono text-[10px] font-black text-neutral-700 transition hover:text-emerald-700 hover:underline">
-          {fmtNum(t.amount)} F
-        </button>
+      )}
+
+      {step === 'date' && (
+        <div className="flex flex-col gap-1">
+          <span className="truncate font-mono text-[10px] font-black text-neutral-700">
+            {draftAmount ? `${fmtNum(Number(draftAmount))} F` : '0 F'}
+          </span>
+          <input
+            ref={dateInputRef}
+            type="date" value={draftDate} disabled={updateTranche.isPending}
+            onChange={e => commitDate(e.target.value)}
+            className="w-full rounded-md border border-emerald-300 px-1 py-0.5 text-[9px] outline-none focus:border-emerald-500"
+          />
+        </div>
+      )}
+
+      {step === 'display' && (
+        <div className="flex flex-col items-start gap-0.5">
+          <button type="button" onClick={() => setStep('amount')}
+            className="truncate text-left font-mono text-[10px] font-black text-neutral-700 transition hover:text-emerald-700 hover:underline">
+            {fmtNum(t.amount)} F
+          </button>
+          {t.paidAt && (
+            <button type="button" onClick={() => setStep('date')} title="Modifier la date"
+              className="truncate text-left text-[9px] font-semibold text-neutral-400 transition hover:text-emerald-600 hover:underline">
+              {fmtDate(t.paidAt)}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -197,6 +244,70 @@ function DetteCell({ tranches, annualFee }: { tranches?: Tranche[]; annualFee: n
     <span className={`font-mono text-xs font-black ${cleared ? 'text-emerald-600' : 'text-red-600'}`}>
       {fmtNum(dette)} F
     </span>
+  );
+}
+
+/* ── Modale "facture requise" ─────────────────────────────
+   Bloque le passage à payé/exempté tant qu'aucune facture n'est
+   créée pour le motif concerné ; propose un raccourci direct
+   vers l'éditeur de facture, motif et membre déjà pré-remplis. */
+function InvoiceRequiredModal({ member, message, motif, onClose }: {
+  member: MemberListItem;
+  message: string;
+  motif: 'cotisation' | 'cotisation_annuelle';
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const goToInvoiceEditor = () => {
+    router.push(`/admin/facturation?motif=${motif}&memberId=${encodeURIComponent(member._id)}`);
+    onClose();
+  };
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        className="relative w-full max-w-md rounded-2xl border-2 border-red-500 bg-white p-6 shadow-2xl"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          title="Fermer"
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-red-400 transition hover:bg-red-50 hover:text-red-600"
+        >
+          <X size={16} />
+        </button>
+
+        <div className="flex flex-col items-center gap-3 pt-2 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
+            <AlertTriangle size={22} className="text-red-600" />
+          </div>
+          <p className="text-sm font-black leading-relaxed text-red-600">{message}</p>
+          <p className="text-xs font-semibold text-neutral-500">
+            {formatFullName(member.firstName, member.lastName)} · {member.memberId}
+          </p>
+        </div>
+
+        <div className="mt-5 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-neutral-200 bg-white py-2.5 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={goToInvoiceEditor}
+            className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-red-700 active:scale-[0.98]"
+          >
+            Créer la facture
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -227,6 +338,7 @@ export default function AdminAdherentsPage() {
   const [checkedIds,     setCheckedIds]     = useState<Set<string>>(new Set());
   const [showCheckboxes, setShowCheckboxes] = useState(false);
   const [confirmModal,   setConfirmModal]   = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+  const [invoiceRequiredModal, setInvoiceRequiredModal] = useState<{ member: MemberListItem; message: string; motif: 'cotisation' | 'cotisation_annuelle' } | null>(null);
   const [showGroupsPanel, setShowGroupsPanel] = useState(false);
   const [openGroupIds,    setOpenGroupIds]    = useState<Set<string>>(new Set());
 
@@ -411,7 +523,21 @@ export default function AdminAdherentsPage() {
   const handleDeleteClick = (e: React.MouseEvent, id: string) => { e.preventDefault(); e.stopPropagation(); handleDelete(id); };
 
   const handleCotisChange = (userId: string, status: CotisationStatus) => {
-    setConfirmModal({ title: 'Modifier le statut de cotisation', message: 'Confirmer le changement de statut de cotisation pour ce membre ?', onConfirm: () => updateCotisation.mutate({ userId, year: cotisYear, status }) });
+    setConfirmModal({
+      title: 'Modifier le statut de cotisation',
+      message: 'Confirmer le changement de statut de cotisation pour ce membre ?',
+      onConfirm: () => updateCotisation.mutate(
+        { userId, year: cotisYear, status },
+        {
+          onError: (err: Error) => {
+            if (/Créez d'abord une facture/i.test(err.message)) {
+              const member = members.find(m => m._id === userId);
+              if (member) setInvoiceRequiredModal({ member, message: err.message, motif: 'cotisation' });
+            }
+          },
+        },
+      ),
+    });
   };
 
   const handleSendRelance = () => {
@@ -1310,7 +1436,7 @@ export default function AdminAdherentsPage() {
                             <>
                               {[0, 1, 2, 3].map(i => (
                                 <td key={i} className="px-1.5 py-1 align-top">
-                                  <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} />
+                                  <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} />
                                 </td>
                               ))}
                               <td className="px-2 py-3 align-top">
@@ -1471,7 +1597,7 @@ export default function AdminAdherentsPage() {
                                     {[0, 1, 2, 3].map(i => (
                                       <div key={i} className="rounded-xl border border-violet-100 bg-white p-1.5">
                                         <p className="mb-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-violet-400">Tranche {i + 1}</p>
-                                        <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} />
+                                        <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} />
                                       </div>
                                     ))}
                                   </div>
@@ -1547,6 +1673,14 @@ export default function AdminAdherentsPage() {
       <ConfirmSendModal title={confirmModal.title} message={confirmModal.message}
         onConfirm={() => { confirmModal.onConfirm(); setConfirmModal(null); }}
         onClose={() => setConfirmModal(null)} />
+    )}
+    {invoiceRequiredModal && (
+      <InvoiceRequiredModal
+        member={invoiceRequiredModal.member}
+        message={invoiceRequiredModal.message}
+        motif={invoiceRequiredModal.motif}
+        onClose={() => setInvoiceRequiredModal(null)}
+      />
     )}
     {showActPicker && (
       <ActivityPickerModal activities={activities}

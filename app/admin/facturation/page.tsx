@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Plus, X, Send, Eye, ChevronDown, Search,
   CalendarDays, Banknote, FileText, CheckCircle2, Clock,
@@ -17,7 +17,7 @@ import {
   useResendClientDocument, useResendInvoiceRecipient,
   type InvoiceClientDoc, type InvoiceDoc, type RecipientDoc,
 } from '@/lib/api/invoices';
-import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
+import { useAdminMembers, useAdminMember, type MemberListItem } from '@/lib/api/members';
 import { formatFullName } from '@/lib/format-name';
 import { applyInlineTextStyle, captureTextSelection, sanitizeRichHtml, type StoredTextSelection } from '@/lib/rich-text';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
@@ -925,7 +925,7 @@ function MotifPickerModal({ onClose, onSelect }: { onClose: () => void; onSelect
   );
 }
 
-function CreateInvoiceModal({ motif, onClose }: { motif: InvoiceMotif; onClose: () => void }) {
+function CreateInvoiceModal({ motif, presetMemberId, onClose }: { motif: InvoiceMotif; presetMemberId?: string; onClose: () => void }) {
   const today = new Date().toISOString().slice(0, 10);
   const cfg = MOTIF_CONFIG[motif];
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -935,7 +935,7 @@ function CreateInvoiceModal({ motif, onClose }: { motif: InvoiceMotif; onClose: 
   const [dueDate, setDueDate] = useState(today);
   const [paymentLink, setPaymentLink] = useState('');
   const [recipientMode, setRecipientMode] = useState<'all' | 'select'>('select');
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(presetMemberId ? [presetMemberId] : []);
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [memberSearch, setMemberSearch] = useState('');
   const [cotisFilter, setCotisFilter] = useState<'all' | MemberListItem['cotisationStatus']>('all');
@@ -968,8 +968,18 @@ function CreateInvoiceModal({ motif, onClose }: { motif: InvoiceMotif; onClose: 
   const createInvoice = useCreateInvoice();
   const { data: membersData } = useAdminMembers({ limit: 200, status: 'active' });
   const { data: clientsData } = useInvoiceClients();
-  const allMembers: MemberListItem[] = membersData?.data?.data ?? [];
+  const { data: presetMemberData } = useAdminMember(presetMemberId ?? '');
   const clients = clientsData?.data ?? [];
+
+  /* Le membre visé par le raccourci "facture requise" n'est pas forcément dans
+     les 200 premiers actifs récupérés ci-dessus : on le fusionne explicitement
+     pour garantir qu'il apparaisse dans l'aperçu et la sélection. */
+  const allMembers: MemberListItem[] = useMemo(() => {
+    const base = membersData?.data?.data ?? [];
+    const preset = presetMemberData?.data;
+    if (preset && !base.some(m => m._id === preset._id)) return [preset, ...base];
+    return base;
+  }, [membersData, presetMemberData]);
 
   const rawTotals = useMemo(() => calcInvoiceTotals(lines), [lines]);
   const totals = isExempt ? { ht: 0, vat: 0, ttc: 0 } : rawTotals;
@@ -1716,11 +1726,23 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
 
 /* ─── Page principale ─────────────────────────────────── */
 export default function FacturationAdminPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const paymentFilter = searchParams.get('payment');
+  const motifParam = searchParams.get('motif');
+  const presetMemberId = searchParams.get('memberId') ?? undefined;
   const [search,      setSearch]      = useState('');
   const [showMotifPicker, setShowMotifPicker] = useState(false);
   const [createMotif,     setCreateMotif]     = useState<InvoiceMotif | null>(null);
+
+  /* Raccourci "facture requise" depuis Adhérents : motif + membre déjà connus,
+     on saute directement l'éditeur sans repasser par la modale de choix. */
+  useEffect(() => {
+    if (motifParam && Object.prototype.hasOwnProperty.call(MOTIF_CONFIG, motifParam)) {
+      setCreateMotif(motifParam as InvoiceMotif);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [showClients, setShowClients] = useState(false);
   const [viewInvoice, setViewInvoice] = useState<InvoiceDoc | null>(null);
   const [viewRecipientInvoice, setViewRecipientInvoice] = useState<InvoiceRecipientRow | null>(null);
@@ -1909,7 +1931,16 @@ export default function FacturationAdminPage() {
           onSelect={m => { setShowMotifPicker(false); setCreateMotif(m); }}
         />
       )}
-      {createMotif && <CreateInvoiceModal motif={createMotif} onClose={() => setCreateMotif(null)} />}
+      {createMotif && (
+        <CreateInvoiceModal
+          motif={createMotif}
+          presetMemberId={presetMemberId}
+          onClose={() => {
+            setCreateMotif(null);
+            if (motifParam) router.replace('/admin/facturation');
+          }}
+        />
+      )}
       {showClients && <ClientsModal onClose={() => setShowClients(false)} />}
       {editInvoice && <EditInvoiceModal invoice={editInvoice} onClose={() => setEditInvoice(null)} />}
       {viewInvoice && <InvoiceDetailModal invoice={viewInvoice} onClose={() => setViewInvoice(null)} />}
