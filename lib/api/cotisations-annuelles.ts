@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { apiClient } from './client';
+import { apiClient, type ApiResponse } from './client';
 import { useAuthStore } from '@/store/auth.store';
 import type { AuditLogDoc } from './audit-logs';
 
@@ -222,23 +222,29 @@ export function useUpdateTranche() {
          la bonne valeur dès ce même rendu, sans attendre le refetch. */
       const updatedDoc = (res as any)?.data as CotisationAnnuelleDoc | undefined;
       if (updatedDoc) {
-        qc.setQueryData<AdminCotisationAnnuelleRow[]>(['admin-cotisations-annuelles', vars.year], old =>
-          old?.map(row =>
-            String(row.user._id) === String(vars.userId)
-              ? {
-                  ...row,
-                  cotisation: {
-                    ...row.cotisation,
-                    tranches: updatedDoc.tranches,
-                    totalPaid: updatedDoc.totalPaid,
-                    status: updatedDoc.status,
-                    paidAt: updatedDoc.paidAt,
-                    reference: updatedDoc.reference,
-                  },
-                }
-              : row,
-          ),
-        );
+        /* Le cache stocke l'ApiResponse complète ({success,message,data:[...]}),
+           pas le tableau brut — il faut patcher `.data`, pas `old` lui-même. */
+        qc.setQueryData<ApiResponse<AdminCotisationAnnuelleRow[]>>(['admin-cotisations-annuelles', vars.year], old => {
+          if (!old?.data) return old;
+          return {
+            ...old,
+            data: old.data.map(row =>
+              String(row.user._id) === String(vars.userId)
+                ? {
+                    ...row,
+                    cotisation: {
+                      ...row.cotisation,
+                      tranches: updatedDoc.tranches,
+                      totalPaid: updatedDoc.totalPaid,
+                      status: updatedDoc.status,
+                      paidAt: updatedDoc.paidAt,
+                      reference: updatedDoc.reference,
+                    },
+                  }
+                : row,
+            ),
+          };
+        });
       }
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles', vars.year] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });

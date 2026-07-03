@@ -219,9 +219,11 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
       </select>
 
       {step === 'amount' && (
-        <div className="group relative">
-          {/* Boutons flottants juste au-dessus du champ de saisie : masqués par défaut, visibles uniquement au focus du champ */}
-          <div className="absolute bottom-full left-0 z-20 mb-1 hidden items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within:flex">
+        <div className="group/tranche relative">
+          {/* Boutons flottants juste au-dessus du champ de saisie : masqués par défaut, visibles uniquement au focus DE CE champ précis.
+              Groupe nommé (group/tranche) car la <tr> de la ligne porte déjà "group" (survol) — un group-focus-within générique
+              se déclencherait dès qu'un focus est détecté n'importe où dans la ligne (les 4 tranches en même temps). */}
+          <div className="absolute bottom-full left-0 z-20 mb-1 hidden items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/tranche:flex">
             <button type="button" onMouseDown={e => e.preventDefault()} onClick={confirmAmount} disabled={updateTranche.isPending} title="Valider le montant"
               className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
               <Check size={11} />

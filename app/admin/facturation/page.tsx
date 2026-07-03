@@ -18,6 +18,7 @@ import {
   type InvoiceClientDoc, type InvoiceDoc, type RecipientDoc,
 } from '@/lib/api/invoices';
 import { useAdminReceipts, useUpdateReceipt, useCancelReceipt, type ReceiptDoc } from '@/lib/api/receipts';
+import { downloadReceiptPdf } from '@/lib/receipt-pdf';
 import { useAdminMembers, useAdminMember, type MemberListItem } from '@/lib/api/members';
 import { formatFullName } from '@/lib/format-name';
 import { applyInlineTextStyle, captureTextSelection, sanitizeRichHtml, type StoredTextSelection } from '@/lib/rich-text';
@@ -1745,6 +1746,11 @@ function receiptMemberName(r: ReceiptDoc) {
   return u ? formatFullName(u.firstName ?? '', u.lastName ?? '') : 'Membre';
 }
 
+function receiptMemberInfo(r: ReceiptDoc): { firstName: string; lastName: string; memberNumber?: string | null } {
+  const u = typeof r.userId === 'object' ? r.userId : null;
+  return { firstName: u?.firstName ?? '', lastName: u?.lastName ?? '', memberNumber: u?.memberNumber };
+}
+
 function EditReceiptModal({ receipt, onClose }: { receipt: ReceiptDoc; onClose: () => void }) {
   const updateReceipt = useUpdateReceipt();
   const [amount, setAmount] = useState(String(receipt.amount));
@@ -1884,6 +1890,10 @@ function ReceiptsTab() {
                   <p className="font-black text-neutral-900">{fmtCfa(r.amount)}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
+                  <button onClick={() => downloadReceiptPdf(r, receiptMemberInfo(r))} title="Voir le reçu"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-50 text-neutral-500 transition hover:bg-emerald-500 hover:text-white">
+                    <Eye size={12} />
+                  </button>
                   <button onClick={() => setEditing(r)} disabled={isCancelled} title="Modifier"
                     className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-50 text-neutral-500 transition hover:bg-yellow-400 hover:text-neutral-950 disabled:cursor-not-allowed disabled:opacity-40">
                     <Pencil size={12} />
