@@ -140,12 +140,6 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t.amount, t.paidAt, t.status]);
 
-  /* Le membre n'est pas tenu de régler en 4 fois : une tranche à 0 doit toujours
-     montrer le champ de saisie, jamais un "0 F" statique (peu importe d'où vient ce 0). */
-  useEffect(() => {
-    if (step === 'display' && !(t.amount > 0)) setStep('amount');
-  }, [step, t.amount]);
-
   useEffect(() => {
     if (step === 'date') dateInputRef.current?.focus();
   }, [step]);
@@ -264,9 +258,10 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
 
       {step === 'display' && (
         <div className="flex flex-col items-start gap-0.5">
-          <button type="button" onClick={() => setStep('amount')}
-            className={`truncate text-left font-mono font-black text-neutral-700 transition hover:text-emerald-700 hover:underline ${sizes.amount}`}>
+          <button type="button" onClick={() => setStep('amount')} title="Modifier le montant"
+            className={`flex items-center gap-1 truncate text-left font-mono font-black text-neutral-700 transition hover:text-emerald-700 hover:underline ${sizes.amount}`}>
             {fmtNum(t.amount)} F
+            <PencilLine size={10} className="shrink-0 text-neutral-400" />
           </button>
           {t.paidAt && (
             <button type="button" onClick={() => setStep('date')} title="Modifier la date"

@@ -328,7 +328,7 @@ export default function ProfilPage() {
               {form.gender === 'femme' ? 'Madame' : 'Monsieur'}
             </p>
           )}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2"><p className="text-sm font-black text-neutral-900">{formatFullName(form.firstName, form.lastName)}</p><CauriBadge compact onScrollTo={() => { cauriRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} /></div>
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2"><p className="text-sm font-black text-neutral-900">{formatFullName(form.firstName, form.lastName)}</p><CauriBadge compact alwaysShowCount onScrollTo={() => { cauriRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} /></div>
           <p className="text-xs text-neutral-500">{form.activitySector || 'Membre SALAM'}</p>
           {user?._id && (
             <p className="mt-0.5 font-mono text-[11px] text-emerald-600">
