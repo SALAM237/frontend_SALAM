@@ -38,29 +38,33 @@ type ActiveTab  = 'relance' | 'frais' | 'cauris' | 'cartes' | 'cotisation-annuel
 type RelanceSub = 'cotisation' | 'cotisation-annuelle' | 'inscription' | 'profil' | 'presence' | 'facture' | null;
 
 /* ── Constants ──────────────────────────────────────────── */
-const statusConfig: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
-  active:    { label: 'Inscrit',               cls: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle2 },
-  pending:   { label: 'Inscription en attente', cls: 'bg-yellow-50  text-yellow-700  border-yellow-100',  icon: Clock        },
-  suspended: { label: 'Suspendu',               cls: 'bg-red-50     text-red-700     border-red-100',      icon: XCircle      },
-  rejected:  { label: 'Refusé',                 cls: 'bg-neutral-50 text-neutral-500 border-neutral-200', icon: XCircle      },
+const statusConfig: Record<string, { label: string; labelF?: string; cls: string; icon: React.ElementType }> = {
+  active:    { label: 'Inscrit',   labelF: 'Inscrite',  cls: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle2 },
+  pending:   { label: 'Inscription en attente',         cls: 'bg-yellow-50  text-yellow-700  border-yellow-100',  icon: Clock        },
+  suspended: { label: 'Suspendu',  labelF: 'Suspendue', cls: 'bg-red-50     text-red-700     border-red-100',      icon: XCircle      },
+  rejected:  { label: 'Refusé',    labelF: 'Refusée',   cls: 'bg-neutral-50 text-neutral-500 border-neutral-200', icon: XCircle      },
 };
-const cotisationConfig: Record<string, { label: string; cls: string }> = {
-  paid:   { label: 'Adhésion payée',   cls: 'bg-emerald-50 text-emerald-700' },
-  unpaid: { label: 'Impayée adhésion', cls: 'bg-red-50 text-red-600'        },
+/* Accorde le libellé de statut au genre du membre (comme pour les postes du bureau) */
+function genderedLabel(cfg: { label: string; labelF?: string }, gender?: 'homme' | 'femme'): string {
+  return gender === 'femme' && cfg.labelF ? cfg.labelF : cfg.label;
+}
+const cotisationConfig: Record<string, { label: string; labelMobile?: string; cls: string }> = {
+  paid:   { label: 'Adh. Payé',    labelMobile: 'Adhésion Payé',    cls: 'bg-emerald-50 text-emerald-700' },
+  unpaid: { label: 'Adh. Impayée', labelMobile: 'Adhésion Impayée', cls: 'bg-red-50 text-red-600'        },
   exempt: { label: 'Exempté adhésion', cls: 'bg-neutral-50 text-neutral-400' },
 };
-const cotisAnnuelleConfig: Record<string, { label: string; cls: string }> = {
-  paid:    { label: 'Payée cotisation',   cls: 'bg-violet-50 text-violet-700'  },
-  partiel: { label: 'Partiel cotisation', cls: 'bg-orange-50 text-orange-600'  },
-  unpaid:  { label: 'Impayée cotisation', cls: 'bg-red-50 text-red-600'        },
+const cotisAnnuelleConfig: Record<string, { label: string; labelMobile?: string; cls: string }> = {
+  paid:    { label: 'Cot. Payé',    labelMobile: 'Cotisation Payé',      cls: 'bg-violet-50 text-violet-700'  },
+  partiel: { label: 'Cot. Partiel', labelMobile: 'Cotisation Partielle', cls: 'bg-orange-50 text-orange-600'  },
+  unpaid:  { label: 'Cot. Impayée', labelMobile: 'Cotisation Impayée',   cls: 'bg-red-50 text-red-600'        },
   exempt:  { label: 'Exempté cotisation', cls: 'bg-neutral-50 text-neutral-400' },
 };
 const ANNUAL_FEE = 30_000;
 const EMPTY_TRANCHE: Tranche = { amount: 0, status: 'unpaid', paidAt: null, reference: null };
 const DEFAULT_TRANCHES: Tranche[] = [EMPTY_TRANCHE, EMPTY_TRANCHE, EMPTY_TRANCHE, EMPTY_TRANCHE];
 const profileConfig = {
-  complete:   { label: 'Complet',   cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
-  incomplete: { label: 'Incomplet', cls: 'bg-red-50 text-red-700 border-red-100' },
+  complete:   { label: 'Complet',        labelMobile: undefined as string | undefined, cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+  incomplete: { label: 'Pro. Incomplet', labelMobile: 'Profil Incomplet' as string | undefined, cls: 'bg-red-50 text-red-700 border-red-100' },
 };
 const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const YEARS_LIST = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
@@ -338,7 +342,7 @@ export default function AdminAdherentsPage() {
   /* ── Displayed list (search + filters + tab auto-filter) ── */
   const displayed = useMemo(() => {
     let list = members.filter(m => {
-      const matchSearch     = `${m.firstName} ${m.lastName} ${m.email} ${m.memberId}`.toLowerCase().includes(search.toLowerCase());
+      const matchSearch     = `${m.firstName} ${m.lastName} ${m.email} ${m.memberId} ${m.phone ?? ''}`.toLowerCase().includes(search.toLowerCase());
       const matchStatut     = filters.statut.length     === 0 || filters.statut.includes(m.memberStatus);
       const matchCotisation = filters.cotisation.length === 0 || filters.cotisation.includes(m.cotisationStatus);
       const matchCotisationAnnuelle = filters.cotisationAnnuelle.length === 0 || filters.cotisationAnnuelle.includes(m.cotisationAnnuelleStatus);
@@ -459,7 +463,7 @@ export default function AdminAdherentsPage() {
 
   const exportToCSV = () => {
     const headers = ['N° ID','Prénom','Nom','Email','Téléphone','Genre','Année promotionnaire','Statut',"Frais d'adhésion",'Cotisation annuelle','Reste à payer cotisation annuelle','Dernière connexion','Date inscription'];
-    const rows = displayed.map(m => [csvEscape(m.memberId),csvEscape(m.firstName),csvEscape(m.lastName),csvEscape(m.email),csvEscape(m.phone??''),csvEscape(m.gender==='femme'?'Madame':m.gender==='homme'?'Monsieur':''),csvEscape(m.promotionYear),csvEscape(statusConfig[m.memberStatus]?.label??m.memberStatus),csvEscape(cotisationConfig[m.cotisationStatus]?.label??m.cotisationStatus),csvEscape(cotisAnnuelleConfig[m.cotisationAnnuelleStatus]?.label??m.cotisationAnnuelleStatus),csvEscape(m.cotisationAnnuelleReste),csvEscape(fmtDate(m.lastLoginAt)),csvEscape(fmt(m.createdAt))].join(','));
+    const rows = displayed.map(m => [csvEscape(m.memberId),csvEscape(m.firstName),csvEscape(m.lastName),csvEscape(m.email),csvEscape(m.phone??''),csvEscape(m.gender==='femme'?'Madame':m.gender==='homme'?'Monsieur':''),csvEscape(m.promotionYear),csvEscape(statusConfig[m.memberStatus]?genderedLabel(statusConfig[m.memberStatus],m.gender):m.memberStatus),csvEscape(cotisationConfig[m.cotisationStatus]?.label??m.cotisationStatus),csvEscape(cotisAnnuelleConfig[m.cotisationAnnuelleStatus]?.label??m.cotisationAnnuelleStatus),csvEscape(m.cotisationAnnuelleReste),csvEscape(fmtDate(m.lastLoginAt)),csvEscape(fmt(m.createdAt))].join(','));
     const csv  = [headers.join(','), ...rows].join('\n');
     const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
@@ -853,7 +857,7 @@ export default function AdminAdherentsPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="relative w-full sm:min-w-[140px] sm:max-w-[240px]">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-          <input type="text" placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)}
+          <input type="text" placeholder="Nom, email, téléphone…" value={search} onChange={e => setSearch(e.target.value)}
             className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-8 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10" />
           {search && (
             <button type="button" onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600">
@@ -1317,7 +1321,7 @@ export default function AdminAdherentsPage() {
                             <>
                               <td className="px-2 py-3">
                                 <span className={`inline-flex max-w-full items-center gap-0.5 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[8px] font-black leading-none ${s.cls}`}>
-                                  <SI size={8} /><span className="truncate">{s.label}</span>
+                                  <SI size={8} /><span className="truncate">{genderedLabel(s, m.gender)}</span>
                                 </span>
                               </td>
                               <td className="px-2 py-3">
@@ -1439,10 +1443,10 @@ export default function AdminAdherentsPage() {
                               <p className="truncate text-[9px] text-neutral-400">{m.email}</p>
                             </div>
                             <div className="flex shrink-0 flex-col items-end gap-1">
-                              <span className={`inline-flex items-center gap-0.5 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[7px] font-black leading-none ${s.cls}`}><SI size={7} /> {s.label}</span>
-                              <span className={`inline-flex whitespace-nowrap rounded-full px-1.5 py-0.5 text-[7px] font-black leading-none ${c.cls}`}>{c.label}</span>
-                              <span className={`inline-flex whitespace-nowrap rounded-full px-1.5 py-0.5 text-[7px] font-black leading-none ${cAnnuelle.cls}`}>{cAnnuelle.label}</span>
-                              <span className={`inline-flex whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[7px] font-black leading-none ${m.profileComplete ? profileConfig.complete.cls : profileConfig.incomplete.cls}`}>{m.profileComplete ? 'Complet' : 'Incomplet'}</span>
+                              <span className={`inline-flex items-center gap-0.5 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[7px] font-black leading-none ${s.cls}`}><SI size={7} /> {genderedLabel(s, m.gender)}</span>
+                              <span className={`inline-flex whitespace-nowrap rounded-full px-1.5 py-0.5 text-[7px] font-black leading-none ${c.cls}`}>{c.labelMobile ?? c.label}</span>
+                              <span className={`inline-flex whitespace-nowrap rounded-full px-1.5 py-0.5 text-[7px] font-black leading-none ${cAnnuelle.cls}`}>{cAnnuelle.labelMobile ?? cAnnuelle.label}</span>
+                              <span className={`inline-flex whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[7px] font-black leading-none ${m.profileComplete ? profileConfig.complete.cls : profileConfig.incomplete.cls}`}>{m.profileComplete ? profileConfig.complete.label : (profileConfig.incomplete.labelMobile ?? profileConfig.incomplete.label)}</span>
                             </div>
                             <ChevronDown size={13} className={`shrink-0 text-neutral-300 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-emerald-600' : ''}`} />
                           </button>
