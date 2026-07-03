@@ -885,12 +885,53 @@ const COTIS_BADGE: Record<MemberListItem['cotisationStatus'], string> = {
   exempt: 'bg-neutral-100 text-neutral-600',
 };
 
-function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
+type InvoiceMotif = 'cotisation' | 'cotisation_annuelle' | 'other' | 'avoir';
+
+const MOTIF_CONFIG: Record<InvoiceMotif, { title: string; designation: string; amount: number | null; locked: boolean }> = {
+  cotisation:           { title: "FRAIS D'ADHÉSION",  designation: "FRAIS D'ADHÉSION - MEMBRE SALAM",  amount: 5000,  locked: true  },
+  cotisation_annuelle:  { title: 'COTISATION ANNUELLE', designation: 'COTISATION ANNUELLE - MEMBRE SALAM', amount: 30000, locked: true  },
+  avoir:                { title: 'AVOIR',              designation: 'Avoir — Association SALAM',        amount: null,  locked: false },
+  other:                { title: '',                   designation: '',                                 amount: null,  locked: false },
+};
+
+function MotifPickerModal({ onClose, onSelect }: { onClose: () => void; onSelect: (motif: InvoiceMotif) => void }) {
+  const options: { motif: InvoiceMotif; label: string; description: string; cls: string }[] = [
+    { motif: 'cotisation',          label: "Frais d'adhésion",  description: '5 000 F.CFA TTC — montant et libellé verrouillés',  cls: 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100' },
+    { motif: 'cotisation_annuelle', label: 'Cotisation annuelle', description: '30 000 F.CFA TTC — montant et libellé verrouillés', cls: 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100' },
+    { motif: 'other',                label: 'Autres',             description: 'Facture libre, entièrement personnalisable',        cls: 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100' },
+    { motif: 'avoir',                label: 'Avoir',              description: 'Crédite le solde du membre et débite la trésorerie', cls: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' },
+  ];
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">Facturation SALAM</p>
+            <h3 className="text-lg font-black text-neutral-900">Motif de la facture</h3>
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
+        </div>
+        <div className="grid gap-3 p-6 sm:grid-cols-2">
+          {options.map(o => (
+            <button key={o.motif} type="button" onClick={() => onSelect(o.motif)}
+              className={`flex flex-col items-start gap-1 rounded-2xl border px-4 py-4 text-left transition ${o.cls}`}>
+              <span className="text-sm font-black">{o.label}</span>
+              <span className="text-[11px] font-semibold opacity-80">{o.description}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CreateInvoiceModal({ motif, onClose }: { motif: InvoiceMotif; onClose: () => void }) {
   const today = new Date().toISOString().slice(0, 10);
+  const cfg = MOTIF_CONFIG[motif];
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [association, setAssociation] = useState<AssociationInvoiceInfo>(() => loadAssociationInfo());
-  const [invoiceTitle, setInvoiceTitle] = useState('Adhésion');
-  const [description, setDescription] = useState('Frais et contribution liés aux activités de l’association.');
+  const [invoiceTitle, setInvoiceTitle] = useState(cfg.title || 'Facture');
+  const [description, setDescription] = useState(motif === 'other' ? "Frais et contribution liés aux activités de l'association." : cfg.designation);
   const [dueDate, setDueDate] = useState(today);
   const [paymentLink, setPaymentLink] = useState('');
   const [recipientMode, setRecipientMode] = useState<'all' | 'select'>('select');
@@ -900,8 +941,11 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const [cotisFilter, setCotisFilter] = useState<'all' | MemberListItem['cotisationStatus']>('all');
   const [notes, setNotes] = useState("Merci pour votre engagement au sein de SALAM. Cette facture correspond aux frais ou contributions validés par l'association.");
   const [legal, setLegal] = useState('Association SALAM — document généré électroniquement. Paiement à effectuer selon les moyens validés par le bureau exécutif.');
+  const [isExempt, setIsExempt] = useState(false);
   const [lines, setLines] = useState<InvoiceLine[]>([
-    { id: 1, designation: 'Frais d’adhésion annuelle', qty: 1, ht: 5000, vat: 0 },
+    cfg.locked && cfg.amount != null
+      ? { id: 1, designation: cfg.designation, qty: 1, ht: cfg.amount, vat: 0 }
+      : { id: 1, designation: motif === 'avoir' ? cfg.designation : 'Frais d’adhésion annuelle', qty: 1, ht: motif === 'avoir' ? 0 : 5000, vat: 0 },
   ]);
   const [blockOffsets, setBlockOffsets] = useState<Record<LayoutBlockId, { x: number; y: number }>>({
     assoc: { x: 0, y: 0 },
@@ -927,7 +971,8 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const allMembers: MemberListItem[] = membersData?.data?.data ?? [];
   const clients = clientsData?.data ?? [];
 
-  const totals = useMemo(() => calcInvoiceTotals(lines), [lines]);
+  const rawTotals = useMemo(() => calcInvoiceTotals(lines), [lines]);
+  const totals = isExempt ? { ht: 0, vat: 0, ttc: 0 } : rawTotals;
   const year = new Date().getFullYear();
   const previewNumber = `SALAM-FACT-${year}-0001`;
 
@@ -958,14 +1003,25 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   };
 
   const updateLine = (id: number, patch: Partial<InvoiceLine>) => {
-    setLines(prev => prev.map(line => line.id === id ? { ...line, ...patch } : line));
+    setLines(prev => prev.map(line => {
+      if (line.id !== id) return line;
+      const next = { ...line, ...patch };
+      /* Montant TTC verrouillé : on recalcule le HT pour que le total reste fixe quand la TVA change */
+      if (cfg.locked && cfg.amount != null && patch.vat !== undefined) {
+        const vatPct = Number(patch.vat || 0);
+        next.ht = Math.round((cfg.amount / (1 + vatPct / 100)) * 100) / 100;
+      }
+      return next;
+    }));
   };
 
   const addLine = () => {
+    if (cfg.locked) return;
     setLines(prev => [...prev, { id: Date.now(), designation: 'Nouvelle ligne', qty: 1, ht: 0, vat: 0 }]);
   };
 
   const removeLine = (id: number) => {
+    if (cfg.locked) return;
     setLines(prev => prev.length > 1 ? prev.filter(line => line.id !== id) : prev);
   };
 
@@ -992,7 +1048,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
     const next: Record<string, string> = {};
     if (!invoiceTitle.trim()) next.title = 'Titre requis';
     if (!dueDate) next.dueDate = 'Échéance requise';
-    if (totals.ttc <= 0) next.amount = 'Le total doit être supérieur à 0';
+    if (!isExempt && totals.ttc <= 0) next.amount = 'Le total doit être supérieur à 0';
     if (recipientMode === 'select' && selected.length === 0 && selectedClients.length === 0) next.recipients = 'Sélectionnez au moins un destinataire';
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -1001,9 +1057,6 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const handleCreate = () => {
     if (!validate()) return;
     persistAssociation();
-    const invoiceType = /adh[ée]sion|adhesion|cotisation|frais/i.test(`${invoiceTitle} ${description} ${notes}`)
-      ? 'cotisation'
-      : 'event';
     createInvoice.mutate(
       {
         title: invoiceTitle.trim(),
@@ -1011,7 +1064,8 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
         amount: totals.ttc,
         dueDate,
         paymentLink: paymentLink.trim() || undefined,
-        type: invoiceType,
+        type: motif,
+        isExempt,
         recipientIds: recipientMode === 'select' ? selected : undefined,
         clientIds: recipientMode === 'select' ? selectedClients : undefined,
       },
@@ -1051,13 +1105,14 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
         }]
       : [{ name: 'Destinataire à renseigner' }];
 
+    const pdfLines = isExempt ? lines.map(l => ({ ...l, ht: 0, vat: 0 })) : lines;
     const targetRecipients = [...memberRecipients, ...clientRecipients];
     const docs = (targetRecipients.length ? targetRecipients : fallbackRecipients).map((recipient, index) => ({
       association,
       invoiceTitle,
       invoiceNumber: `${previewNumber}-${seq(index + 1)}`,
       recipient,
-      lines,
+      lines: pdfLines,
       notes,
       legal,
       dueDate,
@@ -1105,7 +1160,7 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                 <header className="bg-gradient-to-br from-[#087348] via-[#075f41] to-[#043d2d] px-10 pb-6 pt-10 text-white">
                   <input value={association.name} onChange={event => updateAssociation({ name: event.target.value })} className="w-full bg-transparent text-[11px] font-black uppercase tracking-[0.28em] text-yellow-200 outline-none" />
                   <p className="mt-1 text-xs font-semibold text-white/75">Solidaire Associative des Lauréats du Maroc</p>
-                  <input value={invoiceTitle} onChange={event => setInvoiceTitle(event.target.value)} className="mt-3 w-full bg-transparent text-[29px] font-black leading-none tracking-[-0.04em] text-white outline-none" />
+                  <input value={invoiceTitle} readOnly={cfg.locked} onChange={event => !cfg.locked && setInvoiceTitle(event.target.value)} className={`mt-3 w-full bg-transparent text-[29px] font-black leading-none tracking-[-0.04em] text-white outline-none ${cfg.locked ? 'cursor-not-allowed opacity-90' : ''}`} />
                   <input value={previewNumber} readOnly className="mt-2 w-full bg-transparent font-mono text-xs text-white/70 outline-none" />
                 </header>
 
@@ -1176,24 +1231,35 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
                   <section className="rounded-[18px] border border-neutral-200 bg-white p-5">
                     <div className="mb-3 flex items-center justify-between">
                       <h4 className="font-black text-neutral-900">Désignations</h4>
-                      <button type="button" onClick={addLine} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-black text-white"><Plus size={13} /> Ligne</button>
+                      {!cfg.locked && (
+                        <button type="button" onClick={addLine} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-black text-white"><Plus size={13} /> Ligne</button>
+                      )}
                     </div>
                     <div className="grid grid-cols-[1fr_64px_95px_64px_100px_32px] rounded-t-xl bg-neutral-950 px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-white">
                       <span>Désignation</span><span>Qté</span><span>HT</span><span>TVA</span><span>TTC</span><span />
                     </div>
                     {lines.map(line => {
-                      const ttc = Number(line.qty || 0) * Number(line.ht || 0) * (1 + Number(line.vat || 0) / 100);
+                      const ttc = isExempt ? 0 : Number(line.qty || 0) * Number(line.ht || 0) * (1 + Number(line.vat || 0) / 100);
                       return (
                         <div key={line.id} className="grid grid-cols-[1fr_64px_95px_64px_100px_32px] items-center border-b border-neutral-100 px-3 py-2 text-sm">
-                          <RichTextEditor value={String(line.designation ?? '')} onChange={value => updateLine(line.id, { designation: value })} className="min-w-0 rounded-lg px-2 py-1 outline-emerald-300" multiline={false} />
-                          <input type="number" value={line.qty} onChange={event => updateLine(line.id, { qty: event.target.value })} className="w-14 rounded-lg px-2 py-1 outline-emerald-300" />
-                          <input type="number" value={line.ht} onChange={event => updateLine(line.id, { ht: event.target.value })} className="w-20 rounded-lg px-2 py-1 outline-emerald-300" />
+                          {cfg.locked ? (
+                            <span className="min-w-0 truncate rounded-lg px-2 py-1 font-semibold text-neutral-800">{line.designation}</span>
+                          ) : (
+                            <RichTextEditor value={String(line.designation ?? '')} onChange={value => updateLine(line.id, { designation: value })} className="min-w-0 rounded-lg px-2 py-1 outline-emerald-300" multiline={false} />
+                          )}
+                          <input type="number" value={line.qty} readOnly={cfg.locked} onChange={event => !cfg.locked && updateLine(line.id, { qty: event.target.value })} className={`w-14 rounded-lg px-2 py-1 outline-emerald-300 ${cfg.locked ? 'cursor-not-allowed bg-neutral-50 text-neutral-400' : ''}`} />
+                          <input type="number" value={line.ht} readOnly={cfg.locked} onChange={event => !cfg.locked && updateLine(line.id, { ht: event.target.value })} className={`w-20 rounded-lg px-2 py-1 outline-emerald-300 ${cfg.locked ? 'cursor-not-allowed bg-neutral-50 text-neutral-400' : ''}`} />
                           <input type="number" value={line.vat} onChange={event => updateLine(line.id, { vat: event.target.value })} className="w-14 rounded-lg px-2 py-1 outline-emerald-300" />
                           <b className="text-xs">{fmtCfa(ttc)}</b>
-                          <button type="button" onClick={() => removeLine(line.id)} className="text-red-500"><Trash2 size={14} /></button>
+                          {!cfg.locked && <button type="button" onClick={() => removeLine(line.id)} className="text-red-500"><Trash2 size={14} /></button>}
                         </div>
                       );
                     })}
+                    {cfg.locked && (
+                      <p className="px-3 py-2 text-[11px] font-semibold text-neutral-400">
+                        Montant TTC fixé à {fmtCfa(cfg.amount ?? 0)} — seule la TVA est ajustable (le HT se recalcule automatiquement).
+                      </p>
+                    )}
                   </section>
                   </DraggableBox>
 
@@ -1236,11 +1302,15 @@ function CreateInvoiceModal({ onClose }: { onClose: () => void }) {
               <div className="space-y-3">
                 <label className="block">
                   <span className="text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Titre</span>
-                  <input value={invoiceTitle} onChange={event => setInvoiceTitle(event.target.value)} className={inputCls(errors.title)} />
+                  <input value={invoiceTitle} readOnly={cfg.locked} onChange={event => !cfg.locked && setInvoiceTitle(event.target.value)} className={`${inputCls(errors.title)} ${cfg.locked ? 'cursor-not-allowed bg-neutral-50 text-neutral-500' : ''}`} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Description API</span>
                   <textarea value={description} onChange={event => setDescription(event.target.value)} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-emerald-300" />
+                </label>
+                <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                  <input type="checkbox" checked={isExempt} onChange={event => setIsExempt(event.target.checked)} className="h-4 w-4 accent-amber-600" />
+                  <span className="text-xs font-black text-amber-800">Membre exempté (facture à 0 F.CFA)</span>
                 </label>
               </div>
               {(errors.title || errors.amount || errors.recipients || errors.dueDate) && (
@@ -1649,7 +1719,8 @@ export default function FacturationAdminPage() {
   const searchParams = useSearchParams();
   const paymentFilter = searchParams.get('payment');
   const [search,      setSearch]      = useState('');
-  const [showCreate,  setShowCreate]  = useState(false);
+  const [showMotifPicker, setShowMotifPicker] = useState(false);
+  const [createMotif,     setCreateMotif]     = useState<InvoiceMotif | null>(null);
   const [showClients, setShowClients] = useState(false);
   const [viewInvoice, setViewInvoice] = useState<InvoiceDoc | null>(null);
   const [viewRecipientInvoice, setViewRecipientInvoice] = useState<InvoiceRecipientRow | null>(null);
@@ -1694,7 +1765,7 @@ export default function FacturationAdminPage() {
             className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-700 shadow-sm transition hover:bg-amber-100 active:scale-[0.98]">
             <UserPlus size={15} /> Clients
           </button>
-          <button onClick={() => setShowCreate(true)}
+          <button onClick={() => setShowMotifPicker(true)}
             className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]">
             <Plus size={15} /> Nouvelle facture
           </button>
@@ -1832,7 +1903,13 @@ export default function FacturationAdminPage() {
         </div>
       </div>
 
-      {showCreate && <CreateInvoiceModal onClose={() => setShowCreate(false)} />}
+      {showMotifPicker && (
+        <MotifPickerModal
+          onClose={() => setShowMotifPicker(false)}
+          onSelect={m => { setShowMotifPicker(false); setCreateMotif(m); }}
+        />
+      )}
+      {createMotif && <CreateInvoiceModal motif={createMotif} onClose={() => setCreateMotif(null)} />}
       {showClients && <ClientsModal onClose={() => setShowClients(false)} />}
       {editInvoice && <EditInvoiceModal invoice={editInvoice} onClose={() => setEditInvoice(null)} />}
       {viewInvoice && <InvoiceDetailModal invoice={viewInvoice} onClose={() => setViewInvoice(null)} />}

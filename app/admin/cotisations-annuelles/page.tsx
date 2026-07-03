@@ -6,7 +6,7 @@ import {
   ChevronDown, Search, CheckCircle2, XCircle, ShieldOff,
   CalendarDays, History, X, Upload, AlertTriangle,
   Eye, Settings2, Send, Loader2, Edit3, Download,
-  Trash2,
+  Trash2, Clock,
 } from 'lucide-react';
 import {
   useAdminCotisationsAnnuelles, useUpdateCotisationAnnuelleStatus, useDeleteCotisationAnnuelle,
@@ -47,9 +47,10 @@ const REMINDER_OPTIONS = [
 
 /* ─── Helpers ────────────────────────────────────────────── */
 const STATUS_CONFIG: Record<CotisationAnnuelleStatus, { dot: string; badge: string; label: string; icon: React.ReactNode }> = {
-  paid:   { dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',        label: 'Payé',     icon: <CheckCircle2 size={11} /> },
-  unpaid: { dot: 'bg-red-500',     badge: 'bg-red-50 text-red-700 border-red-200',                    label: 'Non payé', icon: <XCircle size={11} />     },
-  exempt: { dot: 'bg-emerald-900', badge: 'bg-emerald-950/10 text-emerald-900 border-emerald-900/25', label: 'Exempté',  icon: <ShieldOff size={11} />   },
+  paid:    { dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',        label: 'Payé',      icon: <CheckCircle2 size={11} /> },
+  partiel: { dot: 'bg-orange-500',  badge: 'bg-orange-50 text-orange-600 border-orange-200',           label: 'Partiel',   icon: <Clock size={11} />         },
+  unpaid:  { dot: 'bg-red-500',     badge: 'bg-red-50 text-red-700 border-red-200',                    label: 'Non payé',  icon: <XCircle size={11} />     },
+  exempt:  { dot: 'bg-emerald-900', badge: 'bg-emerald-950/10 text-emerald-900 border-emerald-900/25', label: 'Exempté',   icon: <ShieldOff size={11} />   },
 };
 
 function fmt(dateStr?: string | null) {
@@ -651,6 +652,7 @@ export default function CotisationsAnnuellesAdminPage() {
                         disabled={updateStatus.isPending}
                         className={`h-7 w-[5.5rem] appearance-none truncate rounded-full border pl-2 pr-5 text-[10px] font-black outline-none cursor-pointer disabled:opacity-60 sm:h-8 sm:w-auto sm:pl-3 sm:pr-7 sm:text-[11px] ${cfg.badge}`}>
                         <option value="unpaid">Non payé</option>
+                        <option value="partiel">Partiel</option>
                         <option value="paid">Payé</option>
                         <option value="exempt">Exempté</option>
                       </select>

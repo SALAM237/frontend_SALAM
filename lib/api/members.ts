@@ -20,6 +20,8 @@ export interface MemberListItem {
   memberNumber?: string;
   cardVerifyToken?: string | null;
   cotisationStatus: 'paid' | 'unpaid' | 'exempt';
+  cotisationAnnuelleStatus: 'paid' | 'partiel' | 'unpaid' | 'exempt';
+  cotisationAnnuelleReste: number;
   profileComplete?: boolean;
   missingProfileFields?: string[];
   gender?: 'homme' | 'femme';

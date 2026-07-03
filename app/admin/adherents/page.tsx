@@ -7,7 +7,7 @@ import {
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
   Plus, Minus, SlidersHorizontal, X, Bell, Banknote,
   Send, CalendarDays, AlertTriangle, Users, ChevronLeft,
-  FolderOpen, Folders, ChevronRight,
+  FolderOpen, Folders, ChevronRight, Check, Wallet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -18,6 +18,10 @@ import {
   useAdminCotisations, useUpdateCotisationStatus, useSendReminders,
   useSendUnpaidInvoiceRelance, type AdminCotisationRow, type CotisationStatus,
 } from '@/lib/api/cotisations';
+import {
+  useAdminCotisationsAnnuelles, useUpdateTranche, useSendCotisationAnnuelleReminders,
+  type AdminCotisationAnnuelleRow, type Tranche,
+} from '@/lib/api/cotisations-annuelles';
 import { useActivities, useActivityInvitations, useRemindActivityInvitations, type ActivityDoc } from '@/lib/api/activities';
 import { useAdminGroups, useDeleteGroup, type MemberGroup } from '@/lib/api/groups';
 import { useAdjustMemberCauris } from '@/lib/api/cauris';
@@ -30,21 +34,30 @@ import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard'
 import { downloadElementAsPng, memberCardMailto } from '@/lib/member-card-export';
 
 /* ── Types ─────────────────────────────────────────────── */
-type ActiveTab  = 'relance' | 'frais' | 'cauris' | 'cartes' | null;
-type RelanceSub = 'cotisation' | 'inscription' | 'profil' | 'presence' | 'facture' | null;
+type ActiveTab  = 'relance' | 'frais' | 'cauris' | 'cartes' | 'cotisation-annuelle' | null;
+type RelanceSub = 'cotisation' | 'cotisation-annuelle' | 'inscription' | 'profil' | 'presence' | 'facture' | null;
 
 /* ── Constants ──────────────────────────────────────────── */
 const statusConfig: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
-  active:    { label: 'Actif',      cls: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle2 },
-  pending:   { label: 'En attente', cls: 'bg-yellow-50  text-yellow-700  border-yellow-100',  icon: Clock        },
-  suspended: { label: 'Suspendu',   cls: 'bg-red-50     text-red-700     border-red-100',      icon: XCircle      },
-  rejected:  { label: 'Refusé',     cls: 'bg-neutral-50 text-neutral-500 border-neutral-200', icon: XCircle      },
+  active:    { label: 'Inscrit',               cls: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle2 },
+  pending:   { label: 'Inscription en attente', cls: 'bg-yellow-50  text-yellow-700  border-yellow-100',  icon: Clock        },
+  suspended: { label: 'Suspendu',               cls: 'bg-red-50     text-red-700     border-red-100',      icon: XCircle      },
+  rejected:  { label: 'Refusé',                 cls: 'bg-neutral-50 text-neutral-500 border-neutral-200', icon: XCircle      },
 };
 const cotisationConfig: Record<string, { label: string; cls: string }> = {
-  paid:   { label: 'Payée',   cls: 'bg-emerald-50 text-emerald-700' },
-  unpaid: { label: 'Impayée', cls: 'bg-red-50 text-red-600'        },
-  exempt: { label: 'Exempté', cls: 'bg-neutral-50 text-neutral-400' },
+  paid:   { label: 'Adhésion payée',   cls: 'bg-emerald-50 text-emerald-700' },
+  unpaid: { label: 'Impayée adhésion', cls: 'bg-red-50 text-red-600'        },
+  exempt: { label: 'Exempté adhésion', cls: 'bg-neutral-50 text-neutral-400' },
 };
+const cotisAnnuelleConfig: Record<string, { label: string; cls: string }> = {
+  paid:    { label: 'Payée cotisation',   cls: 'bg-violet-50 text-violet-700'  },
+  partiel: { label: 'Partiel cotisation', cls: 'bg-orange-50 text-orange-600'  },
+  unpaid:  { label: 'Impayée cotisation', cls: 'bg-red-50 text-red-600'        },
+  exempt:  { label: 'Exempté cotisation', cls: 'bg-neutral-50 text-neutral-400' },
+};
+const ANNUAL_FEE = 30_000;
+const EMPTY_TRANCHE: Tranche = { amount: 0, status: 'unpaid', paidAt: null, reference: null };
+const DEFAULT_TRANCHES: Tranche[] = [EMPTY_TRANCHE, EMPTY_TRANCHE, EMPTY_TRANCHE, EMPTY_TRANCHE];
 const profileConfig = {
   complete:   { label: 'Complet',   cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
   incomplete: { label: 'Incomplet', cls: 'bg-red-50 text-red-700 border-red-100' },
@@ -52,11 +65,12 @@ const profileConfig = {
 const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const YEARS_LIST = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 const RELANCE_OPTIONS: { id: RelanceSub; label: string }[] = [
-  { id: 'cotisation',  label: 'Cotisation impayée'      },
-  { id: 'inscription', label: 'Inscription en attente'  },
-  { id: 'profil',      label: 'Profil incomplet'        },
-  { id: 'presence',    label: 'Présence activité'       },
-  { id: 'facture',     label: 'Facture'                 },
+  { id: 'cotisation',          label: "Frais d'adhésion impayés"    },
+  { id: 'cotisation-annuelle', label: 'Cotisation annuelle impayée' },
+  { id: 'inscription',         label: 'Inscription en attente'       },
+  { id: 'profil',              label: 'Profil incomplet'             },
+  { id: 'presence',            label: 'Présence activité'            },
+  { id: 'facture',             label: 'Facture'                      },
 ];
 const REMINDER_OPTIONS = [
   { value: 'off', label: 'Désactivé'      },
@@ -64,19 +78,21 @@ const REMINDER_OPTIONS = [
   { value: '15',  label: '15 jours avant' },
   { value: '7',   label: '7 jours avant'  },
 ];
-type ActiveFilters = { statut: string[]; cotisation: string[]; profil: string[]; mois: number[] };
-const EMPTY_FILTERS: ActiveFilters = { statut: [], cotisation: [], profil: [], mois: [] };
+type ActiveFilters = { statut: string[]; cotisation: string[]; cotisationAnnuelle: string[]; profil: string[]; mois: number[] };
+const EMPTY_FILTERS: ActiveFilters = { statut: [], cotisation: [], cotisationAnnuelle: [], profil: [], mois: [] };
 
 const TAB_LABELS: Record<string, string> = {
-  relance: 'Relance',
-  frais:   "Frais d'adhésion",
-  cauris:  'Gestion cauris',
-  cartes:  'Cartes membres',
+  relance:               'Relance',
+  frais:                 "Frais d'adhésion",
+  cauris:                'Gestion cauris',
+  cartes:                'Cartes membres',
+  'cotisation-annuelle': 'Cotisation annuelle',
 };
 
 /* ── Utilities ───────────────────────────────────────────── */
 const fmt     = (d: string)  => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 const fmtDate = (d?: string) => !d ? 'Jamais' : new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+const fmtNum  = (n: number)  => n.toLocaleString('fr-FR');
 function csvEscape(v: string | number | undefined | null): string {
   const s = v == null ? '' : String(v);
   if (s.includes('"') || s.includes(',') || s.includes('\n')) return `"${s.replace(/"/g,'""')}"`;
@@ -84,6 +100,100 @@ function csvEscape(v: string | number | undefined | null): string {
 }
 function toCardData(m: MemberListItem): MemberCardData {
   return { id: m.memberId, cardVerifyToken: m.cardVerifyToken, firstName: m.firstName, lastName: m.lastName, gender: m.gender, role: 'Membre actif', year: new Date().getFullYear(), photo: memberPhotoUrl(m) };
+}
+
+/* ── Cellule tranche (onglet Cotisation annuelle) ────────── */
+const TRANCHE_BADGE_CLS: Record<string, string> = {
+  unpaid: 'bg-red-50 text-red-600 border-red-100',
+  paid:   'bg-emerald-50 text-emerald-700 border-emerald-100',
+  exempt: 'bg-neutral-50 text-neutral-400 border-neutral-200',
+};
+
+function TrancheCell({ userId, year, index, tranche }: {
+  userId: string; year: number; index: number; tranche?: Tranche;
+}) {
+  const t = tranche ?? EMPTY_TRANCHE;
+  const [editing, setEditing]         = useState(!(t.amount > 0));
+  const [draftAmount, setDraftAmount] = useState(t.amount > 0 ? String(t.amount) : '');
+  const [draftDate, setDraftDate]     = useState(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
+  const updateTranche = useUpdateTranche();
+
+  useEffect(() => {
+    if (editing) return;
+    setDraftAmount(t.amount > 0 ? String(t.amount) : '');
+    setDraftDate(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t.amount, t.paidAt, t.status]);
+
+  const commitStatus = (status: 'unpaid' | 'paid' | 'exempt') => {
+    updateTranche.mutate({ userId, year, trancheIndex: index, amount: t.amount, status, paidAt: t.paidAt ?? undefined });
+  };
+
+  const validate = () => {
+    const amount = Math.max(0, Number(draftAmount) || 0);
+    updateTranche.mutate(
+      { userId, year, trancheIndex: index, amount, status: amount > 0 ? 'paid' : 'unpaid', paidAt: draftDate },
+      { onSuccess: () => setEditing(false) },
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-1 py-1" onClick={e => e.stopPropagation()}>
+      <div className="relative">
+        <select
+          value={t.status}
+          onChange={e => commitStatus(e.target.value as 'unpaid' | 'paid' | 'exempt')}
+          disabled={updateTranche.isPending}
+          className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center text-[8px] font-black outline-none ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
+        >
+          <option value="unpaid">Impayé</option>
+          <option value="paid">Payé</option>
+          <option value="exempt">Exempté</option>
+        </select>
+      </div>
+
+      {editing ? (
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-1">
+            <input
+              type="number" min={0} value={draftAmount}
+              onChange={e => setDraftAmount(e.target.value)}
+              placeholder="Montant"
+              className="w-14 min-w-0 rounded-md border border-neutral-200 px-1 py-0.5 text-[10px] outline-none focus:border-emerald-400"
+            />
+            <button type="button" onClick={validate} disabled={updateTranche.isPending} title="Valider"
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
+              <Check size={11} />
+            </button>
+            <button type="button" onClick={() => setEditing(false)} title="Annuler" disabled={!(t.amount > 0)}
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 transition hover:bg-red-100 hover:text-red-500 disabled:opacity-30">
+              <X size={11} />
+            </button>
+          </div>
+          <input
+            type="date" value={draftDate} onChange={e => setDraftDate(e.target.value)}
+            className="w-full rounded-md border border-neutral-200 px-1 py-0.5 text-[9px] outline-none focus:border-emerald-400"
+          />
+        </div>
+      ) : (
+        <button type="button" onClick={() => setEditing(true)}
+          className="truncate text-left font-mono text-[10px] font-black text-neutral-700 transition hover:text-emerald-700 hover:underline">
+          {fmtNum(t.amount)} F
+        </button>
+      )}
+    </div>
+  );
+}
+
+function DetteCell({ tranches, annualFee }: { tranches?: Tranche[]; annualFee: number }) {
+  const sumEntered = (tranches ?? DEFAULT_TRANCHES).reduce((acc, t) => acc + Number(t.amount || 0), 0);
+  const dette = Math.min(0, sumEntered - annualFee);
+  const cleared = dette >= 0;
+  return (
+    <span className={`font-mono text-xs font-black ${cleared ? 'text-emerald-600' : 'text-red-600'}`}>
+      {fmtNum(dette)} F
+    </span>
+  );
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -96,11 +206,16 @@ export default function AdminAdherentsPage() {
   const [relanceSub,     setRelanceSub]     = useState<RelanceSub>(null);
   const [selectedAct,    setSelectedAct]    = useState<ActivityDoc | null>(null);
   const [showActPicker,  setShowActPicker]  = useState(false);
-  const [cotisYear,      setCotisYear]      = useState(new Date().getFullYear());
+  const [cotisYear,         setCotisYear]         = useState(new Date().getFullYear());
+  const [cotisAnnuelleYear, setCotisAnnuelleYear] = useState(new Date().getFullYear());
   const [showFraisParams, setShowFraisParams] = useState(false);
   const [deadline,       setDeadline]       = useState('');
   const [reminder,       setReminder]       = useState('off');
   const [fraisSaved,     setFraisSaved]     = useState(false);
+  const [showCotAnnuelleParams, setShowCotAnnuelleParams] = useState(false);
+  const [cotAnnuelleDeadline, setCotAnnuelleDeadline] = useState('');
+  const [cotAnnuelleReminder, setCotAnnuelleReminder] = useState('off');
+  const [cotAnnuelleSaved,    setCotAnnuelleSaved]    = useState(false);
   const [caurisOp,       setCaurisOp]       = useState<'add' | 'remove'>('add');
   const [caurisAmt,      setCaurisAmt]      = useState('');
   const [caurisReason,   setCaurisReason]   = useState('');
@@ -130,23 +245,31 @@ export default function AdminAdherentsPage() {
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
 
   /* ── Data hooks ─────────────────────────────────────────── */
-  const { data, isLoading }      = useAdminMembers({ search: '', limit: 200 });
-  const { data: cotisData }      = useAdminCotisations(cotisYear);
-  const { data: activitiesData } = useActivities({ status: 'published' });
+  const { data, isLoading }            = useAdminMembers({ search: '', limit: 200 });
+  const { data: cotisData }            = useAdminCotisations(cotisYear);
+  const { data: cotisAnnuelleData }    = useAdminCotisationsAnnuelles(cotisAnnuelleYear);
+  const { data: activitiesData }       = useActivities({ status: 'published' });
   /* Fetch invitations only when presence relance is active + activity chosen */
   const { data: presenceInvitData } = useActivityInvitations(
     activeTab === 'relance' && relanceSub === 'presence' && selectedAct ? selectedAct._id : undefined,
   );
 
-  const members: MemberListItem[]       = useMemo(() => data?.data?.data ?? [], [data]);
-  const cotisRows: AdminCotisationRow[] = useMemo(() => cotisData?.data ?? [], [cotisData]);
-  const activities: ActivityDoc[]       = useMemo(() => activitiesData?.data?.activities ?? [], [activitiesData]);
+  const members: MemberListItem[]                       = useMemo(() => data?.data?.data ?? [], [data]);
+  const cotisRows: AdminCotisationRow[]                 = useMemo(() => cotisData?.data ?? [], [cotisData]);
+  const cotisAnnuelleRows: AdminCotisationAnnuelleRow[] = useMemo(() => cotisAnnuelleData?.data ?? [], [cotisAnnuelleData]);
+  const activities: ActivityDoc[]                       = useMemo(() => activitiesData?.data?.activities ?? [], [activitiesData]);
 
   const cotisStatusMap = useMemo(() => {
     const map = new Map<string, CotisationStatus>();
     cotisRows.forEach(r => map.set(String(r.user._id), r.cotisation.status));
     return map;
   }, [cotisRows]);
+
+  const cotisAnnuelleMap = useMemo(() => {
+    const map = new Map<string, AdminCotisationAnnuelleRow['cotisation']>();
+    cotisAnnuelleRows.forEach(r => map.set(String(r.user._id), r.cotisation));
+    return map;
+  }, [cotisAnnuelleRows]);
 
   /* IDs des membres avec invitation pending/unsure pour l'activité choisie */
   const pendingInviteeIds = useMemo(() => {
@@ -171,6 +294,7 @@ export default function AdminAdherentsPage() {
   const hardDelete       = useHardDeleteMember();
   const resendInvitation = useResendInvitation();
   const remindCotisation   = useSendReminders();
+  const remindCotisationAnnuelle = useSendCotisationAnnuelleReminders();
   const remindInvoice      = useSendUnpaidInvoiceRelance();
   const remindProfil       = useRemindIncompleteProfiles();
   const remindInscription  = useRemindPendingInscriptions();
@@ -217,14 +341,16 @@ export default function AdminAdherentsPage() {
       const matchSearch     = `${m.firstName} ${m.lastName} ${m.email} ${m.memberId}`.toLowerCase().includes(search.toLowerCase());
       const matchStatut     = filters.statut.length     === 0 || filters.statut.includes(m.memberStatus);
       const matchCotisation = filters.cotisation.length === 0 || filters.cotisation.includes(m.cotisationStatus);
+      const matchCotisationAnnuelle = filters.cotisationAnnuelle.length === 0 || filters.cotisationAnnuelle.includes(m.cotisationAnnuelleStatus);
       const matchProfil     = filters.profil.length     === 0 ||
         (filters.profil.includes('complete') && m.profileComplete) ||
         (filters.profil.includes('incomplete') && !m.profileComplete);
       const matchMois = filters.mois.length === 0 || filters.mois.includes(new Date(m.createdAt).getMonth());
-      return matchSearch && matchStatut && matchCotisation && matchProfil && matchMois;
+      return matchSearch && matchStatut && matchCotisation && matchCotisationAnnuelle && matchProfil && matchMois;
     });
     if (activeTab === 'relance') {
-      if (relanceSub === 'cotisation')  list = list.filter(m => m.cotisationStatus === 'unpaid');
+      if (relanceSub === 'cotisation')          list = list.filter(m => m.cotisationStatus === 'unpaid');
+      if (relanceSub === 'cotisation-annuelle') list = list.filter(m => m.cotisationAnnuelleStatus === 'unpaid');
       if (relanceSub === 'inscription') list = list.filter(m => m.memberStatus === 'pending');
       if (relanceSub === 'profil')      list = list.filter(m => !m.profileComplete);
       /* Présence : restreint aux seuls membres réellement invités (pending/unsure) à l'activité */
@@ -239,7 +365,7 @@ export default function AdminAdherentsPage() {
     return list;
   }, [members, search, filters, activeTab, relanceSub, selectedAct, pendingInviteeIds]);
 
-  const activeFilterCount = filters.statut.length + filters.cotisation.length + filters.profil.length + filters.mois.length;
+  const activeFilterCount = filters.statut.length + filters.cotisation.length + filters.cotisationAnnuelle.length + filters.profil.length + filters.mois.length;
 
   /* ── Helpers ────────────────────────────────────────────── */
   const toggleFilter = <K extends keyof ActiveFilters>(key: K, value: ActiveFilters[K][number]) => {
@@ -272,6 +398,7 @@ export default function AdminAdherentsPage() {
     setActiveTab(tab); setShowKpis(false); setCheckedIds(new Set()); setShowCheckboxes(false);
     if (tab !== 'relance') setRelanceSub(null);
     if (tab !== 'frais')   setShowFraisParams(false);
+    if (tab !== 'cotisation-annuelle') setShowCotAnnuelleParams(false);
   };
 
   /* ── Action handlers ────────────────────────────────────── */
@@ -286,7 +413,7 @@ export default function AdminAdherentsPage() {
   const handleSendRelance = () => {
     const ids = [...checkedIds];
     if (!ids.length) { toast.error('Sélectionnez au moins un membre.'); return; }
-    const typeLabels: Record<string, string> = { cotisation: 'de relance cotisation impayée', inscription: "d'invitation inscription", profil: 'de relance profil incomplet', facture: 'de relance facture', presence: 'de présence activité' };
+    const typeLabels: Record<string, string> = { cotisation: 'de relance cotisation impayée', 'cotisation-annuelle': 'de relance cotisation annuelle impayée', inscription: "d'invitation inscription", profil: 'de relance profil incomplet', facture: 'de relance facture', presence: 'de présence activité' };
     const label = relanceSub ? (typeLabels[relanceSub] ?? 'de relance') : 'de relance';
     setConfirmModal({
       title: "Confirmation d'envoi",
@@ -294,6 +421,7 @@ export default function AdminAdherentsPage() {
       onConfirm: async () => {
         try {
           if      (relanceSub === 'cotisation')               await remindCotisation.mutateAsync({ year: new Date().getFullYear(), userIds: ids });
+          else if (relanceSub === 'cotisation-annuelle')      await remindCotisationAnnuelle.mutateAsync({ year: cotisAnnuelleYear, userIds: ids });
           else if (relanceSub === 'inscription')               await remindInscription.mutateAsync({ userIds: ids });
           else if (relanceSub === 'facture')                  await remindInvoice.mutateAsync({ userIds: ids });
           else if (relanceSub === 'profil')                   await remindProfil.mutateAsync({ userIds: ids });
@@ -330,8 +458,8 @@ export default function AdminAdherentsPage() {
   };
 
   const exportToCSV = () => {
-    const headers = ['N° ID','Prénom','Nom','Email','Téléphone','Genre','Année promotionnaire','Statut','Cotisation','Dernière connexion','Date inscription'];
-    const rows = displayed.map(m => [csvEscape(m.memberId),csvEscape(m.firstName),csvEscape(m.lastName),csvEscape(m.email),csvEscape(m.phone??''),csvEscape(m.gender==='femme'?'Madame':m.gender==='homme'?'Monsieur':''),csvEscape(m.promotionYear),csvEscape(statusConfig[m.memberStatus]?.label??m.memberStatus),csvEscape(cotisationConfig[m.cotisationStatus]?.label??m.cotisationStatus),csvEscape(fmtDate(m.lastLoginAt)),csvEscape(fmt(m.createdAt))].join(','));
+    const headers = ['N° ID','Prénom','Nom','Email','Téléphone','Genre','Année promotionnaire','Statut',"Frais d'adhésion",'Cotisation annuelle','Reste à payer cotisation annuelle','Dernière connexion','Date inscription'];
+    const rows = displayed.map(m => [csvEscape(m.memberId),csvEscape(m.firstName),csvEscape(m.lastName),csvEscape(m.email),csvEscape(m.phone??''),csvEscape(m.gender==='femme'?'Madame':m.gender==='homme'?'Monsieur':''),csvEscape(m.promotionYear),csvEscape(statusConfig[m.memberStatus]?.label??m.memberStatus),csvEscape(cotisationConfig[m.cotisationStatus]?.label??m.cotisationStatus),csvEscape(cotisAnnuelleConfig[m.cotisationAnnuelleStatus]?.label??m.cotisationAnnuelleStatus),csvEscape(m.cotisationAnnuelleReste),csvEscape(fmtDate(m.lastLoginAt)),csvEscape(fmt(m.createdAt))].join(','));
     const csv  = [headers.join(','), ...rows].join('\n');
     const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
@@ -345,6 +473,7 @@ export default function AdminAdherentsPage() {
       frais:   { active: 'border-blue-500 bg-blue-600 text-white',           inactive: 'border-blue-300 bg-blue-50 text-blue-600 lg:bg-white',          desktop: 'lg:border-blue-300 lg:text-blue-600'      },
       cauris:  { active: 'border-amber-500 bg-amber-500 text-white',         inactive: 'border-amber-300 bg-amber-50 text-amber-600 lg:bg-white',       desktop: 'lg:border-amber-300 lg:text-amber-600'    },
       cartes:  { active: 'border-yellow-400 bg-yellow-400 text-neutral-900', inactive: 'border-yellow-300 bg-yellow-50 text-yellow-700 lg:bg-white',    desktop: 'lg:border-yellow-300 lg:text-yellow-700'  },
+      'cotisation-annuelle': { active: 'border-violet-500 bg-violet-600 text-white', inactive: 'border-violet-300 bg-violet-50 text-violet-600 lg:bg-white', desktop: 'lg:border-violet-300 lg:text-violet-600' },
     };
     const t = THEME[tab as string];
     if (!t) return '';
@@ -355,7 +484,7 @@ export default function AdminAdherentsPage() {
 
   /* Icon color when button is NOT active (inherits white when active from parent text-white) */
   const tabIconCls = (tab: ActiveTab): string => {
-    const ICON_CLR: Record<string, string> = { relance: 'text-orange-500', frais: 'text-blue-500', cauris: 'text-amber-500', cartes: 'text-yellow-500' };
+    const ICON_CLR: Record<string, string> = { relance: 'text-orange-500', frais: 'text-blue-500', cauris: 'text-amber-500', cartes: 'text-yellow-500', 'cotisation-annuelle': 'text-violet-500' };
     if (activeTab === tab) return ''; /* inherits text-white from button */
     return ICON_CLR[tab as string] ?? '';
   };
@@ -402,6 +531,15 @@ export default function AdminAdherentsPage() {
             <Banknote size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('frais')}`} />
             <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'frais' ? 'max-w-[130px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
               Frais d&apos;adhésion
+            </span>
+          </button>
+
+          {/* Cotisation annuelle */}
+          <button type="button" onClick={() => handleTabClick('cotisation-annuelle')}
+            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cotisation-annuelle')}`}>
+            <Wallet size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('cotisation-annuelle')}`} />
+            <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cotisation-annuelle' ? 'max-w-[150px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
+              Cotisation annuelle
             </span>
           </button>
 
@@ -563,6 +701,78 @@ export default function AdminAdherentsPage() {
                       disabled={remindCotisation.isPending}
                       className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-black text-orange-700 transition hover:bg-orange-100 disabled:opacity-50">
                       {remindCotisation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                      Relancer tous maintenant
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Cotisation annuelle row */}
+      <div className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${activeTab === 'cotisation-annuelle' ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+        <div className="space-y-3 rounded-2xl border border-violet-100 bg-violet-50/40 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="shrink-0 text-sm font-black text-violet-800">Cotisation annuelle</span>
+            <div className="relative">
+              <select value={cotisAnnuelleYear} onChange={e => setCotisAnnuelleYear(Number(e.target.value))}
+                className="h-8 appearance-none rounded-xl border border-violet-200 bg-white pl-3 pr-8 text-sm font-semibold text-neutral-700 focus:border-violet-400 focus:outline-none">
+                {YEARS_LIST.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <ChevronDown size={12} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+            </div>
+            {checkedIds.size > 0 && (
+              <button type="button"
+                onClick={() => setConfirmModal({ title: 'Relance cotisation annuelle', message: `Envoyer un email de relance cotisation annuelle à ${checkedIds.size} membre${checkedIds.size > 1 ? 's' : ''} ?`, onConfirm: () => remindCotisationAnnuelle.mutate({ year: cotisAnnuelleYear, userIds: [...checkedIds] }) })}
+                className="ml-auto inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-black text-orange-700 transition hover:bg-orange-100">
+                <Send size={12} /> Relancer sélection ({checkedIds.size})
+              </button>
+            )}
+          </div>
+          {/* Paramètres en accordéon */}
+          <div className="overflow-hidden rounded-xl border border-violet-100 bg-white">
+            <button type="button" onClick={() => setShowCotAnnuelleParams(v => !v)}
+              className="flex w-full items-center justify-between px-4 py-3 transition hover:bg-neutral-50/60">
+              <span className="text-sm font-black text-violet-800">Paramètres cotisation annuelle {cotisAnnuelleYear}</span>
+              <ChevronDown size={14} className={`text-neutral-400 transition-transform duration-200 ${showCotAnnuelleParams ? 'rotate-180' : ''}`} />
+            </button>
+            <div className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${showCotAnnuelleParams ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+              <div className="overflow-hidden">
+                <div className="space-y-3 border-t border-violet-50 px-4 pb-4 pt-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Date limite de paiement</label>
+                      <div className="relative">
+                        <CalendarDays size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                        <input type="date" value={cotAnnuelleDeadline} onChange={e => setCotAnnuelleDeadline(e.target.value)}
+                          className="w-full rounded-xl border border-neutral-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-violet-400 focus:outline-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Relances auto</label>
+                      <div className="relative">
+                        <Bell size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                        <select value={cotAnnuelleReminder} onChange={e => { setCotAnnuelleReminder(e.target.value); setCotAnnuelleSaved(false); }}
+                          className="w-full appearance-none rounded-xl border border-neutral-200 bg-white py-2 pl-8 pr-8 text-sm focus:border-violet-400 focus:outline-none">
+                          {REMINDER_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                        <ChevronDown size={12} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button type="button"
+                      onClick={() => { setCotAnnuelleSaved(true); setTimeout(() => setCotAnnuelleSaved(false), 2500); }}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-3 py-2 text-xs font-black text-white transition hover:bg-violet-700">
+                      {cotAnnuelleSaved ? '✓ Enregistré' : 'Enregistrer les paramètres'}
+                    </button>
+                    <button type="button"
+                      onClick={() => setConfirmModal({ title: 'Relancer tous', message: `Envoyer un email de relance cotisation annuelle à TOUS les membres non payés pour ${cotisAnnuelleYear} ?`, onConfirm: () => remindCotisationAnnuelle.mutate({ year: cotisAnnuelleYear, dueDate: cotAnnuelleDeadline || undefined }) })}
+                      disabled={remindCotisationAnnuelle.isPending}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-black text-orange-700 transition hover:bg-orange-100 disabled:opacity-50">
+                      {remindCotisationAnnuelle.isPending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
                       Relancer tous maintenant
                     </button>
                   </div>
@@ -759,6 +969,46 @@ export default function AdminAdherentsPage() {
                     );
                   })()}
 
+                  {/* ── Cotisation annuelle ──────────────────────── */}
+                  {(() => {
+                    const open = openFilterSections.has('cotisationAnnuelle');
+                    const toggle = () => setOpenFilterSections(prev => { const n = new Set(prev); open ? n.delete('cotisationAnnuelle') : n.add('cotisationAnnuelle'); return n; });
+                    return (
+                      <div>
+                        <button type="button" onClick={toggle}
+                          className="flex w-full items-center justify-between px-4 py-2.5 transition hover:bg-neutral-50/70">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Cotisation annuelle</span>
+                            {filters.cotisationAnnuelle.length > 0 && (
+                              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-500 px-1 text-[9px] font-black text-white">
+                                {filters.cotisationAnnuelle.length}
+                              </span>
+                            )}
+                          </div>
+                          <ChevronDown size={12} className={`text-neutral-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                        </button>
+                        <div className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                          <div className="overflow-hidden">
+                            <div className="space-y-1 px-4 pb-3 pt-1">
+                              {([['paid','Payée'],['partiel','Partiel'],['unpaid','Impayée'],['exempt','Exempté']] as const).map(([val,lbl]) => {
+                                const checked = filters.cotisationAnnuelle.includes(val); const cfg = cotisAnnuelleConfig[val];
+                                return (
+                                  <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-violet-200 bg-violet-50' : 'border-transparent hover:bg-neutral-50'}`}>
+                                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-violet-600 bg-violet-600' : 'border-neutral-300 bg-white'}`}>
+                                      {checked && <CheckCircle2 size={10} className="text-white" />}
+                                    </span>
+                                    <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('cotisationAnnuelle', val)} />
+                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${cfg.cls}`}>{lbl}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* ── Profil ──────────────────────────────────── */}
                   {(() => {
                     const open = openFilterSections.has('profil');
@@ -854,6 +1104,7 @@ export default function AdminAdherentsPage() {
             <div className="flex flex-wrap gap-1">
               {filters.statut.map(v => <button key={v} type="button" onClick={() => toggleFilter('statut',v)} className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700 hover:bg-emerald-100">{statusConfig[v]?.label} <X size={9} /></button>)}
               {filters.cotisation.map(v => <button key={v} type="button" onClick={() => toggleFilter('cotisation',v)} className="flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700 hover:bg-blue-100">{cotisationConfig[v]?.label} <X size={9} /></button>)}
+              {filters.cotisationAnnuelle.map(v => <button key={v} type="button" onClick={() => toggleFilter('cotisationAnnuelle',v)} className="flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-black text-violet-700 hover:bg-violet-100">{cotisAnnuelleConfig[v]?.label} <X size={9} /></button>)}
               {filters.profil.map(v => <button key={v} type="button" onClick={() => toggleFilter('profil',v)} className="flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-black text-violet-700 hover:bg-violet-100">Profil {v==='complete'?'complet':'incomplet'} <X size={9} /></button>)}
               {filters.mois.map(idx => <button key={idx} type="button" onClick={() => toggleFilter('mois',idx)} className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-black text-amber-700 hover:bg-amber-100">{MONTHS_FR[idx]} <X size={9} /></button>)}
             </div>
@@ -967,13 +1218,23 @@ export default function AdminAdherentsPage() {
 
               {/* ── Desktop table ──────────────────────────────── */}
               <div className="hidden lg:block">
+                {(() => { const isTrancheTab = activeTab === 'cotisation-annuelle'; return (
                 <table className="w-full table-fixed text-[11px]">
-                  <colgroup>
-                    <col className="w-[4%]" /><col className="w-[15%]" /><col className="w-[7%]" />
-                    <col className="w-[14%]" /><col className="w-[8%]" /><col className="w-[7%]" />
-                    <col className="w-[7%]" /><col className="w-[7%]" /><col className="w-[8%]" />
-                    <col className="w-[9%]" /><col className="w-[9%]" />
-                  </colgroup>
+                  {isTrancheTab ? (
+                    <colgroup>
+                      <col className="w-[3%]" /><col className="w-[14%]" /><col className="w-[6%]" />
+                      <col className="w-[13%]" /><col className="w-[6%]" /><col className="w-[8%]" />
+                      <col className="w-[8%]" /><col className="w-[8%]" /><col className="w-[8%]" />
+                      <col className="w-[10%]" />
+                    </colgroup>
+                  ) : (
+                    <colgroup>
+                      <col className="w-[3%]" /><col className="w-[13%]" /><col className="w-[6%]" />
+                      <col className="w-[11%]" /><col className="w-[6%]" /><col className="w-[6%]" />
+                      <col className="w-[7%]" /><col className="w-[7%]" /><col className="w-[7%]" />
+                      <col className="w-[6%]" /><col className="w-[7%]" /><col className="w-[7%]" />
+                    </colgroup>
+                  )}
                   <thead>
                     <tr className="border-b border-neutral-100 bg-neutral-50/60">
                       <th className="px-2 py-3">
@@ -983,11 +1244,25 @@ export default function AdminAdherentsPage() {
                       <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">N° ID</th>
                       <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Email</th>
                       <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Tél.</th>
-                      <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Statut</th>
-                      <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Cotis.</th>
-                      <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Profil</th>
-                      <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Conn.</th>
-                      <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Inscr.</th>
+                      {isTrancheTab ? (
+                        <>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Tranche 1</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Tranche 2</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Tranche 3</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Tranche 4</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Dette totale</th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Statut</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Frais d&apos;adh.</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Cotis. annuelle</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Reste à payer</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Profil</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Dern. connexion</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Date inscr.</th>
+                        </>
+                      )}
                       <th className="px-3 py-3" />
                     </tr>
                   </thead>
@@ -997,6 +1272,8 @@ export default function AdminAdherentsPage() {
                       const SI = s.icon;
                       const cotisSts = activeTab === 'frais' ? (cotisStatusMap.get(m._id) ?? m.cotisationStatus) : m.cotisationStatus;
                       const c        = cotisationConfig[cotisSts] ?? cotisationConfig.unpaid;
+                      const cAnnuelle    = cotisAnnuelleConfig[m.cotisationAnnuelleStatus] ?? cotisAnnuelleConfig.unpaid;
+                      const annuelleData = cotisAnnuelleMap.get(m._id);
                       const isConfirming = confirmDeleteId === m._id;
                       const photoUrl     = memberPhotoUrl(m);
                       const isChecked    = checkedIds.has(m._id);
@@ -1025,30 +1302,51 @@ export default function AdminAdherentsPage() {
                           <td className="px-2 py-3"><span className="font-mono text-[10px] text-neutral-500">{m.memberId}</span></td>
                           <td className="truncate px-2 py-3 text-[10px] text-neutral-500">{m.email}</td>
                           <td className="truncate px-2 py-3 text-[10px] text-neutral-500">{m.phone ?? <span className="text-neutral-300">—</span>}</td>
-                          <td className="px-2 py-3">
-                            <span className={`inline-flex max-w-full items-center gap-0.5 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[8px] font-black leading-none ${s.cls}`}>
-                              <SI size={8} /><span className="truncate">{s.label}</span>
-                            </span>
-                          </td>
-                          <td className="px-2 py-3">
-                            {activeTab === 'frais' ? (
-                              <select value={cotisSts} onChange={e => handleCotisChange(m._id, e.target.value as CotisationStatus)} onClick={e => e.stopPropagation()}
-                                className={`cursor-pointer appearance-none rounded-lg px-1.5 py-0.5 text-[8px] font-black focus:outline-none ${c.cls}`}>
-                                <option value="unpaid">Impayée</option>
-                                <option value="paid">Payée</option>
-                                <option value="exempt">Exempté</option>
-                              </select>
-                            ) : (
-                              <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8px] font-black leading-none ${c.cls}`}>{c.label}</span>
-                            )}
-                          </td>
-                          <td className="px-2 py-3">
-                            <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[8px] font-black leading-none ${m.profileComplete ? profileConfig.complete.cls : profileConfig.incomplete.cls}`}>
-                              {m.profileComplete ? profileConfig.complete.label : profileConfig.incomplete.label}
-                            </span>
-                          </td>
-                          <td className="truncate px-2 py-3 text-[10px] text-neutral-400">{fmtDate(m.lastLoginAt)}</td>
-                          <td className="truncate px-2 py-3 text-[10px] text-neutral-400">{fmt(m.createdAt)}</td>
+                          {isTrancheTab ? (
+                            <>
+                              {[0, 1, 2, 3].map(i => (
+                                <td key={i} className="px-1.5 py-1 align-top">
+                                  <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} />
+                                </td>
+                              ))}
+                              <td className="px-2 py-3 align-top">
+                                <DetteCell tranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} />
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="px-2 py-3">
+                                <span className={`inline-flex max-w-full items-center gap-0.5 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[8px] font-black leading-none ${s.cls}`}>
+                                  <SI size={8} /><span className="truncate">{s.label}</span>
+                                </span>
+                              </td>
+                              <td className="px-2 py-3">
+                                {activeTab === 'frais' ? (
+                                  <select value={cotisSts} onChange={e => handleCotisChange(m._id, e.target.value as CotisationStatus)} onClick={e => e.stopPropagation()}
+                                    className={`cursor-pointer appearance-none rounded-lg px-1.5 py-0.5 text-[8px] font-black focus:outline-none ${c.cls}`}>
+                                    <option value="unpaid">Impayée</option>
+                                    <option value="paid">Payée</option>
+                                    <option value="exempt">Exempté</option>
+                                  </select>
+                                ) : (
+                                  <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8px] font-black leading-none ${c.cls}`}>{c.label}</span>
+                                )}
+                              </td>
+                              <td className="px-2 py-3">
+                                <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8px] font-black leading-none ${cAnnuelle.cls}`}>{cAnnuelle.label}</span>
+                              </td>
+                              <td className="px-2 py-3">
+                                <span className={`font-mono text-[10px] font-black ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</span>
+                              </td>
+                              <td className="px-2 py-3">
+                                <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[8px] font-black leading-none ${m.profileComplete ? profileConfig.complete.cls : profileConfig.incomplete.cls}`}>
+                                  {m.profileComplete ? profileConfig.complete.label : profileConfig.incomplete.label}
+                                </span>
+                              </td>
+                              <td className="truncate px-2 py-3 text-[10px] text-neutral-400">{fmtDate(m.lastLoginAt)}</td>
+                              <td className="truncate px-2 py-3 text-[10px] text-neutral-400">{fmt(m.createdAt)}</td>
+                            </>
+                          )}
                           <td className="px-3 py-3">
                             <div className="flex items-center justify-end gap-1.5">
                               {m.memberStatus === 'pending' && (
@@ -1071,6 +1369,7 @@ export default function AdminAdherentsPage() {
                     })}
                   </tbody>
                 </table>
+                ); })()}
               </div>
 
               {/* ── Mobile header + cards ──────────────────────── */}
@@ -1093,6 +1392,8 @@ export default function AdminAdherentsPage() {
                     const s  = statusConfig[m.memberStatus] ?? statusConfig.pending;
                     const SI = s.icon;
                     const c  = cotisationConfig[m.cotisationStatus] ?? cotisationConfig.unpaid;
+                    const cAnnuelle    = cotisAnnuelleConfig[m.cotisationAnnuelleStatus] ?? cotisAnnuelleConfig.unpaid;
+                    const annuelleData = cotisAnnuelleMap.get(m._id);
                     const isConfirming = confirmDeleteId === m._id;
                     const isExpanded   = expandedId === m._id;
                     const photoUrl     = memberPhotoUrl(m);
@@ -1140,6 +1441,7 @@ export default function AdminAdherentsPage() {
                             <div className="flex shrink-0 flex-col items-end gap-1">
                               <span className={`inline-flex items-center gap-0.5 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[7px] font-black leading-none ${s.cls}`}><SI size={7} /> {s.label}</span>
                               <span className={`inline-flex whitespace-nowrap rounded-full px-1.5 py-0.5 text-[7px] font-black leading-none ${c.cls}`}>{c.label}</span>
+                              <span className={`inline-flex whitespace-nowrap rounded-full px-1.5 py-0.5 text-[7px] font-black leading-none ${cAnnuelle.cls}`}>{cAnnuelle.label}</span>
                               <span className={`inline-flex whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[7px] font-black leading-none ${m.profileComplete ? profileConfig.complete.cls : profileConfig.incomplete.cls}`}>{m.profileComplete ? 'Complet' : 'Incomplet'}</span>
                             </div>
                             <ChevronDown size={13} className={`shrink-0 text-neutral-300 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-emerald-600' : ''}`} />
@@ -1159,10 +1461,27 @@ export default function AdminAdherentsPage() {
                                   </div>
                                 </div>
                               )}
+                              {activeTab === 'cotisation-annuelle' && (
+                                <div className="mb-2.5 space-y-2">
+                                  <div className="grid grid-cols-2 gap-1.5">
+                                    {[0, 1, 2, 3].map(i => (
+                                      <div key={i} className="rounded-xl border border-violet-100 bg-white p-1.5">
+                                        <p className="mb-0.5 text-[8px] font-black uppercase tracking-[0.1em] text-violet-400">Tranche {i + 1}</p>
+                                        <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} />
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="flex items-center justify-between rounded-xl border border-violet-100 bg-violet-50/60 px-3 py-2">
+                                    <span className="text-[9px] font-black uppercase tracking-[0.1em] text-violet-500">Dette totale</span>
+                                    <DetteCell tranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} />
+                                  </div>
+                                </div>
+                              )}
                               <div className="grid grid-cols-2 gap-2 text-[9px] text-neutral-500">
                                 <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Téléphone</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{m.phone ?? 'Non renseigné'}</p></div>
                                 <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Connexion</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{fmtDate(m.lastLoginAt)}</p></div>
                                 <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Inscription</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{fmt(m.createdAt)}</p></div>
+                                <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Reste cot. annuelle</p><p className={`mt-0.5 truncate font-semibold ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</p></div>
                                 <div>
                                   <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Actions</p>
                                   <div className="mt-1 flex items-center gap-1">

@@ -4,7 +4,14 @@ import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
 import type { AuditLogDoc } from './audit-logs';
 
-export type CotisationAnnuelleStatus = 'unpaid' | 'paid' | 'exempt';
+export type CotisationAnnuelleStatus = 'unpaid' | 'partiel' | 'paid' | 'exempt';
+
+export interface Tranche {
+  amount: number;
+  status: 'unpaid' | 'paid' | 'exempt';
+  paidAt?: string | null;
+  reference?: string | null;
+}
 
 export interface CotisationAnnuelleDoc {
   _id: string;
@@ -15,6 +22,8 @@ export interface CotisationAnnuelleDoc {
   paidAt?: string;
   reference?: string;
   notes?: string;
+  tranches?: Tranche[];
+  totalPaid?: number;
 }
 
 export interface AdminCotisationAnnuelleRow {
@@ -37,6 +46,8 @@ export interface AdminCotisationAnnuelleRow {
     paidAt?: string;
     reference?: string;
     notes?: string;
+    tranches?: Tranche[];
+    totalPaid?: number;
   };
 }
 
@@ -171,6 +182,41 @@ export function useCotisationAnnuelleLogs() {
         token: token ?? '',
       }),
     enabled: !!token,
+  });
+}
+
+export function useUpdateTranche() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      userId: string;
+      year: number;
+      trancheIndex: number;
+      amount: number;
+      paidAt?: string;
+      status?: 'unpaid' | 'paid' | 'exempt';
+      reference?: string;
+    }) =>
+      apiClient<CotisationAnnuelleDoc & { invoiceWarning?: string | null }>(
+        `/api/v1/admin/cotisations-annuelles/${vars.userId}/tranche/${vars.trancheIndex}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ year: vars.year, amount: vars.amount, paidAt: vars.paidAt, status: vars.status, reference: vars.reference }),
+          token: token ?? '',
+        },
+      ),
+    onSuccess: (res, vars) => {
+      qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles', vars.year] });
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      if ((res as any).invoiceWarning) {
+        toast.warning((res as any).invoiceWarning);
+      } else {
+        toast.success('Tranche mise à jour');
+      }
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 }
 

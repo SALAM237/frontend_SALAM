@@ -29,6 +29,7 @@ export interface InvoiceDoc {
   _id: string;
   invoiceNumber: string;
   type: string;
+  isExempt?: boolean;
   title: string;
   description?: string;
   amount: number;
@@ -74,7 +75,8 @@ export function useCreateInvoice() {
   return useMutation({
     mutationFn: (body: {
       title: string;
-      type?: 'cotisation' | 'event' | 'other';
+      type?: 'cotisation' | 'cotisation_annuelle' | 'event' | 'other' | 'avoir';
+      isExempt?: boolean;
       description?: string;
       amount: number;
       dueDate: string;
@@ -91,6 +93,8 @@ export function useCreateInvoice() {
       qc.invalidateQueries({ queryKey: ['admin-invoices'] });
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
       toast.success((res as any).message ?? 'Facture créée');
     },
     onError: (err: Error) => toast.error(err.message),

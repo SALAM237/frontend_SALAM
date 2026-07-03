@@ -1,16 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2, XCircle, ShieldOff, Download, X } from 'lucide-react';
+import { CheckCircle2, XCircle, ShieldOff, Clock, Download, X } from 'lucide-react';
 import { useMemberCotisationsAnnuelles, type CotisationAnnuelleDoc, type CotisationAnnuelleStatus } from '@/lib/api/cotisations-annuelles';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName } from '@/lib/format-name';
 
 /* ─── Status config ──────────────────────────────────────── */
 const STATUS_CFG: Record<CotisationAnnuelleStatus, { badge: string; label: string; icon: React.ReactNode; dot: string }> = {
-  paid:   { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',        label: 'Payé',     icon: <CheckCircle2 size={12} />, dot: 'bg-emerald-500' },
-  unpaid: { badge: 'bg-red-50 text-red-700 border-red-200',                    label: 'Non payé', icon: <XCircle size={12} />,      dot: 'bg-red-500'     },
-  exempt: { badge: 'bg-emerald-950/10 text-emerald-900 border-emerald-900/25', label: 'Exempté',  icon: <ShieldOff size={12} />,    dot: 'bg-emerald-900' },
+  paid:    { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',        label: 'Payé',      icon: <CheckCircle2 size={12} />, dot: 'bg-emerald-500' },
+  partiel: { badge: 'bg-orange-50 text-orange-600 border-orange-200',          label: 'Partiel',   icon: <Clock size={12} />,        dot: 'bg-orange-500'  },
+  unpaid:  { badge: 'bg-red-50 text-red-700 border-red-200',                    label: 'Non payé',  icon: <XCircle size={12} />,      dot: 'bg-red-500'     },
+  exempt:  { badge: 'bg-emerald-950/10 text-emerald-900 border-emerald-900/25', label: 'Exempté',   icon: <ShieldOff size={12} />,    dot: 'bg-emerald-900' },
 };
 
 function fmt(dateStr?: string | null) {
@@ -120,7 +121,7 @@ function ReceiptModal({ cot, user, onClose }: {
 
 /* ─── Page principale ─────────────────────────────────────── */
 
-export default function MemberCotisationsAnnuellesPage() {
+export function MemberCotisationsAnnuelleContent() {
   const [openReceipt, setOpenReceipt] = useState<CotisationAnnuelleDoc | null>(null);
   const [filter,      setFilter]      = useState<CotisationAnnuelleStatus | 'all'>('all');
 
@@ -141,10 +142,11 @@ export default function MemberCotisationsAnnuellesPage() {
       {/* Filter */}
       <div className="flex gap-1.5 flex-wrap">
         {([
-          { value: 'all',    label: 'Toutes'     },
-          { value: 'paid',   label: 'Payées'     },
-          { value: 'unpaid', label: 'Non payées' },
-          { value: 'exempt', label: 'Exemptées'  },
+          { value: 'all',     label: 'Toutes'     },
+          { value: 'paid',    label: 'Payées'     },
+          { value: 'partiel', label: 'Partielles' },
+          { value: 'unpaid',  label: 'Non payées' },
+          { value: 'exempt',  label: 'Exemptées'  },
         ] as { value: CotisationAnnuelleStatus | 'all'; label: string }[]).map(f => (
           <button key={f.value} onClick={() => setFilter(f.value)}
             className={`rounded-full px-2.5 py-0.5 text-[11px] font-black transition sm:px-4 sm:py-1.5 sm:text-xs ${
@@ -187,6 +189,11 @@ export default function MemberCotisationsAnnuellesPage() {
                 <p className="font-black text-sm text-neutral-900">Cotisation annuelle {cot.year}</p>
                 {cot.status === 'paid' && cot.paidAt && (
                   <p className="text-xs text-neutral-500 mt-0.5">Payé le {fmt(cot.paidAt)}</p>
+                )}
+                {cot.status === 'partiel' && (
+                  <p className="text-xs text-orange-600 mt-0.5 font-semibold">
+                    {(cot.totalPaid ?? 0).toLocaleString('fr-FR')} F.CFA versés sur {cot.amount.toLocaleString('fr-FR')} F.CFA
+                  </p>
                 )}
                 {cot.status === 'unpaid' && (
                   <p className="text-xs text-red-500 mt-0.5 font-semibold">En attente de paiement</p>
@@ -236,4 +243,8 @@ export default function MemberCotisationsAnnuellesPage() {
       )}
     </div>
   );
+}
+
+export default function MemberCotisationsAnnuellesPage() {
+  return <MemberCotisationsAnnuelleContent />;
 }

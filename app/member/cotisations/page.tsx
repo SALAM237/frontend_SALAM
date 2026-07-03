@@ -5,6 +5,7 @@ import { CheckCircle2, XCircle, ShieldOff, Download, X, Loader2 } from 'lucide-r
 import { useMemberCotisations, type CotisationDoc, type CotisationStatus } from '@/lib/api/cotisations';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName } from '@/lib/format-name';
+import { MemberCotisationsAnnuelleContent } from '@/app/member/cotisations-annuelles/page';
 
 /* ─── Status config ──────────────────────────────────────── */
 const STATUS_CFG: Record<CotisationStatus, { badge: string; label: string; icon: React.ReactNode; dot: string }> = {
@@ -121,6 +122,7 @@ function ReceiptModal({ cot, user, onClose }: {
 /* ─── Page principale ─────────────────────────────────────── */
 
 export default function MemberCotisationsPage() {
+  const [tab,          setTab]          = useState<'frais' | 'annuelle'>('frais');
   const [openReceipt, setOpenReceipt] = useState<CotisationDoc | null>(null);
   const [filter,      setFilter]      = useState<CotisationStatus | 'all'>('all');
 
@@ -135,8 +137,22 @@ export default function MemberCotisationsPage() {
 
       <div>
         <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Mes cotisations</h1>
-        <p className="mt-1 text-sm text-neutral-500">Historique de vos frais d&apos;adhésion annuels.</p>
+        <p className="mt-1 text-sm text-neutral-500">Frais d&apos;adhésion et cotisation annuelle.</p>
       </div>
+
+      {/* Onglets */}
+      <div className="flex gap-1.5 rounded-2xl border border-neutral-100 bg-neutral-50/70 p-1.5">
+        <button onClick={() => setTab('frais')}
+          className={`flex-1 rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${tab === 'frais' ? 'bg-white text-emerald-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>
+          Frais d&apos;adhésion
+        </button>
+        <button onClick={() => setTab('annuelle')}
+          className={`flex-1 rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${tab === 'annuelle' ? 'bg-white text-violet-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>
+          Cotisation annuelle
+        </button>
+      </div>
+
+      {tab === 'annuelle' ? <MemberCotisationsAnnuelleContent /> : <>
 
       {/* Filter */}
       <div className="flex gap-1.5 flex-wrap">
@@ -234,6 +250,7 @@ export default function MemberCotisationsPage() {
           onClose={() => setOpenReceipt(null)}
         />
       )}
+      </>}
     </div>
   );
 }
