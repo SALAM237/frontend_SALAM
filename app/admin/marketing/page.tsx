@@ -22,6 +22,7 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState('🎁 Offre spéciale SALAM — Cadeau exclusif');
   const [giftName, setGiftName] = useState('15 000 Cauris');
   const [packageCount, setPackageCount] = useState(0);
+  const [cauriAmount, setCauriAmount] = useState(15000);
   const [deadline, setDeadline] = useState('2026-07-20');
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [memberSearch, setMemberSearch] = useState('');
@@ -78,6 +79,7 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
         title: title.trim(),
         giftName: giftName.trim(),
         packageCount: Math.max(0, Number(packageCount ?? 0)),
+        cauriAmount: Math.max(1, Number(cauriAmount ?? 0)),
         deadline: new Date(deadline).toISOString(),
         imageUrl,
         recipientIds: selected,
@@ -120,6 +122,15 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
               <input type="number" min={0} value={packageCount} onChange={e => setPackageCount(Number(e.target.value))}
                 className="h-11 w-full rounded-xl border border-neutral-200 px-3.5 text-sm outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-500/20" />
             </div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Cauris à créditer automatiquement</label>
+            <input type="number" min={1} value={cauriAmount} onChange={e => setCauriAmount(Number(e.target.value))}
+              className="h-11 w-full rounded-xl border border-neutral-200 px-3.5 text-sm outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-500/20" />
+            <p className="mt-1 text-[11px] text-neutral-400">
+              Crédité automatiquement dès qu&apos;un destinataire est inscrit ET a un profil complet à 100%, avant la date limite. Historique cauris : «&nbsp;Cadeau promotion &quot;Inscription et profil complet&quot;&nbsp;».
+            </p>
           </div>
 
           <div>
@@ -192,6 +203,7 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
 }
 
 function CampaignHistoryRow({ campaign }: { campaign: CampaignDoc }) {
+  const creditedNow = campaign.recipients.filter(r => r.giftCreditedImmediately).length;
   return (
     <div className="flex items-center gap-4 px-5 py-4">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 border border-rose-100">
@@ -200,8 +212,11 @@ function CampaignHistoryRow({ campaign }: { campaign: CampaignDoc }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-black text-neutral-900">{campaign.title}</p>
         <p className="mt-0.5 text-[11px] text-neutral-400">
-          {campaign.giftName} · Échéance {fmt(campaign.deadline)} · {campaign.recipients.length} destinataire{campaign.recipients.length > 1 ? 's' : ''}
+          {campaign.giftName} ({campaign.cauriAmount.toLocaleString('fr-FR')} cauris) · Échéance {fmt(campaign.deadline)} · {campaign.recipients.length} destinataire{campaign.recipients.length > 1 ? 's' : ''}
         </p>
+        {creditedNow > 0 && (
+          <p className="mt-0.5 text-[11px] font-semibold text-emerald-600">{creditedNow} déjà crédité{creditedNow > 1 ? 's' : ''} immédiatement</p>
+        )}
       </div>
       <div className="shrink-0 text-right">
         <p className="text-sm font-black text-emerald-700">{campaign.sentCount} envoyé{campaign.sentCount > 1 ? 's' : ''}</p>

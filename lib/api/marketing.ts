@@ -8,6 +8,10 @@ export interface CampaignRecipientDoc {
   email: string;
   status: 'sent' | 'failed';
   reason?: string;
+  /* true si ce destinataire remplissait déjà les 2 conditions (inscrit + profil
+     complet) au moment de l'envoi — il a reçu directement le mail de
+     confirmation de crédit plutôt que le mail d'invitation. */
+  giftCreditedImmediately?: boolean;
 }
 
 export interface CampaignDoc {
@@ -16,6 +20,9 @@ export interface CampaignDoc {
   title: string;
   giftName: string;
   packageCount: number;
+  /* Montant de cauris crédité automatiquement dès que le membre remplit les 2
+     conditions (inscrit + profil complet) avant la date limite. */
+  cauriAmount: number;
   deadline: string;
   imageUrl?: string;
   recipients: CampaignRecipientDoc[];
@@ -43,6 +50,7 @@ export function useCreateCampaign() {
       title: string;
       giftName: string;
       packageCount: number;
+      cauriAmount: number;
       deadline: string;
       imageUrl?: string;
       recipientIds: string[];
