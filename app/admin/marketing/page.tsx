@@ -406,7 +406,7 @@ export default function AdminMarketingPage() {
             <span className="text-xs font-semibold text-rose-600/80">Invitez les membres à finaliser leur profil pour bénéficier d&apos;un cadeau exclusif.</span>
           </button>
 
-          <div className="grid items-start gap-3 sm:grid-cols-2">
+          <div className="grid items-start gap-3 sm:grid-cols-[1.7fr_1fr]">
             <div>
               <h2 className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-neutral-500">Historique des campagnes</h2>
               <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">

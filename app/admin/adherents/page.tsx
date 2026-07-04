@@ -1223,8 +1223,8 @@ export default function AdminAdherentsPage() {
               { label: 'Total membres',         value: kpis.total,   cls: 'text-neutral-800', bg: 'bg-white border-neutral-100',          Icon: Users         },
               { label: 'Cotis. impayée',         value: kpis.unpaid,  cls: 'text-red-700',     bg: 'bg-red-50 border-red-100',             Icon: AlertTriangle },
               { label: 'Cotis. payée',           value: kpis.paid,    cls: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100',     Icon: CheckCircle2  },
-              { label: 'En attente Inscription', value: kpis.pending, cls: 'text-yellow-700',  bg: 'bg-yellow-50 border-yellow-100',       Icon: Clock         },
-              { label: 'Actifs',                 value: kpis.active,  cls: 'text-emerald-700', bg: 'bg-emerald-50/60 border-emerald-100',  Icon: CheckCircle2  },
+              { label: 'Inscription en attente', value: kpis.pending, cls: 'text-yellow-700',  bg: 'bg-yellow-50 border-yellow-100',       Icon: Clock         },
+              { label: 'Inscrits',               value: kpis.active,  cls: 'text-emerald-700', bg: 'bg-emerald-50/60 border-emerald-100',  Icon: CheckCircle2  },
               { label: 'Exempté',                value: kpis.exempt,  cls: 'text-neutral-500', bg: 'bg-neutral-50 border-neutral-200',     Icon: XCircle       },
             ].map(({ label, value, cls, bg, Icon }) => (
               <div key={label} className={`rounded-2xl border p-3 shadow-sm ${bg}`}>
@@ -1297,7 +1297,7 @@ export default function AdminAdherentsPage() {
                         <div className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                           <div className="overflow-hidden">
                             <div className="space-y-1 px-4 pb-3 pt-1">
-                              {([['active','Actif'],['pending','En attente'],['suspended','Suspendu']] as const).map(([val,lbl]) => {
+                              {(['active','pending','suspended','rejected'] as const).map((val) => {
                                 const checked = filters.statut.includes(val); const cfg = statusConfig[val];
                                 return (
                                   <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-emerald-200 bg-emerald-50' : 'border-transparent hover:bg-neutral-50'}`}>
@@ -1305,7 +1305,9 @@ export default function AdminAdherentsPage() {
                                       {checked && <CheckCircle2 size={10} className="text-white" />}
                                     </span>
                                     <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('statut', val)} />
-                                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${cfg.cls}`}><cfg.icon size={9} /> {lbl}</span>
+                                    {/* Labels tirés directement de statusConfig — jamais dupliqués en dur ici,
+                                        sinon ce filtre redevient périmé dès que statusConfig change ailleurs. */}
+                                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${cfg.cls}`}><cfg.icon size={9} /> {cfg.label}</span>
                                   </label>
                                 );
                               })}

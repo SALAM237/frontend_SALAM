@@ -83,10 +83,10 @@ function triggerErrorFeedback() {
 }
 function StatusBadge({ status }: { status: ScannedMember['memberStatus'] }) {
   const m: Record<string, { l: string; c: string }> = {
-    active:    { l: 'Actif',      c: 'bg-emerald-100 text-emerald-700' },
-    pending:   { l: 'En attente', c: 'bg-yellow-100  text-yellow-700'  },
-    suspended: { l: 'Suspendu',   c: 'bg-red-100     text-red-700'     },
-    rejected:  { l: 'Rejeté',     c: 'bg-neutral-100 text-neutral-500' },
+    active:    { l: 'Inscrit',                c: 'bg-emerald-100 text-emerald-700' },
+    pending:   { l: 'Inscription en attente', c: 'bg-yellow-100  text-yellow-700'  },
+    suspended: { l: 'Suspendu',               c: 'bg-red-100     text-red-700'     },
+    rejected:  { l: 'Refusé',                 c: 'bg-neutral-100 text-neutral-500' },
   };
   const s = m[status] ?? m.rejected;
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${s.c}`}>{s.l}</span>;

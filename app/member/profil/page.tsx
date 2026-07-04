@@ -298,6 +298,28 @@ export default function ProfilPage() {
 
   const initials = formatInitials(form.firstName, form.lastName, '??');
 
+  /* Reflète exactement isProfileComplete côté backend (cauris.service.ts) —
+     un champ manquant s'affiche avec une bordure rouge épaisse pour que le
+     membre sache visuellement quoi compléter pour atteindre 100% de profil. */
+  const missing = {
+    firstName:      !form.firstName.trim(),
+    lastName:       !form.lastName.trim(),
+    phone:          !form.phone.trim(),
+    gender:         !['homme', 'femme'].includes(form.gender),
+    promotionYear:  !form.promotionYear.trim(),
+    city:           !form.city.trim(),
+    country:        !form.country.trim(),
+    residenceCity:  !form.residenceCity.trim(),
+    antenne:        !form.antenne || (form.antenne === 'Autre' && !form.antenneAutre.trim()),
+    birthDate:      !form.birthDate,
+    activitySector: !form.activitySector,
+    recoveryContact: !form.recoveryContact.trim(),
+    bio:            !form.bio.trim(),
+    motivation:     !form.motivation.trim(),
+    skills:         form.skills.length === 0,
+    expertiseDomains: form.expertiseDomains.length === 0,
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div>
@@ -352,10 +374,10 @@ export default function ProfilPage() {
         <form onSubmit={handleSave} className="min-w-0 space-y-4">
         <Section title="Informations personnelles">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Select label="Civilite" required value={form.gender} onChange={set('gender')} options={[['', 'Non renseignee'], ['homme', 'Monsieur'], ['femme', 'Madame']]} />
+            <Select label="Civilite" required missing={missing.gender} value={form.gender} onChange={set('gender')} options={[['', 'Non renseignee'], ['homme', 'Monsieur'], ['femme', 'Madame']]} />
             <div className="hidden sm:block" />
-            <F icon={User} label="Prenom" value={form.firstName} onChange={set('firstName')} required />
-            <F icon={User} label="Nom" value={form.lastName} onChange={set('lastName')} required />
+            <F icon={User} label="Prenom" value={form.firstName} onChange={set('firstName')} required missing={missing.firstName} />
+            <F icon={User} label="Nom" value={form.lastName} onChange={set('lastName')} required missing={missing.lastName} />
             <F icon={Mail} label="Email" value={form.email} onChange={set('email')} type="email" readOnly />
             <div>
               <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">
@@ -366,27 +388,29 @@ export default function ProfilPage() {
                 onChange={val => setForm(prev => ({ ...prev, phone: val }))}
                 size="sm"
                 required
+                error={missing.phone}
                 defaultCountry="CM"
               />
             </div>
             <div>
               <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">
-                Contact de recuperation
+                Contact de recuperation{missing.recoveryContact && <span className="ml-0.5 text-red-500">*</span>}
               </label>
               <PhoneField
                 value={form.recoveryContact}
                 onChange={val => setForm(prev => ({ ...prev, recoveryContact: val }))}
                 size="sm"
+                error={missing.recoveryContact}
                 defaultCountry="CM"
                 placeholder="+237 6 00 00 00"
               />
             </div>
-            <F icon={Calendar} label="Date de naissance" value={form.birthDate} onChange={set('birthDate')} type="date" required />
-            <F icon={MapPin} label="Ville de résidence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." />
-            <F icon={MapPin} label="Pays" value={form.country} onChange={set('country')} placeholder="Cameroun, Maroc..." />
+            <F icon={Calendar} label="Date de naissance" value={form.birthDate} onChange={set('birthDate')} type="date" required missing={missing.birthDate} />
+            <F icon={MapPin} label="Ville de résidence" value={form.residenceCity} onChange={set('residenceCity')} placeholder="Douala, Rabat, Dakar..." missing={missing.residenceCity} />
+            <F icon={MapPin} label="Pays" value={form.country} onChange={set('country')} placeholder="Cameroun, Maroc..." missing={missing.country} />
             <div>
               <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">
-                Promotionnaire
+                Promotionnaire{missing.promotionYear && <span className="ml-0.5 text-red-500">*</span>}
               </label>
               <input
                 type="text"
@@ -395,12 +419,13 @@ export default function ProfilPage() {
                 value={form.promotionYear}
                 onChange={e => setForm(prev => ({ ...prev, promotionYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
                 placeholder="2026"
-                className="h-8 w-full rounded-xl border border-neutral-200 px-3 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:text-sm"
+                className={`h-8 w-full rounded-xl border px-3 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:text-sm ${missing.promotionYear ? 'border-2 border-red-500' : 'border-neutral-200'}`}
               />
             </div>
             <div className="space-y-2">
               <Select
                 label="Antenne"
+                missing={missing.antenne}
                 value={form.antenne}
                 onChange={set('antenne')}
                 options={[['', 'Sélectionner une antenne'], ...ANTENNE_OPTIONS.map(a => [a, a] as [string, string])]}
@@ -412,6 +437,7 @@ export default function ProfilPage() {
                   value={form.antenneAutre}
                   onChange={set('antenneAutre')}
                   placeholder="Ex : Bruxelles, Berlin, Abidjan..."
+                  missing={!form.antenneAutre.trim()}
                 />
               )}
             </div>
@@ -420,8 +446,8 @@ export default function ProfilPage() {
 
         <Section title="Parcours et expertises">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Select label="Secteur d'activite" value={form.activitySector} onChange={set('activitySector')} options={[['', 'Selectionner'], ...ACTIVITY_SECTORS.map(s => [s, s] as [string, string])]} />
-            <F icon={MapPin} label="Ville d'origine au Maroc" value={form.city} onChange={set('city')} placeholder="Ville d'origine au Maroc" />
+            <Select label="Secteur d'activite" missing={missing.activitySector} value={form.activitySector} onChange={set('activitySector')} options={[['', 'Selectionner'], ...ACTIVITY_SECTORS.map(s => [s, s] as [string, string])]} />
+            <F icon={MapPin} label="Ville d'origine au Maroc" value={form.city} onChange={set('city')} placeholder="Ville d'origine au Maroc" missing={missing.city} />
           </div>
           {form.activitySector === 'Autre' && (
             <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
@@ -432,12 +458,12 @@ export default function ProfilPage() {
             </div>
           )}
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            <TagInput icon={Tag} label="Competences" help="Saisissez des mots-cles separes par une virgule." value={form.skills} onChange={skills => setForm(prev => ({ ...prev, skills }))} placeholder="Ex: React, gestion de projet..." />
-            <TagInput icon={Briefcase} label="Domaines d'expertise" help="Saisissez des mots-cles separes par une virgule." value={form.expertiseDomains} onChange={expertiseDomains => setForm(prev => ({ ...prev, expertiseDomains }))} placeholder="Ex: finance, communication..." />
+            <TagInput icon={Tag} label="Competences" help="Saisissez des mots-cles separes par une virgule." value={form.skills} onChange={skills => setForm(prev => ({ ...prev, skills }))} placeholder="Ex: React, gestion de projet..." missing={missing.skills} />
+            <TagInput icon={Briefcase} label="Domaines d'expertise" help="Saisissez des mots-cles separes par une virgule." value={form.expertiseDomains} onChange={expertiseDomains => setForm(prev => ({ ...prev, expertiseDomains }))} placeholder="Ex: finance, communication..." missing={missing.expertiseDomains} />
           </div>
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            <TextArea label="Biographie" value={form.bio} onChange={set('bio')} placeholder="Parlez de vous en quelques mots..." limit={BIO_MAX_LENGTH} />
-            <TextArea label="Motivation" value={form.motivation} onChange={set('motivation')} placeholder="Ce que vous souhaitez apporter a SALAM..." />
+            <TextArea label="Biographie" value={form.bio} onChange={set('bio')} placeholder="Parlez de vous en quelques mots..." limit={BIO_MAX_LENGTH} missing={missing.bio} />
+            <TextArea label="Motivation" value={form.motivation} onChange={set('motivation')} placeholder="Ce que vous souhaitez apporter a SALAM..." missing={missing.motivation} />
           </div>
         </Section>
 
@@ -497,7 +523,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function F({ icon: Icon, label, value, onChange, type = 'text', readOnly, placeholder, required }: {
+function F({ icon: Icon, label, value, onChange, type = 'text', readOnly, placeholder, required, missing }: {
   icon: React.ElementType;
   label: string;
   value: string;
@@ -506,11 +532,12 @@ function F({ icon: Icon, label, value, onChange, type = 'text', readOnly, placeh
   readOnly?: boolean;
   placeholder?: string;
   required?: boolean;
+  missing?: boolean;
 }) {
   return (
     <div>
       <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">
-        {label}{required && <span className="ml-0.5 text-red-500">*</span>}
+        {label}{(required || missing) && <span className="ml-0.5 text-red-500">*</span>}
       </label>
       <div className="relative">
         <Icon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -521,30 +548,31 @@ function F({ icon: Icon, label, value, onChange, type = 'text', readOnly, placeh
           readOnly={readOnly}
           placeholder={placeholder}
           required={required}
-          className={`h-8 w-full rounded-xl border border-neutral-200 pl-8 pr-3 text-xs text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:pl-9 sm:text-sm ${readOnly ? 'bg-neutral-50 text-neutral-500' : 'bg-white'}`}
+          className={`h-8 w-full rounded-xl border pl-8 pr-3 text-xs text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:pl-9 sm:text-sm ${missing ? 'border-2 border-red-500' : 'border-neutral-200'} ${readOnly ? 'bg-neutral-50 text-neutral-500' : 'bg-white'}`}
         />
       </div>
     </div>
   );
 }
 
-function Select({ label, value, onChange, options, readOnly, required }: {
+function Select({ label, value, onChange, options, readOnly, required, missing }: {
   label: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   options: [string, string][];
   readOnly?: boolean;
   required?: boolean;
+  missing?: boolean;
 }) {
   return (
     <div>
-      <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">{label}{required && <span className="ml-0.5 text-red-500">*</span>}</label>
+      <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">{label}{(required || missing) && <span className="ml-0.5 text-red-500">*</span>}</label>
       <select
         value={value}
         onChange={onChange}
         disabled={readOnly}
         required={required}
-        className="h-8 w-full rounded-xl border border-neutral-200 bg-white px-3 text-xs text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 disabled:bg-neutral-50 disabled:text-neutral-500 sm:h-9 sm:text-sm"
+        className={`h-8 w-full rounded-xl border bg-white px-3 text-xs text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 disabled:bg-neutral-50 disabled:text-neutral-500 sm:h-9 sm:text-sm ${missing ? 'border-2 border-red-500' : 'border-neutral-200'}`}
       >
         {options.map(([optionValue, optionLabel]) => (
           <option key={optionValue || optionLabel} value={optionValue}>{optionLabel}</option>
@@ -554,17 +582,18 @@ function Select({ label, value, onChange, options, readOnly, required }: {
   );
 }
 
-function TextArea({ label, value, onChange, placeholder, limit }: {
+function TextArea({ label, value, onChange, placeholder, limit, missing }: {
   label: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   placeholder?: string;
   limit?: number;
+  missing?: boolean;
 }) {
   return (
     <div>
       <div className="mb-1 flex items-center justify-between gap-3 sm:mb-1.5">
-        <label className="block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:text-[10px]">{label}</label>
+        <label className="block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:text-[10px]">{label}{missing && <span className="ml-0.5 text-red-500">*</span>}</label>
         {limit && <span className={`text-[10px] font-bold ${value.trim().length > limit ? 'text-red-500' : 'text-neutral-400'}`}>{value.trim().length}/{limit}</span>}
       </div>
       <textarea
@@ -572,19 +601,20 @@ function TextArea({ label, value, onChange, placeholder, limit }: {
         onChange={onChange}
         rows={3}
         placeholder={placeholder}
-        className="w-full resize-none rounded-xl border border-neutral-200 px-3 py-2 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 sm:py-2.5 sm:text-sm"
+        className={`w-full resize-none rounded-xl border px-3 py-2 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 sm:py-2.5 sm:text-sm ${missing ? 'border-2 border-red-500' : 'border-neutral-200'}`}
       />
     </div>
   );
 }
 
-function TagInput({ icon: Icon, label, help, value, onChange, placeholder }: {
+function TagInput({ icon: Icon, label, help, value, onChange, placeholder, missing }: {
   icon: React.ElementType;
   label: string;
   help?: string;
   value: string[];
   onChange: (next: string[]) => void;
   placeholder?: string;
+  missing?: boolean;
 }) {
   const [draft, setDraft] = useState('');
 
@@ -600,9 +630,9 @@ function TagInput({ icon: Icon, label, help, value, onChange, placeholder }: {
 
   return (
     <div>
-      <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">{label}</label>
+      <label className="mb-1 block text-[9px] font-black uppercase tracking-[0.12em] text-neutral-500 sm:mb-1.5 sm:text-[10px]">{label}{missing && <span className="ml-0.5 text-red-500">*</span>}</label>
       {help && <p className="mb-1.5 text-[10px] font-semibold text-neutral-400 sm:mb-2 sm:text-[11px]">{help}</p>}
-      <div className="rounded-xl border border-neutral-200 px-3 py-2 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-500/10">
+      <div className={`rounded-xl border px-3 py-2 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-500/10 ${missing ? 'border-2 border-red-500' : 'border-neutral-200'}`}>
         <div className="flex flex-wrap gap-1.5">
           {value.map(tag => (
             <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-100">

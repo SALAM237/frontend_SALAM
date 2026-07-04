@@ -866,7 +866,7 @@ export default function NouveauAdherentPage() {
               {(['all', 'active', 'pending'] as const).map(s => (
                 <button key={s} onClick={() => setGroupStatusFilter(s)}
                   className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-black transition ${groupStatusFilter === s ? 'bg-emerald-600 text-white' : 'border border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300'}`}>
-                  {s === 'all' ? 'Tous' : s === 'active' ? 'Actifs' : 'En attente'}
+                  {s === 'all' ? 'Tous' : s === 'active' ? 'Inscrits' : 'Inscription en attente'}
                 </button>
               ))}
               <span className="shrink-0 text-xs text-neutral-500">
@@ -903,7 +903,7 @@ export default function NouveauAdherentPage() {
                           <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-black ${cotisColor}`}>{cotisLabel}</span>
                           {m.memberStatus !== 'active' && (
                             <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-black text-amber-700">
-                              {m.memberStatus === 'pending' ? 'En attente' : m.memberStatus}
+                              {m.memberStatus === 'pending' ? 'Inscription en attente' : m.memberStatus === 'suspended' ? 'Suspendu' : m.memberStatus === 'rejected' ? 'Refusé' : m.memberStatus}
                             </span>
                           )}
                           {m.profileComplete === false && (

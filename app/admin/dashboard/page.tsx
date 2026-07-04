@@ -23,10 +23,10 @@ const QUICK_ACTIONS = [
 ];
 
 const statusStyle: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
-  active:    { label: 'Actif',      cls: 'bg-emerald-50 text-emerald-700', icon: CheckCircle2 },
-  pending:   { label: 'En attente', cls: 'bg-yellow-50 text-yellow-700',   icon: Clock        },
-  suspended: { label: 'Suspendu',   cls: 'bg-red-50 text-red-700',         icon: XCircle      },
-  rejected:  { label: 'Refusé',     cls: 'bg-neutral-50 text-neutral-500', icon: XCircle      },
+  active:    { label: 'Inscrit',                 cls: 'bg-emerald-50 text-emerald-700', icon: CheckCircle2 },
+  pending:   { label: 'Inscription en attente',  cls: 'bg-yellow-50 text-yellow-700',   icon: Clock        },
+  suspended: { label: 'Suspendu',                cls: 'bg-red-50 text-red-700',         icon: XCircle      },
+  rejected:  { label: 'Refusé',                  cls: 'bg-neutral-50 text-neutral-500', icon: XCircle      },
 };
 
 function fmt(d: string) {

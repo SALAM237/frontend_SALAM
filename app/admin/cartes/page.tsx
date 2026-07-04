@@ -84,9 +84,9 @@ export default function CartesPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Total adhérents', value: total,   color: 'text-neutral-700',  bg: 'bg-white',        border: 'border-neutral-100' },
-          { label: 'Actifs',          value: actifs,  color: 'text-emerald-700',  bg: 'bg-emerald-50',   border: 'border-emerald-100' },
-          { label: 'En attente',      value: pending, color: 'text-yellow-700',   bg: 'bg-yellow-50',    border: 'border-yellow-100'  },
+          { label: 'Total adhérents',        value: total,   color: 'text-neutral-700',  bg: 'bg-white',        border: 'border-neutral-100' },
+          { label: 'Inscrits',               value: actifs,  color: 'text-emerald-700',  bg: 'bg-emerald-50',   border: 'border-emerald-100' },
+          { label: 'Inscription en attente', value: pending, color: 'text-yellow-700',   bg: 'bg-yellow-50',    border: 'border-yellow-100'  },
         ].map(({ label, value, color, bg, border }) => (
           <div key={label} className={`rounded-2xl border ${border} ${bg} p-4 shadow-sm`}>
             {isLoading
@@ -114,9 +114,9 @@ export default function CartesPage() {
               />
             </div>
             {([
-              { value: 'all',     label: 'Tous'        },
-              { value: 'active',  label: 'Actifs'      },
-              { value: 'pending', label: 'En attente'  },
+              { value: 'all',     label: 'Tous'                      },
+              { value: 'active',  label: 'Inscrits'                  },
+              { value: 'pending', label: 'Inscription en attente'    },
             ] as const).map(f => (
               <button
                 key={f.value}
@@ -149,6 +149,10 @@ export default function CartesPage() {
                 {filtered.map(m => {
                   const isSelected = selected?._id === m._id;
                   const isActive   = m.memberStatus === 'active';
+                  const statusLabel = m.memberStatus === 'active' ? 'Inscrit'
+                    : m.memberStatus === 'pending' ? 'Inscription en attente'
+                    : m.memberStatus === 'suspended' ? 'Suspendu'
+                    : m.memberStatus === 'rejected' ? 'Refusé' : m.memberStatus;
                   const photoUrl   = memberPhotoUrl(m);
                   return (
                     <li key={m._id} className="overflow-hidden">
@@ -180,7 +184,7 @@ export default function CartesPage() {
 
                         {/* Badge statut */}
                         <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ${isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-yellow-50 text-yellow-700'}`}>
-                          {isActive ? 'Actif' : 'En attente'}
+                          {statusLabel}
                         </span>
 
                         {/* Icône accordéon mobile / carte desktop */}
