@@ -235,29 +235,32 @@ function RewardedMembersPanel() {
   const rewarded = data?.data ?? [];
 
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
-      <div className="flex items-center gap-2.5">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white"><Gift size={18} /></span>
-        <div>
-          <p className="text-sm font-black text-emerald-800">Déjà récompensés</p>
-          <p className="text-xs font-semibold text-emerald-600/80">{rewarded.length} membre{rewarded.length > 1 ? 's' : ''} — ne peuvent plus être sélectionnés</p>
+    <div>
+      <h2 className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-neutral-500">Historique des bénéficiaires</h2>
+      <div className="flex flex-col gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white"><Gift size={18} /></span>
+          <div>
+            <p className="text-sm font-black text-emerald-800">Déjà récompensés</p>
+            <p className="text-xs font-semibold text-emerald-600/80">{rewarded.length} membre{rewarded.length > 1 ? 's' : ''} — ne peuvent plus être sélectionnés</p>
+          </div>
         </div>
-      </div>
-      <div className="mt-1 max-h-48 overflow-y-auto">
-        {isLoading && <p className="py-3 text-center text-xs text-emerald-700/60">Chargement…</p>}
-        {!isLoading && rewarded.length === 0 && (
-          <p className="py-3 text-center text-xs text-emerald-700/60">Aucun bénéficiaire pour le moment.</p>
-        )}
-        <div className="divide-y divide-emerald-100/70">
-          {rewarded.map(r => (
-            <div key={r.userId} className="flex items-center justify-between gap-2 py-1.5">
-              <div className="min-w-0">
-                <p className="truncate text-xs font-bold text-emerald-900">{formatFullName(r.firstName, r.lastName)}</p>
-                <p className="truncate text-[10px] text-emerald-700/70">{fmtDateTime(r.creditedAt)}</p>
+        <div className="mt-1 max-h-48 overflow-y-auto">
+          {isLoading && <p className="py-3 text-center text-xs text-emerald-700/60">Chargement…</p>}
+          {!isLoading && rewarded.length === 0 && (
+            <p className="py-3 text-center text-xs text-emerald-700/60">Aucun bénéficiaire pour le moment.</p>
+          )}
+          <div className="divide-y divide-emerald-100/70">
+            {rewarded.map(r => (
+              <div key={r.userId} className="flex items-center justify-between gap-2 py-1.5">
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-bold text-emerald-900">{formatFullName(r.firstName, r.lastName)}</p>
+                  <p className="truncate text-[10px] text-emerald-700/70">{fmtDateTime(r.creditedAt)}</p>
+                </div>
+                <span className="shrink-0 text-[11px] font-black text-emerald-700">{r.amount.toLocaleString('fr-FR')}</span>
               </div>
-              <span className="shrink-0 text-[11px] font-black text-emerald-700">{r.amount.toLocaleString('fr-FR')}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -396,27 +399,27 @@ export default function AdminMarketingPage() {
         <CampaignInsightsView campaigns={campaigns} />
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button onClick={() => setShowEditor(true)}
-              className="flex flex-col items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-left transition hover:bg-rose-100">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-600 text-white"><Gift size={18} /></span>
-              <span className="text-sm font-black text-rose-700">Campagne Cadeau SALAM</span>
-              <span className="text-xs font-semibold text-rose-600/80">Invitez les membres à finaliser leur profil pour bénéficier d&apos;un cadeau exclusif.</span>
-            </button>
-            <RewardedMembersPanel />
-          </div>
+          <button onClick={() => setShowEditor(true)}
+            className="flex w-full flex-col items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-left transition hover:bg-rose-100 sm:w-1/2">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-600 text-white"><Gift size={18} /></span>
+            <span className="text-sm font-black text-rose-700">Campagne Cadeau SALAM</span>
+            <span className="text-xs font-semibold text-rose-600/80">Invitez les membres à finaliser leur profil pour bénéficier d&apos;un cadeau exclusif.</span>
+          </button>
 
-          <div>
-            <h2 className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-neutral-500">Historique des campagnes</h2>
-            <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
-              {isLoading && <p className="px-5 py-8 text-center text-sm text-neutral-400">Chargement…</p>}
-              {!isLoading && campaigns.length === 0 && (
-                <p className="px-5 py-8 text-center text-sm text-neutral-400">Aucune campagne envoyée pour le moment.</p>
-              )}
-              <div className="divide-y divide-neutral-50">
-                {campaigns.map(c => <CampaignHistoryRow key={c._id} campaign={c} />)}
+          <div className="grid items-start gap-3 sm:grid-cols-2">
+            <div>
+              <h2 className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-neutral-500">Historique des campagnes</h2>
+              <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+                {isLoading && <p className="px-5 py-8 text-center text-sm text-neutral-400">Chargement…</p>}
+                {!isLoading && campaigns.length === 0 && (
+                  <p className="px-5 py-8 text-center text-sm text-neutral-400">Aucune campagne envoyée pour le moment.</p>
+                )}
+                <div className="divide-y divide-neutral-50">
+                  {campaigns.map(c => <CampaignHistoryRow key={c._id} campaign={c} />)}
+                </div>
               </div>
             </div>
+            <RewardedMembersPanel />
           </div>
         </>
       )}
