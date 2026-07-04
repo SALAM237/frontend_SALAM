@@ -72,6 +72,10 @@ export function useUpdateReceipt() {
       qc.invalidateQueries({ queryKey: ['member-receipts'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-transactions'] });
       qc.invalidateQueries({ queryKey: ['member-treasury-transactions'] });
+      /* Le montant/date du reçu peuvent changer ici — impacte directement les
+         totaux payés et les taux de recouvrement (KPI trésorerie). */
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
       toast.success((res as any).message ?? 'Reçu mis à jour');
     },
     onError: (err: Error) => toast.error(err.message),

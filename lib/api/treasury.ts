@@ -74,7 +74,10 @@ export interface MembershipFeeProposal {
 }
 
 export function formatFcfa(value: number) {
-  return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(value || 0) + ' F.CFA';
+  const n = Math.round(value || 0);
+  const sign = n < 0 ? '-' : '';
+  const digits = Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${sign}${digits} F.CFA`;
 }
 
 export function useTreasuryOverview(admin = false) {

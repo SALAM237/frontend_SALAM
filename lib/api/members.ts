@@ -214,6 +214,8 @@ export function useCreateMember() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-stats'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
       toast.success((res as any).message ?? 'Membre créé');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -233,6 +235,8 @@ export function useUpdateMember(id: string) {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-member', id] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
       toast.success((res as any).message ?? 'Membre mis Ã  jour');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -251,6 +255,8 @@ export function useSuspendMember() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-stats'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
       toast.success((res as any).message ?? 'Membre suspendu');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -392,6 +398,8 @@ export function useImportMembersCSV() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-stats'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -406,6 +414,8 @@ export function useHardDeleteMember() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-stats'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
       toast.success((res as any).message ?? 'Membre supprimé');
     },
     onError: (err: Error) => toast.error(err.message),

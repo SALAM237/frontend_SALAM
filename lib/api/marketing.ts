@@ -73,6 +73,39 @@ export function useCreateCampaign() {
   });
 }
 
+export interface CampaignInsightRecipient {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  emailStatus: 'sent' | 'failed';
+  giftCreditedImmediately: boolean;
+  openCount: number;
+  firstOpenAt: string | null;
+  lastOpenAt: string | null;
+  clickCount: number;
+  firstClickAt: string | null;
+  lastClickAt: string | null;
+  lastClickDevice: 'mobile' | 'tablet' | 'desktop' | 'unknown' | null;
+  clicks: { occurredAt: string; deviceType: string; userAgent?: string }[];
+}
+
+export interface CampaignInsights {
+  campaign: { _id: string; title: string; sentCount: number };
+  recipients: CampaignInsightRecipient[];
+}
+
+/* Accès strictement réservé à salamcameroun237@gmail.com côté backend — cette
+   requête échouera (403) pour tout autre compte, même super_admin. */
+export function useCampaignInsights(campaignId: string | null) {
+  const token = useAuthStore(s => s.accessToken);
+  return useQuery({
+    queryKey: ['admin-campaign-insights', campaignId],
+    queryFn: () => apiClient<CampaignInsights>(`/api/v1/admin/marketing/campaigns/${campaignId}/insights`, { token: token ?? '' }),
+    enabled: !!token && !!campaignId,
+  });
+}
+
 export function useUploadCampaignImage() {
   const token = useAuthStore(s => s.accessToken);
   return useMutation({

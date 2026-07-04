@@ -113,6 +113,7 @@ export function useCreateInvoice() {
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['member-cotisations'] });
       qc.invalidateQueries({ queryKey: ['member-cotisations-annuelles'] });
@@ -145,6 +146,10 @@ export function useUpdateInvoice() {
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
+      /* Le montant d'une facture "Autres" (motif libre) impacte directement le
+         taux de recouvrement "Autres" affiché en trésorerie. */
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
       toast.success((res as any).message ?? 'Facture mise a jour');
     },
     onError: (err: Error) => toast.error(err.message),

@@ -169,6 +169,14 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
   const lastTrancheBlocksPaid = isLastTranche && (othersPaidSum + t.amount) < annualFee;
   const resteAvantTranche4 = Math.max(0, annualFee - othersPaidSum);
 
+  /* Le total des 4 tranches ne doit jamais dépasser la cotisation annuelle (la
+     "dette totale") — contrôle générique (toutes tranches, pas seulement la 4ème),
+     vérifié ici pour un retour immédiat, et re-vérifié côté serveur (rejeté avant
+     toute écriture) en dernier rempart. */
+  const othersPaidSumExcludingSelf = (allTranches ?? DEFAULT_TRANCHES)
+    .filter((_, i) => i !== index)
+    .reduce((acc, tr) => acc + (tr.status === 'paid' ? (tr.amount ?? 0) : 0), 0);
+
   /* Dès que la dette totale (somme de tous les montants saisis) est soldée,
      aucune des 4 tranches ne peut être repassée à "Impayé" (sécurité anti-incohérence). */
   const totalEnteredSum = (allTranches ?? DEFAULT_TRANCHES).reduce((acc, tr) => acc + Number(tr.amount || 0), 0);
@@ -210,6 +218,11 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
      redemander de la reconfirmer. */
   const commitAmount = (rawAmount: string) => {
     const amount = Math.max(0, Number(rawAmount) || 0);
+    if (amount > 0 && othersPaidSumExcludingSelf + amount > annualFee) {
+      const maxAllowed = Math.max(0, annualFee - othersPaidSumExcludingSelf);
+      onFeedback('warning', `Le total des tranches ne peut pas dépasser la cotisation annuelle (${annualFee.toLocaleString('fr-FR')} F.CFA). Montant maximum possible pour cette tranche : ${maxAllowed.toLocaleString('fr-FR')} F.CFA.`);
+      return;
+    }
     const paidAtToSend = t.paidAt ?? draftDate;
     updateAmount.mutate(
       { userId, year, trancheIndex: index, amount, status: amount > 0 ? 'paid' : 'unpaid', paidAt: paidAtToSend },
