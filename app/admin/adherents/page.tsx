@@ -252,6 +252,13 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
   return (
     <div className="flex flex-col items-center gap-1 py-1 text-center" onClick={e => e.stopPropagation()}>
       <select
+        /* key=t.status : force React à remonter proprement le <select> à chaque changement
+           de statut (déclenché par une mutation, pas par une interaction directe avec ce
+           contrôle) — certains navigateurs mobiles (WebKit) ne repeignent pas toujours le
+           libellé affiché d'un <select> fermé après une mise à jour purement programmatique
+           de sa `value`, ce qui donne l'impression que le badge "n'a pas suivi" alors que la
+           donnée est bien à jour en base et dans le cache. */
+        key={t.status}
         value={t.status}
         onChange={e => commitStatus(e.target.value as 'unpaid' | 'paid' | 'exempt')}
         disabled={updateTranche.isPending || isUnfilledAndIrrelevant}

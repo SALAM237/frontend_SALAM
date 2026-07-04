@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  useAdminInvoices, useCreateInvoice, useDeleteInvoice,
+  useAdminInvoices, useCreateInvoice, useDeleteInvoice, useRemoveInvoiceRecipient,
   useUpdateInvoice,
   useInvoiceClients, useSaveInvoiceClient, useDeleteInvoiceClient, useClientDocuments,
   useResendClientDocument, useResendInvoiceRecipient,
@@ -23,7 +23,6 @@ import { useAdminMembers, useAdminMember, type MemberListItem } from '@/lib/api/
 import { formatFullName } from '@/lib/format-name';
 import { applyInlineTextStyle, captureTextSelection, sanitizeRichHtml, type StoredTextSelection } from '@/lib/rich-text';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
-import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 /* ─── Helpers ─────────────────────────────────────────── */
 type InvoiceStatus = 'draft' | 'sent' | 'closed';
@@ -36,7 +35,7 @@ const STATUS_CONFIG: Record<InvoiceStatus, { badge: string; label: string; icon:
 
 const RECIPIENT_STATUS_CONFIG: Record<RecipientDoc['status'], { badge: string; label: string }> = {
   pending:   { badge: 'bg-neutral-50 text-neutral-600 border-neutral-200', label: 'A envoyer' },
-  sent:      { badge: 'bg-blue-50 text-blue-700 border-blue-200', label: 'Impayee' },
+  sent:      { badge: 'bg-red-50 text-red-600 border-red-200', label: 'Impayee' },
   partiel:   { badge: 'bg-orange-50 text-orange-600 border-orange-200', label: 'Partiel' },
   paid:      { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Payee' },
   cancelled: { badge: 'bg-red-50 text-red-700 border-red-200', label: 'Annulee' },
@@ -1955,6 +1954,7 @@ export default function FacturationAdminPage() {
   const { data, isLoading, isError } = useAdminInvoices();
   const resendInvoiceRecipient = useResendInvoiceRecipient();
   const deleteInvoice = useDeleteInvoice();
+  const removeRecipient = useRemoveInvoiceRecipient();
 
   const invoices = data?.data ?? [];
   const invoiceRows = useMemo(() => makeInvoiceRecipientRows(invoices), [invoices]);
@@ -2000,11 +2000,20 @@ export default function FacturationAdminPage() {
       </div>
 
       {/* Onglets */}
-      <AnimatedTabBar
-        items={[{ value: 'factures', label: 'Factures' }, { value: 'recus', label: 'Reçus de paiement' }]}
-        value={mainTab}
-        onChange={setMainTab}
-      />
+      <div className="relative flex gap-1.5 rounded-2xl border border-neutral-100 bg-neutral-50/70 p-1.5">
+        <div
+          className="absolute inset-y-1.5 w-[calc(50%-0.375rem)] rounded-xl bg-white shadow-sm transition-all duration-300 ease-in-out"
+          style={{ left: mainTab === 'factures' ? '0.375rem' : 'calc(50% + 0.075rem)' }}
+        />
+        <button onClick={() => setMainTab('factures')}
+          className={`relative z-10 flex-1 rounded-xl px-3 py-2 text-xs font-black transition-colors duration-300 ease-in-out sm:text-sm ${mainTab === 'factures' ? 'text-emerald-700' : 'text-neutral-500 hover:text-neutral-700'}`}>
+          Factures
+        </button>
+        <button onClick={() => setMainTab('recus')}
+          className={`relative z-10 flex-1 rounded-xl px-3 py-2 text-xs font-black transition-colors duration-300 ease-in-out sm:text-sm ${mainTab === 'recus' ? 'text-emerald-700' : 'text-neutral-500 hover:text-neutral-700'}`}>
+          Reçus de paiement
+        </button>
+      </div>
 
       {mainTab === 'recus' ? <ReceiptsTab /> : <>
 
@@ -2085,7 +2094,10 @@ export default function FacturationAdminPage() {
             const inv = row.invoice;
             const invoiceCfg = STATUS_CONFIG[inv.status];
             const recipientCfg = RECIPIENT_STATUS_CONFIG[row.recipient.status] ?? RECIPIENT_STATUS_CONFIG.pending;
-            const isDeleting = confirmDeleteId === inv._id;
+            {/* confirmDeleteId suit row.key (par DESTINATAIRE), pas inv._id (par facture) :
+                une facture groupée partage un seul _id entre plusieurs destinataires — suivre
+                inv._id ferait apparaître "Confirmer" sur toutes les lignes du groupe à la fois. */}
+            const isDeleting = confirmDeleteId === row.key;
             const isSending = resendInvoiceRecipient.isPending;
             return (
               <div key={row.key} className="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50/60 sm:flex-nowrap sm:gap-4 sm:px-5 sm:py-4">
@@ -2129,7 +2141,7 @@ export default function FacturationAdminPage() {
                       <button type="button" onClick={() => setViewRecipientInvoice(row)} className="h-9 rounded-lg border border-violet-200 bg-white text-xs font-black text-violet-700">Voir</button>
                       <button type="button" onClick={() => resendInvoiceRecipient.mutate({ id: inv._id, invoiceNumber: row.invoiceNumber })} disabled={isSending || !row.email} className="h-9 rounded-lg border border-blue-200 bg-blue-50 text-xs font-black text-blue-700 disabled:opacity-50">Envoyer</button>
                       {inv.status === 'draft' && <button type="button" onClick={() => setEditInvoice(inv)} className="h-9 rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-black text-emerald-700">Modifier</button>}
-                      <button type="button" onClick={() => isDeleting ? deleteInvoice.mutate(inv._id, { onSuccess: () => setConfirmDeleteId(null) }) : setConfirmDeleteId(inv._id)} className="h-9 rounded-lg border border-red-100 bg-red-50 text-xs font-black text-red-600">{isDeleting ? 'Confirmer' : 'Supprimer'}</button>
+                      <button type="button" onClick={() => isDeleting ? removeRecipient.mutate({ id: inv._id, invoiceNumber: row.invoiceNumber }, { onSuccess: () => setConfirmDeleteId(null) }) : setConfirmDeleteId(row.key)} className="h-9 rounded-lg border border-red-100 bg-red-50 text-xs font-black text-red-600">{isDeleting ? 'Confirmer' : 'Supprimer'}</button>
                     </div>
                   </div>
                 )}
@@ -2154,16 +2166,16 @@ export default function FacturationAdminPage() {
                   </button>
                   {isDeleting ? (
                     <button
-                      onClick={() => deleteInvoice.mutate(inv._id, { onSuccess: () => setConfirmDeleteId(null) })}
-                      disabled={deleteInvoice.isPending}
+                      onClick={() => removeRecipient.mutate({ id: inv._id, invoiceNumber: row.invoiceNumber }, { onSuccess: () => setConfirmDeleteId(null) })}
+                      disabled={removeRecipient.isPending}
                       className="flex h-8 items-center justify-center rounded-lg bg-red-500 px-2.5 text-[10px] font-black text-white transition hover:bg-red-600 disabled:opacity-50"
                     >
-                      {deleteInvoice.isPending ? <Loader2 size={11} className="animate-spin" /> : 'Confirmer'}
+                      {removeRecipient.isPending ? <Loader2 size={11} className="animate-spin" /> : 'Confirmer'}
                     </button>
                   ) : (
                     <button
-                      onClick={() => setConfirmDeleteId(inv._id)}
-                      title="Supprimer la facture"
+                      onClick={() => setConfirmDeleteId(row.key)}
+                      title="Retirer ce destinataire de la facture"
                       className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-400 transition hover:bg-red-500 hover:text-white"
                     >
                       <Trash2 size={12} />

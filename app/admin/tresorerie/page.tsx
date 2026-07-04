@@ -758,14 +758,23 @@ function AssetList({ title, items, loading, onDelete, deletingId }: { title: str
 
 function RecoveryRateBlock({ label, rate, pending }: { label: string; rate: number; pending?: number }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-neutral-100 bg-neutral-50/60 px-2 py-4 text-center">
-      <p className="text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">{label}</p>
-      <div className="mt-1.5 text-2xl font-black tracking-[-0.04em] text-emerald-700">
-        {rate}<span className="text-sm">%</span>
+    <div className="flex flex-col overflow-hidden rounded-xl border border-neutral-100 text-center">
+      {/* Ligne 1 — en-tête, vert clair faible opacité, grande hauteur */}
+      <div className="flex flex-1 items-center justify-center bg-emerald-500/10 px-2 py-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.1em] text-emerald-700">{label}</p>
       </div>
-      {pending !== undefined && (
-        <p className="mt-1 text-[10px] font-semibold text-neutral-400">{formatFcfa(pending)} en attente</p>
-      )}
+      {/* Ligne 2 — taux, grande hauteur */}
+      <div className="flex flex-1 items-center justify-center bg-white px-2 py-4">
+        <p className="text-3xl font-black tracking-[-0.04em] text-emerald-700">
+          {rate}<span className="text-base">%</span>
+        </p>
+      </div>
+      {/* Ligne 3 — montant en attente, hauteur réduite */}
+      <div className="bg-neutral-50/70 px-2 py-2">
+        <p className="text-[10px] font-semibold text-neutral-400">
+          {pending !== undefined ? `${formatFcfa(pending)} en attente` : '—'}
+        </p>
+      </div>
     </div>
   );
 }

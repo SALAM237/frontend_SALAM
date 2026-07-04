@@ -206,6 +206,36 @@ export function useDeleteInvoice() {
   });
 }
 
+/* Retire UN SEUL destinataire d'une facture — même si elle a été créée en
+   groupe (plusieurs destinataires sur le même document). Si c'était le dernier
+   destinataire, la facture entière est supprimée côté serveur (rien à garder). */
+export function useRemoveInvoiceRecipient() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, invoiceNumber }: { id: string; invoiceNumber: string }) =>
+      apiClient<{ invoiceDeleted: boolean }>(`/api/v1/admin/invoices/${id}/recipients/${encodeURIComponent(invoiceNumber)}`, {
+        method: 'DELETE',
+        token: token ?? '',
+      }),
+    onSuccess: res => {
+      qc.invalidateQueries({ queryKey: ['admin-invoices'] });
+      qc.invalidateQueries({ queryKey: ['cotisation-logs'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
+      qc.invalidateQueries({ queryKey: ['admin-treasury-transactions'] });
+      qc.invalidateQueries({ queryKey: ['member-treasury-transactions'] });
+      qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
+      qc.invalidateQueries({ queryKey: ['member-cotisations-annuelles'] });
+      toast.success((res as any).message ?? 'Destinataire retiré');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 export function useInvoiceClients() {
   const token = useAuthStore(s => s.accessToken);
   return useQuery({
