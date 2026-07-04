@@ -323,13 +323,20 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
                 <th className="px-4 py-3">Membre</th>
                 <th className="px-4 py-3">Ouvertures</th>
                 <th className="px-4 py-3">Clic (date/heure)</th>
-                <th className="px-4 py-3">Appareil</th>
+                <th className="px-4 py-3 text-center">Appareil</th>
                 <th className="px-4 py-3">Cadeau</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-50">
               {insights.recipients.map(r => {
-                const DeviceIcon = DEVICE_ICON[r.lastClickDevice ?? 'unknown'] ?? HelpCircle;
+                /* Historique complet de chaque ouverture/clic, avec sa propre date/heure —
+                   jamais un simple agrégat "dernier événement" qui ferait disparaître les
+                   précédents. Pareil pour l'appareil : chaque événement (ouverture OU clic)
+                   garde son propre type d'appareil détecté, un nouveau n'écrase jamais un
+                   autre déjà détecté. */
+                const deviceEvents = [...r.opens, ...r.clicks].sort(
+                  (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+                );
                 return (
                   <tr key={r.userId}>
                     <td className="px-4 py-3">
@@ -337,24 +344,41 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
                       <p className="text-[11px] text-neutral-400">{r.email}</p>
                     </td>
                     <td className="px-4 py-3">
-                      {r.openCount > 0 ? (
-                        <>
-                          <p className="flex items-center gap-1 font-black text-neutral-900"><Eye size={13} className="text-emerald-600" /> {r.openCount}×</p>
-                          <p className="text-[11px] text-neutral-400">{fmtDateTime(r.lastOpenAt)}</p>
-                        </>
+                      {r.opens.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {r.opens.map((o, i) => (
+                            <p key={i} className="flex items-center gap-1 whitespace-nowrap">
+                              <Eye size={12} className="shrink-0 text-emerald-600" />
+                              <span className="text-[11px] text-neutral-400">{fmtDateTime(o.occurredAt)}</span>
+                            </p>
+                          ))}
+                        </div>
                       ) : <span className="text-neutral-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
-                      {r.clickCount > 0 ? (
-                        <>
-                          <p className="flex items-center gap-1 font-black text-neutral-900"><MousePointerClick size={13} className="text-violet-600" /> {r.clickCount}×</p>
-                          <p className="text-[11px] text-neutral-400">{fmtDateTime(r.lastClickAt)}</p>
-                        </>
+                      {r.clicks.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {r.clicks.map((c, i) => (
+                            <p key={i} className="flex items-center gap-1 whitespace-nowrap">
+                              <MousePointerClick size={12} className="shrink-0 text-violet-600" />
+                              <span className="text-[11px] text-neutral-400">{fmtDateTime(c.occurredAt)}</span>
+                            </p>
+                          ))}
+                        </div>
                       ) : <span className="text-neutral-300">—</span>}
                     </td>
-                    <td className="px-4 py-3">
-                      {r.lastClickDevice ? (
-                        <span className="inline-flex items-center gap-1 text-neutral-600"><DeviceIcon size={13} /> {r.lastClickDevice}</span>
+                    <td className="px-4 py-3 text-center">
+                      {deviceEvents.length > 0 ? (
+                        <div className="flex flex-col items-center gap-1.5">
+                          {deviceEvents.map((e, i) => {
+                            const DeviceIcon = DEVICE_ICON[e.deviceType ?? 'unknown'] ?? HelpCircle;
+                            return (
+                              <p key={i} className="flex items-center justify-center gap-1 whitespace-nowrap text-[11px] text-neutral-400">
+                                <DeviceIcon size={12} className="shrink-0" /> {e.deviceType}
+                              </p>
+                            );
+                          })}
+                        </div>
                       ) : <span className="text-neutral-300">—</span>}
                     </td>
                     <td className="px-4 py-3">

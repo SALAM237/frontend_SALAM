@@ -110,6 +110,7 @@ export interface CampaignInsightRecipient {
   firstClickAt: string | null;
   lastClickAt: string | null;
   lastClickDevice: 'mobile' | 'tablet' | 'desktop' | 'unknown' | null;
+  opens: { occurredAt: string; deviceType: string; userAgent?: string }[];
   clicks: { occurredAt: string; deviceType: string; userAgent?: string }[];
 }
 
