@@ -338,12 +338,18 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
                     </td>
                     <td className="px-4 py-3">
                       {r.openCount > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-700"><Eye size={13} /> {r.openCount}× — {fmtDateTime(r.lastOpenAt)}</span>
+                        <>
+                          <p className="flex items-center gap-1 font-black text-neutral-900"><Eye size={13} className="text-emerald-600" /> {r.openCount}×</p>
+                          <p className="text-[11px] text-neutral-400">{fmtDateTime(r.lastOpenAt)}</p>
+                        </>
                       ) : <span className="text-neutral-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       {r.clickCount > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-violet-700"><MousePointerClick size={13} /> {r.clickCount}× — {fmtDateTime(r.lastClickAt)}</span>
+                        <>
+                          <p className="flex items-center gap-1 font-black text-neutral-900"><MousePointerClick size={13} className="text-violet-600" /> {r.clickCount}×</p>
+                          <p className="text-[11px] text-neutral-400">{fmtDateTime(r.lastClickAt)}</p>
+                        </>
                       ) : <span className="text-neutral-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
