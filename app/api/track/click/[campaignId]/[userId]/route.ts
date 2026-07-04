@@ -8,9 +8,13 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
  * Même logique que la route d'ouverture : le lien embarqué dans le mail
  * pointe sur FRONTEND_URL (fiable) au lieu de BACKEND_URL (qui s'est déjà
  * révélé mal configuré 2 fois en production, cassant le lien pour le membre).
- * La redirection vers le membre ne dépend JAMAIS du backend : elle est
- * calculée ici, et l'appel au backend pour journaliser le clic est fait en
- * best-effort sans jamais bloquer ni faire échouer la redirection.
+ * La redirection vers le membre ne dépend JAMAIS du backend : le calcul de
+ * la destination est fait localement, et un échec/timeout du backend ne
+ * bloque jamais la redirection. L'appel de journalisation est cependant
+ * ATTENDU (pas fire-and-forget) : sur un hébergement serverless, la fonction
+ * peut être coupée dès la réponse envoyée, ce qui tuait silencieusement un
+ * fetch non attendu avant qu'il n'atteigne le backend — c'est ce qui faisait
+ * que le clic n'était jamais journalisé malgré un clic réel.
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ campaignId: string; userId: string }> }) {
   const { campaignId, userId } = await params;
@@ -27,11 +31,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ camp
     // to invalide — on retombe sur l'origine du site
   }
 
-  fetch(`${API}/api/v1/t/c/${campaignId}/${userId}?to=${encodeURIComponent(safeTarget)}`, {
-    headers: { 'user-agent': req.headers.get('user-agent') ?? '' },
-    redirect: 'manual',
-    signal: AbortSignal.timeout(4000),
-  }).catch(() => {});
+  try {
+    await fetch(`${API}/api/v1/t/c/${campaignId}/${userId}?to=${encodeURIComponent(safeTarget)}`, {
+      headers: { 'user-agent': req.headers.get('user-agent') ?? '' },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(4000),
+    });
+  } catch {
+    // Journalisation best-effort — un backend lent/indisponible ne doit jamais empêcher la redirection.
+  }
 
   return NextResponse.redirect(safeTarget, 302);
 }
