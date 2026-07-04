@@ -220,31 +220,38 @@ export function useUpdateTranche() {
          setQueryData applique immédiatement la réponse serveur (autoritative), donc
          TrancheCell (montant/date affichés) et DetteCell (solde de la dette) reflètent
          la bonne valeur dès ce même rendu, sans attendre le refetch. */
-      const updatedDoc = (res as any)?.data as CotisationAnnuelleDoc | undefined;
-      if (updatedDoc) {
-        /* Le cache stocke l'ApiResponse complète ({success,message,data:[...]}),
-           pas le tableau brut — il faut patcher `.data`, pas `old` lui-même. */
-        qc.setQueryData<ApiResponse<AdminCotisationAnnuelleRow[]>>(['admin-cotisations-annuelles', vars.year], old => {
-          if (!old?.data) return old;
-          return {
-            ...old,
-            data: old.data.map(row =>
-              String(row.user._id) === String(vars.userId)
-                ? {
-                    ...row,
-                    cotisation: {
-                      ...row.cotisation,
-                      tranches: updatedDoc.tranches,
-                      totalPaid: updatedDoc.totalPaid,
-                      status: updatedDoc.status,
-                      paidAt: updatedDoc.paidAt,
-                      reference: updatedDoc.reference,
-                    },
-                  }
-                : row,
-            ),
-          };
-        });
+      /* Patch de cache défensif : une erreur ici (forme de donnée inattendue, etc.)
+         ne doit JAMAIS empêcher les callbacks onSuccess de l'appelant (TrancheCell)
+         de s'exécuter — sinon un succès serveur serait perçu comme un échec côté UI. */
+      try {
+        const updatedDoc = (res as any)?.data as CotisationAnnuelleDoc | undefined;
+        if (updatedDoc) {
+          /* Le cache stocke l'ApiResponse complète ({success,message,data:[...]}),
+             pas le tableau brut — il faut patcher `.data`, pas `old` lui-même. */
+          qc.setQueryData<ApiResponse<AdminCotisationAnnuelleRow[]>>(['admin-cotisations-annuelles', vars.year], old => {
+            if (!old?.data) return old;
+            return {
+              ...old,
+              data: old.data.map(row =>
+                row?.user && String(row.user._id) === String(vars.userId)
+                  ? {
+                      ...row,
+                      cotisation: {
+                        ...row.cotisation,
+                        tranches: updatedDoc.tranches,
+                        totalPaid: updatedDoc.totalPaid,
+                        status: updatedDoc.status,
+                        paidAt: updatedDoc.paidAt,
+                        reference: updatedDoc.reference,
+                      },
+                    }
+                  : row,
+              ),
+            };
+          });
+        }
+      } catch (err) {
+        console.error('[useUpdateTranche] Cache patch failed:', err);
       }
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles', vars.year] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
