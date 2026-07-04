@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Banknote, FileText, Eye, X, CheckCircle2, Clock, XCircle, Loader2, Download } from 'lucide-react';
 import { useMemberInvoices, type MemberInvoiceDoc } from '@/lib/api/invoices';
-import { initialAssociation, printMemberInvoice } from '@/lib/invoice-pdf';
+import { printMemberInvoice } from '@/lib/invoice-pdf';
 
 /* ─── Helpers ─────────────────────────────────────────── */
 type RecipientStatus = 'pending' | 'sent' | 'partiel' | 'paid' | 'cancelled' | 'exempt';
@@ -11,7 +11,7 @@ type RecipientStatus = 'pending' | 'sent' | 'partiel' | 'paid' | 'cancelled' | '
 const STATUS_CONFIG: Record<RecipientStatus, { badge: string; label: string; icon: React.ReactNode }> = {
   pending:   { badge: 'bg-amber-50 text-amber-700 border-amber-200',       label: 'En attente',  icon: <Clock size={10} />       },
   sent:      { badge: 'bg-amber-50 text-amber-700 border-amber-200',       label: 'En attente',  icon: <Clock size={10} />       },
-  partiel:   { badge: 'bg-orange-50 text-orange-600 border-orange-200',   label: 'Partiel',     icon: <Clock size={10} />       },
+  partiel:   { badge: 'bg-yellow-50 text-yellow-700 border-yellow-100',   label: 'Partiel',     icon: <Clock size={10} />       },
   paid:      { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Payée',       icon: <CheckCircle2 size={10} /> },
   cancelled: { badge: 'bg-neutral-50 text-neutral-500 border-neutral-200', label: 'Annulée',     icon: <XCircle size={10} />     },
   exempt:    { badge: 'bg-neutral-50 text-neutral-400 border-neutral-200', label: 'Exemptée',    icon: <XCircle size={10} />     },
@@ -49,84 +49,49 @@ function Skeleton() {
 }
 
 /* ─── Invoice detail modal ──────────────────────────────── */
+/* Résumé rapide (pas une réplique de la facture — l'admin lui-même n'en a pas
+   sur cet écran) : la SEULE source de vérité pour l'apparence de la facture est
+   le PDF partagé (lib/invoice-pdf.ts), identique pour l'admin et le membre. */
 function InvoiceModal({ invoice, onClose }: { invoice: MemberInvoiceDoc; onClose: () => void }) {
   const recipientStatus = invoice.myRecipient?.status ?? 'pending';
   const cfg = STATUS_CONFIG[recipientStatus as RecipientStatus];
   const pending = isPending(recipientStatus as RecipientStatus);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/55 p-3 backdrop-blur-sm sm:p-6">
-      <div className="mx-auto flex max-w-[860px] flex-col gap-3">
-        <div className="flex justify-end">
-          <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-neutral-500 shadow-lg hover:text-neutral-900">
-            <X size={16} />
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-600">Facture</p>
+            <h3 className="text-lg font-black text-neutral-900">{invoice.title}</h3>
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
         </div>
-        <div className="overflow-auto rounded-2xl bg-neutral-100 p-3 shadow-2xl">
-          <div className="mx-auto w-[794px] origin-top scale-[0.43] rounded-2xl bg-white text-slate-950 shadow-xl sm:scale-100" style={{ height: 1123 }}>
-            <div className="h-1.5 w-full bg-gradient-to-r from-emerald-700 via-red-600 to-amber-400" />
-            <header className="h-[130px] bg-gradient-to-br from-[#087348] via-[#075f41] to-[#043d2d] px-8 py-6 text-white">
-              <p className="text-xs font-black uppercase tracking-[0.28em] text-yellow-200">Association SALAM</p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight">Facture</h2>
-              <p className="mt-1 font-mono text-xs text-white/75">{invoice.myRecipient?.invoiceNumber ?? invoice.invoiceNumber}</p>
-            </header>
-            <main className="space-y-6 px-8 py-8">
-              <div className="grid grid-cols-2 gap-6">
-                <section className="rounded-2xl border border-neutral-200 p-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-400">Émetteur</p>
-                  <p className="mt-2 text-lg font-black text-neutral-900">{initialAssociation.title}</p>
-                  <p className="mt-2 text-sm text-neutral-500">{initialAssociation.address}</p>
-                  <p className="text-sm text-neutral-500">{initialAssociation.email} · {initialAssociation.phone}</p>
-                </section>
-                <section className="rounded-2xl border border-neutral-200 p-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-400">Facturé à</p>
-                  <p className="mt-2 text-lg font-black text-neutral-900">{invoice.viewerIdentity?.name || 'Membre SALAM'}</p>
-                  <p className="mt-2 text-sm text-neutral-500">{invoice.viewerIdentity?.email}</p>
-                  <p className="text-sm text-neutral-500">{invoice.viewerIdentity?.phone}</p>
-                  {invoice.viewerIdentity?.memberId && <p className="text-sm text-neutral-500">N° membre : {invoice.viewerIdentity.memberId}</p>}
-                </section>
-              </div>
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                <div className="rounded-xl bg-neutral-50 p-4"><span className="text-neutral-400">Émission</span><b className="mt-1 block">{fmt(invoice.issuedAt)}</b></div>
-                <div className="rounded-xl bg-neutral-50 p-4"><span className="text-neutral-400">Échéance</span><b className="mt-1 block">{fmt(invoice.dueDate)}</b></div>
-                <div className="rounded-xl bg-neutral-50 p-4"><span className="text-neutral-400">Statut</span><b className="mt-1 block">{cfg.label}</b></div>
-              </div>
-              <section className="overflow-hidden rounded-2xl border border-neutral-200">
-                <div className="grid grid-cols-[1fr_140px] bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-wider text-white">
-                  <span>Désignation</span><span className="text-right">Montant</span>
-                </div>
-                <div className="grid grid-cols-[1fr_140px] px-5 py-5 text-sm">
-                  <div>
-                    <p className="font-black">{invoice.title}</p>
-                    {invoice.description && <p className="mt-1 leading-relaxed text-neutral-500">{invoice.description}</p>}
-                  </div>
-                  <b className="text-right">{`${fmtCfaNum(invoice.amount)} F.CFA`}</b>
-                </div>
-              </section>
-              <div className="ml-auto w-[320px] rounded-2xl bg-neutral-50 p-5">
-                <div className="flex justify-between text-sm"><span>Total HT</span><b>{`${fmtCfaNum(invoice.amount)} F.CFA`}</b></div>
-                <div className="mt-2 flex justify-between text-sm"><span>TVA</span><b>0 F.CFA</b></div>
-                <div className="mt-4 flex justify-between rounded-xl bg-emerald-700 px-4 py-3 text-white"><span className="font-bold">Total TTC</span><b>{`${fmtCfaNum(invoice.amount)} F.CFA`}</b></div>
-              </div>
-              <div className={`mx-auto flex w-fit items-center gap-2 rounded-full border-2 px-6 py-2 ${recipientStatus === 'paid' ? 'border-emerald-500 text-emerald-700' : pending ? 'border-amber-400 text-amber-700' : 'border-neutral-300 text-neutral-500'}`}>
-                {recipientStatus === 'paid' ? <CheckCircle2 size={16} /> : pending ? <Clock size={16} /> : <XCircle size={16} />}
-                <span className="text-sm font-black uppercase tracking-[0.18em]">{cfg.label}</span>
-              </div>
-            </main>
-            <footer className="border-t bg-slate-50 px-8 py-4 text-center text-xs text-slate-500">Page 1/1</footer>
+        <div className="space-y-4 px-6 py-5">
+          <p className="font-mono text-xs text-neutral-400">{invoice.myRecipient?.invoiceNumber ?? invoice.invoiceNumber}</p>
+          <div className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black ${cfg.badge}`}>
+            {cfg.icon} {cfg.label}
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-xl bg-neutral-50 p-3"><span className="text-[11px] text-neutral-400">Émission</span><b className="mt-0.5 block">{fmt(invoice.issuedAt)}</b></div>
+            <div className="rounded-xl bg-neutral-50 p-3"><span className="text-[11px] text-neutral-400">Échéance</span><b className="mt-0.5 block">{fmt(invoice.dueDate)}</b></div>
+          </div>
+          <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3">
+            <span className="text-sm font-semibold text-neutral-600">Montant TTC</span>
+            <span className="text-xl font-black text-emerald-700">{fmtCfaNum(invoice.amount)} F.CFA</span>
           </div>
         </div>
-        <div className="rounded-2xl bg-white p-4 shadow-xl">
+        <div className="space-y-2 border-t border-neutral-100 px-6 py-4">
           {pending && invoice.paymentLink && (
             <a href={invoice.paymentLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]">
               <Banknote size={14} /> Payer maintenant
             </a>
           )}
           <button onClick={() => printMemberInvoice(invoice)}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 py-2.5 text-sm font-black text-violet-700 transition hover:bg-violet-100">
-            <Download size={14} /> Telecharger la facture PDF
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 py-2.5 text-sm font-black text-violet-700 transition hover:bg-violet-100">
+            <Download size={14} /> Télécharger la facture PDF
           </button>
-          <button onClick={onClose} className="mt-3 w-full rounded-xl border border-neutral-200 bg-white py-2.5 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300">
+          <button onClick={onClose} className="w-full rounded-xl border border-neutral-200 bg-white py-2.5 text-sm font-semibold text-neutral-600 transition hover:border-neutral-300">
             Fermer
           </button>
         </div>

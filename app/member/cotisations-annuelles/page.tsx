@@ -11,7 +11,7 @@ import { downloadReceiptPdf } from '@/lib/receipt-pdf';
 /* ─── Status config ──────────────────────────────────────── */
 const STATUS_CFG: Record<CotisationAnnuelleStatus, { badge: string; label: string; icon: React.ReactNode; dot: string }> = {
   paid:    { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',        label: 'Payé',      icon: <CheckCircle2 size={12} />, dot: 'bg-emerald-500' },
-  partiel: { badge: 'bg-orange-50 text-orange-600 border-orange-200',          label: 'Partiel',   icon: <Clock size={12} />,        dot: 'bg-orange-500'  },
+  partiel: { badge: 'bg-yellow-50 text-yellow-700 border-yellow-100',          label: 'Partiel',   icon: <Clock size={12} />,        dot: 'bg-yellow-500'  },
   unpaid:  { badge: 'bg-red-50 text-red-700 border-red-200',                    label: 'Non payé',  icon: <XCircle size={12} />,      dot: 'bg-red-500'     },
   exempt:  { badge: 'bg-emerald-950/10 text-emerald-900 border-emerald-900/25', label: 'Exempté',   icon: <ShieldOff size={12} />,    dot: 'bg-emerald-900' },
 };
@@ -23,108 +23,6 @@ function fmt(dateStr?: string | null) {
 
 function formatCfa(amount?: number) {
   return `${Number(amount ?? 0).toLocaleString('fr-FR')} F.CFA`;
-}
-
-const RECEIPT_ASSOCIATION = {
-  name: 'ASSOCIATION SALAM',
-  title: 'SALAM Cameroun · Maroc',
-  address: "Adresse de l'association",
-  registration: "N° d'immatriculation : SALAM-CMR-2026",
-  email: 'contact@salam-cameroun.com',
-  phone: '+237 000 000 000',
-};
-
-function escReceipt(value: unknown) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-/* Génère un reçu A4 imprimable/téléchargeable (impression navigateur → "Enregistrer en PDF") */
-function downloadAnnuelleReceiptPdf(cot: CotisationAnnuelleDoc, user: { firstName: string; lastName: string; memberNumber?: string | null }) {
-  const receiptNum = `SALAM-CA-RECU-${cot.year}-${cot._id.slice(-6).toUpperCase()}`;
-  const memberName = formatFullName(user.firstName, user.lastName);
-  const memberId = user.memberNumber ?? '-';
-  const paidAt = fmt(cot.paidAt);
-  const html = `
-<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8" />
-  <title>${escReceipt(receiptNum)}</title>
-  <style>
-    @page { size: A4 portrait; margin: 0; }
-    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { margin: 0; background: #e5e7eb; font-family: Arial, sans-serif; color: #0f172a; font-size: clamp(10px, 1.45vw, 13px); }
-    .page { width: min(100vw, 794px); min-height: min(1123px, calc(100vw * 1.414)); margin: 0 auto; background: white; padding: clamp(22px, 4.8vw, 42px); position: relative; overflow: hidden; }
-    .flag { position: absolute; left: 0; right: 0; top: 0; height: clamp(4px, .8vw, 7px); background: linear-gradient(90deg,#0B8F3A 0 33%,#C8102E 33% 66%,#F7C600 66%); }
-    .header { margin: calc(clamp(22px, 4.8vw, 42px) * -1) calc(clamp(22px, 4.8vw, 42px) * -1) clamp(18px, 3vw, 28px); padding: clamp(32px, 5vw, 42px) clamp(22px, 4.8vw, 42px) clamp(18px, 3vw, 26px); background: linear-gradient(135deg,#087348,#075f41 62%,#043d2d); color: white; }
-    .eyebrow { color: #fde68a; font-size: clamp(8px, 1.6vw, 11px); font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
-    h1 { margin: clamp(8px, 2vw, 12px) 0 5px; font-size: clamp(22px, 5vw, 31px); line-height: 1; }
-    .muted { color: #64748b; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-    .card { border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; background: #fff; }
-    .card h2 { margin: 0 0 14px; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: #64748b; }
-    table { width: 100%; border-collapse: collapse; margin-top: 24px; font-size: 13px; }
-    th { background: #0f172a; color: white; text-align: left; padding: 12px 10px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
-    td { border-bottom: 1px solid #eef2f7; padding: 12px 10px; }
-    .right { text-align: right; }
-    .paid { display: inline-flex; align-items:center; justify-content:center; border: 2px solid #059669; color: #047857; border-radius: 999px; padding: 10px 28px; font-weight: 900; letter-spacing: .18em; margin: 26px auto; }
-    .thanks { margin-top: 24px; border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 18px; padding: 20px; color: #047857; font-weight: 700; line-height: 1.6; }
-    .footer { position: absolute; left: 48px; right: 48px; bottom: 30px; border-top: 1px solid #e5e7eb; padding-top: 14px; text-align: center; color: #64748b; font-size: 11px; }
-    @media print { body { background: white; font-size: 12px; } .page { width: 794px; min-height: 1123px; margin: 0; padding: 38px; } .header { margin: -38px -38px 26px; padding: 40px 38px 24px; } }
-  </style>
-</head>
-<body>
-  <div class="page">
-    <div class="flag"></div>
-    <header class="header">
-      <div class="eyebrow">${escReceipt(RECEIPT_ASSOCIATION.name)}</div>
-      <p style="color:rgba(255,255,255,.72)">Solidaire Associative des Lauréats du Maroc</p>
-      <h1>Reçu de paiement</h1>
-      <p style="color:rgba(255,255,255,.72)">${escReceipt(receiptNum)} · ${escReceipt(paidAt)}</p>
-    </header>
-    <section class="grid">
-      <div class="card">
-        <h2>Émetteur</h2>
-        <strong>${escReceipt(RECEIPT_ASSOCIATION.title)}</strong>
-        <p class="muted">${escReceipt(RECEIPT_ASSOCIATION.address)}</p>
-        <p class="muted">${escReceipt(RECEIPT_ASSOCIATION.registration)}</p>
-        <p class="muted">${escReceipt(RECEIPT_ASSOCIATION.email)} · ${escReceipt(RECEIPT_ASSOCIATION.phone)}</p>
-      </div>
-      <div class="card">
-        <h2>Membre</h2>
-        <strong>${escReceipt(memberName)}</strong>
-        <p class="muted">N° membre : ${escReceipt(memberId)}</p>
-        ${cot.reference ? `<p class="muted">Référence : ${escReceipt(cot.reference)}</p>` : ''}
-      </div>
-    </section>
-    <div style="text-align:center"><span class="paid">PAYÉ</span></div>
-    <table>
-      <thead><tr><th>Reçu</th><th>Désignation</th><th>Date de paiement</th><th class="right">Montant payé</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>${escReceipt(receiptNum)}</td>
-          <td>Cotisation annuelle ${escReceipt(cot.year)}</td>
-          <td>${escReceipt(paidAt)}</td>
-          <td class="right"><strong>${escReceipt(formatCfa(cot.amount))}</strong></td>
-        </tr>
-      </tbody>
-    </table>
-    ${cot.notes ? `<div class="card" style="margin-top:24px"><h2>Commentaire</h2><p class="muted">${escReceipt(cot.notes)}</p></div>` : ''}
-    <div class="thanks">Merci pour votre engagement au sein de SALAM. Votre contribution annuelle soutient les actions d'orientation, de solidarité et d'insertion portées par l'association.</div>
-    <footer class="footer">${escReceipt(RECEIPT_ASSOCIATION.title)} · ${escReceipt(RECEIPT_ASSOCIATION.email)} · ${escReceipt(RECEIPT_ASSOCIATION.phone)} · ${escReceipt(RECEIPT_ASSOCIATION.registration)}</footer>
-  </div>
-  <script>window.addEventListener('load', () => setTimeout(() => window.print(), 250));</script>
-</body>
-</html>`;
-  const win = window.open('', '_blank', 'width=900,height=1200');
-  if (!win) return;
-  win.document.write(html);
-  win.document.close();
 }
 
 /* ─── Skeleton ───────────────────────────────────────────── */
@@ -345,7 +243,7 @@ export function MemberCotisationsAnnuelleContent() {
                       <Eye size={13} />
                     </button>
                     {cot.status === 'paid' && (
-                      <button onClick={() => downloadAnnuelleReceiptPdf(cot, user)}
+                      <button onClick={() => setOpenReceipt(cot)}
                         className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 transition hover:border-emerald-300 hover:text-emerald-700"
                         title="Télécharger le reçu">
                         <Download size={13} />

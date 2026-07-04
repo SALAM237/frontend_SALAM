@@ -41,7 +41,7 @@ const STATUS_CONFIG: Record<InvoiceStatus, { badge: string; label: string; icon:
 const RECIPIENT_STATUS_CONFIG: Record<RecipientDoc['status'], { badge: string; label: string }> = {
   pending:   { badge: 'bg-neutral-50 text-neutral-600 border-neutral-200', label: 'A envoyer' },
   sent:      { badge: 'bg-red-50 text-red-600 border-red-200', label: 'Impayee' },
-  partiel:   { badge: 'bg-orange-50 text-orange-600 border-orange-200', label: 'Partiel' },
+  partiel:   { badge: 'bg-yellow-50 text-yellow-700 border-yellow-100', label: 'Partiel' },
   paid:      { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Payee' },
   cancelled: { badge: 'bg-red-50 text-red-700 border-red-200', label: 'Annulee' },
   exempt:    { badge: 'bg-neutral-50 text-neutral-400 border-neutral-200', label: 'Exempte' },
@@ -1957,7 +1957,16 @@ export default function FacturationAdminPage() {
           presetYear={presetYear}
           onClose={() => {
             setCreateMotif(null);
-            if (motifParam) router.replace('/admin/facturation');
+            /* Ce flux d'édition n'a été atteint que via le raccourci "facture requise"
+               depuis Adhérents (motifParam présent) : une fois terminé (création ou
+               annulation), on renvoie l'admin vers l'onglet Adhérents d'où il vient —
+               jamais vers Facturation, qui n'a jamais été l'interface d'origine. Si
+               l'éditeur a été ouvert directement depuis Facturation (motifParam absent),
+               on y reste, comportement inchangé. */
+            if (motifParam) {
+              const returnTab = motifParam === 'cotisation' ? 'frais' : motifParam === 'cotisation_annuelle' ? 'cotisation-annuelle' : null;
+              router.replace(returnTab ? `/admin/adherents?tab=${returnTab}` : '/admin/adherents');
+            }
           }}
         />
       )}

@@ -48,7 +48,7 @@ const REMINDER_OPTIONS = [
 /* ─── Helpers ────────────────────────────────────────────── */
 const STATUS_CONFIG: Record<CotisationAnnuelleStatus, { dot: string; badge: string; label: string; icon: React.ReactNode }> = {
   paid:    { dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',        label: 'Payé',      icon: <CheckCircle2 size={11} /> },
-  partiel: { dot: 'bg-orange-500',  badge: 'bg-orange-50 text-orange-600 border-orange-200',           label: 'Partiel',   icon: <Clock size={11} />         },
+  partiel: { dot: 'bg-yellow-500',  badge: 'bg-yellow-50 text-yellow-700 border-yellow-100',           label: 'Partiel',   icon: <Clock size={11} />         },
   unpaid:  { dot: 'bg-red-500',     badge: 'bg-red-50 text-red-700 border-red-200',                    label: 'Non payé',  icon: <XCircle size={11} />     },
   exempt:  { dot: 'bg-emerald-900', badge: 'bg-emerald-950/10 text-emerald-900 border-emerald-900/25', label: 'Exempté',   icon: <ShieldOff size={11} />   },
 };

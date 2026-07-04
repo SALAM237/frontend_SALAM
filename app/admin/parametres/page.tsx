@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Save, CheckCircle2, Shield, Bell, Globe, Lock, Palette, FileText } from 'lucide-react';
+import { Save, CheckCircle2, Shield, Bell, Globe, Lock, Palette, FileText, Camera, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
-import { isSuperAdmin } from '@/lib/auth/roles';
+import { isSuperAdmin, hasAnyPermission } from '@/lib/auth/roles';
+import { usePdfLogo, useUploadPdfLogo } from '@/lib/api/settings';
 
 export default function ParametresPage() {
   const router = useRouter();
@@ -69,6 +70,9 @@ export default function ParametresPage() {
           </div>
           <Field label="URL du site" value="https://salam-cameroun.com" onChange={() => {}} disabled />
         </Section>}
+
+        {/* Logo PDF */}
+        {activeTab === 'profil' && hasAnyPermission(user, ['settings.update']) && <PdfLogoSection />}
 
         {/* Notifications */}
         {activeTab === 'preferences' && <Section icon={Bell} title="Notifications admin">
@@ -164,6 +168,55 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
         <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all sm:h-5 sm:w-5 ${checked ? 'left-[18px] sm:left-[22px]' : 'left-0.5'}`} />
       </button>
     </div>
+  );
+}
+
+/* Logo utilisé sur TOUS les documents PDF générés (factures, reçus), côté admin
+   ET côté membre — même principe que la photo de profil d'un membre. */
+function PdfLogoSection() {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const { data } = usePdfLogo();
+  const uploadLogo = useUploadPdfLogo();
+  const logoUrl = data?.data?.logoUrl;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadLogo.mutate(file);
+    e.target.value = '';
+  };
+
+  return (
+    <Section icon={Camera} title="Logo des documents PDF">
+      <p className="text-sm text-neutral-500">
+        Ce logo apparaît sur toutes les factures et tous les reçus générés, aussi bien depuis l&apos;espace admin que depuis l&apos;espace membre.
+      </p>
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="relative shrink-0">
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt="Logo PDF" className="h-16 w-16 rounded-xl border-2 border-neutral-200 object-contain bg-white p-1" />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-dashed border-neutral-200 text-neutral-300">
+              <Camera size={20} />
+            </div>
+          )}
+          {uploadLogo.isPending && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40">
+              <Loader2 size={16} className="animate-spin text-white" />
+            </div>
+          )}
+        </div>
+        <input ref={fileRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp" className="hidden" onChange={handleChange} />
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploadLogo.isPending}
+          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700 disabled:opacity-50"
+        >
+          <Camera size={13} /> {uploadLogo.isPending ? 'Envoi…' : 'Changer le logo'}
+        </button>
+      </div>
+    </Section>
   );
 }
 

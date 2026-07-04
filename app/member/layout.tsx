@@ -11,6 +11,7 @@ import { formatFirstName, formatFullName, formatInitials } from '@/lib/format-na
 import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import MemberAccountTabs, { isMemberAccountPath } from '@/components/member/MemberAccountTabs';
 import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
+import { PdfLogoSync } from '@/components/shared/PdfLogoSync';
 import { NotificationCenter } from '@/components/portal/NotificationCenter';
 import { CauriBadge } from '@/components/member/CauriWallet';
 import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
@@ -272,6 +273,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">
       <AuthSessionKeeper />
+      <PdfLogoSync />
       <GlobalProfilePhotoLightbox />
       <MemberSidebar
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
@@ -330,7 +332,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
               href="/member/profil"
               className="mb-4 block rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-black text-red-700 shadow-sm transition hover:border-red-300 hover:bg-red-100"
             >
-              Profil incomplet : merci de compléter toutes vos informations pour finaliser votre fiche membre.
+              Cliquez ici, et complétez ces informations pour finaliser votre fiche de membre. Votre profil est incomplet.
             </Link>
           )}
           {isMemberAccountPath(pathname) && <MemberAccountTabs />}

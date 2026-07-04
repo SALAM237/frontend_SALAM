@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   UserPlus, CreditCard, Search, Eye, CheckCircle2, Clock, XCircle,
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
@@ -56,7 +56,7 @@ const cotisationConfig: Record<string, { label: string; labelMobile?: string; cl
 };
 const cotisAnnuelleConfig: Record<string, { label: string; labelMobile?: string; cls: string }> = {
   paid:    { label: 'Cot. Payé',    labelMobile: 'Cotisation Payé',      cls: 'bg-emerald-50 text-emerald-700'  },
-  partiel: { label: 'Cot. Partiel', labelMobile: 'Cotisation Partielle', cls: 'bg-orange-50 text-orange-600'  },
+  partiel: { label: 'Cot. Partiel', labelMobile: 'Cotisation Partielle', cls: 'bg-yellow-50 text-yellow-700'  },
   unpaid:  { label: 'Cot. Impayée', labelMobile: 'Cotisation Impayée',   cls: 'bg-red-50 text-red-600'        },
   exempt:  { label: 'Exempté cotisation', cls: 'bg-neutral-50 text-neutral-400' },
 };
@@ -265,7 +265,10 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
         className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center font-black outline-none disabled:cursor-not-allowed disabled:opacity-60 ${sizes.badge} ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
       >
         <option value="unpaid" disabled={isFullySettled || t.amount > 0}>{isUnfilledAndIrrelevant ? 'N.C' : 'Impayé'}</option>
-        <option value="paid" disabled={lastTrancheBlocksPaid}>Payé</option>
+        {/* "Payé" ne doit jamais être choisi manuellement dans la liste — il se met
+            automatiquement dès qu'un montant validé couvre la tranche (cf. commitAmount).
+            Option conservée uniquement pour permettre l'affichage de la valeur courante. */}
+        <option value="paid" disabled>Payé</option>
         <option value="exempt">Exempté</option>
       </select>
 
@@ -488,8 +491,22 @@ function easeTabScroll(t: number) {
 }
 
 export default function AdminAdherentsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   /* ── Tab state ─────────────────────────────────────────── */
   const [activeTab,      setActiveTab]      = useState<ActiveTab>(null);
+
+  /* Retour depuis le raccourci "facture requise" (Facturation) : rouvre
+     automatiquement l'onglet d'où le workflow de création de facture est parti,
+     jamais Facturation elle-même. Le paramètre est ensuite nettoyé de l'URL. */
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'frais' || tabParam === 'cotisation-annuelle') {
+      setActiveTab(tabParam);
+      router.replace('/admin/adherents');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const [showKpis,       setShowKpis]       = useState(true);
   const [relanceSub,     setRelanceSub]     = useState<RelanceSub>(null);

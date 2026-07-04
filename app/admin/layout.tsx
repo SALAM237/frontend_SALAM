@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, CalendarDays,
   Images, Newspaper, Settings, Menu, X, ChevronRight, Bell,
   Banknote, FileText, History, MessageSquare, Shield, Loader2, Globe, ShieldCheck,
-  Handshake, BriefcaseBusiness, Sparkles, Target, ScanLine, AlertTriangle,
+  Handshake, BriefcaseBusiness, Sparkles, Target, ScanLine, AlertTriangle, Gift,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
@@ -18,6 +18,7 @@ import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import AdminAccountTabs from '@/components/admin/AdminAccountTabs';
 import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
+import { PdfLogoSync } from '@/components/shared/PdfLogoSync';
 import { NotificationCenter } from '@/components/portal/NotificationCenter';
 import { CauriBadge } from '@/components/member/CauriWallet';
 import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
@@ -38,6 +39,7 @@ const BASE_NAV: NavItem[] = [
   { label: 'Scanner QR',        href: '/admin/scanner',           icon: ScanLine,    permissions: ['scans.create', 'scans.read'] },
   { label: 'Galerie',           href: '/admin/galerie',           icon: Images },
   { label: 'Actualités',        href: '/admin/actualites',        icon: Newspaper },
+  { label: 'Marketing',         href: '/admin/marketing',         icon: Gift, permissions: ['marketing.read', 'marketing.create'] },
   { label: 'Networking',        href: '/admin/networking',        icon: Handshake, permissions: ['networking.publish'] },
   { label: 'Opportunites',      href: '/admin/opportunites',      icon: BriefcaseBusiness, permissions: ['opportunities.publish', 'opportunities.create', 'opportunities.update', 'opportunities.delete'] },
   { label: 'Messages',          href: '/admin/messages',          icon: MessageSquare },
@@ -354,6 +356,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-screen bg-[#f4f6f5]">
       <AuthSessionKeeper />
+      <PdfLogoSync />
       <GlobalProfilePhotoLightbox />
       <AdminSidebar
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}

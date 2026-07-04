@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { sanitizeRichHtml } from '@/lib/rich-text';
 import type { MemberInvoiceDoc } from '@/lib/api/invoices';
+import { usePdfLogoStore, DEFAULT_PDF_LOGO_URL } from '@/store/pdf-logo.store';
 
 /* Génération de factures imprimables/téléchargeables (impression navigateur →
    "Enregistrer en PDF") — PARTAGÉ entre la vue admin (app/admin/facturation) et
@@ -43,20 +44,23 @@ export const initialAssociation: AssociationInvoiceInfo = {
   email: 'contact@salam-cameroun.com',
   phone: '+237 000 000 000',
   logo: 'SALAM',
-  logoUrl: '/images/logo/logo%20salam.jfif',
+  logoUrl: DEFAULT_PDF_LOGO_URL,
 };
 
+/* Le logo est TOUJOURS celui configuré centralement (Admin > Compte, store
+   partagé synchronisé par PdfLogoSync) — jamais une ancienne préférence locale
+   au navigateur, pour garantir que le PDF admin et le PDF membre affichent
+   rigoureusement le même logo. */
 export function loadAssociationInfo(): AssociationInvoiceInfo {
-  if (typeof window === 'undefined') return initialAssociation;
+  const centralLogoUrl = usePdfLogoStore.getState().logoUrl;
+  if (typeof window === 'undefined') return { ...initialAssociation, logoUrl: centralLogoUrl };
   try {
     const raw = window.localStorage.getItem(ASSOCIATION_STORAGE_KEY);
-    const merged = raw ? { ...initialAssociation, ...JSON.parse(raw) } : initialAssociation;
-    /* Un ancien enregistrement localStorage (avant l'ajout du logo par défaut) peut
-       avoir persisté logoUrl: '' — ne jamais laisser ce vide écraser le logo SALAM. */
-    if (!merged.logoUrl) merged.logoUrl = initialAssociation.logoUrl;
+    const merged = raw ? { ...initialAssociation, ...JSON.parse(raw) } : { ...initialAssociation };
+    merged.logoUrl = centralLogoUrl;
     return merged;
   } catch {
-    return initialAssociation;
+    return { ...initialAssociation, logoUrl: centralLogoUrl };
   }
 }
 
@@ -288,7 +292,7 @@ export function openInvoicePdfBatch(documents: InvoicePdfDocument[]) {
 function buildMemberInvoicePdfDoc(invoice: MemberInvoiceDoc): InvoicePdfDocument {
   const identity = invoice.viewerIdentity;
   return {
-    association: initialAssociation,
+    association: loadAssociationInfo(),
     invoiceTitle: invoice.title,
     invoiceNumber: invoice.myRecipient?.invoiceNumber ?? invoice.invoiceNumber,
     recipient: {

@@ -1,15 +1,21 @@
 import type { ReceiptDoc } from '@/lib/api/receipts';
 import { formatFullName } from '@/lib/format-name';
+import { usePdfLogoStore } from '@/store/pdf-logo.store';
 
-const RECEIPT_ASSOCIATION = {
+const RECEIPT_ASSOCIATION_BASE = {
   name: 'ASSOCIATION SALAM',
   title: 'SALAM Cameroun · Maroc',
   address: "Adresse de l'association",
   registration: "N° d'immatriculation : SALAM-CMR-2026",
   email: 'contact@salam-cameroun.com',
   phone: '+237 000 000 000',
-  logoUrl: '/images/logo/logo%20salam.jfif',
 };
+
+/* Logo TOUJOURS celui configuré centralement (Admin > Compte, store partagé
+   synchronisé par PdfLogoSync) — identique entre reçu admin et reçu membre. */
+function receiptAssociation() {
+  return { ...RECEIPT_ASSOCIATION_BASE, logoUrl: usePdfLogoStore.getState().logoUrl };
+}
 
 function fmt(dateStr?: string | null) {
   if (!dateStr) return '—';
@@ -38,6 +44,7 @@ export function downloadReceiptPdf(
   user: { firstName: string; lastName: string; memberNumber?: string | null },
   resteAPayerOverride?: number,
 ) {
+  const RECEIPT_ASSOCIATION = receiptAssociation();
   const memberName = formatFullName(user.firstName, user.lastName);
   const memberId = user.memberNumber ?? '-';
   const paidAt = fmt(receipt.paidAt);

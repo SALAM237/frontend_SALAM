@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { CheckCircle2, XCircle, ShieldOff, Download, X, Loader2 } from 'lucide-react';
 import { useMemberCotisations, type CotisationDoc, type CotisationStatus } from '@/lib/api/cotisations';
+import { useMemberReceipts } from '@/lib/api/receipts';
 import { useAuthStore } from '@/store/auth.store';
 import { formatFullName } from '@/lib/format-name';
+import { downloadReceiptPdf } from '@/lib/receipt-pdf';
 import { MemberCotisationsAnnuelleContent } from '@/app/member/cotisations-annuelles/page';
 
 /* ─── Status config ──────────────────────────────────────── */
@@ -49,6 +51,8 @@ function ReceiptModal({ cot, user, onClose }: {
 }) {
   const receiptNum = `SALAM-RECU-${cot.year}-${cot._id.slice(-6).toUpperCase()}`;
   const memberId   = user.memberNumber ?? '-';
+  const { data: receiptsData } = useMemberReceipts({ type: 'cotisation', year: cot.year });
+  const realReceipt = (receiptsData?.data ?? []).find(r => r.status !== 'cancelled');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -56,7 +60,10 @@ function ReceiptModal({ cot, user, onClose }: {
         <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
           <p className="text-sm font-black text-neutral-900">Reçu de paiement</p>
           <div className="flex items-center gap-2">
-            <button className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-200 px-3 text-xs font-semibold text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700">
+            <button
+              onClick={() => realReceipt && downloadReceiptPdf(realReceipt, user)}
+              disabled={!realReceipt}
+              className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-200 px-3 text-xs font-semibold text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
               <Download size={12} /> Télécharger
             </button>
             <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700">
