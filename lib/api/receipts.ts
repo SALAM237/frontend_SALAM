@@ -34,6 +34,12 @@ export interface ReceiptDoc {
   cancelledAt?: string | null;
   cancelledBy?: string | { _id: string; firstName?: string; lastName?: string } | null;
   createdAt: string;
+  /* Solde restant figé au moment de l'édition de ce reçu (jamais recalculé après
+     coup avec la mise à jour du solde de la dette). */
+  resteAPayer?: number | null;
+  /* Récap des tranches précédentes actives — présent uniquement sur le reçu qui
+     solde intégralement la dette (resteAPayer === 0). */
+  previousTranches?: { trancheIndex: number | null; receiptNumber: string; amount: number; paidAt: string }[];
 }
 
 /* ── Admin ──────────────────────────────────────────────── */

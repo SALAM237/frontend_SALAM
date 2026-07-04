@@ -20,7 +20,7 @@ export interface RecipientDoc {
   };
   clientId?: string | InvoiceClientDoc;
   invoiceNumber: string;
-  status: 'pending' | 'sent' | 'partiel' | 'paid' | 'cancelled';
+  status: 'pending' | 'sent' | 'partiel' | 'paid' | 'cancelled' | 'exempt';
   sentAt?: string;
   paidAt?: string;
   /* Cotisation annuelle payée par tranches : index (0-3) de la dernière tranche validée */
@@ -37,6 +37,8 @@ export interface InvoiceDoc {
   amount: number;
   currency: string;
   issuedAt: string;
+  /* Année du motif facturé (cotisation/cotisation_annuelle), distincte de issuedAt */
+  year?: number;
   dueDate: string;
   paymentLink?: string;
   status: 'draft' | 'sent' | 'closed';
@@ -44,8 +46,19 @@ export interface InvoiceDoc {
   createdBy?: { firstName: string; lastName: string };
 }
 
+export interface InvoiceViewerIdentity {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  memberId: string;
+}
+
 export interface MemberInvoiceDoc extends InvoiceDoc {
   myRecipient: RecipientDoc;
+  /* Identité réelle du membre connecté — pour que l'aperçu/PDF affiche le vrai
+     destinataire au lieu d'un texte générique, comme côté admin. */
+  viewerIdentity: InvoiceViewerIdentity | null;
 }
 
 export interface InvoiceClientDoc {
@@ -85,6 +98,9 @@ export function useCreateInvoice() {
       paymentLink?: string;
       recipientIds?: string[];
       clientIds?: string[];
+      /* Année du motif facturé (cotisation/cotisation_annuelle) — celle sélectionnée
+         par l'admin dans l'onglet Adhérents, pour lier la facture au bon dossier. */
+      year?: number;
     }) =>
       apiClient<InvoiceDoc>('/api/v1/admin/invoices', {
         method: 'POST',

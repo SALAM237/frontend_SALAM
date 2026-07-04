@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Download, Eye, FileText, FolderOpen, GraduationCap, Loader2, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
-import { downloadMemberInvoicePdf, useMemberInvoices } from '@/lib/api/invoices';
+import { useMemberInvoices } from '@/lib/api/invoices';
+import { printMemberInvoice } from '@/lib/invoice-pdf';
 import { useMemberSharedDocuments, type SharedDocument } from '@/lib/api/documents';
 import { useGenerateMemberAttestation } from '@/lib/api/attestation';
 import { DocumentPreviewModal } from '@/components/portal/DocumentPreviewModal';
@@ -207,7 +207,7 @@ export default function MemberDocumentsPage() {
                     <Eye size={14} />
                   </button>
                   <button type="button" title="Télécharger en PDF"
-                    onClick={() => downloadMemberInvoicePdf(invoice._id, number).catch(err => toast.error(err.message))}
+                    onClick={() => printMemberInvoice(invoice)}
                     className="flex h-9 w-9 items-center justify-center rounded-lg border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100">
                     <Download size={14} />
                   </button>

@@ -155,7 +155,6 @@ function ReceiptModal({ cot, user, onClose }: {
   const { data, isLoading } = useMemberReceipts({ type: 'cotisation_annuelle', year: cot.year });
   /* Uniquement les tranches réellement réglées (montant > 0) — jamais celles à 0 */
   const receipts = (data?.data ?? []).filter(r => r.amount > 0);
-  const resteAPayer = Math.max(0, cot.amount - (cot.totalPaid ?? 0));
   const activeTotal = receipts.filter(r => r.status !== 'cancelled').reduce((acc, r) => acc + r.amount, 0);
 
   return (
@@ -216,7 +215,7 @@ function ReceiptModal({ cot, user, onClose }: {
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <span className={`text-sm font-black ${isCancelled ? 'text-neutral-400 line-through' : 'text-emerald-700'}`}>{formatCfa(r.amount)}</span>
-                      <button onClick={() => downloadReceiptPdf(r, user, resteAPayer)} title="Télécharger ce reçu"
+                      <button onClick={() => downloadReceiptPdf(r, user)} title="Télécharger ce reçu"
                         className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 transition hover:border-emerald-300 hover:text-emerald-700">
                         <Download size={13} />
                       </button>

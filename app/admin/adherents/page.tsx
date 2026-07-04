@@ -416,15 +416,16 @@ function lastTrancheBlockedContent(resteAPayer: number) {
    Bloque le passage à payé/exempté tant qu'aucune facture n'est
    créée pour le motif concerné ; propose un raccourci direct
    vers l'éditeur de facture, motif et membre déjà pré-remplis. */
-function InvoiceRequiredModal({ member, message, motif, onClose }: {
+function InvoiceRequiredModal({ member, message, motif, year, onClose }: {
   member: MemberListItem;
   message: string;
   motif: 'cotisation' | 'cotisation_annuelle';
+  year: number;
   onClose: () => void;
 }) {
   const router = useRouter();
   const goToInvoiceEditor = () => {
-    router.push(`/admin/facturation?motif=${motif}&memberId=${encodeURIComponent(member._id)}`);
+    router.push(`/admin/facturation?motif=${motif}&memberId=${encodeURIComponent(member._id)}&year=${year}`);
     onClose();
   };
   return (
@@ -511,7 +512,7 @@ export default function AdminAdherentsPage() {
   const [checkedIds,     setCheckedIds]     = useState<Set<string>>(new Set());
   const [showCheckboxes, setShowCheckboxes] = useState(false);
   const [confirmModal,   setConfirmModal]   = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
-  const [invoiceRequiredModal, setInvoiceRequiredModal] = useState<{ member: MemberListItem; message: string; motif: 'cotisation' | 'cotisation_annuelle' } | null>(null);
+  const [invoiceRequiredModal, setInvoiceRequiredModal] = useState<{ member: MemberListItem; message: string; motif: 'cotisation' | 'cotisation_annuelle'; year: number } | null>(null);
   const [statusPopup, setStatusPopup] = useState<{ type: 'error' | 'warning' | 'success'; message?: string; content?: React.ReactNode } | null>(null);
   const showFeedback = (type: 'error' | 'warning' | 'success', message: string, content?: React.ReactNode) => setStatusPopup({ type, message, content });
   const [showGroupsPanel, setShowGroupsPanel] = useState(false);
@@ -746,7 +747,7 @@ export default function AdminAdherentsPage() {
           onError: (err: Error) => {
             if (/Créez d'abord une facture/i.test(err.message)) {
               const member = members.find(m => m._id === userId);
-              if (member) setInvoiceRequiredModal({ member, message: err.message, motif: 'cotisation' });
+              if (member) setInvoiceRequiredModal({ member, message: err.message, motif: 'cotisation', year: cotisYear });
             } else {
               showFeedback('error', err.message);
             }
@@ -1662,7 +1663,7 @@ export default function AdminAdherentsPage() {
                             <>
                               {[0, 1, 2, 3].map(i => (
                                 <td key={i} className="px-1.5 py-1 align-top">
-                                  <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} onFeedback={showFeedback} onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation_annuelle' })} />
+                                  <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} onFeedback={showFeedback} onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation_annuelle', year: cotisAnnuelleYear })} />
                                 </td>
                               ))}
                               <td className="px-2 py-3 align-top">
@@ -1823,7 +1824,7 @@ export default function AdminAdherentsPage() {
                                     {[0, 1, 2, 3].map(i => (
                                       <div key={i} className="rounded-xl border border-violet-100 bg-white p-1.5 text-center">
                                         <p className="mb-0.5 text-[10px] font-black uppercase tracking-[0.1em] text-violet-400">Tranche {i + 1}</p>
-                                        <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} variant="mobile" onFeedback={showFeedback} onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation_annuelle' })} />
+                                        <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} variant="mobile" onFeedback={showFeedback} onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation_annuelle', year: cotisAnnuelleYear })} />
                                       </div>
                                     ))}
                                   </div>
@@ -1905,6 +1906,7 @@ export default function AdminAdherentsPage() {
         member={invoiceRequiredModal.member}
         message={invoiceRequiredModal.message}
         motif={invoiceRequiredModal.motif}
+        year={invoiceRequiredModal.year}
         onClose={() => setInvoiceRequiredModal(null)}
       />
     )}

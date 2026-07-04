@@ -8,6 +8,7 @@ const RECEIPT_ASSOCIATION = {
   registration: "N° d'immatriculation : SALAM-CMR-2026",
   email: 'contact@salam-cameroun.com',
   phone: '+237 000 000 000',
+  logoUrl: '/images/logo/logo%20salam.jfif',
 };
 
 function fmt(dateStr?: string | null) {
@@ -35,7 +36,7 @@ function escReceipt(value: unknown) {
 export function downloadReceiptPdf(
   receipt: ReceiptDoc,
   user: { firstName: string; lastName: string; memberNumber?: string | null },
-  resteAPayer?: number,
+  resteAPayerOverride?: number,
 ) {
   const memberName = formatFullName(user.firstName, user.lastName);
   const memberId = user.memberNumber ?? '-';
@@ -44,6 +45,11 @@ export function downloadReceiptPdf(
     ? `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year} — Tranche ${receipt.trancheIndex + 1}`
     : `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}`;
   const isCancelled = receipt.status === 'cancelled';
+  /* Le solde restant est figé sur le reçu au moment de son édition (receipt.resteAPayer) —
+     il ne doit jamais être recalculé après coup avec la mise à jour du solde de la dette.
+     Le paramètre resteAPayerOverride n'existe que pour compatibilité ascendante. */
+  const resteAPayer = resteAPayerOverride !== undefined ? resteAPayerOverride : receipt.resteAPayer ?? undefined;
+  const previousTranches = receipt.previousTranches ?? [];
   const html = `
 <!doctype html>
 <html lang="fr">
@@ -71,6 +77,9 @@ export function downloadReceiptPdf(
     .thanks { margin-top: 24px; border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 18px; padding: 20px; color: #047857; font-weight: 700; line-height: 1.6; }
     .footer { position: absolute; left: 48px; right: 48px; bottom: 30px; border-top: 1px solid #e5e7eb; padding-top: 14px; text-align: center; color: #64748b; font-size: 11px; }
     .stamp { position: absolute; top: 42%; left: 50%; transform: translate(-50%,-50%) rotate(-18deg); font-size: 96px; font-weight: 900; letter-spacing: .1em; color: rgba(220,38,38,.35); border: 10px solid rgba(220,38,38,.35); border-radius: 24px; padding: 10px 40px; z-index: 20; pointer-events: none; }
+    .logo { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,.15); display: inline-flex; align-items: center; justify-content: center; overflow: hidden; vertical-align: middle; margin-right: 10px; }
+    .logo img { width: 100%; height: 100%; object-fit: cover; }
+    .recap-row td { color: #64748b; font-size: 12px; }
     @media print { body { background: white; font-size: 12px; } .page { width: 794px; min-height: 1123px; margin: 0; padding: 38px; } .header { margin: -38px -38px 26px; padding: 40px 38px 24px; } }
   </style>
 </head>
@@ -79,7 +88,7 @@ export function downloadReceiptPdf(
     <div class="flag"></div>
     ${isCancelled ? '<div class="stamp">ANNULÉ</div>' : ''}
     <header class="header">
-      <div class="eyebrow">${escReceipt(RECEIPT_ASSOCIATION.name)}</div>
+      <div class="eyebrow"><span class="logo"><img src="${RECEIPT_ASSOCIATION.logoUrl}" alt="Logo SALAM" /></span>${escReceipt(RECEIPT_ASSOCIATION.name)}</div>
       <p style="color:rgba(255,255,255,.72)">Solidaire Associative des Lauréats du Maroc</p>
       <h1>Reçu de paiement</h1>
       <p style="color:rgba(255,255,255,.72)">${escReceipt(receipt.receiptNumber)} · ${escReceipt(paidAt)}</p>
@@ -104,6 +113,13 @@ export function downloadReceiptPdf(
     <table>
       <thead><tr><th>Reçu</th><th>Désignation</th><th>Date de paiement</th><th class="right">Montant payé</th></tr></thead>
       <tbody>
+        ${previousTranches.length ? [...previousTranches].sort((a, b) => (a.trancheIndex ?? 0) - (b.trancheIndex ?? 0)).map(t => `
+        <tr class="recap-row">
+          <td>${escReceipt(t.receiptNumber)}</td>
+          <td>${escReceipt(RECEIPT_TYPE_TITLE[receipt.type])} ${escReceipt(receipt.year)}${t.trancheIndex != null ? ` — Tranche ${t.trancheIndex + 1}` : ''}</td>
+          <td>${escReceipt(fmt(t.paidAt))}</td>
+          <td class="right">${escReceipt(formatCfa(t.amount))}</td>
+        </tr>`).join('') : ''}
         <tr>
           <td>${escReceipt(receipt.receiptNumber)}</td>
           <td>${escReceipt(designation)}</td>

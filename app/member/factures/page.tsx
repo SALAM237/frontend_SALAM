@@ -2,17 +2,19 @@
 
 import { useState, useMemo } from 'react';
 import { Banknote, FileText, Eye, X, CheckCircle2, Clock, XCircle, Loader2, Download } from 'lucide-react';
-import { downloadMemberInvoicePdf, useMemberInvoices, type MemberInvoiceDoc } from '@/lib/api/invoices';
-import { toast } from 'sonner';
+import { useMemberInvoices, type MemberInvoiceDoc } from '@/lib/api/invoices';
+import { initialAssociation, printMemberInvoice } from '@/lib/invoice-pdf';
 
 /* ─── Helpers ─────────────────────────────────────────── */
-type RecipientStatus = 'pending' | 'sent' | 'paid' | 'cancelled';
+type RecipientStatus = 'pending' | 'sent' | 'partiel' | 'paid' | 'cancelled' | 'exempt';
 
 const STATUS_CONFIG: Record<RecipientStatus, { badge: string; label: string; icon: React.ReactNode }> = {
   pending:   { badge: 'bg-amber-50 text-amber-700 border-amber-200',       label: 'En attente',  icon: <Clock size={10} />       },
   sent:      { badge: 'bg-amber-50 text-amber-700 border-amber-200',       label: 'En attente',  icon: <Clock size={10} />       },
+  partiel:   { badge: 'bg-orange-50 text-orange-600 border-orange-200',   label: 'Partiel',     icon: <Clock size={10} />       },
   paid:      { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Payée',       icon: <CheckCircle2 size={10} /> },
   cancelled: { badge: 'bg-neutral-50 text-neutral-500 border-neutral-200', label: 'Annulée',     icon: <XCircle size={10} />     },
+  exempt:    { badge: 'bg-neutral-50 text-neutral-400 border-neutral-200', label: 'Exemptée',    icon: <XCircle size={10} />     },
 };
 
 function fmt(d?: string | null) {
@@ -21,7 +23,7 @@ function fmt(d?: string | null) {
 }
 
 function isPending(status: RecipientStatus) {
-  return status === 'pending' || status === 'sent';
+  return status === 'pending' || status === 'sent' || status === 'partiel';
 }
 
 function fmtCfaNum(amount: number) {
@@ -72,15 +74,16 @@ function InvoiceModal({ invoice, onClose }: { invoice: MemberInvoiceDoc; onClose
               <div className="grid grid-cols-2 gap-6">
                 <section className="rounded-2xl border border-neutral-200 p-5">
                   <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-400">Émetteur</p>
-                  <p className="mt-2 text-lg font-black text-neutral-900">SALAM Cameroun · Maroc</p>
-                  <p className="mt-2 text-sm text-neutral-500">contact@salam-cameroun.com</p>
-                  <p className="text-sm text-neutral-500">Association SALAM</p>
+                  <p className="mt-2 text-lg font-black text-neutral-900">{initialAssociation.title}</p>
+                  <p className="mt-2 text-sm text-neutral-500">{initialAssociation.address}</p>
+                  <p className="text-sm text-neutral-500">{initialAssociation.email} · {initialAssociation.phone}</p>
                 </section>
                 <section className="rounded-2xl border border-neutral-200 p-5">
                   <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-400">Facturé à</p>
-                  <p className="mt-2 text-lg font-black text-neutral-900">Membre SALAM</p>
-                  <p className="mt-2 text-sm text-neutral-500">Espace membre</p>
-                  <p className="text-sm text-neutral-500">Document personnel</p>
+                  <p className="mt-2 text-lg font-black text-neutral-900">{invoice.viewerIdentity?.name || 'Membre SALAM'}</p>
+                  <p className="mt-2 text-sm text-neutral-500">{invoice.viewerIdentity?.email}</p>
+                  <p className="text-sm text-neutral-500">{invoice.viewerIdentity?.phone}</p>
+                  {invoice.viewerIdentity?.memberId && <p className="text-sm text-neutral-500">N° membre : {invoice.viewerIdentity.memberId}</p>}
                 </section>
               </div>
               <div className="grid grid-cols-3 gap-3 text-sm">
@@ -119,7 +122,7 @@ function InvoiceModal({ invoice, onClose }: { invoice: MemberInvoiceDoc; onClose
               <Banknote size={14} /> Payer maintenant
             </a>
           )}
-          <button onClick={() => downloadMemberInvoicePdf(invoice._id, invoice.myRecipient?.invoiceNumber ?? invoice.invoiceNumber).catch(error => toast.error(error.message))}
+          <button onClick={() => printMemberInvoice(invoice)}
             className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 py-2.5 text-sm font-black text-violet-700 transition hover:bg-violet-100">
             <Download size={14} /> Telecharger la facture PDF
           </button>
@@ -160,7 +163,7 @@ function InvoiceRow({ invoice, onView }: { invoice: MemberInvoiceDoc; onView: ()
         <p className="text-sm font-black text-neutral-900">{`${fmtCfaNum(invoice.amount)} F.CFA`}</p>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
-        <button onClick={() => downloadMemberInvoicePdf(invoice._id, invoice.myRecipient?.invoiceNumber ?? invoice.invoiceNumber).catch(error => toast.error(error.message))}
+        <button onClick={() => printMemberInvoice(invoice)}
           className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"
           title="Telecharger la facture PDF">
           <Download size={13} />
@@ -188,7 +191,7 @@ export default function MemberFacturesPage() {
   [invoices]);
 
   const paid = useMemo(() =>
-    invoices.filter(i => i.myRecipient?.status === 'paid'),
+    invoices.filter(i => i.myRecipient?.status === 'paid' || i.myRecipient?.status === 'exempt'),
   [invoices]);
 
   const total        = invoices.reduce((s, i) => s + (i.myRecipient?.status !== 'cancelled' ? i.amount : 0), 0);
