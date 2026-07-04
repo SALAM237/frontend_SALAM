@@ -2002,15 +2002,15 @@ export default function FacturationAdminPage() {
       {/* Onglets */}
       <div className="relative flex gap-1.5 rounded-2xl border border-neutral-100 bg-neutral-50/70 p-1.5">
         <div
-          className="absolute inset-y-1.5 w-[calc(50%-0.375rem)] rounded-xl bg-white shadow-sm transition-all duration-300 ease-in-out"
+          className="absolute inset-y-1.5 w-[calc(50%-0.375rem)] rounded-xl bg-emerald-600 shadow-sm transition-all duration-300 ease-in-out"
           style={{ left: mainTab === 'factures' ? '0.375rem' : 'calc(50% + 0.075rem)' }}
         />
         <button onClick={() => setMainTab('factures')}
-          className={`relative z-10 flex-1 rounded-xl px-3 py-2 text-xs font-black transition-colors duration-300 ease-in-out sm:text-sm ${mainTab === 'factures' ? 'text-emerald-700' : 'text-neutral-500 hover:text-neutral-700'}`}>
+          className={`relative z-10 flex-1 rounded-xl px-3 py-2 text-xs font-black transition-colors duration-300 ease-in-out sm:text-sm ${mainTab === 'factures' ? 'text-white' : 'text-neutral-500 hover:text-neutral-700'}`}>
           Factures
         </button>
         <button onClick={() => setMainTab('recus')}
-          className={`relative z-10 flex-1 rounded-xl px-3 py-2 text-xs font-black transition-colors duration-300 ease-in-out sm:text-sm ${mainTab === 'recus' ? 'text-emerald-700' : 'text-neutral-500 hover:text-neutral-700'}`}>
+          className={`relative z-10 flex-1 rounded-xl px-3 py-2 text-xs font-black transition-colors duration-300 ease-in-out sm:text-sm ${mainTab === 'recus' ? 'text-white' : 'text-neutral-500 hover:text-neutral-700'}`}>
           Reçus de paiement
         </button>
       </div>
