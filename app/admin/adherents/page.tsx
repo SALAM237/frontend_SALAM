@@ -1602,11 +1602,11 @@ export default function AdminAdherentsPage() {
                       <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Tél.</th>
                       {isTrancheTab ? (
                         <>
-                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Tranche 1</th>
-                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Tranche 2</th>
-                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Tranche 3</th>
-                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Tranche 4</th>
-                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Dette totale</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-violet-400">Tranche 1</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-violet-400">Tranche 2</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-violet-400">Tranche 3</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-violet-400">Tranche 4</th>
+                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-violet-400">Dette totale</th>
                         </>
                       ) : (
                         <>
