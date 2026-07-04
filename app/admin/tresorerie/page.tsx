@@ -8,7 +8,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import {
-  AlertTriangle, ArrowDownRight, ArrowUpRight, Banknote, Boxes, CheckCircle2,
+  AlertTriangle, ArrowDownRight, ArrowUpRight, Boxes, CheckCircle2,
   Clock, Download, FileSpreadsheet, FileUp, Loader2 as ImportLoader, Package, Plus, RefreshCw, Settings2, WalletCards,
   Trash2, WifiOff, X, XCircle,
 } from 'lucide-react';
@@ -66,6 +66,10 @@ const sourceOptions: { value: TreasurySource; label: string }[] = [
 ];
 
 const sourceLabels = Object.fromEntries(sourceOptions.map(s => [s.value, s.label])) as Record<TreasurySource, string>;
+/* Frais d'adhesion et cotisation annuelle sont alimentes automatiquement depuis
+   Facturation (recus/factures) — jamais saisis manuellement en tresorerie. */
+const manualIncomeSourceOptions = sourceOptions.filter(s => s.value !== 'adhesion' && s.value !== 'cotisation_annuelle');
+const isFacturationManaged = (source: TreasurySource) => source === 'adhesion' || source === 'cotisation_annuelle';
 const sourceColors = ['#059669', '#2563eb', '#f59e0b', '#7c3aed', '#dc2626', '#0f766e', '#64748b'];
 const conditionLabels: Record<string, string> = { good: 'Bon', used: 'Use', damaged: 'Abime', sold: 'Vendu', discarded: 'Jete', lost: 'Perdu' };
 
@@ -138,7 +142,7 @@ export default function AdminTresoreriePage() {
 
   const openForm = (mode: FormMode) => {
     setFormMode(mode);
-    if (mode === 'income') setTx(prev => ({ ...prev, kind: 'income', source: 'adhesion' }));
+    if (mode === 'income') setTx(prev => ({ ...prev, kind: 'income', source: 'don' }));
     if (mode === 'expense') setTx(prev => ({ ...prev, kind: 'expense', source: 'other' }));
     if (mode === 'don') setTx(prev => ({ ...prev, kind: 'income', source: 'don' }));
   };
@@ -393,7 +397,7 @@ export default function AdminTresoreriePage() {
           <Kpi label="Encaissements" value={formatFcfa(data?.kpis.income ?? 0)} icon={ArrowUpRight} tone="emerald" />
           <Kpi label="Decaissements" value={formatFcfa(data?.kpis.expense ?? 0)} icon={ArrowDownRight} tone="red" />
           <Kpi label="Adhesions en attente" value={formatFcfa(data?.kpis.pendingAdhesions ?? 0)} icon={Clock} tone="amber" sub={`${data?.kpis.activeMembers ?? 0} membres actifs`} />
-          <Kpi label="Frais d'adhesion" value={formatFcfa(data?.kpis.membershipFee ?? 5000)} icon={Banknote} tone="blue" />
+          <Kpi label="Cotisation en attente" value={formatFcfa(data?.kpis.pendingAnnuelles ?? 0)} icon={Clock} tone="amber" sub={`${data?.kpis.activeMembers ?? 0} membres actifs`} />
           <Kpi label="Patrimoine" value={formatFcfa(data?.kpis.assetsValue ?? 0)} icon={Package} tone="violet" sub={`${data?.kpis.assetsCount ?? 0} element(s)`} />
         </div>
       )}
@@ -437,7 +441,7 @@ export default function AdminTresoreriePage() {
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               <Select label="Type" value={tx.kind} onChange={v => setTx(p => ({ ...p, kind: v }))} options={[['income', 'Encaissement'], ['expense', 'Decaissement']]} disabled={formMode === 'don' || formMode === 'expense'} />
-              <Select label="Source" value={tx.source} onChange={v => setTx(p => ({ ...p, source: v }))} options={sourceOptions.map(s => [s.value, s.label])} disabled={formMode === 'don'} />
+              <Select label="Source" value={tx.source} onChange={v => setTx(p => ({ ...p, source: v }))} options={(formMode === 'income' ? manualIncomeSourceOptions : sourceOptions).map(s => [s.value, s.label])} disabled={formMode === 'don'} />
               <Field label="Libelle" value={tx.label} onChange={v => setTx(p => ({ ...p, label: v }))} />
               <Field label="Montant F.CFA" value={tx.amount} onChange={v => setTx(p => ({ ...p, amount: v }))} type="number" />
               <Field label="Date" value={tx.occurredAt} onChange={v => setTx(p => ({ ...p, occurredAt: v }))} type="date" />
@@ -528,14 +532,11 @@ export default function AdminTresoreriePage() {
               </div>
             </Card>
             <Card>
-              <CardTitle title="Taux de recouvrement adhesions" />
-              <div className="flex h-[220px] flex-col items-center justify-center text-center">
-                <div className="text-5xl font-black tracking-[-0.05em] text-emerald-700">
-                  {data?.kpis.recoveryRate ?? 0}
-                  <span className="text-2xl">%</span>
-                </div>
-                <p className="mt-3 text-sm font-semibold text-neutral-500">des frais d'adhesion encaisses</p>
-                <p className="mt-1 text-xs text-neutral-400">{formatFcfa(data?.kpis.pendingAdhesions ?? 0)} encore en attente</p>
+              <CardTitle title="Taux de recouvrement" />
+              <div className="grid grid-cols-3 gap-3">
+                <RecoveryRateBlock label="Frais adhesion" rate={data?.kpis.recoveryRate ?? 0} pending={data?.kpis.pendingAdhesions ?? 0} />
+                <RecoveryRateBlock label="Cotisation annuelle" rate={data?.kpis.recoveryRateAnnuelle ?? 0} pending={data?.kpis.pendingAnnuelles ?? 0} />
+                <RecoveryRateBlock label="Autres" rate={data?.kpis.recoveryRateOther ?? 0} />
               </div>
             </Card>
           </div>
@@ -692,15 +693,26 @@ function TransactionList({ title, items, kind, loading, onDelete, deletingId }: 
             </div>
             <p className={`shrink-0 text-sm font-black ${item.kind === 'expense' ? 'text-red-600' : 'text-emerald-700'}`}>{formatFcfa(item.amount)}</p>
             {onDelete && (
-              <button
-                type="button"
-                onClick={() => onDelete(item._id)}
-                disabled={deletingId === item._id}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-500 transition hover:bg-red-500 hover:text-white disabled:opacity-50"
-                title="Supprimer"
-              >
-                <Trash2 size={13} />
-              </button>
+              isFacturationManaged(item.source) ? (
+                <button
+                  type="button"
+                  disabled
+                  className="flex h-8 w-8 shrink-0 cursor-not-allowed items-center justify-center rounded-xl border border-neutral-100 bg-neutral-50 text-neutral-300"
+                  title="Supprimer dans la rubrique Facturation"
+                >
+                  <Trash2 size={13} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onDelete(item._id)}
+                  disabled={deletingId === item._id}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-500 transition hover:bg-red-500 hover:text-white disabled:opacity-50"
+                  title="Supprimer"
+                >
+                  <Trash2 size={13} />
+                </button>
+              )
             )}
           </div>
         ))}
@@ -741,6 +753,20 @@ function AssetList({ title, items, loading, onDelete, deletingId }: { title: str
         ))}
       </div>
     </Card>
+  );
+}
+
+function RecoveryRateBlock({ label, rate, pending }: { label: string; rate: number; pending?: number }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-xl border border-neutral-100 bg-neutral-50/60 px-2 py-4 text-center">
+      <p className="text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">{label}</p>
+      <div className="mt-1.5 text-2xl font-black tracking-[-0.04em] text-emerald-700">
+        {rate}<span className="text-sm">%</span>
+      </div>
+      {pending !== undefined && (
+        <p className="mt-1 text-[10px] font-semibold text-neutral-400">{formatFcfa(pending)} en attente</p>
+      )}
+    </div>
   );
 }
 

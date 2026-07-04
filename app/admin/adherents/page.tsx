@@ -144,9 +144,9 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
   const updateStatusMutation = useUpdateTranche();
   const updateTranche = { isPending: updateAmount.isPending || updateDate.isPending || updateStatusMutation.isPending };
 
-  /* Tailles adaptées : sur mobile, badges réduits, montant/date agrandis pour la lisibilité */
+  /* Tailles adaptées : sur mobile, badge encore plus réduit, montant/date agrandis pour la lisibilité */
   const sizes = variant === 'mobile'
-    ? { badge: 'text-[7px]', amount: 'text-[12px]', date: 'text-[11px]' }
+    ? { badge: 'text-[6px]', amount: 'text-[13px]', date: 'text-[12px]' }
     : { badge: 'text-[8px]', amount: 'text-[10px]', date: 'text-[9px]' };
 
   useEffect(() => {
@@ -173,6 +173,10 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
      aucune des 4 tranches ne peut être repassée à "Impayé" (sécurité anti-incohérence). */
   const totalEnteredSum = (allTranches ?? DEFAULT_TRANCHES).reduce((acc, tr) => acc + Number(tr.amount || 0), 0);
   const isFullySettled = totalEnteredSum >= annualFee;
+  /* Une tranche jamais remplie alors que la dette est déjà totalement soldée par
+     les autres tranches n'a plus lieu d'être modifiée : elle est désactivée et
+     affichée "N.C" (non concerné) plutôt que "Impayé". */
+  const isUnfilledAndIrrelevant = isFullySettled && !(t.amount > 0);
 
   const handleMutationError = (err: Error) => {
     if (/Créez une facture/i.test(err.message)) onInvoiceRequired(err.message);
@@ -246,81 +250,88 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
   };
 
   return (
-    <div className="flex flex-col gap-1 py-1" onClick={e => e.stopPropagation()}>
+    <div className="flex flex-col items-center gap-1 py-1 text-center" onClick={e => e.stopPropagation()}>
       <select
         value={t.status}
         onChange={e => commitStatus(e.target.value as 'unpaid' | 'paid' | 'exempt')}
-        disabled={updateTranche.isPending}
-        className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center font-black outline-none disabled:cursor-wait ${sizes.badge} ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
+        disabled={updateTranche.isPending || isUnfilledAndIrrelevant}
+        className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center font-black outline-none disabled:cursor-not-allowed disabled:opacity-60 ${sizes.badge} ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
       >
-        <option value="unpaid" disabled={isFullySettled || t.amount > 0}>Impayé</option>
+        <option value="unpaid" disabled={isFullySettled || t.amount > 0}>{isUnfilledAndIrrelevant ? 'N.C' : 'Impayé'}</option>
         <option value="paid" disabled={lastTrancheBlocksPaid}>Payé</option>
         <option value="exempt">Exempté</option>
       </select>
 
-      {/* Montant : mode 'edit' (saisie) ou 'text' (validé, cliquable pour remodifier) — indépendant de la date. */}
-      {amountMode === 'edit' ? (
-        <div className="group/tranche relative">
-          {/* Boutons flottants juste au-dessus du champ de saisie : masqués par défaut, visibles uniquement au focus DE CE champ précis.
-              Groupe nommé (group/tranche) car la <tr> de la ligne porte déjà "group" (survol) — un group-focus-within générique
-              se déclencherait dès qu'un focus est détecté n'importe où dans la ligne (les 4 tranches en même temps). */}
-          <div className="absolute bottom-full left-0 z-20 mb-1 hidden items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/tranche:flex">
-            <button type="button" onMouseDown={e => e.preventDefault()} onClick={confirmAmount} disabled={updateTranche.isPending} title="Valider le montant"
-              className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
-              <Check size={11} />
-            </button>
-            <button type="button" onMouseDown={e => e.preventDefault()} onClick={clearAmount} disabled={updateTranche.isPending} title="Effacer la saisie"
-              className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 transition hover:bg-red-100 hover:text-red-500">
-              <X size={11} />
-            </button>
-          </div>
-          <input
-            ref={amountInputRef}
-            type="number" min={0} value={draftAmount} disabled={updateTranche.isPending}
-            onChange={e => setDraftAmount(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') confirmAmount(); }}
-            placeholder="Montant"
-            className={`w-full min-w-0 rounded-md border border-neutral-200 px-1 py-0.5 outline-none focus:border-emerald-400 disabled:cursor-wait ${sizes.amount}`}
-          />
-        </div>
+      {/* Tranche jamais remplie mais dette déjà soldée par les autres tranches : plus rien à saisir. */}
+      {isUnfilledAndIrrelevant ? (
+        <span className={`font-mono font-black text-neutral-300 ${sizes.amount}`}>—</span>
       ) : (
-        <button type="button" onClick={() => { setAmountMode('edit'); setTimeout(() => amountInputRef.current?.focus(), 80); }} title="Modifier le montant"
-          className={`flex items-center gap-1 truncate text-left font-mono font-black text-neutral-700 transition hover:text-emerald-700 hover:underline ${sizes.amount}`}>
-          {fmtNum(t.amount)} F
-          <PencilLine size={10} className="shrink-0 text-neutral-400" />
-        </button>
-      )}
-
-      {/* Date : n'apparaît qu'une fois un montant validé (> 0) — jamais avant, pour ne pas
-          changer la mise en page d'une tranche vierge. Mode 'edit'/'text' indépendant du montant. */}
-      {t.amount > 0 && (
-        dateMode === 'edit' ? (
-          <div className="group/trancheDate relative">
-            <div className="absolute bottom-full left-0 z-20 mb-1 hidden items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/trancheDate:flex">
-              <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => commitDate(draftDate)} disabled={updateTranche.isPending} title="Valider la date"
-                className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
-                <Check size={11} />
-              </button>
+        <>
+          {/* Montant : mode 'edit' (saisie) ou 'text' (validé, cliquable pour remodifier) — indépendant de la date. */}
+          {amountMode === 'edit' ? (
+            <div className="group/tranche relative w-full">
+              {/* Boutons flottants juste au-dessus du champ de saisie : masqués par défaut, visibles uniquement au focus DE CE champ précis.
+                  Groupe nommé (group/tranche) car la <tr> de la ligne porte déjà "group" (survol) — un group-focus-within générique
+                  se déclencherait dès qu'un focus est détecté n'importe où dans la ligne (les 4 tranches en même temps). */}
+              <div className="absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/tranche:flex">
+                <button type="button" onMouseDown={e => e.preventDefault()} onClick={confirmAmount} disabled={updateTranche.isPending} title="Valider le montant"
+                  className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
+                  <Check size={11} />
+                </button>
+                <button type="button" onMouseDown={e => e.preventDefault()} onClick={clearAmount} disabled={updateTranche.isPending} title="Effacer la saisie"
+                  className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 transition hover:bg-red-100 hover:text-red-500">
+                  <X size={11} />
+                </button>
+              </div>
+              <input
+                ref={amountInputRef}
+                type="number" min={0} value={draftAmount} disabled={updateTranche.isPending}
+                onChange={e => setDraftAmount(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') confirmAmount(); }}
+                placeholder="Montant"
+                className={`w-full min-w-0 rounded-md border border-neutral-200 px-1 py-0.5 text-center outline-none focus:border-emerald-400 disabled:cursor-wait ${sizes.amount}`}
+              />
             </div>
-            <input
-              ref={dateInputRef}
-              type="date" value={draftDate} disabled={updateTranche.isPending}
-              onChange={e => { setDraftDate(e.target.value); commitDate(e.target.value); }}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitDate(draftDate); } }}
-              className={`w-full min-w-0 rounded-md border border-emerald-300 px-1 py-0.5 outline-none focus:border-emerald-500 disabled:cursor-wait ${sizes.date}`}
-            />
-          </div>
-        ) : (
-          t.paidAt && (
-            <button type="button" onClick={() => { setDateMode('edit'); setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80); }} title="Modifier la date"
-              className={`truncate text-left font-semibold text-neutral-400 transition hover:text-emerald-600 hover:underline ${sizes.date}`}>
-              {fmtDate(t.paidAt)}
+          ) : (
+            <button type="button" onClick={() => { setAmountMode('edit'); setTimeout(() => amountInputRef.current?.focus(), 80); }} title="Modifier le montant"
+              className={`flex items-center justify-center gap-1 truncate font-mono font-black text-neutral-700 transition hover:text-emerald-700 hover:underline ${sizes.amount}`}>
+              {fmtNum(t.amount)} F
+              <PencilLine size={10} className="shrink-0 text-neutral-400" />
             </button>
-          )
-        )
+          )}
+
+          {/* Date : n'apparaît qu'une fois un montant validé (> 0) — jamais avant, pour ne pas
+              changer la mise en page d'une tranche vierge. Mode 'edit'/'text' indépendant du montant. */}
+          {t.amount > 0 && (
+            dateMode === 'edit' ? (
+              <div className="group/trancheDate relative w-full">
+                <div className="absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/trancheDate:flex">
+                  <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => commitDate(draftDate)} disabled={updateTranche.isPending} title="Valider la date"
+                    className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
+                    <Check size={11} />
+                  </button>
+                </div>
+                <input
+                  ref={dateInputRef}
+                  type="date" value={draftDate} disabled={updateTranche.isPending}
+                  onChange={e => { setDraftDate(e.target.value); commitDate(e.target.value); }}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitDate(draftDate); } }}
+                  className={`w-full min-w-0 rounded-md border border-emerald-300 px-1 py-0.5 text-center outline-none focus:border-emerald-500 disabled:cursor-wait ${sizes.date}`}
+                />
+              </div>
+            ) : (
+              t.paidAt && (
+                <button type="button" onClick={() => { setDateMode('edit'); setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80); }} title="Modifier la date"
+                  className={`truncate text-center font-semibold text-neutral-400 transition hover:text-emerald-600 hover:underline ${sizes.date}`}>
+                  {fmtDate(t.paidAt)}
+                </button>
+              )
+            )
+          )}
+        </>
       )}
 
-      {isLastTranche && (
+      {isLastTranche && !isUnfilledAndIrrelevant && (
         <p className="text-[7px] font-semibold leading-tight text-amber-600">Doit boucler le solde total</p>
       )}
     </div>
@@ -461,9 +472,17 @@ function InvoiceRequiredModal({ member, message, motif, onClose }: {
 /* ══════════════════════════════════════════════════════════
    MAIN PAGE
 ══════════════════════════════════════════════════════════ */
+/* Easing identique à AnimatedTabBar (components/ui/AnimatedTabBar.tsx) : fait
+   coulisser en douceur l'onglet cliqué dans la zone visible sur mobile/tablette
+   (overflow-x-auto), pour qu'aucun onglet ne reste invisible hors-champ. */
+function easeTabScroll(t: number) {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
+
 export default function AdminAdherentsPage() {
   /* ── Tab state ─────────────────────────────────────────── */
   const [activeTab,      setActiveTab]      = useState<ActiveTab>(null);
+  const tabsScrollRef = useRef<HTMLDivElement>(null);
   const [showKpis,       setShowKpis]       = useState(true);
   const [relanceSub,     setRelanceSub]     = useState<RelanceSub>(null);
   const [selectedAct,    setSelectedAct]    = useState<ActivityDoc | null>(null);
@@ -657,6 +676,33 @@ export default function AdminAdherentsPage() {
     return next;
   });
 
+  /* Fait coulisser l'onglet actif (ou le bouton "Nouveau membre" en fin de liste
+     quand aucun onglet n'est actif) dans la zone visible du conteneur mobile. */
+  useEffect(() => {
+    const nav = tabsScrollRef.current;
+    if (!nav) return;
+    const target = activeTab
+      ? nav.querySelector<HTMLElement>(`[data-tab-btn="${activeTab}"]`)
+      : null;
+    if (!target) return;
+    const startLeft = nav.scrollLeft;
+    const destLeft = Math.max(0, Math.min(
+      target.offsetLeft - nav.clientWidth / 2 + target.offsetWidth / 2,
+      nav.scrollWidth - nav.clientWidth,
+    ));
+    const distance = destLeft - startLeft;
+    if (Math.abs(distance) < 1) return;
+    let startTime: number | null = null;
+    const duration = 380;
+    const step = (timestamp: number) => {
+      if (startTime === null) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      nav.scrollLeft = startLeft + distance * easeTabScroll(progress);
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [activeTab]);
+
   /* ── Tab switching ─────────────────────────────────────── */
   const handleTabClick = (tab: ActiveTab) => {
     if (activeTab === tab) { setActiveTab(null); setShowKpis(true); setCheckedIds(new Set()); setShowCheckboxes(false); return; }
@@ -800,7 +846,7 @@ export default function AdminAdherentsPage() {
         </p>
 
         {/* Tab buttons row — flex-nowrap to stay on one line on all breakpoints */}
-        <div className="mt-3 flex items-center justify-end gap-1 overflow-x-auto lg:gap-2">
+        <div ref={tabsScrollRef} className="mt-3 flex items-center justify-end gap-1 overflow-x-auto scroll-smooth lg:gap-2">
           {/* Liste adhérents — display none par défaut, visible seulement dans un onglet ; icône seule sur mobile/tablette comme les autres onglets */}
           {activeTab && (
             <button type="button" onClick={handleBackToList}
@@ -820,7 +866,7 @@ export default function AdminAdherentsPage() {
           </div>
 
           {/* Relance */}
-          <button type="button" onClick={() => handleTabClick('relance')}
+          <button type="button" data-tab-btn="relance" onClick={() => handleTabClick('relance')}
             className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('relance')}`}>
             <Bell size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('relance')}`} />
             <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'relance' ? 'max-w-[80px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
@@ -829,7 +875,7 @@ export default function AdminAdherentsPage() {
           </button>
 
           {/* Frais d'adhésion */}
-          <button type="button" onClick={() => handleTabClick('frais')}
+          <button type="button" data-tab-btn="frais" onClick={() => handleTabClick('frais')}
             className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('frais')}`}>
             <Banknote size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('frais')}`} />
             <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'frais' ? 'max-w-[130px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
@@ -838,7 +884,7 @@ export default function AdminAdherentsPage() {
           </button>
 
           {/* Cotisation annuelle */}
-          <button type="button" onClick={() => handleTabClick('cotisation-annuelle')}
+          <button type="button" data-tab-btn="cotisation-annuelle" onClick={() => handleTabClick('cotisation-annuelle')}
             className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cotisation-annuelle')}`}>
             <Wallet size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('cotisation-annuelle')}`} />
             <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cotisation-annuelle' ? 'max-w-[150px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
@@ -847,7 +893,7 @@ export default function AdminAdherentsPage() {
           </button>
 
           {/* Gestion cauris */}
-          <button type="button" onClick={() => handleTabClick('cauris')}
+          <button type="button" data-tab-btn="cauris" onClick={() => handleTabClick('cauris')}
             className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cauris')}`}>
             <span className={`shrink-0 ${activeTab === 'cauris' ? '' : tabIconCls('cauris')}`}>
               <CauriImg size={12} />
@@ -858,7 +904,7 @@ export default function AdminAdherentsPage() {
           </button>
 
           {/* Cartes membres */}
-          <button type="button" onClick={() => handleTabClick('cartes')}
+          <button type="button" data-tab-btn="cartes" onClick={() => handleTabClick('cartes')}
             className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cartes')}`}>
             <CreditCard size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('cartes')}`} />
             <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cartes' ? 'max-w-[110px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
@@ -1768,7 +1814,7 @@ export default function AdminAdherentsPage() {
                                 <div className="mb-2.5 space-y-2">
                                   <div className="grid grid-cols-2 gap-1.5">
                                     {[0, 1, 2, 3].map(i => (
-                                      <div key={i} className="rounded-xl border border-violet-100 bg-white p-1.5">
+                                      <div key={i} className="rounded-xl border border-violet-100 bg-white p-1.5 text-center">
                                         <p className="mb-0.5 text-[10px] font-black uppercase tracking-[0.1em] text-violet-400">Tranche {i + 1}</p>
                                         <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} variant="mobile" onFeedback={showFeedback} onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation_annuelle' })} />
                                       </div>

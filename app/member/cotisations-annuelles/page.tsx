@@ -155,6 +155,7 @@ function ReceiptModal({ cot, user, onClose }: {
   const { data, isLoading } = useMemberReceipts({ type: 'cotisation_annuelle', year: cot.year });
   /* Uniquement les tranches réellement réglées (montant > 0) — jamais celles à 0 */
   const receipts = (data?.data ?? []).filter(r => r.amount > 0);
+  const resteAPayer = Math.max(0, cot.amount - (cot.totalPaid ?? 0));
   const activeTotal = receipts.filter(r => r.status !== 'cancelled').reduce((acc, r) => acc + r.amount, 0);
 
   return (
@@ -215,7 +216,7 @@ function ReceiptModal({ cot, user, onClose }: {
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <span className={`text-sm font-black ${isCancelled ? 'text-neutral-400 line-through' : 'text-emerald-700'}`}>{formatCfa(r.amount)}</span>
-                      <button onClick={() => downloadReceiptPdf(r, user)} title="Télécharger ce reçu"
+                      <button onClick={() => downloadReceiptPdf(r, user, resteAPayer)} title="Télécharger ce reçu"
                         className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 transition hover:border-emerald-300 hover:text-emerald-700">
                         <Download size={13} />
                       </button>
@@ -333,18 +334,24 @@ export function MemberCotisationsAnnuelleContent() {
                 <span className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-black sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[11px] ${cfg.badge}`}>
                   {cfg.icon}{cfg.label}
                 </span>
-                {cot.status === 'paid' && user && (
+                {/* Les reçus sont créés à CHAQUE tranche payée (pas seulement au solde total) :
+                    le bouton "Voir les reçus" doit rester accessible dès qu'un versement partiel
+                    existe, sinon un membre qui a payé 2 tranches sur 4 ne peut jamais consulter
+                    ses reçus déjà émis tant que le solde n'est pas total. */}
+                {(cot.status === 'paid' || cot.status === 'partiel') && user && (
                   <>
                     <button onClick={() => setOpenReceipt(cot)}
                       className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 transition hover:border-emerald-300 hover:text-emerald-700"
-                      title="Voir le reçu">
+                      title="Voir les reçus">
                       <Eye size={13} />
                     </button>
-                    <button onClick={() => downloadAnnuelleReceiptPdf(cot, user)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 transition hover:border-emerald-300 hover:text-emerald-700"
-                      title="Télécharger le reçu">
-                      <Download size={13} />
-                    </button>
+                    {cot.status === 'paid' && (
+                      <button onClick={() => downloadAnnuelleReceiptPdf(cot, user)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 transition hover:border-emerald-300 hover:text-emerald-700"
+                        title="Télécharger le reçu">
+                        <Download size={13} />
+                      </button>
+                    )}
                   </>
                 )}
               </div>

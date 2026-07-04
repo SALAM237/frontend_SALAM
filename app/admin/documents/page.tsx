@@ -1,11 +1,13 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { Check, Download, Eye, FileText, Loader2, Pencil, Send, Trash2, Upload, Users, X, Search, CheckSquare, Square, Mail } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, Download, Eye, FileText, Loader2, Pencil, Send, Trash2, Upload, Users, X, Search, CheckSquare, Square, Mail, GraduationCap, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminDocuments, useDeleteDocument, useRenameDocument, useSendDocument, useUploadDocument, type SharedDocument } from '@/lib/api/documents';
 import { useAdminMembers } from '@/lib/api/members';
+import { useAdminAttestationTemplate, useSaveAttestationTemplate } from '@/lib/api/attestation';
 import { DocumentPreviewModal } from '@/components/portal/DocumentPreviewModal';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
 /* ── Helpers ──────────────────────────────────────────── */
 function fmtSize(bytes: number) {
@@ -230,6 +232,79 @@ function UploadZone() {
   );
 }
 
+/* ── Éditeur d'attestation (modèle unique, rempli par membre à la demande) ── */
+const ATTESTATION_TOKENS: [string, string][] = [
+  ['{{NOM_COMPLET}}', 'Prénom + nom du membre'],
+  ['{{PRENOM}}', 'Prénom'],
+  ['{{NOM}}', 'Nom'],
+  ['{{CIVILITE}}', 'Monsieur / Madame'],
+  ['{{NUMERO_MEMBRE}}', 'N° membre'],
+  ['{{EMAIL}}', 'Email'],
+  ['{{ANNEE_PROMOTION}}', 'Année de promotion'],
+  ['{{VILLE}}', 'Ville de résidence'],
+  ['{{PAYS}}', 'Pays'],
+  ['{{DATE}}', "Date du jour (à l'édition)"],
+];
+
+function AttestationEditor() {
+  const [open, setOpen] = useState(false);
+  const { data, isLoading } = useAdminAttestationTemplate();
+  const saveTemplate = useSaveAttestationTemplate();
+  const [title, setTitle] = useState("Attestation d'adhésion");
+  const [bodyHtml, setBodyHtml] = useState('');
+
+  useEffect(() => {
+    if (data?.data) {
+      setTitle(data.data.title);
+      setBodyHtml(data.data.bodyHtml);
+    }
+  }, [data]);
+
+  return (
+    <div className="rounded-2xl border border-violet-100 bg-white shadow-sm">
+      <button type="button" onClick={() => setOpen(v => !v)} className="flex w-full items-center justify-between px-5 py-4">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><GraduationCap size={16} /></span>
+          <div className="text-left">
+            <p className="text-sm font-black text-neutral-900">Modèle d&apos;attestation d&apos;adhésion</p>
+            <p className="text-xs text-neutral-500">Chaque membre génère sa propre attestation depuis son espace, remplie automatiquement.</p>
+          </div>
+        </div>
+        <ChevronDown size={16} className={`shrink-0 text-neutral-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <div className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+        <div className="overflow-hidden">
+          <div className="space-y-3 border-t border-neutral-100 px-5 py-4">
+            {isLoading ? (
+              <p className="text-sm text-neutral-400">Chargement…</p>
+            ) : (
+              <>
+                <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Titre du document"
+                  className="h-9 w-full rounded-xl border border-neutral-200 px-3 text-sm font-semibold outline-none focus:border-violet-400" />
+                <RichTextEditor value={bodyHtml} onChange={setBodyHtml} placeholder="Rédigez le texte de l'attestation en insérant les jetons ci-dessous…" />
+                <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-3">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-[0.12em] text-violet-600">Jetons disponibles (à saisir tels quels dans le texte)</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ATTESTATION_TOKENS.map(([token, label]) => (
+                      <span key={token} title={label} className="rounded-full border border-violet-200 bg-white px-2 py-1 font-mono text-[10px] font-bold text-violet-700">
+                        {token}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <button type="button" onClick={() => saveTemplate.mutate({ title, bodyHtml })} disabled={saveTemplate.isPending || !bodyHtml.trim()}
+                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-violet-600 px-4 text-xs font-black text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50">
+                  {saveTemplate.isPending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Enregistrer le modèle
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Page principale ────────────────────────────────── */
 export default function AdminDocumentsPage() {
   const [sendModal,    setSendModal]    = useState<SharedDocument | null>(null);
@@ -260,6 +335,7 @@ export default function AdminDocumentsPage() {
       </div>
 
       <UploadZone />
+      <AttestationEditor />
 
       <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
         <div className="border-b border-neutral-100 bg-emerald-50/40 px-5 py-3.5">

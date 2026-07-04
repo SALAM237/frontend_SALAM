@@ -1,14 +1,58 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Download, Eye, FileText, FolderOpen, Loader2, Search } from 'lucide-react';
+import { Download, Eye, FileText, FolderOpen, GraduationCap, Loader2, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { downloadMemberInvoicePdf, useMemberInvoices } from '@/lib/api/invoices';
 import { useMemberSharedDocuments, type SharedDocument } from '@/lib/api/documents';
+import { useGenerateMemberAttestation } from '@/lib/api/attestation';
 import { DocumentPreviewModal } from '@/components/portal/DocumentPreviewModal';
 import { useMarkHrefRead } from '@/lib/api/notifications';
+
+/* Ouvre une fenêtre d'impression A4 avec l'attestation DÉJÀ remplie par le
+   serveur (jetons substitués côté back) — le membre ne voit jamais le modèle brut. */
+function printAttestation(title: string, bodyHtml: string) {
+  const html = `
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>${title}</title>
+  <style>
+    @page { size: A4 portrait; margin: 0; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { margin: 0; background: #e5e7eb; font-family: Arial, sans-serif; color: #0f172a; }
+    .page { width: min(100vw, 794px); min-height: min(1123px, calc(100vw * 1.414)); margin: 0 auto; background: white; padding: clamp(22px, 4.8vw, 42px); position: relative; }
+    .flag { position: absolute; left: 0; right: 0; top: 0; height: clamp(4px, .8vw, 7px); background: linear-gradient(90deg,#0B8F3A 0 33%,#C8102E 33% 66%,#F7C600 66%); }
+    .header { margin: calc(clamp(22px, 4.8vw, 42px) * -1) calc(clamp(22px, 4.8vw, 42px) * -1) clamp(24px, 4vw, 34px); padding: clamp(32px, 5vw, 42px) clamp(22px, 4.8vw, 42px) clamp(18px, 3vw, 26px); background: linear-gradient(135deg,#087348,#075f41 62%,#043d2d); color: white; }
+    .eyebrow { color: #fde68a; font-size: clamp(8px, 1.6vw, 11px); font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+    h1 { margin: clamp(8px, 2vw, 12px) 0 0; font-size: clamp(22px, 5vw, 28px); line-height: 1.1; }
+    .body { font-size: 14px; line-height: 1.9; }
+    .body p { margin: 0 0 14px; }
+    .footer { position: absolute; left: 48px; right: 48px; bottom: 30px; border-top: 1px solid #e5e7eb; padding-top: 14px; text-align: center; color: #64748b; font-size: 11px; }
+    @media print { body { background: white; } .page { width: 794px; min-height: 1123px; margin: 0; padding: 38px; } .header { margin: -38px -38px 26px; padding: 40px 38px 24px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="flag"></div>
+    <header class="header">
+      <div class="eyebrow">Association SALAM Cameroun</div>
+      <h1>${title}</h1>
+    </header>
+    <section class="body">${bodyHtml}</section>
+    <footer class="footer">SALAM Cameroun · Maroc · contact@salam-cameroun.com · Fondée le 20/02/2010</footer>
+  </div>
+  <script>window.addEventListener('load', () => setTimeout(() => window.print(), 250));</script>
+</body>
+</html>`;
+  const win = window.open('', '_blank', 'width=900,height=1200');
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+}
 
 const TABS = [
   { value: 'all',     label: 'Tous' },
@@ -28,6 +72,16 @@ export default function MemberDocumentsPage() {
   const [search, setSearch]   = useState('');
   const [preview, setPreview] = useState<SharedDocument | null>(null);
   const router = useRouter();
+  const generateAttestation = useGenerateMemberAttestation();
+
+  const handleAttestation = () => {
+    generateAttestation.mutate(undefined, {
+      onSuccess: res => {
+        const attestation = (res as any).data;
+        if (attestation) printAttestation(attestation.title, attestation.bodyHtml);
+      },
+    });
+  };
 
   // Décrémente les badges sidebar en marquant lues les notifs documents à l'arrivée sur la page
   const markHrefRead = useMarkHrefRead('member');
@@ -57,9 +111,16 @@ export default function MemberDocumentsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-neutral-900">Mes documents</h1>
-        <p className="mt-1 text-sm text-neutral-500">Consultez et téléchargez vos documents personnels.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-black text-neutral-900">Mes documents</h1>
+          <p className="mt-1 text-sm text-neutral-500">Consultez et téléchargez vos documents personnels.</p>
+        </div>
+        <button type="button" onClick={handleAttestation} disabled={generateAttestation.isPending}
+          className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50">
+          {generateAttestation.isPending ? <Loader2 size={14} className="animate-spin" /> : <GraduationCap size={15} />}
+          Obtenir mon attestation
+        </button>
       </div>
 
       <AnimatedTabBar items={[...TABS]} value={tab} onChange={v => setTab(v as Tab)} />

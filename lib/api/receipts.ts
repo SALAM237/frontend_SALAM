@@ -84,6 +84,14 @@ export function useCancelReceipt() {
       qc.invalidateQueries({ queryKey: ['admin-treasury-transactions'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
       qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });
+      /* Annuler un reçu réinitialise aussi la tranche/le statut concerné côté
+         serveur (voir resetPaymentForCancelledReceipt) — invalider ces caches
+         pour que le badge/montant/dette se remettent à jour immédiatement. */
+      qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
+      qc.invalidateQueries({ queryKey: ['member-cotisations-annuelles'] });
+      qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
+      qc.invalidateQueries({ queryKey: ['member-cotisations'] });
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
       toast.success((res as any).message ?? 'Reçu annulé');
     },
     onError: (err: Error) => toast.error(err.message),

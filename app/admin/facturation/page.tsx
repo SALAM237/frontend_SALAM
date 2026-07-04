@@ -7,7 +7,7 @@ import {
   CalendarDays, Banknote, FileText, CheckCircle2, Clock,
   Link as LinkIcon, Loader2, Trash2, Save, Download, Upload, Building2,
   CheckSquare, Square, UserPlus, Settings, ReceiptText, Pencil,
-  Palette, GripVertical, Bold, Italic, Ban,
+  Palette, GripVertical, Bold, Italic, Ban, SlidersHorizontal,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -23,6 +23,7 @@ import { useAdminMembers, useAdminMember, type MemberListItem } from '@/lib/api/
 import { formatFullName } from '@/lib/format-name';
 import { applyInlineTextStyle, captureTextSelection, sanitizeRichHtml, type StoredTextSelection } from '@/lib/rich-text';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 /* ─── Helpers ─────────────────────────────────────────── */
 type InvoiceStatus = 'draft' | 'sent' | 'closed';
@@ -35,7 +36,7 @@ const STATUS_CONFIG: Record<InvoiceStatus, { badge: string; label: string; icon:
 
 const RECIPIENT_STATUS_CONFIG: Record<RecipientDoc['status'], { badge: string; label: string }> = {
   pending:   { badge: 'bg-neutral-50 text-neutral-600 border-neutral-200', label: 'A envoyer' },
-  sent:      { badge: 'bg-blue-50 text-blue-700 border-blue-200', label: 'Envoyee' },
+  sent:      { badge: 'bg-blue-50 text-blue-700 border-blue-200', label: 'Impayee' },
   partiel:   { badge: 'bg-orange-50 text-orange-600 border-orange-200', label: 'Partiel' },
   paid:      { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Payee' },
   cancelled: { badge: 'bg-red-50 text-red-700 border-red-200', label: 'Annulee' },
@@ -1832,10 +1833,10 @@ function ReceiptsTab() {
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[200px] flex-1">
-          <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
+        <div className="relative w-full sm:min-w-[140px] sm:max-w-[240px]">
+          <Search size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un reçu, un membre…"
-            className="h-10 w-full rounded-xl border border-neutral-200 bg-white pl-10 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" />
+            className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" />
         </div>
         <div className="flex flex-wrap gap-1.5">
           {([['all', 'Tous'], ['cotisation', "Frais d'adhésion"], ['cotisation_annuelle', 'Cotisation annuelle']] as const).map(([val, lbl]) => (
@@ -1900,7 +1901,7 @@ function ReceiptsTab() {
                   </button>
                   <button onClick={() => handleCancel(r._id)} disabled={isCancelled || cancelReceipt.isPending} title="Annuler le reçu"
                     className={`flex h-8 items-center justify-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-40 ${confirmCancelId === r._id ? 'w-auto gap-1 bg-red-500 px-2 text-[10px] font-black text-white' : 'w-8 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white'}`}>
-                    {cancelReceipt.isPending && confirmCancelId === r._id ? <Loader2 size={12} className="animate-spin" /> : confirmCancelId === r._id ? 'Confirmer ?' : <Ban size={12} />}
+                    {cancelReceipt.isPending && confirmCancelId === r._id ? <Loader2 size={12} className="animate-spin" /> : confirmCancelId === r._id ? 'Confirmer ?' : <Trash2 size={12} />}
                   </button>
                 </div>
               </div>
@@ -1923,8 +1924,18 @@ export default function FacturationAdminPage() {
   const presetMemberId = searchParams.get('memberId') ?? undefined;
   const [mainTab,     setMainTab]     = useState<'factures' | 'recus'>('factures');
   const [search,      setSearch]      = useState('');
+  const [statusFilter, setStatusFilter] = useState<Set<RecipientDoc['status']>>(new Set());
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
   const [showMotifPicker, setShowMotifPicker] = useState(false);
   const [createMotif,     setCreateMotif]     = useState<InvoiceMotif | null>(null);
+
+  useEffect(() => {
+    if (!showFilterPanel) return;
+    const h = (e: MouseEvent) => { if (filterRef.current && !filterRef.current.contains(e.target as Node)) setShowFilterPanel(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [showFilterPanel]);
 
   /* Raccourci "facture requise" depuis Adhérents : motif + membre déjà connus,
      on saute directement l'éditeur sans repasser par la modale de choix. */
@@ -1955,9 +1966,10 @@ export default function FacturationAdminPage() {
       const open = row.status === 'pending' || row.status === 'sent';
       const overdue = new Date(row.invoice.dueDate).getTime() < Date.now();
       const matchesPayment = paymentFilter === 'overdue' ? open && overdue : paymentFilter === 'pending' ? open && !overdue : true;
-      return matchesSearch && matchesPayment;
+      const matchesStatus = statusFilter.size === 0 || statusFilter.has(row.recipient.status);
+      return matchesSearch && matchesPayment && matchesStatus;
     }),
-  [invoiceRows, search, paymentFilter]);
+  [invoiceRows, search, paymentFilter, statusFilter]);
   const stats = useMemo(() => ({
     total:  invoiceRows.length,
     sent:   invoiceRows.filter(r => r.status === 'sent').length,
@@ -1988,16 +2000,11 @@ export default function FacturationAdminPage() {
       </div>
 
       {/* Onglets */}
-      <div className="flex gap-1.5 rounded-2xl border border-neutral-100 bg-neutral-50/70 p-1.5">
-        <button onClick={() => setMainTab('factures')}
-          className={`flex-1 rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${mainTab === 'factures' ? 'bg-white text-emerald-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>
-          Factures
-        </button>
-        <button onClick={() => setMainTab('recus')}
-          className={`flex-1 rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${mainTab === 'recus' ? 'bg-white text-emerald-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>
-          Reçus de paiement
-        </button>
-      </div>
+      <AnimatedTabBar
+        items={[{ value: 'factures', label: 'Factures' }, { value: 'recus', label: 'Reçus de paiement' }]}
+        value={mainTab}
+        onChange={setMainTab}
+      />
 
       {mainTab === 'recus' ? <ReceiptsTab /> : <>
 
@@ -2016,13 +2023,49 @@ export default function FacturationAdminPage() {
         ))}
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
-        <input value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Rechercher une facture…"
-          className="h-10 w-full rounded-xl border border-neutral-200 bg-white pl-10 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
-        />
+      {/* Search + filtres */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative w-full sm:min-w-[140px] sm:max-w-[240px]">
+          <Search size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Rechercher une facture…"
+            className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+          />
+        </div>
+        <div ref={filterRef} className="relative">
+          <button type="button" onClick={() => setShowFilterPanel(v => !v)}
+            className={`relative flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all sm:px-4 ${statusFilter.size > 0 ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300 hover:text-emerald-700'}`}>
+            <SlidersHorizontal size={13} /> Filtrer
+            {statusFilter.size > 0 && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-black text-emerald-700">{statusFilter.size}</span>}
+          </button>
+          {showFilterPanel && (
+            <div className="absolute left-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-2xl ring-1 ring-black/5">
+              <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
+                <span className="text-sm font-black text-neutral-900">Statut</span>
+                {statusFilter.size > 0 && (
+                  <button type="button" onClick={() => setStatusFilter(new Set())} className="text-[11px] font-bold text-emerald-700 hover:underline">
+                    Réinitialiser
+                  </button>
+                )}
+              </div>
+              <div className="space-y-1 px-4 py-3">
+                {(Object.keys(RECIPIENT_STATUS_CONFIG) as RecipientDoc['status'][]).map(val => {
+                  const checked = statusFilter.has(val);
+                  return (
+                    <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-emerald-200 bg-emerald-50' : 'border-transparent hover:bg-neutral-50'}`}>
+                      <input type="checkbox" checked={checked} onChange={() => setStatusFilter(prev => {
+                        const n = new Set(prev);
+                        checked ? n.delete(val) : n.add(val);
+                        return n;
+                      })} className="h-3.5 w-3.5 rounded border-neutral-300 accent-emerald-600" />
+                      <span className="text-xs font-semibold text-neutral-700">{RECIPIENT_STATUS_CONFIG[val].label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Invoice list */}

@@ -45,6 +45,12 @@ export interface TreasuryOverview {
     paidAdhesions: number;
     recoveryRate: number;
     membershipFee: number;
+    paidAnnuelles: number;
+    expectedAnnuelles: number;
+    pendingAnnuelles: number;
+    recoveryRateAnnuelle: number;
+    recoveryRateOther: number;
+    annualSubscriptionFee: number;
     donations: number;
     partners: number;
     assetsCount: number;

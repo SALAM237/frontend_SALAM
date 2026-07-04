@@ -32,7 +32,11 @@ function escReceipt(value: unknown) {
    pour UNE tranche (ou un paiement intégral) — avec tampon "ANNULÉ" superposé en
    grand si le reçu a été annulé côté admin. Partagé entre la vue membre
    (app/member/cotisations-annuelles) et la vue admin (app/admin/facturation). */
-export function downloadReceiptPdf(receipt: ReceiptDoc, user: { firstName: string; lastName: string; memberNumber?: string | null }) {
+export function downloadReceiptPdf(
+  receipt: ReceiptDoc,
+  user: { firstName: string; lastName: string; memberNumber?: string | null },
+  resteAPayer?: number,
+) {
   const memberName = formatFullName(user.firstName, user.lastName);
   const memberId = user.memberNumber ?? '-';
   const paidAt = fmt(receipt.paidAt);
@@ -106,6 +110,11 @@ export function downloadReceiptPdf(receipt: ReceiptDoc, user: { firstName: strin
           <td>${escReceipt(paidAt)}</td>
           <td class="right"><strong>${escReceipt(formatCfa(receipt.amount))}</strong></td>
         </tr>
+        ${resteAPayer !== undefined ? `
+        <tr>
+          <td colspan="3" class="muted">Reste à payer (cotisation ${escReceipt(receipt.year)})</td>
+          <td class="right"><strong>${escReceipt(formatCfa(resteAPayer))}</strong></td>
+        </tr>` : ''}
       </tbody>
     </table>
     ${receipt.modifiedAt ? `<p class="muted" style="margin-top:12px;font-size:11px;">Ce reçu a été modifié le ${escReceipt(fmt(receipt.modifiedAt))}.</p>` : ''}
