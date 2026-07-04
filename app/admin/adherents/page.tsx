@@ -131,7 +131,18 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
   const [draftDate, setDraftDate]     = useState(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
   const amountInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
-  const updateTranche = useUpdateTranche();
+  /* 3 instances SÉPARÉES du hook de mutation (montant / date / statut) : TanStack Query
+     ne garde qu'UNE mutation "courante" par instance — un second .mutate() sur la MÊME
+     instance avant que le premier n'ait reçu sa réponse détache l'observateur de la
+     première mutation en cours (cf. MutationObserver.mutate() dans @tanstack/query-core),
+     ce qui fait taire SILENCIEUSEMENT son onSuccess/onError (montant validé mais
+     l'affichage ne bascule jamais, alors que la sauvegarde serveur a réussi). Avec des
+     instances séparées, valider le montant puis enchaîner sur la date ne peut plus
+     jamais interrompre l'accusé de réception de l'autre. */
+  const updateAmount = useUpdateTranche();
+  const updateDate = useUpdateTranche();
+  const updateStatusMutation = useUpdateTranche();
+  const updateTranche = { isPending: updateAmount.isPending || updateDate.isPending || updateStatusMutation.isPending };
 
   /* Tailles adaptées : sur mobile, badges réduits, montant/date agrandis pour la lisibilité */
   const sizes = variant === 'mobile'
@@ -168,11 +179,6 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
     else onFeedback('error', err.message);
   };
 
-  /* Montant actuellement "confirmé" côté client — c'est CETTE valeur locale qui
-     pilote l'affichage et les calculs, jamais la prop serveur (t.amount), qui met
-     un instant à se resynchroniser après une mutation (refetch réseau). */
-  const currentAmount = () => Math.max(0, Number(draftAmount) || 0);
-
   const commitStatus = (status: 'unpaid' | 'paid' | 'exempt') => {
     if (status === 'unpaid' && (isFullySettled || t.amount > 0)) {
       onFeedback('warning', "Un montant supérieur à 0 est déjà saisi pour cette tranche : cliquez sur le montant affiché pour le corriger si besoin, plutôt que de repasser en Impayé.");
@@ -182,7 +188,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
       onFeedback('warning', 'Impossible de passer à Payé', lastTrancheBlockedContent(resteAvantTranche4));
       return;
     }
-    updateTranche.mutate(
+    updateStatusMutation.mutate(
       { userId, year, trancheIndex: index, amount: t.amount, status, paidAt: t.paidAt ?? undefined },
       {
         onSuccess: res => {
@@ -197,55 +203,44 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
 
   /* Valide UNIQUEMENT le montant — la date existante (ou aujourd'hui par défaut
      si aucune n'a encore été confirmée) est réutilisée telle quelle, sans
-     redemander de la reconfirmer. Bascule en mode "text" IMMÉDIATEMENT (comme le
-     composant de référence) : l'affichage ne dépend jamais du round-trip réseau,
-     seule la persistance se fait en tâche de fond (rollback vers 'edit' en cas
-     d'échec serveur, ex. facture manquante). */
-  const confirmAmount = () => {
-    if (!draftAmount.trim()) return;
-    const amount = currentAmount();
+     redemander de la reconfirmer. */
+  const commitAmount = (rawAmount: string) => {
+    const amount = Math.max(0, Number(rawAmount) || 0);
     const paidAtToSend = t.paidAt ?? draftDate;
-    setAmountMode(amount > 0 ? 'text' : 'edit');
-    /* Première saisie (aucune date encore confirmée) : on avance vers le champ
-       date pour la faire confirmer — mais on ne dérange jamais une date déjà
-       validée juste parce que le montant a été modifié. */
-    if (amount > 0 && dateMode === 'edit') {
-      setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 100);
-    }
-    updateTranche.mutate(
+    updateAmount.mutate(
       { userId, year, trancheIndex: index, amount, status: amount > 0 ? 'paid' : 'unpaid', paidAt: paidAtToSend },
       {
         onSuccess: res => {
+          setAmountMode(amount > 0 ? 'text' : 'edit');
+          /* Première saisie (aucune date encore confirmée) : on avance vers le
+             champ date pour la faire confirmer — mais on ne dérange jamais une
+             date déjà validée juste parce que le montant a été modifié. */
+          if (amount > 0 && dateMode === 'edit') {
+            setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 100);
+          }
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
           else onFeedback('success', (res as any).message ?? 'Montant mis à jour');
         },
-        onError: err => { setAmountMode('edit'); handleMutationError(err); },
+        onError: handleMutationError,
       },
     );
   };
-  const clearAmount = () => {
-    setDraftAmount('');
-    setAmountMode('edit');
-    updateTranche.mutate(
-      { userId, year, trancheIndex: index, amount: 0, status: 'unpaid', paidAt: t.paidAt ?? draftDate },
-      { onError: handleMutationError },
-    );
-  };
+  const confirmAmount = () => commitAmount(draftAmount);
+  const clearAmount = () => { setDraftAmount(''); commitAmount(''); };
 
-  /* Valide UNIQUEMENT la date — le montant existant (local) est réutilisé tel quel. */
+  /* Valide UNIQUEMENT la date — le montant existant est réutilisé tel quel. */
   const commitDate = (nextDate: string) => {
-    setDraftDate(nextDate);
-    setDateMode('text');
-    updateTranche.mutate(
-      { userId, year, trancheIndex: index, amount: currentAmount(), status: currentAmount() > 0 ? 'paid' : 'unpaid', paidAt: nextDate },
+    updateDate.mutate(
+      { userId, year, trancheIndex: index, amount: t.amount, status: t.amount > 0 ? 'paid' : 'unpaid', paidAt: nextDate },
       {
         onSuccess: res => {
+          setDateMode('text');
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
           else onFeedback('success', (res as any).message ?? 'Date mise à jour');
         },
-        onError: err => { setDateMode('edit'); handleMutationError(err); },
+        onError: handleMutationError,
       },
     );
   };
@@ -291,17 +286,14 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
       ) : (
         <button type="button" onClick={() => { setAmountMode('edit'); setTimeout(() => amountInputRef.current?.focus(), 80); }} title="Modifier le montant"
           className={`flex items-center gap-1 truncate text-left font-mono font-black text-neutral-700 transition hover:text-emerald-700 hover:underline ${sizes.amount}`}>
-          {fmtNum(currentAmount())} F
+          {fmtNum(t.amount)} F
           <PencilLine size={10} className="shrink-0 text-neutral-400" />
         </button>
       )}
 
       {/* Date : n'apparaît qu'une fois un montant validé (> 0) — jamais avant, pour ne pas
-          changer la mise en page d'une tranche vierge. amountMode === 'text' est la condition
-          (état LOCAL, jamais dépendant du round-trip serveur) : dès que le montant est confirmé
-          côté client, la date devient disponible immédiatement. Mode 'edit'/'text' de la date
-          indépendant de celui du montant. */}
-      {amountMode === 'text' && currentAmount() > 0 && (
+          changer la mise en page d'une tranche vierge. Mode 'edit'/'text' indépendant du montant. */}
+      {t.amount > 0 && (
         dateMode === 'edit' ? (
           <div className="group/trancheDate relative">
             <div className="absolute bottom-full left-0 z-20 mb-1 hidden items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/trancheDate:flex">
@@ -313,16 +305,18 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
             <input
               ref={dateInputRef}
               type="date" value={draftDate} disabled={updateTranche.isPending}
-              onChange={e => commitDate(e.target.value)}
+              onChange={e => { setDraftDate(e.target.value); commitDate(e.target.value); }}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitDate(draftDate); } }}
               className={`w-full min-w-0 rounded-md border border-emerald-300 px-1 py-0.5 outline-none focus:border-emerald-500 disabled:cursor-wait ${sizes.date}`}
             />
           </div>
         ) : (
-          <button type="button" onClick={() => { setDateMode('edit'); setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80); }} title="Modifier la date"
-            className={`truncate text-left font-semibold text-neutral-400 transition hover:text-emerald-600 hover:underline ${sizes.date}`}>
-            {fmtDate(draftDate)}
-          </button>
+          t.paidAt && (
+            <button type="button" onClick={() => { setDateMode('edit'); setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80); }} title="Modifier la date"
+              className={`truncate text-left font-semibold text-neutral-400 transition hover:text-emerald-600 hover:underline ${sizes.date}`}>
+              {fmtDate(t.paidAt)}
+            </button>
+          )
         )
       )}
 
