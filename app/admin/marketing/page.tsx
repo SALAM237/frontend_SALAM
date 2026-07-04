@@ -215,7 +215,7 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
 }
 
 function CampaignHistoryRow({ campaign }: { campaign: CampaignDoc }) {
-  const creditedNow = campaign.recipients.filter(r => r.giftCreditedImmediately).length;
+  const creditedNow = (campaign.recipients ?? []).filter(r => r.giftCreditedImmediately).length;
   return (
     <div className="flex items-center gap-4 px-5 py-4">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 border border-rose-100">
@@ -224,7 +224,7 @@ function CampaignHistoryRow({ campaign }: { campaign: CampaignDoc }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-black text-neutral-900">{campaign.title}</p>
         <p className="mt-0.5 text-[11px] text-neutral-400">
-          {campaign.giftName} ({campaign.cauriAmount.toLocaleString('fr-FR')} cauris) · Échéance {fmt(campaign.deadline)} · {campaign.recipients.length} destinataire{campaign.recipients.length > 1 ? 's' : ''}
+          {campaign.giftName} ({(campaign.cauriAmount ?? 0).toLocaleString('fr-FR')} cauris) · Échéance {fmt(campaign.deadline)} · {(campaign.recipients ?? []).length} destinataire{(campaign.recipients ?? []).length > 1 ? 's' : ''}
         </p>
         {creditedNow > 0 && (
           <p className="mt-0.5 text-[11px] font-semibold text-emerald-600">{creditedNow} déjà crédité{creditedNow > 1 ? 's' : ''} immédiatement</p>
