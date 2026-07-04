@@ -661,7 +661,18 @@ function PresenceModal({ activity, onClose }: { activity: ActivityDoc; onClose: 
     </div>
   );
 }
+function normalizeGuestSearch(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 function GuestChecklist({ title, items, selected, onToggle, onToggleAll, readOnly = false }: { title: string; items: { id: string; label: string; detail?: string }[]; selected: string[]; onToggle: (id: string) => void; onToggleAll: () => void; readOnly?: boolean }) {
+  const [search, setSearch] = useState('');
+  const filteredItems = useMemo(() => {
+    const q = normalizeGuestSearch(search.trim());
+    if (!q) return items;
+    return items.filter(item => normalizeGuestSearch(`${item.label} ${item.detail ?? ''}`).includes(q));
+  }, [items, search]);
+
   return (
     <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-200 bg-white">
       <div className="flex items-center justify-between gap-3 border-b border-neutral-100 px-3 py-2">
@@ -669,9 +680,21 @@ function GuestChecklist({ title, items, selected, onToggle, onToggleAll, readOnl
         {!readOnly && <label className="inline-flex items-center gap-2 text-[11px] font-black text-emerald-700"><input type="checkbox" checked={items.length > 0 && selected.length === items.length} onChange={onToggleAll} /> Tout</label>}
         {readOnly && <span className="text-[11px] font-black text-emerald-700">{items.length} invités</span>}
       </div>
-      <div className="max-h-56 overflow-y-auto divide-y divide-neutral-50">
+      {items.length > 5 && (
+        <div className="border-b border-neutral-100 px-3 py-2">
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Rechercher un nom, un email…"
+            className="h-8 w-full rounded-lg border border-neutral-200 px-2.5 text-xs outline-none focus:border-emerald-400"
+          />
+        </div>
+      )}
+      <div className="max-h-72 overflow-y-auto divide-y divide-neutral-50">
         {items.length === 0 && <p className="px-3 py-6 text-center text-xs font-semibold text-neutral-400">Aucun element disponible.</p>}
-        {items.map(item => (
+        {items.length > 0 && filteredItems.length === 0 && <p className="px-3 py-6 text-center text-xs font-semibold text-neutral-400">Aucun résultat pour cette recherche.</p>}
+        {filteredItems.map(item => (
           <label key={item.id} className={`flex items-center gap-3 px-3 py-2.5 ${readOnly ? 'cursor-default' : 'cursor-pointer hover:bg-emerald-50/40'}`}>
             <input type="checkbox" checked={readOnly ? true : selected.includes(item.id)} onChange={() => !readOnly && onToggle(item.id)} disabled={readOnly} />
             <span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold text-neutral-800">{item.label}</span>{item.detail && <span className="block truncate text-[11px] text-neutral-400">{item.detail}</span>}</span>

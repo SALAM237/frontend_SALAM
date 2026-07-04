@@ -224,7 +224,9 @@ function CampaignHistoryRow({ campaign }: { campaign: CampaignDoc }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-black text-neutral-900">{campaign.title}</p>
         <p className="mt-0.5 text-[11px] text-neutral-400">
-          {campaign.giftName} ({(campaign.cauriAmount ?? 0).toLocaleString('fr-FR')} cauris) · Échéance {fmt(campaign.deadline)} · {(campaign.recipients ?? []).length} destinataire{(campaign.recipients ?? []).length > 1 ? 's' : ''}
+          {/* giftName est déjà le texte complet saisi par l'admin (ex. "15 000 Cauris") —
+              ne jamais lui accoler cauriAmount à côté, sous peine de doublon visuel. */}
+          {campaign.giftName} · Échéance {fmt(campaign.deadline)} · {(campaign.recipients ?? []).length} destinataire{(campaign.recipients ?? []).length > 1 ? 's' : ''}
         </p>
         {creditedNow > 0 && (
           <p className="mt-0.5 text-[11px] font-semibold text-emerald-600">{creditedNow} déjà crédité{creditedNow > 1 ? 's' : ''} immédiatement</p>
