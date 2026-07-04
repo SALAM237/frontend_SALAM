@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import { Gift, X, Search, Image as ImageIcon, Loader2, Send, Users, CheckSquare, Square, Calendar, Package, BarChart3, Eye, MousePointerClick, Smartphone, Tablet, Monitor, HelpCircle } from 'lucide-react';
+import { Gift, X, Search, Image as ImageIcon, Loader2, Send, Users, CheckSquare, Square, Calendar, Package, BarChart3, Eye, MousePointerClick, Smartphone, Tablet, Monitor, HelpCircle, ChevronDown } from 'lucide-react';
 import { useAdminCampaigns, useCreateCampaign, useUploadCampaignImage, useCampaignInsights, useCampaignGiftRewardedMembers, type CampaignDoc } from '@/lib/api/marketing';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { formatFullName } from '@/lib/format-name';
@@ -24,6 +24,30 @@ function normalizeName(value: string) {
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+/* ─── Section accordéon (mobile/tablette) ───────────────────
+   Même pattern que les sections de filtres pliables d'Adhérents : bouton
+   header (contenu libre) + chevron qui pivote + contenu en grid-rows
+   0fr/1fr pour l'animation d'ouverture/fermeture. */
+function SectionAccordion({ header, children, defaultOpen = false }: {
+  header: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-neutral-50/60 sm:px-5">
+        <div className="min-w-0 flex-1">{header}</div>
+        <ChevronDown size={14} className={`shrink-0 text-neutral-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+        <div className="overflow-hidden">{children}</div>
+      </div>
+    </div>
+  );
 }
 
 /* ─── Éditeur de campagne "Cadeau SALAM" ────────────────────
@@ -230,8 +254,33 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
    ayant déjà validé et reçu le cadeau, toutes campagnes de ce type
    confondues. Ces membres sont aussi exclus du sélecteur de destinataires
    (voir CampaignEditorModal) pour qu'ils ne puissent plus être renvoyés. */
-function RewardedMembersPanel() {
+function RewardedMembersList() {
   const { data, isLoading } = useCampaignGiftRewardedMembers();
+  const rewarded = data?.data ?? [];
+
+  return (
+    <div className="max-h-48 overflow-y-auto">
+      {isLoading && <p className="py-3 text-center text-xs text-emerald-700/60">Chargement…</p>}
+      {!isLoading && rewarded.length === 0 && (
+        <p className="py-3 text-center text-xs text-emerald-700/60">Aucun bénéficiaire pour le moment.</p>
+      )}
+      <div className="divide-y divide-emerald-100/70">
+        {rewarded.map(r => (
+          <div key={r.userId} className="flex items-center justify-between gap-2 py-1.5">
+            <div className="min-w-0">
+              <p className="truncate text-xs font-bold text-emerald-900">{formatFullName(r.firstName, r.lastName)}</p>
+              <p className="truncate text-[10px] text-emerald-700/70">{fmtDateTime(r.creditedAt)}</p>
+            </div>
+            <span className="shrink-0 text-[11px] font-black text-emerald-700">{r.amount.toLocaleString('fr-FR')}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RewardedMembersPanel() {
+  const { data } = useCampaignGiftRewardedMembers();
   const rewarded = data?.data ?? [];
 
   return (
@@ -245,23 +294,25 @@ function RewardedMembersPanel() {
             <p className="text-xs font-semibold text-emerald-600/80">{rewarded.length} membre{rewarded.length > 1 ? 's' : ''} — ne peuvent plus être sélectionnés</p>
           </div>
         </div>
-        <div className="mt-1 max-h-48 overflow-y-auto">
-          {isLoading && <p className="py-3 text-center text-xs text-emerald-700/60">Chargement…</p>}
-          {!isLoading && rewarded.length === 0 && (
-            <p className="py-3 text-center text-xs text-emerald-700/60">Aucun bénéficiaire pour le moment.</p>
-          )}
-          <div className="divide-y divide-emerald-100/70">
-            {rewarded.map(r => (
-              <div key={r.userId} className="flex items-center justify-between gap-2 py-1.5">
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-bold text-emerald-900">{formatFullName(r.firstName, r.lastName)}</p>
-                  <p className="truncate text-[10px] text-emerald-700/70">{fmtDateTime(r.creditedAt)}</p>
-                </div>
-                <span className="shrink-0 text-[11px] font-black text-emerald-700">{r.amount.toLocaleString('fr-FR')}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <div className="mt-1"><RewardedMembersList /></div>
+      </div>
+    </div>
+  );
+}
+
+/* Header de l'accordéon mobile/tablette — mêmes 3 lignes que le panneau
+   desktop (label de section, titre, compteur), toujours visibles ; la liste
+   elle-même va dans la partie déroulante (RewardedMembersList). */
+function RewardedAccordionHeader() {
+  const { data } = useCampaignGiftRewardedMembers();
+  const rewarded = data?.data ?? [];
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white"><Gift size={15} /></span>
+      <div className="min-w-0">
+        <p className="text-[9px] font-black uppercase tracking-[0.14em] text-neutral-400">Historique des bénéficiaires</p>
+        <p className="text-sm font-black text-emerald-800">Déjà récompensés</p>
+        <p className="truncate text-xs font-semibold text-emerald-600/80">{rewarded.length} membre{rewarded.length > 1 ? 's' : ''} — ne peuvent plus être sélectionnés</p>
       </div>
     </div>
   );
@@ -316,7 +367,7 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
       {isError && <p className="rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-center text-sm text-red-600">Accès refusé ou erreur de chargement.</p>}
 
       {insights && (
-        <div className="overflow-x-auto rounded-2xl border border-neutral-100 bg-white shadow-sm">
+        <div className="hidden overflow-x-auto rounded-2xl border border-neutral-100 bg-white shadow-sm lg:block">
           <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="border-b border-neutral-100 bg-neutral-50/60 text-left text-[11px] font-black uppercase tracking-wide text-neutral-500">
@@ -393,6 +444,62 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
           </table>
         </div>
       )}
+
+      {/* ── Mobile/tablette : un accordéon par destinataire ──────
+          Header = colonne Membre (mêmes tailles que le nom/email des cartes
+          Adhérents) ; le reste (ouvertures/clic/appareil/cadeau) va dans la
+          partie déroulante, avec les mêmes tailles de police que le corps
+          des accordéons Adhérents (label text-[9px] uppercase + valeur
+          font-semibold text-neutral-700). */}
+      {insights && (
+        <div className="space-y-2 lg:hidden">
+          {insights.recipients.map(r => {
+            const deviceEvents = [...r.opens, ...r.clicks].sort(
+              (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+            );
+            return (
+              <SectionAccordion key={r.userId}
+                header={
+                  <div className="min-w-0">
+                    <p className="truncate text-[11px] font-black leading-tight text-neutral-900">{formatFullName(r.firstName, r.lastName)}</p>
+                    <p className="truncate text-[9px] text-neutral-400">{r.email}</p>
+                  </div>
+                }
+              >
+                <div className="mx-3 mb-3 space-y-2.5 rounded-2xl border border-neutral-100 bg-neutral-50/80 p-2.5 text-[9px] text-neutral-500 sm:mx-4 sm:mb-4">
+                  <div>
+                    <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Ouvertures</p>
+                    {r.opens.length > 0 ? r.opens.map((o, i) => (
+                      <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700"><Eye size={11} className="shrink-0 text-emerald-600" /> {fmtDateTime(o.occurredAt)}</p>
+                    )) : <p className="mt-0.5 text-neutral-300">—</p>}
+                  </div>
+                  <div>
+                    <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Clic</p>
+                    {r.clicks.length > 0 ? r.clicks.map((c, i) => (
+                      <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700"><MousePointerClick size={11} className="shrink-0 text-violet-600" /> {fmtDateTime(c.occurredAt)}</p>
+                    )) : <p className="mt-0.5 text-neutral-300">—</p>}
+                  </div>
+                  <div>
+                    <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Appareil</p>
+                    {deviceEvents.length > 0 ? deviceEvents.map((e, i) => {
+                      const DeviceIcon = DEVICE_ICON[e.deviceType ?? 'unknown'] ?? HelpCircle;
+                      return <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700"><DeviceIcon size={11} className="shrink-0" /> {e.deviceType}</p>;
+                    }) : <p className="mt-0.5 text-neutral-300">—</p>}
+                  </div>
+                  <div>
+                    <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Cadeau</p>
+                    <p className="mt-0.5">
+                      {r.giftCreditedImmediately
+                        ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-black text-emerald-700">Crédité immédiatement</span>
+                        : <span className="text-neutral-300">En attente</span>}
+                    </p>
+                  </div>
+                </div>
+              </SectionAccordion>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -436,7 +543,8 @@ export default function AdminMarketingPage() {
             <span className="text-xs font-semibold text-rose-600/80">Invitez les membres à finaliser leur profil pour bénéficier d&apos;un cadeau exclusif.</span>
           </button>
 
-          <div className="grid items-start gap-3 sm:grid-cols-[1.7fr_1fr]">
+          {/* ── Desktop : les 2 blocs côte à côte, jamais pliés ──── */}
+          <div className="hidden items-start gap-3 lg:grid lg:grid-cols-[1.7fr_1fr]">
             <div>
               <h2 className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-neutral-500">Historique des campagnes</h2>
               <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
@@ -450,6 +558,24 @@ export default function AdminMarketingPage() {
               </div>
             </div>
             <RewardedMembersPanel />
+          </div>
+
+          {/* ── Mobile/tablette : 2 accordéons empilés, bénéficiaires
+              en premier — mêmes headers/contenus, juste pliables. ──── */}
+          <div className="space-y-3 lg:hidden">
+            <SectionAccordion header={<RewardedAccordionHeader />}>
+              <div className="mx-4 mb-4"><RewardedMembersList /></div>
+            </SectionAccordion>
+
+            <SectionAccordion header={<p className="text-xs font-black uppercase tracking-[0.16em] text-neutral-500">Historique des campagnes</p>}>
+              {isLoading && <p className="px-5 py-8 text-center text-sm text-neutral-400">Chargement…</p>}
+              {!isLoading && campaigns.length === 0 && (
+                <p className="px-5 py-8 text-center text-sm text-neutral-400">Aucune campagne envoyée pour le moment.</p>
+              )}
+              <div className="divide-y divide-neutral-50 border-t border-neutral-100">
+                {campaigns.map(c => <CampaignHistoryRow key={c._id} campaign={c} />)}
+              </div>
+            </SectionAccordion>
           </div>
         </>
       )}
