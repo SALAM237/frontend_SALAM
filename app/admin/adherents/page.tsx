@@ -121,10 +121,15 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
   onInvoiceRequired: (message: string) => void;
 }) {
   const t = tranche ?? EMPTY_TRANCHE;
-  /* Étapes : 'display' (montant + date déjà enregistrés) → 'amount' (saisie) → 'date' (choix date) */
-  const [step, setStep]               = useState<'display' | 'amount' | 'date'>(t.amount > 0 ? 'display' : 'amount');
+  /* Montant et date se valident INDÉPENDAMMENT l'un de l'autre : chacun a son propre
+     mode 'edit' (saisie) / 'text' (affiché, cliquable pour remodifier). Modifier
+     l'un ne force jamais une re-validation de l'autre — évite un aller-retour
+     serveur inutile pour le champ qui n'a pas changé. */
+  const [amountMode, setAmountMode] = useState<'edit' | 'text'>(t.amount > 0 ? 'text' : 'edit');
+  const [dateMode,   setDateMode]   = useState<'edit' | 'text'>(t.paidAt ? 'text' : 'edit');
   const [draftAmount, setDraftAmount] = useState(t.amount > 0 ? String(t.amount) : '');
   const [draftDate, setDraftDate]     = useState(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
+  const amountInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const updateTranche = useUpdateTranche();
 
@@ -134,15 +139,16 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
     : { badge: 'text-[8px]', amount: 'text-[10px]', date: 'text-[9px]' };
 
   useEffect(() => {
-    if (step !== 'display') return;
+    if (amountMode !== 'text') return;
     setDraftAmount(t.amount > 0 ? String(t.amount) : '');
-    setDraftDate(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t.amount, t.paidAt, t.status]);
+  }, [t.amount]);
 
   useEffect(() => {
-    if (step === 'date') dateInputRef.current?.focus();
-  }, [step]);
+    if (dateMode !== 'text') return;
+    setDraftDate(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t.paidAt]);
 
   /* Contrôle spécifique tranche 4 : elle doit boucler le solde total */
   const isLastTranche = index === 3;
@@ -184,23 +190,46 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
     );
   };
 
-  /* Clic sur ✓ ou ✗ au-dessus du champ montant : les deux renvoient vers le choix de la date. */
-  const confirmAmount = () => setStep('date');
-  const clearAmount = () => { setDraftAmount(''); setStep('date'); };
-
-  const commitDate = (nextDate: string) => {
-    setDraftDate(nextDate);
-    const amount = Math.max(0, Number(draftAmount) || 0);
+  /* Valide UNIQUEMENT le montant — la date existante (ou aujourd'hui par défaut
+     si aucune n'a encore été confirmée) est réutilisée telle quelle, sans
+     redemander de la reconfirmer. */
+  const commitAmount = (rawAmount: string) => {
+    const amount = Math.max(0, Number(rawAmount) || 0);
+    const paidAtToSend = t.paidAt ?? draftDate;
     updateTranche.mutate(
-      { userId, year, trancheIndex: index, amount, status: amount > 0 ? 'paid' : 'unpaid', paidAt: nextDate },
+      { userId, year, trancheIndex: index, amount, status: amount > 0 ? 'paid' : 'unpaid', paidAt: paidAtToSend },
       {
         onSuccess: res => {
-          setStep(amount > 0 ? 'display' : 'amount');
+          setAmountMode(amount > 0 ? 'text' : 'edit');
+          /* Première saisie (aucune date encore confirmée) : on avance vers le
+             champ date pour la faire confirmer — mais on ne dérange jamais une
+             date déjà validée juste parce que le montant a été modifié. */
+          if (amount > 0 && dateMode === 'edit') {
+            setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 100);
+          }
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
-          else onFeedback('success', (res as any).message ?? 'Tranche mise à jour');
+          else onFeedback('success', (res as any).message ?? 'Montant mis à jour');
         },
-        onError: err => { setStep('amount'); handleMutationError(err); },
+        onError: handleMutationError,
+      },
+    );
+  };
+  const confirmAmount = () => commitAmount(draftAmount);
+  const clearAmount = () => { setDraftAmount(''); commitAmount(''); };
+
+  /* Valide UNIQUEMENT la date — le montant existant est réutilisé tel quel. */
+  const commitDate = (nextDate: string) => {
+    updateTranche.mutate(
+      { userId, year, trancheIndex: index, amount: t.amount, status: t.amount > 0 ? 'paid' : 'unpaid', paidAt: nextDate },
+      {
+        onSuccess: res => {
+          setDateMode('text');
+          const warning = (res as any).invoiceWarning;
+          if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
+          else onFeedback('success', (res as any).message ?? 'Date mise à jour');
+        },
+        onError: handleMutationError,
       },
     );
   };
@@ -218,7 +247,8 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
         <option value="exempt">Exempté</option>
       </select>
 
-      {step === 'amount' && (
+      {/* Montant : mode 'edit' (saisie) ou 'text' (validé, cliquable pour remodifier) — indépendant de la date. */}
+      {amountMode === 'edit' ? (
         <div className="group/tranche relative">
           {/* Boutons flottants juste au-dessus du champ de saisie : masqués par défaut, visibles uniquement au focus DE CE champ précis.
               Groupe nommé (group/tranche) car la <tr> de la ligne porte déjà "group" (survol) — un group-focus-within générique
@@ -234,44 +264,49 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
             </button>
           </div>
           <input
-            type="number" min={0} value={draftAmount}
+            ref={amountInputRef}
+            type="number" min={0} value={draftAmount} disabled={updateTranche.isPending}
             onChange={e => setDraftAmount(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') confirmAmount(); }}
             placeholder="Montant"
-            className={`w-full min-w-0 rounded-md border border-neutral-200 px-1 py-0.5 outline-none focus:border-emerald-400 ${sizes.amount}`}
+            className={`w-full min-w-0 rounded-md border border-neutral-200 px-1 py-0.5 outline-none focus:border-emerald-400 disabled:cursor-wait ${sizes.amount}`}
           />
         </div>
+      ) : (
+        <button type="button" onClick={() => { setAmountMode('edit'); setTimeout(() => amountInputRef.current?.focus(), 80); }} title="Modifier le montant"
+          className={`flex items-center gap-1 truncate text-left font-mono font-black text-neutral-700 transition hover:text-emerald-700 hover:underline ${sizes.amount}`}>
+          {fmtNum(t.amount)} F
+          <PencilLine size={10} className="shrink-0 text-neutral-400" />
+        </button>
       )}
 
-      {step === 'date' && (
-        <div className="flex flex-col gap-1">
-          <span className={`truncate font-mono font-black text-neutral-700 ${sizes.amount}`}>
-            {draftAmount ? `${fmtNum(Number(draftAmount))} F` : '0 F'}
-          </span>
-          <input
-            ref={dateInputRef}
-            type="date" value={draftDate} disabled={updateTranche.isPending}
-            onChange={e => commitDate(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitDate(draftDate); } }}
-            className={`w-full rounded-md border border-emerald-300 px-1 py-0.5 outline-none focus:border-emerald-500 ${sizes.date}`}
-          />
-        </div>
-      )}
-
-      {step === 'display' && (
-        <div className="flex flex-col items-start gap-0.5">
-          <button type="button" onClick={() => setStep('amount')} title="Modifier le montant"
-            className={`flex items-center gap-1 truncate text-left font-mono font-black text-neutral-700 transition hover:text-emerald-700 hover:underline ${sizes.amount}`}>
-            {fmtNum(t.amount)} F
-            <PencilLine size={10} className="shrink-0 text-neutral-400" />
-          </button>
-          {t.paidAt && (
-            <button type="button" onClick={() => setStep('date')} title="Modifier la date"
+      {/* Date : n'apparaît qu'une fois un montant validé (> 0) — jamais avant, pour ne pas
+          changer la mise en page d'une tranche vierge. Mode 'edit'/'text' indépendant du montant. */}
+      {t.amount > 0 && (
+        dateMode === 'edit' ? (
+          <div className="group/trancheDate relative">
+            <div className="absolute bottom-full left-0 z-20 mb-1 hidden items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/trancheDate:flex">
+              <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => commitDate(draftDate)} disabled={updateTranche.isPending} title="Valider la date"
+                className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
+                <Check size={11} />
+              </button>
+            </div>
+            <input
+              ref={dateInputRef}
+              type="date" value={draftDate} disabled={updateTranche.isPending}
+              onChange={e => { setDraftDate(e.target.value); commitDate(e.target.value); }}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitDate(draftDate); } }}
+              className={`w-full min-w-0 rounded-md border border-emerald-300 px-1 py-0.5 outline-none focus:border-emerald-500 disabled:cursor-wait ${sizes.date}`}
+            />
+          </div>
+        ) : (
+          t.paidAt && (
+            <button type="button" onClick={() => { setDateMode('edit'); setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80); }} title="Modifier la date"
               className={`truncate text-left font-semibold text-neutral-400 transition hover:text-emerald-600 hover:underline ${sizes.date}`}>
               {fmtDate(t.paidAt)}
             </button>
-          )}
-        </div>
+          )
+        )
       )}
 
       {isLastTranche && (
