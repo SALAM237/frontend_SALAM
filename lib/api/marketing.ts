@@ -55,21 +55,44 @@ export function useCreateCampaign() {
       imageUrl?: string;
       recipientIds: string[];
     }) =>
-      apiClient<{ campaign: CampaignDoc; sent: number; failed: number; stoppedEarly: boolean }>('/api/v1/admin/marketing/campaigns', {
+      apiClient<{ campaign: CampaignDoc; sent: number; failed: number; stoppedEarly: boolean; alreadyRewardedExcluded?: number }>('/api/v1/admin/marketing/campaigns', {
         method: 'POST',
         body: JSON.stringify(body),
         token: token ?? '',
       }),
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-campaigns'] });
+      qc.invalidateQueries({ queryKey: ['admin-campaign-gift-rewarded'] });
       const data = res.data;
       if (data && data.failed > 0) {
-        toast.warning(`${data.sent} email(s) envoyé(s), ${data.failed} échec(s)${data.stoppedEarly ? ' — limite d\'envoi atteinte' : ''}. Voir Gestion Erreurs pour le détail.`);
+        const excludedSuffix = data.alreadyRewardedExcluded ? ` — ${data.alreadyRewardedExcluded} déjà récompensé(s) exclu(s)` : '';
+        toast.warning(`${data.sent} email(s) envoyé(s), ${data.failed} échec(s)${data.stoppedEarly ? ' — limite d\'envoi atteinte' : ''}${excludedSuffix}. Voir Gestion Erreurs pour le détail.`);
       } else {
         toast.success(res.message ?? 'Campagne envoyée');
       }
     },
     onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export interface RewardedMember {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  amount: number;
+  creditedAt: string;
+}
+
+/* Historique des membres ayant déjà validé et reçu le cadeau "Cadeau SALAM",
+   toutes campagnes de ce type confondues — sert au panneau "Historique des
+   bénéficiaires" et à exclure ces membres du sélecteur de destinataires. */
+export function useCampaignGiftRewardedMembers() {
+  const token = useAuthStore(s => s.accessToken);
+  return useQuery({
+    queryKey: ['admin-campaign-gift-rewarded'],
+    queryFn: () => apiClient<RewardedMember[]>('/api/v1/admin/marketing/campaigns/rewarded-members', { token: token ?? '' }),
+    enabled: !!token,
   });
 }
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { Gift, X, Search, Image as ImageIcon, Loader2, Send, Users, CheckSquare, Square, Calendar, Package, BarChart3, Eye, MousePointerClick, Smartphone, Tablet, Monitor, HelpCircle } from 'lucide-react';
-import { useAdminCampaigns, useCreateCampaign, useUploadCampaignImage, useCampaignInsights, type CampaignDoc } from '@/lib/api/marketing';
+import { useAdminCampaigns, useCreateCampaign, useUploadCampaignImage, useCampaignInsights, useCampaignGiftRewardedMembers, type CampaignDoc } from '@/lib/api/marketing';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { formatFullName } from '@/lib/format-name';
 import { useAuthStore } from '@/store/auth.store';
@@ -47,11 +47,19 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
   const uploadImage = useUploadCampaignImage();
   const createCampaign = useCreateCampaign();
 
+  const { data: rewardedData } = useCampaignGiftRewardedMembers();
+  /* Un membre déjà crédité pour "Cadeau SALAM" (toutes campagnes de ce type
+     confondues, voir hasReceivedCampaignGift côté backend) ne doit plus
+     jamais pouvoir être resélectionné comme destinataire. */
+  const rewardedIds = useMemo(() => new Set((rewardedData?.data ?? []).map(r => r.userId)), [rewardedData]);
+  const selectableMembers = useMemo(() => members.filter(m => !rewardedIds.has(m._id)), [members, rewardedIds]);
+  const excludedCount = members.length - selectableMembers.length;
+
   const filteredMembers = useMemo(() => {
     const q = normalizeName(memberSearch.trim());
-    if (!q) return members;
-    return members.filter(m => normalizeName(`${m.firstName} ${m.lastName} ${m.email ?? ''}`).includes(q));
-  }, [members, memberSearch]);
+    if (!q) return selectableMembers;
+    return selectableMembers.filter(m => normalizeName(`${m.firstName} ${m.lastName} ${m.email ?? ''}`).includes(q));
+  }, [selectableMembers, memberSearch]);
 
   const allFilteredSelected = filteredMembers.length > 0 && filteredMembers.every(m => selected.includes(m._id));
 
@@ -182,6 +190,9 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
                 className="h-9 w-full rounded-lg border border-neutral-200 pl-8 pr-3 text-sm outline-none focus:border-rose-400" />
             </div>
             {errors.recipients && <p className="mb-2 text-xs font-semibold text-red-600">{errors.recipients}</p>}
+            {excludedCount > 0 && (
+              <p className="mb-2 text-[11px] font-semibold text-emerald-700">{excludedCount} membre{excludedCount > 1 ? 's' : ''} déjà récompensé{excludedCount > 1 ? 's' : ''} — exclu{excludedCount > 1 ? 's' : ''} automatiquement de cette liste.</p>
+            )}
             <div className="max-h-56 overflow-y-auto rounded-xl border border-neutral-200">
               {membersLoading && <p className="p-4 text-center text-sm text-neutral-400">Chargement…</p>}
               {!membersLoading && filteredMembers.length === 0 && <p className="p-4 text-center text-sm text-neutral-400">Aucun membre trouvé.</p>}
@@ -208,6 +219,45 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
             {createCampaign.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             Envoyer la campagne
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Historique des bénéficiaires "Cadeau SALAM" ───────────
+   Affiché à droite du bloc de lancement de campagne : liste des membres
+   ayant déjà validé et reçu le cadeau, toutes campagnes de ce type
+   confondues. Ces membres sont aussi exclus du sélecteur de destinataires
+   (voir CampaignEditorModal) pour qu'ils ne puissent plus être renvoyés. */
+function RewardedMembersPanel() {
+  const { data, isLoading } = useCampaignGiftRewardedMembers();
+  const rewarded = data?.data ?? [];
+
+  return (
+    <div className="flex flex-col gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
+      <div className="flex items-center gap-2.5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white"><Gift size={18} /></span>
+        <div>
+          <p className="text-sm font-black text-emerald-800">Déjà récompensés</p>
+          <p className="text-xs font-semibold text-emerald-600/80">{rewarded.length} membre{rewarded.length > 1 ? 's' : ''} — ne peuvent plus être sélectionnés</p>
+        </div>
+      </div>
+      <div className="mt-1 max-h-48 overflow-y-auto">
+        {isLoading && <p className="py-3 text-center text-xs text-emerald-700/60">Chargement…</p>}
+        {!isLoading && rewarded.length === 0 && (
+          <p className="py-3 text-center text-xs text-emerald-700/60">Aucun bénéficiaire pour le moment.</p>
+        )}
+        <div className="divide-y divide-emerald-100/70">
+          {rewarded.map(r => (
+            <div key={r.userId} className="flex items-center justify-between gap-2 py-1.5">
+              <div className="min-w-0">
+                <p className="truncate text-xs font-bold text-emerald-900">{formatFullName(r.firstName, r.lastName)}</p>
+                <p className="truncate text-[10px] text-emerald-700/70">{fmtDateTime(r.creditedAt)}</p>
+              </div>
+              <span className="shrink-0 text-[11px] font-black text-emerald-700">{r.amount.toLocaleString('fr-FR')}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -353,6 +403,7 @@ export default function AdminMarketingPage() {
               <span className="text-sm font-black text-rose-700">Campagne Cadeau SALAM</span>
               <span className="text-xs font-semibold text-rose-600/80">Invitez les membres à finaliser leur profil pour bénéficier d&apos;un cadeau exclusif.</span>
             </button>
+            <RewardedMembersPanel />
           </div>
 
           <div>
