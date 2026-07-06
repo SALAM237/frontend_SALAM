@@ -15,8 +15,8 @@ const DEVICE_ICON: Record<string, React.ElementType> = {
 
 function fmtDateTime(d?: string | null) {
   if (!d) return '—';
-  // Format jj/mm/aaaa (sans heure) pour affichage compact
-  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  // Format jj/mm/aaaa hh:mm (gardez l'heure pour l'historique)
+  return new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function normalizeName(value: string) {
@@ -473,25 +473,25 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
                   </div>
                 }
               >
-                <div className="mx-3 mb-3 rounded-2xl border border-neutral-100 bg-neutral-50/80 p-2.5 text-neutral-500 sm:mx-4 sm:mb-4 grid grid-cols-3 gap-2.5 text-[8px]">
+                <div className="mx-3 mb-3 rounded-2xl border border-neutral-100 bg-neutral-50/80 p-2.5 text-neutral-500 sm:mx-4 sm:mb-4 grid grid-cols-3 gap-2.5 text-[7px]">
                   <div>
                     <p className="mb-1 font-black uppercase tracking-[0.06em] text-neutral-300">Ouvertures</p>
                     {r.opens.length > 0 ? r.opens.map((o, i) => (
-                      <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700 whitespace-nowrap text-[10px]"><Eye size={12} className="shrink-0 text-emerald-600" /> {fmtDateTime(o.occurredAt)}</p>
-                    )) : <p className="mt-0.5 text-neutral-300 text-[10px]">—</p>}
+                      <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700 whitespace-nowrap text-[9px]"><Eye size={12} className="shrink-0 text-emerald-600" /> {fmtDateTime(o.occurredAt)}</p>
+                    )) : <p className="mt-0.5 text-neutral-300 text-[9px]">—</p>}
                   </div>
                   <div>
                     <p className="mb-1 font-black uppercase tracking-[0.06em] text-neutral-300">Clic</p>
                     {r.clicks.length > 0 ? r.clicks.map((c, i) => (
-                      <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700 whitespace-nowrap text-[10px]"><MousePointerClick size={12} className="shrink-0 text-violet-600" /> {fmtDateTime(c.occurredAt)}</p>
-                    )) : <p className="mt-0.5 text-neutral-300 text-[10px]">—</p>}
+                      <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700 whitespace-nowrap text-[9px]"><MousePointerClick size={12} className="shrink-0 text-violet-600" /> {fmtDateTime(c.occurredAt)}</p>
+                    )) : <p className="mt-0.5 text-neutral-300 text-[9px]">—</p>}
                   </div>
                   <div>
                     <p className="mb-1 font-black uppercase tracking-[0.06em] text-neutral-300">Appareil</p>
                     {deviceEvents.length > 0 ? deviceEvents.map((e, i) => {
                       const DeviceIcon = DEVICE_ICON[e.deviceType ?? 'unknown'] ?? HelpCircle;
-                      return <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700 whitespace-nowrap text-[10px]"><DeviceIcon size={12} className="shrink-0" /> {e.deviceType}</p>;
-                    }) : <p className="mt-0.5 text-neutral-300 text-[10px]">—</p>}
+                      return <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700 whitespace-nowrap text-[9px]"><DeviceIcon size={12} className="shrink-0" /> {e.deviceType}</p>;
+                    }) : <p className="mt-0.5 text-neutral-300 text-[9px]">—</p>}
                   </div>
                 </div>
               </SectionAccordion>
