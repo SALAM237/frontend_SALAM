@@ -15,7 +15,8 @@ const DEVICE_ICON: Record<string, React.ElementType> = {
 
 function fmtDateTime(d?: string | null) {
   if (!d) return '—';
-  return new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  // Format jj/mm/aaaa (sans heure) pour affichage compact
+  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function normalizeName(value: string) {
@@ -460,39 +461,37 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
             return (
               <SectionAccordion key={r.userId}
                 header={
-                  <div className="min-w-0">
-                    <p className="truncate text-[11px] font-black leading-tight text-neutral-900">{formatFullName(r.firstName, r.lastName)}</p>
-                    <p className="truncate text-[9px] text-neutral-400">{r.email}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-[11px] font-black leading-tight text-neutral-900">{formatFullName(r.firstName, r.lastName)}</p>
+                      <p className="truncate text-[9px] text-neutral-400">{r.email}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end">
+                      <p className="text-[9px] font-black uppercase tracking-[0.08em] text-neutral-300">Cadeau</p>
+                      <p className="truncate text-[9px] text-neutral-400">{r.giftCreditedImmediately ? 'Crédité immédiatement' : 'En attente'}</p>
+                    </div>
                   </div>
                 }
               >
-                <div className="mx-3 mb-3 space-y-2.5 rounded-2xl border border-neutral-100 bg-neutral-50/80 p-2.5 text-[9px] text-neutral-500 sm:mx-4 sm:mb-4">
+                <div className="mx-3 mb-3 rounded-2xl border border-neutral-100 bg-neutral-50/80 p-2.5 text-neutral-500 sm:mx-4 sm:mb-4 grid grid-cols-3 gap-2.5 text-[8px]">
                   <div>
-                    <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Ouvertures</p>
+                    <p className="mb-1 font-black uppercase tracking-[0.06em] text-neutral-300">Ouvertures</p>
                     {r.opens.length > 0 ? r.opens.map((o, i) => (
-                      <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700"><Eye size={11} className="shrink-0 text-emerald-600" /> {fmtDateTime(o.occurredAt)}</p>
-                    )) : <p className="mt-0.5 text-neutral-300">—</p>}
+                      <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700 whitespace-nowrap text-[10px]"><Eye size={12} className="shrink-0 text-emerald-600" /> {fmtDateTime(o.occurredAt)}</p>
+                    )) : <p className="mt-0.5 text-neutral-300 text-[10px]">—</p>}
                   </div>
                   <div>
-                    <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Clic</p>
+                    <p className="mb-1 font-black uppercase tracking-[0.06em] text-neutral-300">Clic</p>
                     {r.clicks.length > 0 ? r.clicks.map((c, i) => (
-                      <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700"><MousePointerClick size={11} className="shrink-0 text-violet-600" /> {fmtDateTime(c.occurredAt)}</p>
-                    )) : <p className="mt-0.5 text-neutral-300">—</p>}
+                      <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700 whitespace-nowrap text-[10px]"><MousePointerClick size={12} className="shrink-0 text-violet-600" /> {fmtDateTime(c.occurredAt)}</p>
+                    )) : <p className="mt-0.5 text-neutral-300 text-[10px]">—</p>}
                   </div>
                   <div>
-                    <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Appareil</p>
+                    <p className="mb-1 font-black uppercase tracking-[0.06em] text-neutral-300">Appareil</p>
                     {deviceEvents.length > 0 ? deviceEvents.map((e, i) => {
                       const DeviceIcon = DEVICE_ICON[e.deviceType ?? 'unknown'] ?? HelpCircle;
-                      return <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700"><DeviceIcon size={11} className="shrink-0" /> {e.deviceType}</p>;
-                    }) : <p className="mt-0.5 text-neutral-300">—</p>}
-                  </div>
-                  <div>
-                    <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Cadeau</p>
-                    <p className="mt-0.5">
-                      {r.giftCreditedImmediately
-                        ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-black text-emerald-700">Crédité immédiatement</span>
-                        : <span className="text-neutral-300">En attente</span>}
-                    </p>
+                      return <p key={i} className="mt-0.5 flex items-center gap-1 font-semibold text-neutral-700 whitespace-nowrap text-[10px]"><DeviceIcon size={12} className="shrink-0" /> {e.deviceType}</p>;
+                    }) : <p className="mt-0.5 text-neutral-300 text-[10px]">—</p>}
                   </div>
                 </div>
               </SectionAccordion>
