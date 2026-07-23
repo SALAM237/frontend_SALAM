@@ -30,9 +30,10 @@ function printAttestation(title: string, bodyHtml: string) {
     .page { width: min(100vw, 794px); min-height: min(1123px, calc(100vw * 1.414)); margin: 0 auto; background: white; padding: clamp(22px, 4.8vw, 42px); position: relative; }
     .flag { position: absolute; left: 0; right: 0; top: 0; height: clamp(4px, .8vw, 7px); background: linear-gradient(90deg,#0B8F3A 0 33%,#C8102E 33% 66%,#F7C600 66%); }
     .header { margin: calc(clamp(22px, 4.8vw, 42px) * -1) calc(clamp(22px, 4.8vw, 42px) * -1) clamp(24px, 4vw, 34px); padding: clamp(32px, 5vw, 42px) clamp(22px, 4.8vw, 42px) clamp(18px, 3vw, 26px); background: linear-gradient(135deg,#087348,#075f41 62%,#043d2d); color: white; }
-    .brand-col { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
-    .logo { width: 34px; height: 34px; border-radius: 10px; background: #ffffff; color: #047857; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; overflow: hidden; flex-shrink: 0; }
+    .brand-row { display: flex; align-items: center; gap: 12px; }
+    .logo { width: 40px; height: 40px; border-radius: 12px; background: #ffffff; color: #047857; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; overflow: hidden; flex-shrink: 0; }
     .logo img { width: 100%; height: 100%; object-fit: cover; }
+    .brand-text { display: flex; flex-direction: column; gap: 2px; }
     .brand-name { font-size: clamp(13px, 2.4vw, 16px); font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
     .tagline { margin: 0; font-size: clamp(10px, 1.8vw, 12px); color: rgba(255,255,255,.75); }
     h1 { margin: clamp(8px, 2vw, 12px) 0 0; font-size: clamp(22px, 5vw, 28px); line-height: 1.1; }
@@ -51,10 +52,12 @@ function printAttestation(title: string, bodyHtml: string) {
   <div class="page">
     <div class="flag"></div>
     <header class="header">
-      <div class="brand-col">
+      <div class="brand-row">
         <span class="logo">${association.logoUrl ? `<img src="${esc(association.logoUrl)}" alt="Logo" />` : esc(association.logo)}</span>
-        <span class="brand-name">${esc(association.name)}</span>
-        <p class="tagline">Solidaire Associative des Lauréats du Maroc</p>
+        <div class="brand-text">
+          <span class="brand-name">${esc(association.name)}</span>
+          <p class="tagline">Solidaire Associative des Lauréats du Maroc</p>
+        </div>
       </div>
       <h1>${title}</h1>
     </header>
