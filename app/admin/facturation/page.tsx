@@ -20,6 +20,7 @@ import {
 import { useAdminReceipts, useUpdateReceipt, useCancelReceipt, type ReceiptDoc } from '@/lib/api/receipts';
 import { downloadReceiptPdf } from '@/lib/receipt-pdf';
 import { useAdminMembers, useAdminMember, type MemberListItem } from '@/lib/api/members';
+import { MemberFilterPanel, EMPTY_MEMBER_FILTERS, memberMatchesFilters, type MemberFilters } from '@/components/admin/MemberFilterPanel';
 import { formatFullName } from '@/lib/format-name';
 import { applyInlineTextStyle, captureTextSelection, type StoredTextSelection } from '@/lib/rich-text';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
@@ -704,7 +705,7 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
   const [selected, setSelected] = useState<string[]>(presetMemberId ? [presetMemberId] : []);
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [memberSearch, setMemberSearch] = useState('');
-  const [cotisFilter, setCotisFilter] = useState<'all' | MemberListItem['cotisationStatus']>('all');
+  const [filters, setFilters] = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
   const [notes, setNotes] = useState("Merci pour votre engagement au sein de SALAM. Cette facture correspond aux frais ou contributions validés par l'association.");
   const [legal, setLegal] = useState('Association SALAM — document généré électroniquement. Paiement à effectuer selon les moyens validés par le bureau exécutif.');
   const [isExempt, setIsExempt] = useState(false);
@@ -732,7 +733,7 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
   const [activeBlockDesign, setActiveBlockDesign] = useState<LayoutBlockId | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const createInvoice = useCreateInvoice();
-  const { data: membersData } = useAdminMembers({ limit: 200, status: 'active' });
+  const { data: membersData } = useAdminMembers({ limit: 200 });
   const { data: clientsData } = useInvoiceClients();
   const { data: presetMemberData } = useAdminMember(presetMemberId ?? '');
   const clients = clientsData?.data ?? [];
@@ -756,10 +757,9 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
     allMembers.filter(m => {
       const q = normalizeName(`${m.firstName} ${m.lastName} ${m.email ?? ''} ${m.memberId ?? ''}`);
       const matchSearch = !memberSearch.trim() || q.includes(normalizeName(memberSearch));
-      const matchCotis = cotisFilter === 'all' || m.cotisationStatus === cotisFilter;
-      return matchSearch && matchCotis;
+      return matchSearch && memberMatchesFilters(m, filters);
     }),
-  [allMembers, memberSearch, cotisFilter]);
+  [allMembers, memberSearch, filters]);
 
   const recipients = recipientMode === 'all'
     ? allMembers
@@ -1104,7 +1104,7 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
               </div>
               <div className="mb-3 flex gap-2">
                 <button type="button" onClick={() => setRecipientMode('all')} className={`flex-1 rounded-xl border px-3 py-2 text-xs font-black ${recipientMode === 'all' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}>
-                  Tous actifs
+                  Tous les membres
                 </button>
                 <button type="button" onClick={() => setRecipientMode('select')} className={`flex-1 rounded-xl border px-3 py-2 text-xs font-black ${recipientMode === 'select' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}>
                   Sélection
@@ -1114,12 +1114,8 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
                 <input value={memberSearch} onChange={event => setMemberSearch(event.target.value)} placeholder="Rechercher..." className="h-10 w-full rounded-xl border border-neutral-200 pl-9 pr-3 text-sm outline-emerald-300" />
               </div>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {(['all', 'unpaid', 'paid', 'exempt'] as const).map(filter => (
-                  <button key={filter} type="button" onClick={() => setCotisFilter(filter)} className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${cotisFilter === filter ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 text-neutral-500'}`}>
-                    {filter === 'all' ? 'Tous' : filter === 'unpaid' ? 'Impayé' : filter === 'paid' ? 'À jour' : 'Exempté'}
-                  </button>
-                ))}
+              <div className="mt-3">
+                <MemberFilterPanel filters={filters} onChange={setFilters} />
               </div>
               {recipientMode === 'select' && (
                 <>
@@ -1274,22 +1270,21 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const [recipientMode, setRecipientMode] = useState<'all' | 'select'>('all');
   const [selected,      setSelected]      = useState<string[]>([]);
   const [memberSearch,  setMemberSearch]  = useState('');
-  const [cotisFilter,   setCotisFilter]   = useState<'all' | MemberListItem['cotisationStatus']>('all');
+  const [filters,       setFilters]       = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
   const [errors,        setErrors]        = useState<Record<string, string>>({});
   const recipientRef = useRef<HTMLDivElement>(null);
 
   const createInvoice = useCreateInvoice();
-  const { data: membersData } = useAdminMembers({ limit: 200, status: 'active' });
+  const { data: membersData } = useAdminMembers({ limit: 200 });
   const allMembers: MemberListItem[] = membersData?.data?.data ?? [];
 
   const filteredMembers = useMemo(() =>
     allMembers.filter(m => {
       const q = memberSearch.trim().toLowerCase();
       const matchSearch = !q || `${m.firstName} ${m.lastName}`.toLowerCase().includes(q);
-      const matchCotis  = cotisFilter === 'all' || m.cotisationStatus === cotisFilter;
-      return matchSearch && matchCotis;
+      return matchSearch && memberMatchesFilters(m, filters);
     }),
-  [allMembers, memberSearch, cotisFilter]);
+  [allMembers, memberSearch, filters]);
 
   const allFilteredSelected  = filteredMembers.length > 0 && filteredMembers.every(m => selected.includes(m._id));
   const someFilteredSelected = filteredMembers.some(m => selected.includes(m._id));
@@ -1401,7 +1396,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
             <div className="flex gap-2">
               <button type="button" onClick={() => setRecipientMode('all')}
                 className={`rounded-xl border px-4 py-2 text-xs font-black transition ${recipientMode === 'all' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300'}`}>
-                Tous les actifs
+                Tous les membres
               </button>
               <button type="button" onClick={() => {
                   setRecipientMode('select');
@@ -1422,14 +1417,9 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
                     className="h-9 w-full bg-neutral-50 pl-9 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:bg-white" />
                 </div>
 
-                {/* Cotisation filter chips */}
-                <div className="flex flex-wrap gap-1.5 border-b border-neutral-100 px-3 py-2">
-                  {(['all', 'unpaid', 'paid', 'exempt'] as const).map(f => (
-                    <button key={f} type="button" onClick={() => setCotisFilter(f)}
-                      className={`rounded-full border px-2.5 py-0.5 text-[10px] font-black transition ${cotisFilter === f ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300'}`}>
-                      {f === 'all' ? 'Tous' : f === 'unpaid' ? 'Impayé' : f === 'paid' ? 'À jour' : 'Exempté'}
-                    </button>
-                  ))}
+                {/* Filtre multi-critères (statut / cotisation / cotisation annuelle / profil / mois) */}
+                <div className="border-b border-neutral-100 px-3 py-2">
+                  <MemberFilterPanel filters={filters} onChange={setFilters} />
                 </div>
 
                 {/* Select all row */}
@@ -1562,6 +1552,11 @@ function ReceiptsTab() {
   const [typeFilter,      setTypeFilter]      = useState<'all' | 'cotisation' | 'cotisation_annuelle'>('all');
   const [editing,         setEditing]         = useState<ReceiptDoc | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  const [selectMode,      setSelectMode]      = useState(false);
+  const [selectedIds,     setSelectedIds]     = useState<Set<string>>(new Set());
+  const [confirmBulkCancel, setConfirmBulkCancel] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasLongPress    = useRef(false);
 
   const { data, isLoading, isError } = useAdminReceipts(typeFilter === 'all' ? undefined : { type: typeFilter });
   const cancelReceipt = useCancelReceipt();
@@ -1572,6 +1567,7 @@ function ReceiptsTab() {
     const searchable = `${r.receiptNumber} ${name} ${r.invoiceNumber ?? ''}`.toLowerCase();
     return searchable.includes(search.toLowerCase());
   });
+  const selectableFiltered = filtered.filter(r => r.status !== 'cancelled');
 
   const handleCancel = (id: string) => {
     if (confirmCancelId !== id) {
@@ -1581,6 +1577,29 @@ function ReceiptsTab() {
     }
     cancelReceipt.mutate(id, { onSettled: () => setConfirmCancelId(null) });
   };
+
+  const toggleId = (id: string) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+  const allSelected = selectableFiltered.length > 0 && selectableFiltered.every(r => selectedIds.has(r._id));
+  const toggleAllIds = () => setSelectedIds(allSelected ? new Set() : new Set(selectableFiltered.map(r => r._id)));
+  const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); setConfirmBulkCancel(false); };
+  const handleBulkCancel = () => {
+    if (!confirmBulkCancel) { setConfirmBulkCancel(true); setTimeout(() => setConfirmBulkCancel(false), 3000); return; }
+    selectedIds.forEach(id => cancelReceipt.mutate(id));
+    exitSelectMode();
+  };
+  const startLongPress = (id: string) => {
+    longPressTimer.current = setTimeout(() => {
+      wasLongPress.current = true;
+      setSelectMode(true);
+      toggleId(id);
+      if (typeof navigator !== 'undefined') navigator.vibrate?.(50);
+    }, 500);
+  };
+  const cancelLongPress = () => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } };
 
   return (
     <>
@@ -1601,10 +1620,32 @@ function ReceiptsTab() {
       </div>
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
-        <div className="border-b border-neutral-100 px-5 py-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 px-5 py-3.5">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-neutral-500">
-            {isLoading ? 'Chargement...' : `${filtered.length} reçu${filtered.length > 1 ? 's' : ''} (Reçus de paiement émis)`}
+            {isLoading
+              ? 'Chargement...'
+              : selectMode && selectedIds.size > 0
+                ? `${selectedIds.size} sélectionné${selectedIds.size > 1 ? 's' : ''}`
+                : `${filtered.length} reçu${filtered.length > 1 ? 's' : ''} (Reçus de paiement émis)`}
+            {!selectMode && <span className="ml-2 font-normal normal-case text-neutral-300 sm:hidden">(maintenir le doigt pour sélectionner)</span>}
           </p>
+          <div className="flex items-center gap-2">
+            {selectMode && (
+              <button type="button" onClick={toggleAllIds} className="text-[11px] font-black text-emerald-700 hover:underline">
+                {allSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+              </button>
+            )}
+            {selectMode && selectedIds.size > 0 && (
+              <button type="button" onClick={handleBulkCancel}
+                className="flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-[11px] font-black text-white transition hover:bg-red-600">
+                <Trash2 size={12} /> {confirmBulkCancel ? 'Confirmer ?' : `Annuler (${selectedIds.size})`}
+              </button>
+            )}
+            <button type="button" onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-black transition ${selectMode ? 'border-neutral-300 bg-neutral-100 text-neutral-600' : 'border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700'}`}>
+              <CheckSquare size={12} /> {selectMode ? 'Annuler' : 'Sélectionner'}
+            </button>
+          </div>
         </div>
         <div className="divide-y divide-neutral-50">
           {isLoading && <Skeleton />}
@@ -1615,9 +1656,21 @@ function ReceiptsTab() {
           {!isLoading && !isError && filtered.map(r => {
             const name = receiptMemberName(r);
             const isCancelled = r.status === 'cancelled';
+            const isChecked = selectedIds.has(r._id);
             const trancheLabel = r.trancheIndex != null ? ` · Tranche ${r.trancheIndex + 1}` : '';
             return (
-              <div key={r._id} className={`flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50/60 sm:flex-nowrap sm:gap-4 sm:px-5 sm:py-4 ${isCancelled ? 'opacity-60' : ''}`}>
+              <div key={r._id}
+                className={`select-none flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50/60 sm:flex-nowrap sm:gap-4 sm:px-5 sm:py-4 ${isCancelled ? 'opacity-60' : ''} ${isChecked ? 'bg-emerald-50/40' : ''}`}
+                onPointerDown={() => { if (!isCancelled) startLongPress(r._id); }}
+                onPointerUp={cancelLongPress}
+                onPointerLeave={cancelLongPress}
+                onPointerCancel={cancelLongPress}
+                onContextMenu={e => e.preventDefault()}
+              >
+                {selectMode && (
+                  <input type="checkbox" checked={isChecked} disabled={isCancelled} onClick={e => e.stopPropagation()} onChange={() => toggleId(r._id)}
+                    className="h-4 w-4 shrink-0 rounded border-neutral-300 accent-emerald-600 disabled:opacity-30" />
+                )}
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50">
                   <ReceiptText size={16} className="text-emerald-600" />
                 </div>
@@ -1705,6 +1758,11 @@ export default function FacturationAdminPage() {
   const [editInvoice, setEditInvoice] = useState<InvoiceDoc | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasLongPress = useRef(false);
 
   const { data, isLoading, isError } = useAdminInvoices();
   const resendInvoiceRecipient = useResendInvoiceRecipient();
@@ -1731,6 +1789,30 @@ export default function FacturationAdminPage() {
     closed: invoiceRows.filter(r => r.status === 'paid').length,
     draft:  invoiceRows.filter(r => r.invoice.status === 'draft' || r.status === 'pending').length,
   }), [invoiceRows]);
+
+  const toggleKey = (key: string) => setSelectedKeys(prev => {
+    const next = new Set(prev);
+    next.has(key) ? next.delete(key) : next.add(key);
+    return next;
+  });
+  const allKeysSelected = filtered.length > 0 && filtered.every(row => selectedKeys.has(row.key));
+  const toggleAllKeys = () => setSelectedKeys(allKeysSelected ? new Set() : new Set(filtered.map(row => row.key)));
+  const exitSelectMode = () => { setSelectMode(false); setSelectedKeys(new Set()); setConfirmBulkDelete(false); };
+  const handleBulkDelete = () => {
+    if (!confirmBulkDelete) { setConfirmBulkDelete(true); setTimeout(() => setConfirmBulkDelete(false), 3000); return; }
+    filtered.filter(row => selectedKeys.has(row.key)).forEach(row =>
+      removeRecipient.mutate({ id: row.invoice._id, invoiceNumber: row.invoiceNumber }));
+    exitSelectMode();
+  };
+  const startLongPress = (key: string) => {
+    longPressTimer.current = setTimeout(() => {
+      wasLongPress.current = true;
+      setSelectMode(true);
+      toggleKey(key);
+      if (typeof navigator !== 'undefined') navigator.vibrate?.(50);
+    }, 500);
+  };
+  const cancelLongPress = () => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } };
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -1834,10 +1916,32 @@ export default function FacturationAdminPage() {
 
       {/* Invoice list */}
       <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
-        <div className="border-b border-neutral-100 px-5 py-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 px-5 py-3.5">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-neutral-500">
-            {isLoading ? 'Chargement...' : `${filtered.length} document${filtered.length > 1 ? 's' : ''} (Facture émise)`}
+            {isLoading
+              ? 'Chargement...'
+              : selectMode && selectedKeys.size > 0
+                ? `${selectedKeys.size} sélectionné${selectedKeys.size > 1 ? 's' : ''}`
+                : `${filtered.length} document${filtered.length > 1 ? 's' : ''} (Facture émise)`}
+            {!selectMode && <span className="ml-2 font-normal normal-case text-neutral-300 sm:hidden">(maintenir le doigt pour sélectionner)</span>}
           </p>
+          <div className="flex items-center gap-2">
+            {selectMode && (
+              <button type="button" onClick={toggleAllKeys} className="text-[11px] font-black text-emerald-700 hover:underline">
+                {allKeysSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+              </button>
+            )}
+            {selectMode && selectedKeys.size > 0 && (
+              <button type="button" onClick={handleBulkDelete}
+                className="flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-[11px] font-black text-white transition hover:bg-red-600">
+                <Trash2 size={12} /> {confirmBulkDelete ? 'Confirmer ?' : `Supprimer (${selectedKeys.size})`}
+              </button>
+            )}
+            <button type="button" onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-black transition ${selectMode ? 'border-neutral-300 bg-neutral-100 text-neutral-600' : 'border-neutral-200 text-neutral-500 hover:border-emerald-300 hover:text-emerald-700'}`}>
+              <CheckSquare size={12} /> {selectMode ? 'Annuler' : 'Sélectionner'}
+            </button>
+          </div>
         </div>
         <div className="divide-y divide-neutral-50">
           {isLoading && <Skeleton />}
@@ -1854,8 +1958,20 @@ export default function FacturationAdminPage() {
                 inv._id ferait apparaître "Confirmer" sur toutes les lignes du groupe à la fois. */}
             const isDeleting = confirmDeleteId === row.key;
             const isSending = resendInvoiceRecipient.isPending;
+            const isChecked = selectedKeys.has(row.key);
             return (
-              <div key={row.key} className="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50/60 sm:flex-nowrap sm:gap-4 sm:px-5 sm:py-4">
+              <div key={row.key}
+                className={`select-none flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50/60 sm:flex-nowrap sm:gap-4 sm:px-5 sm:py-4 ${isChecked ? 'bg-emerald-50/40' : ''}`}
+                onPointerDown={() => startLongPress(row.key)}
+                onPointerUp={cancelLongPress}
+                onPointerLeave={cancelLongPress}
+                onPointerCancel={cancelLongPress}
+                onContextMenu={e => e.preventDefault()}
+              >
+                {selectMode && (
+                  <input type="checkbox" checked={isChecked} onClick={e => e.stopPropagation()} onChange={() => toggleKey(row.key)}
+                    className="h-4 w-4 shrink-0 rounded border-neutral-300 accent-emerald-600" />
+                )}
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${row.isClient ? 'border-amber-100 bg-amber-50' : 'border-violet-100 bg-violet-50'}`}>
                   <FileText size={16} className="text-violet-600" />
                 </div>
@@ -1881,7 +1997,11 @@ export default function FacturationAdminPage() {
                   <p className="text-xs font-black text-neutral-700">{fmtCfa(inv.amount)}</p>
                   <p className="text-[10px] text-neutral-400">Échéance {fmt(inv.dueDate)}</p>
                 </div>
-                                <button type="button" onClick={() => setExpandedInvoice(expandedInvoice === row.key ? null : row.key)}
+                <button type="button" onClick={() => {
+                    if (wasLongPress.current) { wasLongPress.current = false; return; }
+                    if (selectMode) { toggleKey(row.key); return; }
+                    setExpandedInvoice(expandedInvoice === row.key ? null : row.key);
+                  }}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 sm:hidden"
                   aria-label="Afficher les details">
                   <ChevronDown size={15} className={expandedInvoice === row.key ? 'rotate-180 transition' : 'transition'} />
