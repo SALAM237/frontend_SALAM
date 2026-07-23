@@ -5,6 +5,7 @@ import { Check, Download, Eye, FileText, Loader2, Pencil, Send, Trash2, Upload, 
 import { toast } from 'sonner';
 import { useAdminDocuments, useDeleteDocument, useRenameDocument, useSendDocument, useUploadDocument, type SharedDocument } from '@/lib/api/documents';
 import { useAdminMembers } from '@/lib/api/members';
+import { MemberFilterPanel, EMPTY_MEMBER_FILTERS, memberMatchesFilters, type MemberFilters } from '@/components/admin/MemberFilterPanel';
 import { useAdminAttestationTemplate, useSaveAttestationTemplate } from '@/lib/api/attestation';
 import { DocumentPreviewModal } from '@/components/portal/DocumentPreviewModal';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
@@ -35,16 +36,17 @@ function mimeIcon(mime: string) {
 /* ── Send Modal ───────────────────────────────────────── */
 function SendModal({ doc, onClose }: { doc: SharedDocument; onClose: () => void }) {
   const [search, setSearch]       = useState('');
+  const [filters, setFilters]     = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
   const [selected, setSelected]   = useState<Set<string>>(new Set());
   const [sendAll, setSendAll]     = useState(false);
   const [sendEmail, setSendEmail] = useState(false);
   const sendDoc = useSendDocument();
-  const { data: membersData } = useAdminMembers({ status: 'active', limit: 500 });
+  const { data: membersData } = useAdminMembers({ limit: 500 });
   const members = membersData?.data?.data ?? [];
 
   const filtered = members.filter(m => {
     const name = `${m.firstName ?? ''} ${m.lastName ?? ''} ${m.email ?? ''}`.toLowerCase();
-    return name.includes(search.toLowerCase());
+    return name.includes(search.toLowerCase()) && memberMatchesFilters(m, filters);
   });
 
   const toggle = (id: string) =>
@@ -88,8 +90,8 @@ function SendModal({ doc, onClose }: { doc: SharedDocument; onClose: () => void 
           {/* Send all toggle */}
           <div className="flex items-center justify-between rounded-xl border border-neutral-100 p-3">
             <div>
-              <p className="text-sm font-semibold text-neutral-800">Envoyer à tous les membres actifs</p>
-              <p className="text-xs text-neutral-400">Tous les membres avec statut actif</p>
+              <p className="text-sm font-semibold text-neutral-800">Envoyer à tous les membres</p>
+              <p className="text-xs text-neutral-400">Tous les membres, y compris en attente d&apos;inscription</p>
             </div>
             <button
               type="button"
@@ -112,6 +114,7 @@ function SendModal({ doc, onClose }: { doc: SharedDocument; onClose: () => void 
                   className="h-9 w-full rounded-xl border border-neutral-200 pl-9 pr-3 text-sm outline-none focus:border-emerald-500"
                 />
               </div>
+              <MemberFilterPanel filters={filters} onChange={setFilters} />
               <div className="flex items-center justify-between px-1">
                 <p className="text-xs text-neutral-400">{selected.size} sélectionné(s)</p>
                 <button type="button" onClick={toggleAll} className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700">

@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Gift, X, Search, Image as ImageIcon, Loader2, Send, Users, CheckSquare, Square, Calendar, Package, BarChart3, Eye, MousePointerClick, Smartphone, Tablet, Monitor, HelpCircle, ChevronDown } from 'lucide-react';
 import { useAdminCampaigns, useCreateCampaign, useUploadCampaignImage, useCampaignInsights, useCampaignGiftRewardedMembers, type CampaignDoc } from '@/lib/api/marketing';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
+import { MemberFilterPanel, EMPTY_MEMBER_FILTERS, memberMatchesFilters, type MemberFilters } from '@/components/admin/MemberFilterPanel';
 import { formatFullName } from '@/lib/format-name';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -63,6 +64,7 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
   const [deadline, setDeadline] = useState('2026-07-20');
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [memberSearch, setMemberSearch] = useState('');
+  const [memberFilters, setMemberFilters] = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
   const [selected, setSelected] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,9 +84,10 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
 
   const filteredMembers = useMemo(() => {
     const q = normalizeName(memberSearch.trim());
-    if (!q) return selectableMembers;
-    return selectableMembers.filter(m => normalizeName(`${m.firstName} ${m.lastName} ${m.email ?? ''}`).includes(q));
-  }, [selectableMembers, memberSearch]);
+    return selectableMembers.filter(m =>
+      (!q || normalizeName(`${m.firstName} ${m.lastName} ${m.email ?? ''}`).includes(q))
+      && memberMatchesFilters(m, memberFilters));
+  }, [selectableMembers, memberSearch, memberFilters]);
 
   const allFilteredSelected = filteredMembers.length > 0 && filteredMembers.every(m => selected.includes(m._id));
 
@@ -213,6 +216,9 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
               <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
               <input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder="Rechercher un membre…"
                 className="h-9 w-full rounded-lg border border-neutral-200 pl-8 pr-3 text-sm outline-none focus:border-rose-400" />
+            </div>
+            <div className="mb-2">
+              <MemberFilterPanel filters={memberFilters} onChange={setMemberFilters} />
             </div>
             {errors.recipients && <p className="mb-2 text-xs font-semibold text-red-600">{errors.recipients}</p>}
             {excludedCount > 0 && (

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, ChevronDown, CreditCard, Search, Loader2, Users } from 'lucide-react';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
+import { MemberFilterPanel, EMPTY_MEMBER_FILTERS, memberMatchesFilters, memberFilterCount, type MemberFilters } from '@/components/admin/MemberFilterPanel';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { downloadElementAsPng, memberCardMailto } from '@/lib/member-card-export';
@@ -25,7 +26,7 @@ function toCardData(m: MemberListItem): MemberCardData {
 
 export default function CartesPage() {
   const [search,   setSearch]   = useState('');
-  const [filter,   setFilter]   = useState<'all' | 'active' | 'pending'>('all');
+  const [filters,  setFilters]  = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
   const [selected, setSelected] = useState<MemberListItem | null>(null);
 
   /* Ref desktop (panel sticky) — utilisé pour le téléchargement sur écran large */
@@ -40,10 +41,9 @@ export default function CartesPage() {
     members.filter(m => {
       const matchSearch = `${m.firstName} ${m.lastName} ${m.memberId} ${m.email}`
         .toLowerCase().includes(search.toLowerCase());
-      const matchFilter = filter === 'all' || m.memberStatus === filter;
-      return matchSearch && matchFilter;
+      return matchSearch && memberMatchesFilters(m, filters);
     }),
-  [members, search, filter]);
+  [members, search, filters]);
 
   const total   = members.length;
   const actifs  = members.filter(m => m.memberStatus === 'active').length;
@@ -113,19 +113,7 @@ export default function CartesPage() {
                 className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-8 pr-3 text-sm placeholder:text-neutral-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
               />
             </div>
-            {([
-              { value: 'all',     label: 'Tous'                      },
-              { value: 'active',  label: 'Inscrits'                  },
-              { value: 'pending', label: 'Inscription en attente'    },
-            ] as const).map(f => (
-              <button
-                key={f.value}
-                onClick={() => setFilter(f.value)}
-                className={`h-9 rounded-xl border px-3 text-xs font-bold transition-all ${filter === f.value ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300 hover:text-emerald-700'}`}
-              >
-                {f.label}
-              </button>
-            ))}
+            <MemberFilterPanel filters={filters} onChange={setFilters} />
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
@@ -139,7 +127,7 @@ export default function CartesPage() {
               <div className="flex flex-col items-center px-5 py-14 text-center">
                 <Users size={32} className="mb-3 text-neutral-200" />
                 <p className="text-sm font-semibold text-neutral-400">
-                  {search || filter !== 'all' ? 'Aucun membre correspondant.' : 'Aucun membre enregistré.'}
+                  {search || memberFilterCount(filters) > 0 ? 'Aucun membre correspondant.' : 'Aucun membre enregistré.'}
                 </p>
               </div>
             )}

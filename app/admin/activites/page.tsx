@@ -13,6 +13,7 @@ import {
 import { useAdminMembers } from '@/lib/api/members';
 import { useInvoiceClients } from '@/lib/api/invoices';
 import { useBureauMembers, useAdminGroups } from '@/lib/api/groups';
+import { MemberFilterPanel, EMPTY_MEMBER_FILTERS, memberMatchesFilters, type MemberFilters } from '@/components/admin/MemberFilterPanel';
 import { DesignEditorField, type DesignStyle } from '@/components/admin/DesignEditorField';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
@@ -76,6 +77,7 @@ function ActivityForm({
   const [rsvpMode, setRsvpMode] = useState<'required' | 'optional'>('optional');
   const [rsvpDeadline, setRsvpDeadline] = useState('');
   const [selectedGroupId,    setSelectedGroupId]    = useState<string | null>(null);
+  const [memberFilters, setMemberFilters] = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
   const membersQuery = useAdminMembers({ limit: 500 });
   const clientsQuery = useInvoiceClients();
   const bureauQuery  = useBureauMembers();
@@ -101,7 +103,7 @@ function ActivityForm({
   }, [existingInvitations]);
 
   /* Listes filtrées — membres non encore invités */
-  const availableMembers         = members.filter(m => !alreadyInvitedMemberIds.has(m._id));
+  const availableMembers         = members.filter(m => !alreadyInvitedMemberIds.has(m._id) && memberMatchesFilters(m, memberFilters));
   const availableBureauMembers   = bureauMembers.filter(b => !alreadyInvitedMemberIds.has(b._id));
   const availableNonBureauMembers = members.filter(
     m => !bureauMembers.some(b => b._id === m._id) && !alreadyInvitedMemberIds.has(m._id),
@@ -357,13 +359,16 @@ function ActivityForm({
               </div>
             </div>
             {guestMode === 'member' && (
-              <GuestChecklist
-                title={`Membres actifs${alreadyInvitedMemberIds.size > 0 ? ` (${alreadyInvitedMemberIds.size} déjà invité${alreadyInvitedMemberIds.size > 1 ? 's' : ''})` : ''}`}
-                items={availableMembers.map(m => ({ id: m._id, label: `${m.firstName} ${m.lastName}`, detail: m.email }))}
-                selected={selectedMemberIds}
-                onToggle={id => toggleId(id, selectedMemberIds, setSelectedMemberIds)}
-                onToggleAll={() => setAll(availableMembers.map(m => m._id), selectedMemberIds, setSelectedMemberIds)}
-              />
+              <div className="mt-3 space-y-2">
+                <MemberFilterPanel filters={memberFilters} onChange={setMemberFilters} />
+                <GuestChecklist
+                  title={`Membres${alreadyInvitedMemberIds.size > 0 ? ` (${alreadyInvitedMemberIds.size} déjà invité${alreadyInvitedMemberIds.size > 1 ? 's' : ''})` : ''}`}
+                  items={availableMembers.map(m => ({ id: m._id, label: `${m.firstName} ${m.lastName}`, detail: m.email }))}
+                  selected={selectedMemberIds}
+                  onToggle={id => toggleId(id, selectedMemberIds, setSelectedMemberIds)}
+                  onToggleAll={() => setAll(availableMembers.map(m => m._id), selectedMemberIds, setSelectedMemberIds)}
+                />
+              </div>
             )}
             {guestMode === 'bureau' && (
               <div className="mt-3 space-y-2">

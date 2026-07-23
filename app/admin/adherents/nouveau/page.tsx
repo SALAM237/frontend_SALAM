@@ -16,6 +16,7 @@ import { formatFirstName, formatFullName, formatLastName } from '@/lib/format-na
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { previewMemberNumber } from '@/lib/member-number';
 import { useCreateGroup } from '@/lib/api/groups';
+import { MemberFilterPanel, EMPTY_MEMBER_FILTERS, memberMatchesFilters, type MemberFilters } from '@/components/admin/MemberFilterPanel';
 import { PhoneField } from '@/components/ui/PhoneField';
 
 /* ─── Types ─────────────────────────────────────────────── */
@@ -193,7 +194,7 @@ export default function NouveauAdherentPage() {
   /* ── Group states ────────────────────────────── */
   const [groupName,        setGroupName]        = useState('');
   const [groupSearch,      setGroupSearch]      = useState('');
-  const [groupStatusFilter, setGroupStatusFilter] = useState<'all' | 'active' | 'pending'>('all');
+  const [groupFilters,     setGroupFilters]     = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
   const [groupSelectedIds, setGroupSelectedIds] = useState<Set<string>>(new Set());
 
   const { data: allMembersData } = useAdminMembers({ limit: 500 });
@@ -797,7 +798,7 @@ export default function NouveauAdherentPage() {
       {mode === 'group' && (() => {
         const q = groupSearch.trim().toLowerCase();
         const filtered = allMembers.filter(m => {
-          if (groupStatusFilter !== 'all' && m.memberStatus !== groupStatusFilter) return false;
+          if (!memberMatchesFilters(m, groupFilters)) return false;
           if (!q) return true;
           return (
             m.firstName.toLowerCase().includes(q) ||
@@ -863,12 +864,7 @@ export default function NouveauAdherentPage() {
                   </button>
                 )}
               </div>
-              {(['all', 'active', 'pending'] as const).map(s => (
-                <button key={s} onClick={() => setGroupStatusFilter(s)}
-                  className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-black transition ${groupStatusFilter === s ? 'bg-emerald-600 text-white' : 'border border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300'}`}>
-                  {s === 'all' ? 'Tous' : s === 'active' ? 'Inscrits' : 'Inscription en attente'}
-                </button>
-              ))}
+              <MemberFilterPanel filters={groupFilters} onChange={setGroupFilters} />
               <span className="shrink-0 text-xs text-neutral-500">
                 {groupSelectedIds.size} sélectionné{groupSelectedIds.size !== 1 ? 's' : ''}
               </span>

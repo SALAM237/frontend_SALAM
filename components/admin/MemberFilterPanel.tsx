@@ -153,7 +153,7 @@ export function MemberFilterPanel({ filters, onChange }: { filters: MemberFilter
                   })}
                 </div>
               </AccordionSection>
-              <AccordionSection label="Cotisation" count={filters.cotisation.length} badgeColor="bg-blue-500" open={openSections.has('cotisation')} onToggle={() => toggleSection('cotisation')}>
+              <AccordionSection label="Frais d'adhésion" count={filters.cotisation.length} badgeColor="bg-blue-500" open={openSections.has('cotisation')} onToggle={() => toggleSection('cotisation')}>
                 <div className="space-y-1 px-4 pb-3 pt-1">
                   {(['paid', 'unpaid', 'exempt'] as const).map(val => (
                     <CheckOption key={val} checked={filters.cotisation.includes(val)} onChange={() => toggleFilter('cotisation', val)}>
