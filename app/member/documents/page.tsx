@@ -30,19 +30,20 @@ function printAttestation(title: string, bodyHtml: string) {
     .page { width: min(100vw, 794px); min-height: min(1123px, calc(100vw * 1.414)); margin: 0 auto; background: white; padding: clamp(22px, 4.8vw, 42px); position: relative; }
     .flag { position: absolute; left: 0; right: 0; top: 0; height: clamp(4px, .8vw, 7px); background: linear-gradient(90deg,#0B8F3A 0 33%,#C8102E 33% 66%,#F7C600 66%); }
     .header { margin: calc(clamp(22px, 4.8vw, 42px) * -1) calc(clamp(22px, 4.8vw, 42px) * -1) clamp(24px, 4vw, 34px); padding: clamp(32px, 5vw, 42px) clamp(22px, 4.8vw, 42px) clamp(18px, 3vw, 26px); background: linear-gradient(135deg,#087348,#075f41 62%,#043d2d); color: white; }
-    .eyebrow { color: #fde68a; font-size: clamp(8px, 1.6vw, 11px); font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
-    h1 { margin: clamp(8px, 2vw, 12px) 0 0; font-size: clamp(22px, 5vw, 28px); line-height: 1.1; }
-    /* Bloc identité SALAM — même infos que la carte "Émetteur" des factures,
-       encadré en vert pour rester cohérent avec la charte de l'attestation. */
-    .issuer { margin-top: clamp(16px, 3vw, 22px); border: 2px solid #34d399; border-radius: 16px; padding: clamp(14px, 2.4vw, 18px) clamp(16px, 3vw, 20px); background: rgba(255,255,255,.08); }
-    .issuer-row { display: flex; align-items: center; gap: 12px; }
-    .logo { width: 44px; height: 44px; border-radius: 12px; background: #ffffff; color: #047857; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; overflow: hidden; flex-shrink: 0; }
+    .brand-row { display: flex; align-items: center; gap: 10px; }
+    .logo { width: 34px; height: 34px; border-radius: 10px; background: #ffffff; color: #047857; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; overflow: hidden; flex-shrink: 0; }
     .logo img { width: 100%; height: 100%; object-fit: cover; }
-    .issuer strong { font-size: 14px; }
-    .issuer p { margin: 2px 0 0; font-size: 11px; color: rgba(255,255,255,.75); }
-    .body { max-width: 88%; margin: 0 auto; font-size: 17px; line-height: 2.1; text-align: justify; }
+    .brand-name { font-size: clamp(13px, 2.4vw, 16px); font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .tagline { margin: 5px 0 0; font-size: clamp(10px, 1.8vw, 12px); color: rgba(255,255,255,.75); }
+    h1 { margin: clamp(8px, 2vw, 12px) 0 0; font-size: clamp(22px, 5vw, 28px); line-height: 1.1; }
+    .assoc-line { margin: 3px 0 0; font-size: clamp(10px, 1.8vw, 12px); color: rgba(255,255,255,.85); }
+    .assoc-line.spaced { margin-top: 12px; }
+    .body { max-width: 88%; margin: 0 auto; padding-top: clamp(28px, 5vw, 48px); font-size: 17px; line-height: 2.1; text-align: justify; }
     .body p { margin: 0 0 22px; }
     .body strong { color: #065f46; font-weight: 900; }
+    .body .align-right { text-align: right; }
+    .body .signature { margin-top: 90px; text-align: right; }
+    .body .signature p { margin: 0 0 4px; }
     .footer { position: absolute; left: 48px; right: 48px; bottom: 30px; border-top: 1px solid #e5e7eb; padding-top: 14px; text-align: center; color: #64748b; font-size: 11px; }
     @media print { body { background: white; } .page { width: 794px; min-height: 1123px; margin: 0; padding: 38px; } .header { margin: -38px -38px 26px; padding: 40px 38px 24px; } }
   </style>
@@ -51,17 +52,18 @@ function printAttestation(title: string, bodyHtml: string) {
   <div class="page">
     <div class="flag"></div>
     <header class="header">
-      <div class="eyebrow">Association SALAM Cameroun</div>
-      <h1>${title}</h1>
-      <div class="issuer">
-        <div class="issuer-row">
-          <span class="logo">${association.logoUrl ? `<img src="${esc(association.logoUrl)}" alt="Logo" />` : esc(association.logo)}</span>
-          <strong>${esc(association.title)}</strong>
-        </div>
-        <p>${esc(association.address)}</p>
-        <p>${esc(association.registration)}</p>
-        <p>${esc(association.email)} · ${esc(association.phone)}</p>
+      <div class="brand-row">
+        <span class="logo">${association.logoUrl ? `<img src="${esc(association.logoUrl)}" alt="Logo" />` : esc(association.logo)}</span>
+        <span class="brand-name">${esc(association.name)}</span>
       </div>
+      <p class="tagline">Solidaire Associative des Lauréats du Maroc</p>
+      <h1>${title}</h1>
+      <p class="assoc-line">${esc(association.address)}</p>
+      <p class="assoc-line spaced">${esc(association.registration)}</p>
+      <p class="assoc-line spaced">${esc(association.email)} · ${esc(association.phone)}</p>
+      <p class="assoc-line">Hôtel SOMATEL, sis à montée Aurore</p>
+      <p class="assoc-line">Yaoundé — CAMEROUN</p>
+      <p class="assoc-line">B.P : 8389 Yaoundé</p>
     </header>
     <section class="body">${bodyHtml}</section>
     <footer class="footer">SALAM Cameroun · Maroc · contact@salam-cameroun.com · Fondée le 20/02/2010</footer>
