@@ -3,20 +3,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, ChevronDown, Clock, SlidersHorizontal, X, XCircle } from 'lucide-react';
 import type { MemberListItem } from '@/lib/api/members';
+import { GenderIcon } from '@/components/ui/GenderIcon';
 
 /* Réplique du filtre multi-critères de la page Adhérents (statut / cotisation /
-   cotisation annuelle / profil / mois d'inscription), pour être réutilisé partout
-   où une liste de membres doit être filtrée de la même façon (ex. sélection des
-   destinataires d'une facture). */
+   cotisation annuelle / profil / mois d'inscription / civilité), pour être
+   réutilisé partout où une liste de membres doit être filtrée de la même façon
+   (ex. sélection des destinataires d'une facture). */
 export type MemberFilters = {
   statut: string[];
   cotisation: string[];
   cotisationAnnuelle: string[];
   profil: string[];
   mois: number[];
+  civilite: string[];
 };
 
-export const EMPTY_MEMBER_FILTERS: MemberFilters = { statut: [], cotisation: [], cotisationAnnuelle: [], profil: [], mois: [] };
+export const EMPTY_MEMBER_FILTERS: MemberFilters = { statut: [], cotisation: [], cotisationAnnuelle: [], profil: [], mois: [], civilite: [] };
 
 export const MEMBER_STATUS_CONFIG: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
   active:    { label: 'Inscrit',                cls: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle2 },
@@ -40,6 +42,10 @@ const PROFILE_CONFIG = {
   incomplete: { label: 'Incomplet', cls: 'bg-red-50 text-red-700 border-red-100'              },
 };
 const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const CIVILITE_CONFIG: Record<string, { label: string; cls: string }> = {
+  homme: { label: 'Homme', cls: 'bg-blue-50 text-blue-700 border-blue-100' },
+  femme: { label: 'Femme', cls: 'bg-pink-50 text-pink-700 border-pink-100' },
+};
 
 export function memberMatchesFilters(m: MemberListItem, filters: MemberFilters): boolean {
   const matchStatut     = filters.statut.length === 0 || filters.statut.includes(m.memberStatus);
@@ -49,11 +55,12 @@ export function memberMatchesFilters(m: MemberListItem, filters: MemberFilters):
     || (filters.profil.includes('complete') && m.profileComplete)
     || (filters.profil.includes('incomplete') && !m.profileComplete);
   const matchMois = filters.mois.length === 0 || filters.mois.includes(new Date(m.createdAt).getMonth());
-  return matchStatut && matchCotisation && matchAnnuelle && matchProfil && matchMois;
+  const matchCivilite = filters.civilite.length === 0 || (!!m.gender && filters.civilite.includes(m.gender));
+  return matchStatut && matchCotisation && matchAnnuelle && matchProfil && matchMois && matchCivilite;
 }
 
 export function memberFilterCount(filters: MemberFilters): number {
-  return filters.statut.length + filters.cotisation.length + filters.cotisationAnnuelle.length + filters.profil.length + filters.mois.length;
+  return filters.statut.length + filters.cotisation.length + filters.cotisationAnnuelle.length + filters.profil.length + filters.mois.length + filters.civilite.length;
 }
 
 function AccordionSection({ label, count, badgeColor, open, onToggle, children }: {
@@ -190,6 +197,15 @@ export function MemberFilterPanel({ filters, onChange }: { filters: MemberFilter
                   ))}
                 </div>
               </AccordionSection>
+              <AccordionSection label="Civilité" count={filters.civilite.length} badgeColor="bg-pink-500" open={openSections.has('civilite')} onToggle={() => toggleSection('civilite')}>
+                <div className="space-y-1 px-4 pb-3 pt-1">
+                  {(['homme', 'femme'] as const).map(val => (
+                    <CheckOption key={val} checked={filters.civilite.includes(val)} onChange={() => toggleFilter('civilite', val)}>
+                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${CIVILITE_CONFIG[val].cls}`}><GenderIcon gender={val} size={10} /> {CIVILITE_CONFIG[val].label}</span>
+                    </CheckOption>
+                  ))}
+                </div>
+              </AccordionSection>
             </div>
           </div>
         )}
@@ -202,6 +218,7 @@ export function MemberFilterPanel({ filters, onChange }: { filters: MemberFilter
           {filters.cotisationAnnuelle.map(v => <button key={`ca-${v}`} type="button" onClick={() => toggleFilter('cotisationAnnuelle', v)} className="flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-black text-violet-700 hover:bg-violet-100">{COTIS_ANNUELLE_CONFIG[v]?.label} <X size={9} /></button>)}
           {filters.profil.map(v => <button key={`p-${v}`} type="button" onClick={() => toggleFilter('profil', v)} className="flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-black text-violet-700 hover:bg-violet-100">Profil {v === 'complete' ? 'complet' : 'incomplet'} <X size={9} /></button>)}
           {filters.mois.map(idx => <button key={`m-${idx}`} type="button" onClick={() => toggleFilter('mois', idx)} className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-black text-amber-700 hover:bg-amber-100">{MONTHS_FR[idx]} <X size={9} /></button>)}
+          {filters.civilite.map(v => <button key={`g-${v}`} type="button" onClick={() => toggleFilter('civilite', v)} className="flex items-center gap-1 rounded-full border border-pink-200 bg-pink-50 px-2 py-1 text-[10px] font-black text-pink-700 hover:bg-pink-100">{CIVILITE_CONFIG[v]?.label} <X size={9} /></button>)}
         </div>
       )}
     </div>
