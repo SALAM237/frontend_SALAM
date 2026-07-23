@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, ChevronDown, Clock, SlidersHorizontal, X, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Clock, HelpCircle, SlidersHorizontal, X, XCircle } from 'lucide-react';
 import type { MemberListItem } from '@/lib/api/members';
 import { GenderIcon } from '@/components/ui/GenderIcon';
 
@@ -45,6 +45,7 @@ const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','A
 const CIVILITE_CONFIG: Record<string, { label: string; cls: string }> = {
   homme: { label: 'Homme', cls: 'bg-blue-50 text-blue-700 border-blue-100' },
   femme: { label: 'Femme', cls: 'bg-pink-50 text-pink-700 border-pink-100' },
+  non_renseigne: { label: 'Non renseigné', cls: 'bg-neutral-50 text-neutral-500 border-neutral-200' },
 };
 
 export function memberMatchesFilters(m: MemberListItem, filters: MemberFilters): boolean {
@@ -55,7 +56,8 @@ export function memberMatchesFilters(m: MemberListItem, filters: MemberFilters):
     || (filters.profil.includes('complete') && m.profileComplete)
     || (filters.profil.includes('incomplete') && !m.profileComplete);
   const matchMois = filters.mois.length === 0 || filters.mois.includes(new Date(m.createdAt).getMonth());
-  const matchCivilite = filters.civilite.length === 0 || (!!m.gender && filters.civilite.includes(m.gender));
+  const matchCivilite = filters.civilite.length === 0
+    || (m.gender ? filters.civilite.includes(m.gender) : filters.civilite.includes('non_renseigne'));
   return matchStatut && matchCotisation && matchAnnuelle && matchProfil && matchMois && matchCivilite;
 }
 
@@ -199,9 +201,11 @@ export function MemberFilterPanel({ filters, onChange }: { filters: MemberFilter
               </AccordionSection>
               <AccordionSection label="Civilité" count={filters.civilite.length} badgeColor="bg-pink-500" open={openSections.has('civilite')} onToggle={() => toggleSection('civilite')}>
                 <div className="space-y-1 px-4 pb-3 pt-1">
-                  {(['homme', 'femme'] as const).map(val => (
+                  {(['homme', 'femme', 'non_renseigne'] as const).map(val => (
                     <CheckOption key={val} checked={filters.civilite.includes(val)} onChange={() => toggleFilter('civilite', val)}>
-                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${CIVILITE_CONFIG[val].cls}`}><GenderIcon gender={val} size={10} /> {CIVILITE_CONFIG[val].label}</span>
+                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${CIVILITE_CONFIG[val].cls}`}>
+                        {val === 'non_renseigne' ? <HelpCircle size={10} /> : <GenderIcon gender={val} size={10} />} {CIVILITE_CONFIG[val].label}
+                      </span>
                     </CheckOption>
                   ))}
                 </div>

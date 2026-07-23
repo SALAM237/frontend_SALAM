@@ -24,7 +24,7 @@ const BASE_SECURITY_HEADERS = [
       "img-src 'self' data: blob: https: https://www.google-analytics.com https://www.googletagmanager.com",
       "font-src 'self' data:",
       "media-src 'self' blob: https:",
-      "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
+      "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://media.salam-cameroun.com https://backendsalam-production.up.railway.app https://backend.salam-cameroun.com",
       "connect-src 'self' https://salam-cameroun.com https://backendsalam-production.up.railway.app https://backend.salam-cameroun.com https://www.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://stats.g.doubleclick.net",
       "frame-ancestors 'none'",
       "base-uri 'self'",
