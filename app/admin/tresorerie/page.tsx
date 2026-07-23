@@ -758,6 +758,8 @@ function TransactionList({ title, items, kind, loading, onDelete, deletingId }: 
                   type="button"
                   onClick={() => toast.info('Suppression indisponible ici', {
                     description: `"${item.label || 'Cette operation'}" est gere depuis Facturation. Pour la supprimer, rendez-vous dans l'onglet Facturation -> Recus de paiement et supprimez le recu correspondant a ce membre.`,
+                    duration: 8000,
+                    closeButton: true,
                   })}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-neutral-100 bg-neutral-50 text-neutral-300 transition hover:border-neutral-200 hover:text-neutral-400"
                   title="Suppression via Facturation"
