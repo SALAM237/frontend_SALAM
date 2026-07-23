@@ -30,21 +30,20 @@ function printAttestation(title: string, bodyHtml: string) {
     .page { width: min(100vw, 794px); min-height: min(1123px, calc(100vw * 1.414)); margin: 0 auto; background: white; padding: clamp(22px, 4.8vw, 42px); position: relative; }
     .flag { position: absolute; left: 0; right: 0; top: 0; height: clamp(4px, .8vw, 7px); background: linear-gradient(90deg,#0B8F3A 0 33%,#C8102E 33% 66%,#F7C600 66%); }
     .header { margin: calc(clamp(22px, 4.8vw, 42px) * -1) calc(clamp(22px, 4.8vw, 42px) * -1) clamp(24px, 4vw, 34px); padding: clamp(32px, 5vw, 42px) clamp(22px, 4.8vw, 42px) clamp(18px, 3vw, 26px); background: linear-gradient(135deg,#087348,#075f41 62%,#043d2d); color: white; }
-    .brand-row { display: flex; align-items: center; gap: 10px; }
+    .brand-col { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
     .logo { width: 34px; height: 34px; border-radius: 10px; background: #ffffff; color: #047857; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; overflow: hidden; flex-shrink: 0; }
     .logo img { width: 100%; height: 100%; object-fit: cover; }
     .brand-name { font-size: clamp(13px, 2.4vw, 16px); font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
-    .tagline { margin: 5px 0 0; font-size: clamp(10px, 1.8vw, 12px); color: rgba(255,255,255,.75); }
+    .tagline { margin: 0; font-size: clamp(10px, 1.8vw, 12px); color: rgba(255,255,255,.75); }
     h1 { margin: clamp(8px, 2vw, 12px) 0 0; font-size: clamp(22px, 5vw, 28px); line-height: 1.1; }
-    .assoc-line { margin: 3px 0 0; font-size: clamp(10px, 1.8vw, 12px); color: rgba(255,255,255,.85); }
-    .assoc-line.spaced { margin-top: 12px; }
     .body { max-width: 88%; margin: 0 auto; padding-top: clamp(28px, 5vw, 48px); font-size: 17px; line-height: 2.1; text-align: justify; }
     .body p { margin: 0 0 22px; }
     .body strong { color: #065f46; font-weight: 900; }
     .body .align-right { text-align: right; }
     .body .signature { margin-top: 90px; text-align: right; }
     .body .signature p { margin: 0 0 4px; }
-    .footer { position: absolute; left: 48px; right: 48px; bottom: 30px; border-top: 1px solid #e5e7eb; padding-top: 14px; text-align: center; color: #64748b; font-size: 11px; }
+    .body .signature-name strong { color: #0f172a; font-weight: 900; }
+    .footer { position: absolute; left: 48px; right: 48px; bottom: 30px; border-top: 1px solid #e5e7eb; padding-top: 14px; text-align: center; color: #64748b; font-size: 11px; line-height: 1.7; }
     @media print { body { background: white; } .page { width: 794px; min-height: 1123px; margin: 0; padding: 38px; } .header { margin: -38px -38px 26px; padding: 40px 38px 24px; } }
   </style>
 </head>
@@ -52,21 +51,21 @@ function printAttestation(title: string, bodyHtml: string) {
   <div class="page">
     <div class="flag"></div>
     <header class="header">
-      <div class="brand-row">
+      <div class="brand-col">
         <span class="logo">${association.logoUrl ? `<img src="${esc(association.logoUrl)}" alt="Logo" />` : esc(association.logo)}</span>
         <span class="brand-name">${esc(association.name)}</span>
+        <p class="tagline">Solidaire Associative des Lauréats du Maroc</p>
       </div>
-      <p class="tagline">Solidaire Associative des Lauréats du Maroc</p>
       <h1>${title}</h1>
-      <p class="assoc-line">${esc(association.address)}</p>
-      <p class="assoc-line spaced">${esc(association.registration)}</p>
-      <p class="assoc-line spaced">${esc(association.email)} · ${esc(association.phone)}</p>
-      <p class="assoc-line">Hôtel SOMATEL, sis à montée Aurore</p>
-      <p class="assoc-line">Yaoundé — CAMEROUN</p>
-      <p class="assoc-line">B.P : 8389 Yaoundé</p>
     </header>
     <section class="body">${bodyHtml}</section>
-    <footer class="footer">SALAM Cameroun · Maroc · contact@salam-cameroun.com · Fondée le 20/02/2010</footer>
+    <footer class="footer">
+      ${esc(association.registration)}<br>
+      ${esc(association.email)} · ${esc(association.phone)}<br>
+      Hôtel SOMATEL, sis à montée Aurore<br>
+      Yaoundé — CAMEROUN<br>
+      B.P : 8389 Yaoundé
+    </footer>
   </div>
   <script>window.addEventListener('load', () => setTimeout(() => window.print(), 250));</script>
 </body>
