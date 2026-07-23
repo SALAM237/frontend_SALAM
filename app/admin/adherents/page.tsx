@@ -8,7 +8,7 @@ import {
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
   Plus, Minus, SlidersHorizontal, X, Bell, Banknote,
   Send, CalendarDays, AlertTriangle, Users,
-  FolderOpen, Folders, ChevronRight, Check, Wallet,
+  FolderOpen, Folders, ChevronRight, Check, Wallet, HelpCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -32,6 +32,7 @@ import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/
 import { ControlledAvatarDialog } from '@/components/portal/AvatarLightbox';
 import { CauriImg } from '@/components/member/CauriWallet';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
+import { GenderIcon } from '@/components/ui/GenderIcon';
 import { downloadElementAsPng, memberCardMailto } from '@/lib/member-card-export';
 
 /* ── Types ─────────────────────────────────────────────── */
@@ -83,8 +84,13 @@ const REMINDER_OPTIONS = [
   { value: '15',  label: '15 jours avant' },
   { value: '7',   label: '7 jours avant'  },
 ];
-type ActiveFilters = { statut: string[]; cotisation: string[]; cotisationAnnuelle: string[]; profil: string[]; mois: number[] };
-const EMPTY_FILTERS: ActiveFilters = { statut: [], cotisation: [], cotisationAnnuelle: [], profil: [], mois: [] };
+type ActiveFilters = { statut: string[]; cotisation: string[]; cotisationAnnuelle: string[]; profil: string[]; mois: number[]; civilite: string[] };
+const EMPTY_FILTERS: ActiveFilters = { statut: [], cotisation: [], cotisationAnnuelle: [], profil: [], mois: [], civilite: [] };
+const civiliteConfig: Record<string, { label: string; cls: string }> = {
+  homme: { label: 'Homme', cls: 'bg-blue-50 text-blue-700 border-blue-100' },
+  femme: { label: 'Femme', cls: 'bg-pink-50 text-pink-700 border-pink-100' },
+  non_renseigne: { label: 'Non renseigné', cls: 'bg-neutral-50 text-neutral-500 border-neutral-200' },
+};
 
 const TAB_LABELS: Record<string, string> = {
   relance:               'Relance',
@@ -668,7 +674,9 @@ export default function AdminAdherentsPage() {
         (filters.profil.includes('complete') && m.profileComplete) ||
         (filters.profil.includes('incomplete') && !m.profileComplete);
       const matchMois = filters.mois.length === 0 || filters.mois.includes(new Date(m.createdAt).getMonth());
-      return matchSearch && matchStatut && matchCotisation && matchCotisationAnnuelle && matchProfil && matchMois;
+      const matchCivilite = filters.civilite.length === 0
+        || (m.gender ? filters.civilite.includes(m.gender) : filters.civilite.includes('non_renseigne'));
+      return matchSearch && matchStatut && matchCotisation && matchCotisationAnnuelle && matchProfil && matchMois && matchCivilite;
     });
     if (activeTab === 'relance') {
       if (relanceSub === 'cotisation')          list = list.filter(m => m.cotisationStatus === 'unpaid');
@@ -687,7 +695,7 @@ export default function AdminAdherentsPage() {
     return list;
   }, [members, search, filters, activeTab, relanceSub, selectedAct, pendingInviteeIds]);
 
-  const activeFilterCount = filters.statut.length + filters.cotisation.length + filters.cotisationAnnuelle.length + filters.profil.length + filters.mois.length;
+  const activeFilterCount = filters.statut.length + filters.cotisation.length + filters.cotisationAnnuelle.length + filters.profil.length + filters.mois.length + filters.civilite.length;
 
   /* ── Helpers ────────────────────────────────────────────── */
   const toggleFilter = <K extends keyof ActiveFilters>(key: K, value: ActiveFilters[K][number]) => {
@@ -1475,6 +1483,48 @@ export default function AdminAdherentsPage() {
                     );
                   })()}
 
+                  {/* ── Civilité ─────────────────────────────────── */}
+                  {(() => {
+                    const open = openFilterSections.has('civilite');
+                    const toggle = () => setOpenFilterSections(prev => { const n = new Set(prev); open ? n.delete('civilite') : n.add('civilite'); return n; });
+                    return (
+                      <div>
+                        <button type="button" onClick={toggle}
+                          className="flex w-full items-center justify-between px-4 py-2.5 transition hover:bg-neutral-50/70">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Civilité</span>
+                            {filters.civilite.length > 0 && (
+                              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-pink-500 px-1 text-[9px] font-black text-white">
+                                {filters.civilite.length}
+                              </span>
+                            )}
+                          </div>
+                          <ChevronDown size={12} className={`text-neutral-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                        </button>
+                        <div className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                          <div className="overflow-hidden">
+                            <div className="space-y-1 px-4 pb-3 pt-1">
+                              {(['homme', 'femme', 'non_renseigne'] as const).map(val => {
+                                const checked = filters.civilite.includes(val);
+                                return (
+                                  <label key={val} className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${checked ? 'border-emerald-200 bg-emerald-50' : 'border-transparent hover:bg-neutral-50'}`}>
+                                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? 'border-emerald-600 bg-emerald-600' : 'border-neutral-300 bg-white'}`}>
+                                      {checked && <CheckCircle2 size={10} className="text-white" />}
+                                    </span>
+                                    <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleFilter('civilite', val)} />
+                                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${civiliteConfig[val].cls}`}>
+                                      {val === 'non_renseigne' ? <HelpCircle size={10} /> : <GenderIcon gender={val} size={10} />} {civiliteConfig[val].label}
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                 </div>
 
                 {/* Pied */}
@@ -1496,6 +1546,7 @@ export default function AdminAdherentsPage() {
               {filters.cotisationAnnuelle.map(v => <button key={v} type="button" onClick={() => toggleFilter('cotisationAnnuelle',v)} className="flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-black text-violet-700 hover:bg-violet-100">{cotisAnnuelleConfig[v]?.label} <X size={9} /></button>)}
               {filters.profil.map(v => <button key={v} type="button" onClick={() => toggleFilter('profil',v)} className="flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-black text-violet-700 hover:bg-violet-100">Profil {v==='complete'?'complet':'incomplet'} <X size={9} /></button>)}
               {filters.mois.map(idx => <button key={idx} type="button" onClick={() => toggleFilter('mois',idx)} className="flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-black text-amber-700 hover:bg-amber-100">{MONTHS_FR[idx]} <X size={9} /></button>)}
+              {filters.civilite.map(v => <button key={v} type="button" onClick={() => toggleFilter('civilite',v)} className="flex items-center gap-1 rounded-full border border-pink-200 bg-pink-50 px-2 py-1 text-[10px] font-black text-pink-700 hover:bg-pink-100">{civiliteConfig[v]?.label} <X size={9} /></button>)}
             </div>
           )}
 
