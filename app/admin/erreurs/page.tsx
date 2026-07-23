@@ -5,7 +5,7 @@ import {
   AlertTriangle, Trash2, ChevronDown, ChevronRight,
   Mail, RotateCcw, AlertCircle, CheckCircle2, Loader2,
   Upload, Shield, Database, FileText, Bell, HelpCircle,
-  Settings, Table, Scan, Star, Check,
+  Settings, Table, Scan, Star, Check, ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -31,6 +31,7 @@ const CATEGORY_CFG: Record<FilterKey, { label: string; bg: string; text: string;
   config:       { label: 'Config',         bg: 'bg-rose-100',    text: 'text-rose-700',    icon: Settings },
   csv_import:   { label: 'Import CSV',     bg: 'bg-lime-100',    text: 'text-lime-700',    icon: Table },
   notification: { label: 'Notification',   bg: 'bg-indigo-100',  text: 'text-indigo-700',  icon: Bell },
+  security:     { label: 'Sécurité',        bg: 'bg-slate-100',   text: 'text-slate-700',   icon: ShieldAlert },
   other:        { label: 'Autre',          bg: 'bg-neutral-100', text: 'text-neutral-500', icon: HelpCircle },
 };
 
@@ -42,7 +43,7 @@ const SEVERITY_CFG = {
 
 const FILTER_TABS: FilterKey[] = [
   'all', 'email', 'upload', 'auth', 'validation',
-  'database', 'pdf', 'qr_scan', 'cauris', 'config', 'csv_import', 'notification', 'other',
+  'database', 'pdf', 'qr_scan', 'cauris', 'config', 'csv_import', 'notification', 'security', 'other',
 ];
 
 function fmt(d: string) {

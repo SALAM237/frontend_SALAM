@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/auth.store';
 
 export type AppErrorCategory =
   | 'email' | 'upload' | 'auth' | 'validation' | 'database' | 'pdf'
-  | 'qr_scan' | 'cauris' | 'config' | 'csv_import' | 'notification' | 'other';
+  | 'qr_scan' | 'cauris' | 'config' | 'csv_import' | 'notification' | 'security' | 'other';
 
 export interface AppErrorLog {
   _id: string;
