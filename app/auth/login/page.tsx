@@ -102,7 +102,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 lg:mx-auto lg:max-w-sm">
 
       <div>
         <h2 className="text-[1.75rem] font-black leading-[1.1] tracking-[-0.04em] text-neutral-900">
@@ -227,7 +227,7 @@ function LoginForm() {
 
 function LoginFallback() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 lg:mx-auto lg:max-w-sm">
       <div>
         <div className="h-9 w-48 rounded-lg bg-neutral-100 animate-pulse" />
         <div className="mt-2 h-4 w-64 rounded bg-neutral-50 animate-pulse" />

@@ -9,9 +9,10 @@ import {
 } from 'recharts';
 import {
   AlertTriangle, ArrowDownRight, ArrowUpRight, Boxes, CheckCircle2,
-  Clock, Download, FileSpreadsheet, FileUp, Loader2 as ImportLoader, Package, Plus, RefreshCw, Settings2, WalletCards,
+  Clock, Download, FileSpreadsheet, FileUp, Loader2 as ImportLoader, Package, Plus, RefreshCw, Search, Settings2, WalletCards,
   Trash2, WifiOff, X, XCircle,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   formatFcfa,
   useCreateMembershipFeeProposal,
@@ -671,15 +672,74 @@ function Select({ label, value, onChange, options, disabled = false }: { label: 
   );
 }
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
+function ListToolbar({ search, onSearchChange, pageSize, onPageSizeChange }: {
+  search: string;
+  onSearchChange: (v: string) => void;
+  pageSize: number;
+  onPageSizeChange: (v: number) => void;
+}) {
+  return (
+    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="relative sm:max-w-xs sm:flex-1">
+        <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+        <input
+          value={search}
+          onChange={e => onSearchChange(e.target.value)}
+          placeholder="Rechercher..."
+          className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-8 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => onSearchChange('')}
+            title="Effacer la recherche"
+            className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600"
+          >
+            <X size={13} />
+          </button>
+        )}
+      </div>
+      <label className="flex shrink-0 items-center gap-2 text-xs font-semibold text-neutral-500">
+        Lignes par page
+        <select
+          value={pageSize}
+          onChange={e => onPageSizeChange(Number(e.target.value))}
+          className="h-9 rounded-xl border border-neutral-200 bg-white px-2 text-sm font-bold text-neutral-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+        >
+          {PAGE_SIZE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+        </select>
+      </label>
+    </div>
+  );
+}
+
 function TransactionList({ title, items, kind, loading, onDelete, deletingId }: { title: string; items: TreasuryTransaction[]; kind?: TreasuryKind; loading?: boolean; onDelete?: (id: string) => void; deletingId?: string }) {
+  const [search, setSearch] = useState('');
+  const [pageSize, setPageSize] = useState(10);
+
   const filtered = kind ? items.filter(i => i.kind === kind) : items;
+  const q = search.trim().toLowerCase();
+  const searched = q
+    ? filtered.filter(item => [
+        item.label, item.counterparty, item.reference, item.description, sourceLabels[item.source],
+      ].some(field => field?.toLowerCase().includes(q)))
+    : filtered;
+  const visible = searched.slice(0, pageSize);
+
   return (
     <Card>
-      <CardTitle title={title} subtitle={`${filtered.length} operation(s)`} />
+      <CardTitle title={title} subtitle={`${searched.length} operation(s)${q ? ` sur ${filtered.length}` : ''}`} />
+      <ListToolbar search={search} onSearchChange={setSearch} pageSize={pageSize} onPageSizeChange={setPageSize} />
       <div className="divide-y divide-neutral-50">
         {loading && <p className="py-6 text-sm text-neutral-400">Chargement...</p>}
-        {!loading && filtered.length === 0 && <p className="py-6 text-sm font-semibold text-neutral-400">Aucune donnee pour le moment.</p>}
-        {filtered.map(item => (
+        {!loading && searched.length === 0 && (
+          <p className="py-6 text-sm font-semibold text-neutral-400">
+            {q ? 'Aucun resultat pour cette recherche.' : 'Aucune donnee pour le moment.'}
+          </p>
+        )}
+        {visible.map(item => (
           <div key={item._id} className="flex items-center gap-3 py-3">
             <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${item.kind === 'expense' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
               {item.kind === 'expense' ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
@@ -696,9 +756,11 @@ function TransactionList({ title, items, kind, loading, onDelete, deletingId }: 
               isFacturationManaged(item.source) ? (
                 <button
                   type="button"
-                  disabled
-                  className="flex h-8 w-8 shrink-0 cursor-not-allowed items-center justify-center rounded-xl border border-neutral-100 bg-neutral-50 text-neutral-300"
-                  title="Supprimer dans la rubrique Facturation"
+                  onClick={() => toast.info('Suppression indisponible ici', {
+                    description: `"${item.label || 'Cette operation'}" est gere depuis Facturation. Pour la supprimer, rendez-vous dans l'onglet Facturation -> Recus de paiement et supprimez le recu correspondant a ce membre.`,
+                  })}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-neutral-100 bg-neutral-50 text-neutral-300 transition hover:border-neutral-200 hover:text-neutral-400"
+                  title="Suppression via Facturation"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -717,18 +779,37 @@ function TransactionList({ title, items, kind, loading, onDelete, deletingId }: 
           </div>
         ))}
       </div>
+      {searched.length > pageSize && (
+        <p className="mt-3 text-center text-xs font-semibold text-neutral-400">
+          {pageSize} sur {searched.length} affichées — augmentez le nombre de lignes ci-dessus pour en voir plus.
+        </p>
+      )}
     </Card>
   );
 }
 
 function AssetList({ title, items, loading, onDelete, deletingId }: { title: string; items: TreasuryAsset[]; loading?: boolean; onDelete?: (id: string) => void; deletingId?: string }) {
+  const [search, setSearch] = useState('');
+  const [pageSize, setPageSize] = useState(10);
+
+  const q = search.trim().toLowerCase();
+  const searched = q
+    ? items.filter(item => [item.name, item.category, item.location, item.responsible].some(field => field?.toLowerCase().includes(q)))
+    : items;
+  const visible = searched.slice(0, pageSize);
+
   return (
     <Card>
-      <CardTitle title={title} subtitle={`${items.length} element(s)`} />
+      <CardTitle title={title} subtitle={`${searched.length} element(s)${q ? ` sur ${items.length}` : ''}`} />
+      <ListToolbar search={search} onSearchChange={setSearch} pageSize={pageSize} onPageSizeChange={setPageSize} />
       <div className="grid gap-3 sm:grid-cols-2">
         {loading && <p className="py-6 text-sm text-neutral-400">Chargement...</p>}
-        {!loading && items.length === 0 && <p className="py-6 text-sm font-semibold text-neutral-400">Aucun element de patrimoine renseigne.</p>}
-        {items.map(item => (
+        {!loading && searched.length === 0 && (
+          <p className="py-6 text-sm font-semibold text-neutral-400">
+            {q ? 'Aucun resultat pour cette recherche.' : 'Aucun element de patrimoine renseigne.'}
+          </p>
+        )}
+        {visible.map(item => (
           <div key={item._id} className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-3">
             <div className="flex items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-700"><Boxes size={16} /></span>
@@ -752,6 +833,11 @@ function AssetList({ title, items, loading, onDelete, deletingId }: { title: str
           </div>
         ))}
       </div>
+      {searched.length > pageSize && (
+        <p className="mt-3 text-center text-xs font-semibold text-neutral-400">
+          {pageSize} sur {searched.length} affichés — augmentez le nombre de lignes ci-dessus pour en voir plus.
+        </p>
+      )}
     </Card>
   );
 }
