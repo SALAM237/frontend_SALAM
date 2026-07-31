@@ -122,8 +122,18 @@ function MemberFilterButton({ selectedIds, onChange }: { selectedIds: string[]; 
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Rechercher un membre..."
-              className="h-8 w-full rounded-lg border border-neutral-200 pl-7 pr-2 text-xs outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+              className="h-8 w-full rounded-lg border border-neutral-200 pl-7 pr-7 text-xs outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                title="Effacer la recherche"
+                className="absolute right-2 top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600"
+              >
+                <X size={11} />
+              </button>
+            )}
           </div>
           <div className="mb-2 flex items-center justify-between">
             <button
