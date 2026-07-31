@@ -19,8 +19,8 @@ const MIN_YEAR = 2010;
 const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - MIN_YEAR + 1 }).map((_, i) => CURRENT_YEAR - i);
 const MONTH_LABELS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
-const selectCls = 'h-7 w-full rounded-lg border border-neutral-200 bg-white px-1 text-[10px] font-semibold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-24 sm:rounded-xl sm:px-2.5 sm:text-xs';
-const yearSelectCls = 'h-7 w-16 shrink-0 rounded-lg border border-neutral-200 bg-white px-1 text-[10px] font-semibold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-20 sm:rounded-xl sm:px-2.5 sm:text-xs';
+const selectCls = 'h-7 w-full rounded-lg border border-neutral-200 bg-white px-0.5 text-[8px] font-semibold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-24 sm:rounded-xl sm:px-2.5 sm:text-xs';
+const yearSelectCls = 'h-7 w-16 shrink-0 rounded-lg border border-neutral-200 bg-white px-0.5 text-[8px] font-semibold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-20 sm:rounded-xl sm:px-2.5 sm:text-xs';
 const labelCls = 'text-[9px] font-black uppercase tracking-[0.08em] text-neutral-500 sm:text-[10px]';
 
 export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, loading = false, gradientId, sourceLabels, sourceColors }: {
@@ -183,7 +183,7 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
             </div>
           )}
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chart}>
+            <AreaChart data={chart} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
               <defs>
                 <linearGradient id={`${gradientId}Income`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#059669" stopOpacity={0.28} />
@@ -196,7 +196,7 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${Math.round(Number(v) / 1000)}k`} />
+              <YAxis width={36} tick={{ fontSize: 11 }} tickFormatter={v => `${Math.round(Number(v) / 1000)}k`} />
               <Tooltip formatter={v => formatFcfa(Number(v ?? 0))} />
               <Area type="monotone" dataKey="income" stroke="#059669" fill={`url(#${gradientId}Income)`} strokeWidth={2} name="Encaissements" />
               <Area type="monotone" dataKey="expense" stroke="#dc2626" fill={`url(#${gradientId}Expense)`} strokeWidth={2} name="Depenses" />

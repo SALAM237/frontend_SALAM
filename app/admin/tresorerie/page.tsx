@@ -107,11 +107,16 @@ export default function AdminTresoreriePage() {
   const importRef    = useRef<HTMLInputElement>(null);
   const csvImportRef = useRef<HTMLInputElement>(null);
   const settingsRef  = useRef<HTMLDivElement>(null);
+  const formRef      = useRef<HTMLDivElement>(null);
   const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
 
   useEffect(() => {
     if (settingsOpen) settingsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [settingsOpen]);
+
+  useEffect(() => {
+    if (formMode) formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [formMode]);
 
   const overview = useTreasuryOverview(true);
   const income = useTreasuryTransactions('income', true);
@@ -382,22 +387,22 @@ export default function AdminTresoreriePage() {
             </button>
           )}
           <div className="flex flex-nowrap gap-1.5 sm:contents">
-            <button onClick={() => csvImportRef.current?.click()} className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-lg border border-emerald-200 bg-emerald-50 px-1 text-[9px] font-black text-emerald-700 transition hover:bg-emerald-100 sm:h-8 sm:flex-none sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px] sm:whitespace-nowrap">
+            <button onClick={() => csvImportRef.current?.click()} className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-lg border border-emerald-200 bg-emerald-50 px-1 text-[9px] font-black text-emerald-700 transition hover:bg-emerald-100 active:scale-95 active:bg-emerald-200 sm:h-8 sm:flex-none sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px] sm:whitespace-nowrap">
               <Upload className="h-3 w-3 shrink-0" />
               <span className="truncate sm:hidden">CSV/XLSX</span>
               <span className="hidden sm:inline">Importer CSV/XLSX</span>
             </button>
-            <button onClick={() => importRef.current?.click()} className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-lg border border-neutral-200 bg-white px-1 text-[9px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:h-8 sm:flex-none sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px] sm:whitespace-nowrap">
+            <button onClick={() => importRef.current?.click()} className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-lg border border-blue-200 bg-blue-50 px-1 text-[9px] font-black text-blue-700 transition hover:bg-blue-100 active:scale-95 active:bg-blue-200 sm:h-8 sm:flex-none sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px] sm:whitespace-nowrap">
               <Upload className="h-3 w-3 shrink-0" />
               <span className="truncate sm:hidden">PDF</span>
               <span className="hidden sm:inline">Import document PDF</span>
             </button>
-            <button onClick={exportCsv} className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-lg border border-neutral-200 bg-white px-1 text-[9px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:h-8 sm:flex-none sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px] sm:whitespace-nowrap">
+            <button onClick={exportCsv} className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-lg border border-violet-200 bg-violet-50 px-1 text-[9px] font-black text-violet-700 transition hover:bg-violet-100 active:scale-95 active:bg-violet-200 sm:h-8 sm:flex-none sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px] sm:whitespace-nowrap">
               <Download className="h-3 w-3 shrink-0" />
               <span className="truncate sm:hidden">Export</span>
               <span className="hidden sm:inline">Exporter</span>
             </button>
-            <button onClick={() => setSettingsOpen(true)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:text-[11px]" title="Parametres tresorerie">
+            <button onClick={() => setSettingsOpen(true)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700 transition hover:bg-amber-100 active:scale-95 active:bg-amber-200 sm:text-[11px]" title="Parametres tresorerie">
               <Settings2 className="h-3 w-3 shrink-0" />
             </button>
           </div>
@@ -445,6 +450,7 @@ export default function AdminTresoreriePage() {
       )}
 
       {formMode && (
+        <div ref={formRef}>
         <FormPanel title={formMode === 'expense' ? 'Nouvelle depense' : formMode === 'don' ? 'Nouveau don' : formMode === 'asset' ? 'Nouveau patrimoine' : 'Nouvel encaissement'} onClose={() => setFormMode(null)}>
           {formMode === 'asset' ? (
             <div className="grid gap-3 md:grid-cols-2">
@@ -471,6 +477,7 @@ export default function AdminTresoreriePage() {
             </div>
           )}
         </FormPanel>
+        </div>
       )}
 
       {tab === 'overview' && (
