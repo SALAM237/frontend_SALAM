@@ -2,15 +2,21 @@
 
 import { useState } from 'react';
 import {
-  AlertTriangle, Laptop, LogIn, LogOut, MapPin, Monitor, Smartphone, Tablet,
+  AlertTriangle, Laptop, LogIn, LogOut, MapPin, Monitor, Search, Smartphone, Tablet, Users, X,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { useUserActivityLogs, useUserAuditLogs, type UserActivityLogDoc, type UserAuditLogDoc } from '@/lib/api/user-logs';
+import { useAdminMembers } from '@/lib/api/members';
+import { formatFullName } from '@/lib/format-name';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { formatPageUrl } from '@/lib/format-url';
 
 const ALLOWED_EMAIL = 'salamcameroun237@gmail.com';
+
+function normalizeName(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
 
 type TabValue = 'activity' | 'audit';
 
@@ -45,6 +51,75 @@ function humanizeAction(action: string) {
   return action.replace(/[._]/g, ' ');
 }
 
+function MemberFilterButton({ selectedIds, onChange }: { selectedIds: string[]; onChange: (ids: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const { data, isLoading } = useAdminMembers({ limit: 500 });
+  const members = data?.data?.data ?? [];
+
+  const q = normalizeName(search.trim());
+  const filtered = members.filter(m =>
+    !q || normalizeName(`${m.firstName} ${m.lastName} ${m.email ?? ''}`).includes(q));
+
+  const toggle = (id: string) => {
+    onChange(selectedIds.includes(id) ? selectedIds.filter(x => x !== id) : [...selectedIds, id]);
+  };
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2 text-xs font-semibold transition sm:h-9 sm:rounded-xl sm:text-sm ${
+          selectedIds.length || open ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-200 hover:text-emerald-700'
+        }`}
+      >
+        <Users size={13} />
+        {selectedIds.length ? `Membres (${selectedIds.length})` : 'Filtrer par membre'}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-10 z-20 w-72 rounded-xl border border-neutral-200 bg-white p-3 shadow-lg">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[10px] font-black uppercase tracking-[0.08em] text-neutral-500">Choisir des membres</p>
+            <button type="button" onClick={() => setOpen(false)} className="text-neutral-400 hover:text-neutral-600"><X size={13} /></button>
+          </div>
+          <div className="relative mb-2">
+            <Search size={12} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher un membre..."
+              className="h-8 w-full rounded-lg border border-neutral-200 pl-7 pr-2 text-xs outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+            />
+          </div>
+          {selectedIds.length > 0 && (
+            <button type="button" onClick={() => onChange([])} className="mb-2 text-[11px] font-semibold text-red-600 hover:underline">
+              Réinitialiser ({selectedIds.length})
+            </button>
+          )}
+          <div className="max-h-56 overflow-y-auto rounded-lg border border-neutral-100">
+            {isLoading && <p className="p-3 text-center text-xs text-neutral-400">Chargement...</p>}
+            {!isLoading && filtered.length === 0 && <p className="p-3 text-center text-xs text-neutral-400">Aucun membre trouvé.</p>}
+            {filtered.map(m => {
+              const checked = selectedIds.includes(m._id);
+              return (
+                <label key={m._id} className={`flex cursor-pointer items-center gap-2 border-b border-neutral-50 px-2.5 py-1.5 last:border-0 ${checked ? 'bg-emerald-50/60' : 'hover:bg-neutral-50'}`}>
+                  <input type="checkbox" checked={checked} onChange={() => toggle(m._id)} className="h-3.5 w-3.5 shrink-0 accent-emerald-600" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-neutral-900">{formatFullName(m.firstName, m.lastName)}</p>
+                    <p className="truncate text-[10px] text-neutral-400">{m.email}</p>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function UserLogsPage() {
   const user = useAuthStore(s => s.user);
   const [tab, setTab] = useState<TabValue>('activity');
@@ -52,9 +127,12 @@ export default function UserLogsPage() {
   const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState('');
   const [eventType, setEventType] = useState('all');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
-  const activityQuery = useUserActivityLogs({ page, limit: pageSize, search, eventType });
-  const auditQuery = useUserAuditLogs({ page, limit: pageSize, search });
+  const activityQuery = useUserActivityLogs({ page, limit: pageSize, search, eventType, userIds: selectedUserIds });
+  const auditQuery = useUserAuditLogs({ page, limit: pageSize, search, userIds: selectedUserIds });
+
+  const changeMemberFilter = (ids: string[]) => { setSelectedUserIds(ids); setPage(1); };
 
   if (user?.email !== ALLOWED_EMAIL) {
     return (
@@ -94,13 +172,16 @@ export default function UserLogsPage() {
             onPageSizeChange={v => { setPageSize(v); setPage(1); }}
             placeholder="Rechercher par nom, email, page..."
             filterSlot={
-              <select
-                value={eventType}
-                onChange={e => { setEventType(e.target.value); setPage(1); }}
-                className="h-8 rounded-lg border border-neutral-200 bg-white px-2 text-xs font-semibold text-neutral-600 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:rounded-xl sm:text-sm"
-              >
-                {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={eventType}
+                  onChange={e => { setEventType(e.target.value); setPage(1); }}
+                  className="h-8 rounded-lg border border-neutral-200 bg-white px-2 text-xs font-semibold text-neutral-600 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:rounded-xl sm:text-sm"
+                >
+                  {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+                <MemberFilterButton selectedIds={selectedUserIds} onChange={changeMemberFilter} />
+              </div>
             }
           />
           <p className="mb-2 text-xs font-semibold text-neutral-400">{activityQuery.isLoading ? '…' : `${activityTotal} événement(s)`}</p>
@@ -157,6 +238,7 @@ export default function UserLogsPage() {
             pageSize={pageSize}
             onPageSizeChange={v => { setPageSize(v); setPage(1); }}
             placeholder="Rechercher par nom, action..."
+            filterSlot={<MemberFilterButton selectedIds={selectedUserIds} onChange={changeMemberFilter} />}
           />
           <p className="mb-2 text-xs font-semibold text-neutral-400">{auditQuery.isLoading ? '…' : `${auditTotal} entrée(s)`}</p>
 

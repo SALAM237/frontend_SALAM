@@ -42,16 +42,17 @@ interface PagedResult<T> {
   pages: number;
 }
 
-export function useUserActivityLogs(params: { page: number; limit: number; search?: string; eventType?: string }) {
+export function useUserActivityLogs(params: { page: number; limit: number; search?: string; eventType?: string; userIds?: string[] }) {
   const token = useAuthStore(s => s.accessToken);
   const qs = new URLSearchParams();
   qs.set('page', String(params.page));
   qs.set('limit', String(params.limit));
   if (params.search) qs.set('search', params.search);
   if (params.eventType && params.eventType !== 'all') qs.set('eventType', params.eventType);
+  if (params.userIds?.length) qs.set('userIds', params.userIds.join(','));
 
   return useQuery({
-    queryKey: ['user-logs-activity', params.page, params.limit, params.search, params.eventType],
+    queryKey: ['user-logs-activity', params.page, params.limit, params.search, params.eventType, params.userIds],
     queryFn: () => apiClient<PagedResult<UserActivityLogDoc>>(`/api/v1/admin/user-logs/activity?${qs.toString()}`, { token: token ?? '' }),
     enabled: !!token,
     staleTime: 0,
@@ -59,15 +60,16 @@ export function useUserActivityLogs(params: { page: number; limit: number; searc
   });
 }
 
-export function useUserAuditLogs(params: { page: number; limit: number; search?: string }) {
+export function useUserAuditLogs(params: { page: number; limit: number; search?: string; userIds?: string[] }) {
   const token = useAuthStore(s => s.accessToken);
   const qs = new URLSearchParams();
   qs.set('page', String(params.page));
   qs.set('limit', String(params.limit));
   if (params.search) qs.set('search', params.search);
+  if (params.userIds?.length) qs.set('userIds', params.userIds.join(','));
 
   return useQuery({
-    queryKey: ['user-logs-audit', params.page, params.limit, params.search],
+    queryKey: ['user-logs-audit', params.page, params.limit, params.search, params.userIds],
     queryFn: () => apiClient<PagedResult<UserAuditLogDoc>>(`/api/v1/admin/user-logs/audit?${qs.toString()}`, { token: token ?? '' }),
     enabled: !!token,
     staleTime: 0,
