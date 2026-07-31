@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiClient } from './client';
 import { useAuthStore } from '@/store/auth.store';
@@ -62,6 +62,22 @@ export interface TreasuryOverview {
   assets: TreasuryAsset[];
 }
 
+export type TreasuryChartGranularity = 'month' | 'year';
+
+export interface TreasuryChartPoint {
+  key: string;
+  label: string;
+  income: number;
+  expense: number;
+}
+
+export interface TreasuryChartResponse {
+  granularity: TreasuryChartGranularity;
+  from: string;
+  to: string;
+  chart: TreasuryChartPoint[];
+}
+
 export interface MembershipFeeProposal {
   _id: string;
   key: 'membership_fee';
@@ -88,6 +104,30 @@ export function useTreasuryOverview(admin = false) {
     enabled: !!token,
     staleTime: 0,
     refetchOnWindowFocus: true,
+  });
+}
+
+export interface TreasuryChartFilter {
+  granularity: TreasuryChartGranularity;
+  from: string;
+  to: string;
+}
+
+export function useTreasuryChart(admin = false, filter: TreasuryChartFilter | null) {
+  const token = useAuthStore(s => s.accessToken);
+  const params = new URLSearchParams();
+  if (filter) {
+    params.set('granularity', filter.granularity);
+    params.set('from', filter.from);
+    params.set('to', filter.to);
+  }
+  const qs = params.toString();
+  return useQuery({
+    queryKey: [admin ? 'admin-treasury-chart' : 'member-treasury-chart', filter?.granularity, filter?.from, filter?.to],
+    queryFn: () => apiClient<TreasuryChartResponse>(`/api/v1/${admin ? 'admin' : 'member'}/treasury/chart?${qs}`, { token: token ?? '' }),
+    enabled: !!token && !!filter,
+    staleTime: 0,
+    placeholderData: keepPreviousData,
   });
 }
 

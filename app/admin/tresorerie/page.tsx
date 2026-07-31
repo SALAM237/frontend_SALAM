@@ -31,6 +31,7 @@ import {
   type TreasuryTransaction,
 } from '@/lib/api/treasury';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
+import { TreasuryEvolutionChart } from '@/components/shared/TreasuryEvolutionChart';
 
 type TabValue = 'overview' | 'income' | 'expense' | 'don' | 'assets';
 type FormMode = 'income' | 'expense' | 'don' | 'asset' | null;
@@ -459,29 +460,7 @@ export default function AdminTresoreriePage() {
         <div className="space-y-5">
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="lg:col-span-2">
-              <CardTitle title="Evolution encaissements & depenses" />
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={data?.chart ?? []}>
-                    <defs>
-                      <linearGradient id="adminIncome" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#059669" stopOpacity={0.28} />
-                        <stop offset="100%" stopColor="#059669" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="adminExpense" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#dc2626" stopOpacity={0.16} />
-                        <stop offset="100%" stopColor="#dc2626" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${Math.round(Number(v) / 1000)}k`} />
-                    <Tooltip formatter={v => formatFcfa(Number(v ?? 0))} />
-                    <Area type="monotone" dataKey="income" stroke="#059669" fill="url(#adminIncome)" strokeWidth={2} name="Encaissements" />
-                    <Area type="monotone" dataKey="expense" stroke="#dc2626" fill="url(#adminExpense)" strokeWidth={2} name="Depenses" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <TreasuryEvolutionChart admin defaultChart={data?.chart ?? []} loading={overview.isLoading} gradientId="adminTreasury" />
             </Card>
 
             <Card>
