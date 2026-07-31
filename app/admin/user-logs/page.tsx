@@ -54,22 +54,53 @@ function humanizeAction(action: string) {
 function MemberFilterButton({ selectedIds, onChange }: { selectedIds: string[]; onChange: (ids: string[]) => void }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const { data, isLoading } = useAdminMembers({ limit: 500 });
+  // Selection brouillon — les cases cochées ne s'appliquent qu'au clic sur
+  // "Appliquer", jamais immédiatement (évite une requête par case cochée).
+  const [draft, setDraft] = useState<string[]>(selectedIds);
+  // status:'all' explicite — la liste doit toujours inclure les membres en
+  // attente d'inscription (pending), suspendus, etc., pas seulement actifs.
+  const { data, isLoading } = useAdminMembers({ limit: 500, status: 'all' });
   const members = data?.data?.data ?? [];
 
   const q = normalizeName(search.trim());
   const filtered = members.filter(m =>
     !q || normalizeName(`${m.firstName} ${m.lastName} ${m.email ?? ''}`).includes(q));
 
+  const togglePanel = () => {
+    if (!open) setDraft(selectedIds); // resynchronise le brouillon sur la sélection réellement appliquée
+    setOpen(o => !o);
+  };
+
   const toggle = (id: string) => {
-    onChange(selectedIds.includes(id) ? selectedIds.filter(x => x !== id) : [...selectedIds, id]);
+    setDraft(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every(m => draft.includes(m._id));
+  const toggleSelectAll = () => {
+    const filteredIds = filtered.map(m => m._id);
+    if (allFilteredSelected) {
+      setDraft(prev => prev.filter(id => !filteredIds.includes(id)));
+    } else {
+      setDraft(prev => Array.from(new Set([...prev, ...filteredIds])));
+    }
+  };
+
+  const handleApply = () => {
+    onChange(draft);
+    setOpen(false);
+  };
+
+  const handleReset = () => {
+    setDraft([]);
+    onChange([]);
+    setOpen(false);
   };
 
   return (
     <div className="relative shrink-0">
       <button
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={togglePanel}
         className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2 text-xs font-semibold transition sm:h-9 sm:rounded-xl sm:text-sm ${
           selectedIds.length || open ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-200 hover:text-emerald-700'
         }`}
@@ -93,16 +124,26 @@ function MemberFilterButton({ selectedIds, onChange }: { selectedIds: string[]; 
               className="h-8 w-full rounded-lg border border-neutral-200 pl-7 pr-2 text-xs outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
             />
           </div>
-          {selectedIds.length > 0 && (
-            <button type="button" onClick={() => onChange([])} className="mb-2 text-[11px] font-semibold text-red-600 hover:underline">
-              Réinitialiser ({selectedIds.length})
+          <div className="mb-2 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              disabled={filtered.length === 0}
+              className="text-[11px] font-semibold text-emerald-700 hover:underline disabled:cursor-not-allowed disabled:text-neutral-300 disabled:no-underline"
+            >
+              {allFilteredSelected ? 'Tout désélectionner' : 'Tout sélectionner'} ({filtered.length})
             </button>
-          )}
+            {draft.length > 0 && (
+              <button type="button" onClick={handleReset} className="text-[11px] font-semibold text-red-600 hover:underline">
+                Réinitialiser ({draft.length})
+              </button>
+            )}
+          </div>
           <div className="max-h-56 overflow-y-auto rounded-lg border border-neutral-100">
             {isLoading && <p className="p-3 text-center text-xs text-neutral-400">Chargement...</p>}
             {!isLoading && filtered.length === 0 && <p className="p-3 text-center text-xs text-neutral-400">Aucun membre trouvé.</p>}
             {filtered.map(m => {
-              const checked = selectedIds.includes(m._id);
+              const checked = draft.includes(m._id);
               return (
                 <label key={m._id} className={`flex cursor-pointer items-center gap-2 border-b border-neutral-50 px-2.5 py-1.5 last:border-0 ${checked ? 'bg-emerald-50/60' : 'hover:bg-neutral-50'}`}>
                   <input type="checkbox" checked={checked} onChange={() => toggle(m._id)} className="h-3.5 w-3.5 shrink-0 accent-emerald-600" />
@@ -114,6 +155,13 @@ function MemberFilterButton({ selectedIds, onChange }: { selectedIds: string[]; 
               );
             })}
           </div>
+          <button
+            type="button"
+            onClick={handleApply}
+            className="mt-2 h-8 w-full rounded-lg bg-emerald-600 text-[11px] font-black text-white transition hover:bg-emerald-700 sm:h-9 sm:rounded-xl sm:text-xs"
+          >
+            Appliquer le filtre
+          </button>
         </div>
       )}
     </div>
