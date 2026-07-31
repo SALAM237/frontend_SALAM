@@ -9,7 +9,7 @@ import {
 } from 'recharts';
 import {
   AlertTriangle, ArrowDownRight, ArrowUpRight, Boxes, CheckCircle2,
-  Clock, Download, FileSpreadsheet, FileUp, Loader2 as ImportLoader, Package, Plus, RefreshCw, Search, Settings2, WalletCards,
+  Clock, Download, FileSpreadsheet, Loader2 as ImportLoader, Package, Plus, RefreshCw, Search, Settings2, Upload, WalletCards,
   Trash2, WifiOff, X, XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -375,30 +375,32 @@ export default function AdminTresoreriePage() {
           <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Tresorerie</h1>
           <p className="mt-1 text-sm text-neutral-500 sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap sm:text-[clamp(0.625rem,1.1vw,0.875rem)]">Pilotage des encaissements, decaissements, dons, justificatifs et patrimoine.</p>
         </div>
-        <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:gap-1.5 lg:flex-nowrap">
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-1.5 lg:flex-nowrap">
           {tab !== 'overview' && (
-            <button onClick={() => openForm(tab === 'expense' ? 'expense' : tab === 'don' ? 'don' : tab === 'assets' ? 'asset' : 'income')} className="inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-emerald-600 px-2 text-[10px] font-black text-white shadow-sm transition hover:bg-emerald-700 sm:h-8 sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px]">
+            <button onClick={() => openForm(tab === 'expense' ? 'expense' : tab === 'don' ? 'don' : tab === 'assets' ? 'asset' : 'income')} className="inline-flex h-8 w-full items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-emerald-600 px-2 text-[10px] font-black text-white shadow-sm transition hover:bg-emerald-700 sm:w-auto sm:text-[11px]">
               <Plus className="h-3 w-3 shrink-0" /> <span className="truncate">{tab === 'expense' ? 'Ajouter depense' : tab === 'don' ? 'Ajouter don' : tab === 'assets' ? 'Ajouter patrimoine' : 'Ajouter encaissement'}</span>
             </button>
           )}
-          <button onClick={() => csvImportRef.current?.click()} className="inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-emerald-200 bg-emerald-50 px-2 text-[10px] font-black text-emerald-700 transition hover:bg-emerald-100 sm:h-8 sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px]">
-            <FileSpreadsheet className="h-3 w-3 shrink-0" />
-            <span className="sm:hidden">CSV/XLSX</span>
-            <span className="hidden sm:inline">Importer CSV/XLSX</span>
-          </button>
-          <button onClick={() => importRef.current?.click()} className="inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-neutral-200 bg-white px-2 text-[10px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:h-8 sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px]">
-            <FileUp className="h-3 w-3 shrink-0" />
-            <span className="sm:hidden">PDF</span>
-            <span className="hidden sm:inline">Import document PDF</span>
-          </button>
-          <button onClick={exportCsv} className="inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-neutral-200 bg-white px-2 text-[10px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:h-8 sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px]">
-            <Download className="h-3 w-3 shrink-0" />
-            <span className="sm:hidden">Export</span>
-            <span className="hidden sm:inline">Exporter</span>
-          </button>
-          <button onClick={() => setSettingsOpen(true)} className="col-span-2 flex h-8 items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white text-[10px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:col-auto sm:h-8 sm:w-8 sm:shrink-0 sm:rounded-lg sm:text-[11px]" title="Parametres tresorerie">
-            <Settings2 className="h-3 w-3 shrink-0" /> <span className="sm:hidden">Parametres</span>
-          </button>
+          <div className="flex flex-nowrap gap-1.5 sm:contents">
+            <button onClick={() => csvImportRef.current?.click()} className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-lg border border-emerald-200 bg-emerald-50 px-1 text-[9px] font-black text-emerald-700 transition hover:bg-emerald-100 sm:h-8 sm:flex-none sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px] sm:whitespace-nowrap">
+              <Upload className="h-3 w-3 shrink-0" />
+              <span className="truncate sm:hidden">CSV/XLSX</span>
+              <span className="hidden sm:inline">Importer CSV/XLSX</span>
+            </button>
+            <button onClick={() => importRef.current?.click()} className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-lg border border-neutral-200 bg-white px-1 text-[9px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:h-8 sm:flex-none sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px] sm:whitespace-nowrap">
+              <Upload className="h-3 w-3 shrink-0" />
+              <span className="truncate sm:hidden">PDF</span>
+              <span className="hidden sm:inline">Import document PDF</span>
+            </button>
+            <button onClick={exportCsv} className="inline-flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-lg border border-neutral-200 bg-white px-1 text-[9px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:h-8 sm:flex-none sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px] sm:whitespace-nowrap">
+              <Download className="h-3 w-3 shrink-0" />
+              <span className="truncate sm:hidden">Export</span>
+              <span className="hidden sm:inline">Exporter</span>
+            </button>
+            <button onClick={() => setSettingsOpen(true)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:text-[11px]" title="Parametres tresorerie">
+              <Settings2 className="h-3 w-3 shrink-0" />
+            </button>
+          </div>
           <input ref={importRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.heic,.doc,.docx,.xls,.xlsx,.txt" className="hidden" onChange={e => handleImport(e.target.files?.[0])} />
           <input ref={csvImportRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => handleImport(e.target.files?.[0])} />
         </div>
@@ -673,8 +675,8 @@ function ListToolbar({ search, onSearchChange, pageSize, onPageSizeChange }: {
           </button>
         )}
       </div>
-      <label className="ml-auto flex shrink-0 flex-col gap-1">
-        <span className="text-[9px] font-black uppercase tracking-[0.06em] text-neutral-500 sm:text-[10px]">Lignes par page</span>
+      <label className="ml-auto flex shrink-0 flex-col items-center gap-1">
+        <span className="whitespace-nowrap text-center text-[9px] font-black uppercase tracking-[0.06em] text-neutral-500 sm:text-[10px]">Lignes par page</span>
         <select
           value={pageSize}
           onChange={e => onPageSizeChange(Number(e.target.value))}
