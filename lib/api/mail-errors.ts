@@ -9,6 +9,8 @@ export type AppErrorCategory =
   | 'email' | 'upload' | 'auth' | 'validation' | 'database' | 'pdf'
   | 'qr_scan' | 'cauris' | 'config' | 'csv_import' | 'notification' | 'security' | 'other';
 
+export type AppErrorScope = 'errors' | 'external_scans';
+
 export interface AppErrorLog {
   _id: string;
   category: AppErrorCategory;
@@ -32,15 +34,17 @@ export interface AppErrorLog {
 // Backward-compat alias
 export type MailErrorLog = AppErrorLog;
 
-export function useAppErrorLogs(page = 1, category?: AppErrorCategory, options?: { limit?: number; search?: string }) {
+export function useAppErrorLogs(page = 1, category?: AppErrorCategory, options?: { limit?: number; search?: string; scope?: AppErrorScope }) {
   const token = useAuthStore(s => s.accessToken);
   const limit = options?.limit ?? 20;
   const search = options?.search ?? '';
+  const scope = options?.scope ?? 'errors';
   const qs    = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (category) qs.set('category', category);
   if (search)   qs.set('search', search);
+  if (scope !== 'errors') qs.set('scope', scope);
   return useQuery({
-    queryKey: ['app-error-logs', page, category ?? 'all', limit, search],
+    queryKey: ['app-error-logs', page, category ?? 'all', limit, search, scope],
     queryFn:  () =>
       apiClient<{ logs: AppErrorLog[]; total: number; page: number; pages: number }>(
         `/api/v1/admin/app-errors?${qs}`,

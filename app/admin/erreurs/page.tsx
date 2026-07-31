@@ -10,7 +10,7 @@ import {
 import { toast } from 'sonner';
 import {
   useAppErrorLogs, useDeleteAppError, useClearAppErrors, useResolveAppError,
-  type AppErrorLog, type AppErrorCategory,
+  type AppErrorLog, type AppErrorCategory, type AppErrorScope,
 } from '@/lib/api/mail-errors';
 import { useAuthStore } from '@/store/auth.store';
 import { ListToolbar } from '@/components/shared/ListToolbar';
@@ -99,11 +99,12 @@ function EmailFailures({ failures }: { failures: { name?: string; email?: string
 }
 
 function LogRow({
-  log, onDelete, onResolve,
+  log, onDelete, onResolve, scanView = false,
 }: {
   log: AppErrorLog;
   onDelete: (id: string) => void;
   onResolve: (id: string) => void;
+  scanView?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const details  = log.details as Record<string, any> | undefined;
@@ -124,6 +125,12 @@ function LogRow({
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <CategoryBadge category={log.category} />
             <SeverityBadge severity={log.severity} />
+            {scanView && (
+              <span className="inline-flex items-center gap-1 text-xs bg-slate-900 text-white rounded-full px-2 py-0.5 font-medium">
+                <ShieldAlert size={10} />
+                Scan externe bloque
+              </span>
+            )}
             {details?.stoppedEarly && (
               <span className="text-xs bg-red-50 text-red-600 border border-red-200 rounded-full px-2 py-0.5 font-medium">
                 Interrompu
@@ -245,11 +252,12 @@ export default function GestionErreursPage() {
   const [pageSize,     setPageSize]     = useState(20);
   const [search,       setSearch]       = useState('');
   const [category,     setCategory]     = useState<FilterKey>('all');
+  const [errorScope,   setErrorScope]   = useState<AppErrorScope>('errors');
   const [showResolved, setShowResolved] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
   const catArg = category === 'all' ? undefined : category;
-  const { data, isLoading, refetch, isFetching } = useAppErrorLogs(page, catArg, { limit: pageSize, search });
+  const { data, isLoading, refetch, isFetching } = useAppErrorLogs(page, catArg, { limit: pageSize, search, scope: errorScope });
   const deleteEntry  = useDeleteAppError();
   const clearAll     = useClearAppErrors();
   const resolveEntry = useResolveAppError();
@@ -258,6 +266,7 @@ export default function GestionErreursPage() {
   const logs    = showResolved ? allLogs : allLogs.filter(l => !l.resolved);
   const total   = data?.data?.total ?? 0;
   const pages   = data?.data?.pages ?? 1;
+  const showingExternalScans = errorScope === 'external_scans';
 
   const email        = user?.email ?? '';
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
@@ -289,11 +298,28 @@ export default function GestionErreursPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-neutral-900">Gestion des erreurs</h1>
-            <p className="text-sm text-neutral-500">{total} entrée(s) — toutes catégories</p>
+            <p className="text-sm text-neutral-500">{total} {showingExternalScans ? 'scan(s) externe(s) bloque(s)' : 'erreur(s) applicative(s)'}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => {
+              setErrorScope(v => v === 'external_scans' ? 'errors' : 'external_scans');
+              setCategory('all');
+              setPage(1);
+              setConfirmClear(false);
+            }}
+            className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors ${
+              showingExternalScans
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            <ShieldAlert size={14} />
+            {showingExternalScans ? 'Voir erreurs applicatives' : 'Scans externes bloques'}
+          </button>
+
           <button
             onClick={() => setShowResolved(v => !v)}
             className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${
@@ -314,7 +340,7 @@ export default function GestionErreursPage() {
             Actualiser
           </button>
 
-          {total > 0 && (
+          {total > 0 && !showingExternalScans && (
             <button
               onClick={handleClearAll}
               disabled={clearAll.isPending}
@@ -348,7 +374,8 @@ export default function GestionErreursPage() {
       />
 
       {/* Category filter tabs */}
-      <div className="flex flex-wrap gap-2">
+      {!showingExternalScans && (
+        <div className="flex flex-wrap gap-2">
         {FILTER_TABS.map(key => {
           const cfg = CATEGORY_CFG[key];
           return (
@@ -365,7 +392,14 @@ export default function GestionErreursPage() {
             </button>
           );
         })}
-      </div>
+        </div>
+      )}
+
+      {showingExternalScans && (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          Ces lignes correspondent aux requetes automatisees bloquees par CORS, typiquement WordPress, backup, staging ou anciens chemins. Elles sont separees des vraies erreurs applicatives.
+        </div>
+      )}
 
       {/* Content */}
       {isLoading ? (
@@ -375,8 +409,8 @@ export default function GestionErreursPage() {
       ) : logs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3 text-neutral-400">
           <CheckCircle2 size={40} className="text-emerald-400" />
-          <p className="font-medium text-neutral-600">Aucune erreur pour cette catégorie</p>
-          <p className="text-sm">Toutes les opérations se sont déroulées correctement.</p>
+          <p className="font-medium text-neutral-600">{showingExternalScans ? 'Aucun scan externe bloque' : 'Aucune erreur pour cette categorie'}</p>
+          <p className="text-sm">{showingExternalScans ? 'Les scans connus ne polluent plus les erreurs applicatives.' : 'Toutes les operations se sont deroulees correctement.'}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -386,6 +420,7 @@ export default function GestionErreursPage() {
               log={log}
               onDelete={handleDelete}
               onResolve={handleResolve}
+              scanView={showingExternalScans}
             />
           ))}
         </div>
