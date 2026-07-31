@@ -620,15 +620,15 @@ function Kpi({ icon: Icon, label, value, sub, tone }: { icon: React.ElementType;
 
 function FormPanel({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
-    <section className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <section className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+      <div className="flex items-center justify-between bg-emerald-50 px-5 py-3.5">
         <div className="flex items-center gap-2">
           <Settings2 size={16} className="text-emerald-700" />
-          <p className="text-sm font-black text-neutral-900">{title}</p>
+          <p className="text-sm font-black text-emerald-900">{title}</p>
         </div>
-        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={15} /></button>
+        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-emerald-700/60 transition hover:bg-emerald-100 hover:text-emerald-700"><X size={15} /></button>
       </div>
-      {children}
+      <div className="p-5">{children}</div>
     </section>
   );
 }
@@ -687,7 +687,7 @@ function ListToolbar({ search, onSearchChange, pageSize, onPageSizeChange }: {
         <select
           value={pageSize}
           onChange={e => onPageSizeChange(Number(e.target.value))}
-          className="h-8 w-14 rounded-lg border border-neutral-200 bg-white px-1.5 text-xs font-bold text-neutral-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-16 sm:rounded-xl sm:px-2 sm:text-sm"
+          className="h-8 w-20 rounded-lg border border-neutral-200 bg-white px-1.5 text-[10px] font-bold text-neutral-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-16 sm:rounded-xl sm:px-2 sm:text-sm"
         >
           {PAGE_SIZE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
         </select>

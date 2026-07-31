@@ -19,9 +19,14 @@ const MIN_YEAR = 2010;
 const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - MIN_YEAR + 1 }).map((_, i) => CURRENT_YEAR - i);
 const MONTH_LABELS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
-const selectCls = 'h-7 w-full rounded-lg border border-neutral-200 bg-white px-0.5 text-[8px] font-semibold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-24 sm:rounded-xl sm:px-2.5 sm:text-xs';
-const yearSelectCls = 'h-7 w-16 shrink-0 rounded-lg border border-neutral-200 bg-white px-0.5 text-[8px] font-semibold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-20 sm:rounded-xl sm:px-2.5 sm:text-xs';
+const selectCls = 'h-7 w-full rounded-lg border border-neutral-200 bg-white px-0.5 text-[8px] font-semibold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-32 sm:rounded-xl sm:px-2.5 sm:text-xs';
+const yearSelectCls = 'h-7 w-16 shrink-0 rounded-lg border border-neutral-200 bg-white px-0.5 text-[8px] font-semibold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-24 sm:rounded-xl sm:px-2.5 sm:text-xs';
+const monthNativeCls = 'h-7 w-full rounded-lg border border-neutral-200 bg-white px-1.5 text-[10px] font-semibold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10';
 const labelCls = 'text-[9px] font-black uppercase tracking-[0.08em] text-neutral-500 sm:text-[10px]';
+
+function toMonthInputValue(monthIdx: string, year: string) {
+  return `${year}-${String(Number(monthIdx) + 1).padStart(2, '0')}`;
+}
 
 export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, loading = false, gradientId, sourceLabels, sourceColors }: {
   admin: boolean;
@@ -33,6 +38,7 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
   sourceColors: string[];
 }) {
   const now = new Date();
+  const currentMonthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [open, setOpen] = useState(false);
   const [granularity, setGranularity] = useState<TreasuryChartGranularity>('month');
   const [mFromMonth, setMFromMonth] = useState(String(now.getMonth()));
@@ -69,6 +75,13 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
   const resetFilter = () => {
     setFilter(null);
     setOpen(false);
+  };
+
+  const applyNativeMonthValue = (value: string, setYear: (v: string) => void, setMonth: (v: string) => void) => {
+    const [y, m] = value.split('-');
+    if (!y || !m) return;
+    setYear(y);
+    setMonth(String(Number(m) - 1));
   };
 
   return (
@@ -127,7 +140,15 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
                 <>
                   <div className="min-w-0 space-y-1">
                     <span className={labelCls}>De</span>
-                    <div className="flex min-w-0 gap-1">
+                    <input
+                      type="month"
+                      value={toMonthInputValue(mFromMonth, mFromYear)}
+                      min={`${MIN_YEAR}-01`}
+                      max={currentMonthValue}
+                      onChange={e => applyNativeMonthValue(e.target.value, setMFromYear, setMFromMonth)}
+                      className={`${monthNativeCls} sm:hidden`}
+                    />
+                    <div className="hidden min-w-0 gap-1 sm:flex">
                       <select value={mFromMonth} onChange={e => setMFromMonth(e.target.value)} className={`${selectCls} min-w-0 flex-1`}>
                         {MONTH_LABELS.map((m, i) => <option key={m} value={i}>{m}</option>)}
                       </select>
@@ -138,7 +159,15 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
                   </div>
                   <div className="min-w-0 space-y-1">
                     <span className={labelCls}>À</span>
-                    <div className="flex min-w-0 gap-1">
+                    <input
+                      type="month"
+                      value={toMonthInputValue(mToMonth, mToYear)}
+                      min={`${MIN_YEAR}-01`}
+                      max={currentMonthValue}
+                      onChange={e => applyNativeMonthValue(e.target.value, setMToYear, setMToMonth)}
+                      className={`${monthNativeCls} sm:hidden`}
+                    />
+                    <div className="hidden min-w-0 gap-1 sm:flex">
                       <select value={mToMonth} onChange={e => setMToMonth(e.target.value)} className={`${selectCls} min-w-0 flex-1`}>
                         {MONTH_LABELS.map((m, i) => <option key={m} value={i}>{m}</option>)}
                       </select>
