@@ -9,6 +9,7 @@ import {
   Images, Newspaper, Settings, Menu, X, ChevronRight, Bell,
   Banknote, FileText, History, MessageSquare, Shield, Loader2, Globe, ShieldCheck,
   Handshake, BriefcaseBusiness, Sparkles, Target, ScanLine, AlertTriangle, Gift,
+  Eye, BarChart3,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
@@ -27,7 +28,8 @@ import { useAdminStats } from '@/lib/api/dashboard';
 import { useNotifications } from '@/lib/api/notifications';
 
 const ERRORS_ALLOWED_EMAILS = ['salamcameroun237@gmail.com', 'vicklionel@yahoo.fr'];
-type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; permissions?: string[]; hidden?: boolean; allowedEmails?: string[] };
+const USER_LOG_ALLOWED_EMAIL = 'salamcameroun237@gmail.com';
+type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; adminOnly?: boolean; permissions?: string[]; hidden?: boolean; allowedEmails?: string[]; emailOnly?: string[] };
 
 const BASE_NAV: NavItem[] = [
   { label: 'Tableau de bord',   href: '/admin/dashboard',         icon: LayoutDashboard },
@@ -39,7 +41,7 @@ const BASE_NAV: NavItem[] = [
   { label: 'Scanner QR',        href: '/admin/scanner',           icon: ScanLine,    permissions: ['scans.create', 'scans.read'] },
   { label: 'Galerie',           href: '/admin/galerie',           icon: Images },
   { label: 'Actualités',        href: '/admin/actualites',        icon: Newspaper },
-  { label: 'Marketing',         href: '/admin/marketing',         icon: Gift, permissions: ['marketing.read', 'marketing.create'] },
+  { label: 'Marketing',         href: '/admin/marketing',         icon: Gift, permissions: ['marketing.read', 'marketing.create', 'marketing.update', 'marketing.delete'] },
   { label: 'Networking',        href: '/admin/networking',        icon: Handshake, permissions: ['networking.publish'] },
   { label: 'Opportunites',      href: '/admin/opportunites',      icon: BriefcaseBusiness, permissions: ['opportunities.publish', 'opportunities.create', 'opportunities.update', 'opportunities.delete'] },
   { label: 'Messages',          href: '/admin/messages',          icon: MessageSquare },
@@ -47,6 +49,8 @@ const BASE_NAV: NavItem[] = [
   { label: 'IDP/ISP',           href: '/admin/idp-isp',           icon: Target },
   { label: 'Validations',       href: '/admin/validations',       icon: ShieldCheck, permissions: ['content.publish', 'gallery.publish', 'networking.publish', 'opportunities.publish'] },
   { label: 'Historique',        href: '/admin/historique',        icon: History },
+  { label: 'Analytics',         href: '/admin/analytics',         icon: BarChart3, adminOnly: true },
+  { label: 'User Log',          href: '/admin/user-logs',         icon: Eye, emailOnly: [USER_LOG_ALLOWED_EMAIL] },
   { label: 'Gestion Erreurs',   href: '/admin/erreurs',           icon: AlertTriangle, allowedEmails: ERRORS_ALLOWED_EMAILS },
   { label: 'Rôles & Accès',     href: '/admin/roles',             icon: Shield, superAdminOnly: true },
   { label: 'Bureau',            href: '/admin/bureau',            icon: Users },
@@ -340,8 +344,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const nav = BASE_NAV.filter(n => {
     if (n.hidden) return false;
     if (n.superAdminOnly && !SA) return false;
+    if (n.adminOnly && !hasAdminRole(user)) return false;
     if (n.permissions && !hasAnyPermission(user, n.permissions)) return false;
     if (n.allowedEmails && !SA && !n.allowedEmails.includes(user?.email ?? '')) return false;
+    // emailOnly : aucun contournement super-admin — reserve a un email exact (User Log).
+    if (n.emailOnly && !n.emailOnly.includes(user?.email ?? '')) return false;
     return true;
   });
 

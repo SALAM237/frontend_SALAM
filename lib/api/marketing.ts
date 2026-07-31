@@ -42,6 +42,16 @@ export function useAdminCampaigns() {
   });
 }
 
+export type CampaignPayload = {
+  title: string;
+  giftName: string;
+  packageCount: number;
+  cauriAmount: number;
+  deadline: string;
+  imageUrl?: string;
+  recipientIds: string[];
+};
+
 export function useCreateCampaign() {
   const token = useAuthStore(s => s.accessToken);
   const qc = useQueryClient();
@@ -75,6 +85,44 @@ export function useCreateCampaign() {
   });
 }
 
+
+export function useUpdateCampaign() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: CampaignPayload }) =>
+      apiClient<CampaignDoc>(`/api/v1/admin/marketing/campaigns/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+        token: token ?? '',
+      }),
+    onSuccess: (_res, vars) => {
+      qc.invalidateQueries({ queryKey: ['admin-campaigns'] });
+      qc.invalidateQueries({ queryKey: ['admin-campaign-insights', vars.id] });
+      toast.success('Campagne mise a jour');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useDeleteCampaign() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient<{ deleted: boolean }>(`/api/v1/admin/marketing/campaigns/${id}`, {
+        method: 'DELETE',
+        token: token ?? '',
+      }),
+    onSuccess: (_res, id) => {
+      qc.invalidateQueries({ queryKey: ['admin-campaigns'] });
+      qc.invalidateQueries({ queryKey: ['admin-campaign-gift-rewarded'] });
+      qc.removeQueries({ queryKey: ['admin-campaign-insights', id] });
+      toast.success('Campagne supprimee');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
 export interface RewardedMember {
   userId: string;
   firstName: string;

@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 import {
   AlertTriangle, ArrowDownRight, ArrowUpRight, Banknote, CheckCircle2, Clock,
-  Download, Filter, Package, RefreshCw, Users, WalletCards, WifiOff, XCircle,
+  Download, Filter, Package, RefreshCw, Search, WalletCards, WifiOff, X, XCircle,
 } from 'lucide-react';
 import {
   formatFcfa,
@@ -23,6 +23,7 @@ import {
 } from '@/lib/api/treasury';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { TreasuryEvolutionSection } from '@/components/shared/TreasuryEvolutionChart';
+import { RecoveryRateBlock } from '@/components/shared/RecoveryRateBlock';
 
 type TabValue = 'overview' | 'income' | 'expense' | 'don' | 'assets';
 
@@ -50,6 +51,8 @@ const conditionLabels: Record<string, string> = { good: 'Bon', used: 'Use', dama
 
 export default function TresoreriePage() {
   const [tab, setTab] = useState<TabValue>('overview');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const overview = useTreasuryOverview(false);
   const income = useTreasuryTransactions('income', false);
   const expense = useTreasuryTransactions('expense', false);
@@ -62,13 +65,64 @@ export default function TresoreriePage() {
   const incomeItems = income.data?.data?.items ?? [];
   const expenseItems = expense.data?.data?.items ?? [];
   const donationItems = donations.data?.data?.items ?? [];
+  const assetItems = assets.data?.data?.items ?? [];
   const pendingProposal = (feeProposals.data?.data?.items ?? []).find(p => p.status === 'pending');
   const approvalRole = feeProposals.data?.data?.approvalRole;
   const alreadyApproved = !!pendingProposal && !!approvalRole && pendingProposal.approvals.some(a => a.role === approvalRole);
 
   const loading = overview.isLoading;
+  const refreshing = overview.isFetching || income.isFetching || expense.isFetching || donations.isFetching || assets.isFetching;
   const sourceData = data?.sources ?? [];
   const balanceTone = (data?.kpis.balance ?? 0) >= 0 ? 'emerald' : 'red';
+
+  const q = search.trim().toLowerCase();
+  const matchesTx = (item: TreasuryTransaction) => !q || [item.label, item.counterparty, item.reference, item.description, sourceLabels[item.source]].some(f => f?.toLowerCase().includes(q));
+  const filteredIncome = incomeItems.filter(matchesTx);
+  const filteredExpense = expenseItems.filter(matchesTx);
+  const filteredDonations = donationItems.filter(matchesTx);
+  const filteredAssets = assetItems.filter(a => !q || [a.name, a.category, a.location, a.responsible].some(f => f?.toLowerCase().includes(q)));
+
+  const handleRefresh = () => {
+    overview.refetch();
+    income.refetch();
+    expense.refetch();
+    donations.refetch();
+    assets.refetch();
+    feeProposals.refetch();
+  };
+
+  const exportCsv = () => {
+    const rows = tab === 'assets'
+      ? filteredAssets.map(item => ({
+          type: 'patrimoine',
+          nom: item.name,
+          categorie: item.category ?? '',
+          etat: item.condition,
+          valeur: item.estimatedValue ?? 0,
+          localisation: item.location ?? '',
+          responsable: item.responsible ?? '',
+        }))
+      : (tab === 'income' ? filteredIncome : tab === 'expense' ? filteredExpense : tab === 'don' ? filteredDonations : [...filteredIncome, ...filteredExpense]).map(item => ({
+          type: item.kind,
+          source: item.source,
+          libelle: item.label,
+          montant: item.amount,
+          date: new Date(item.occurredAt).toLocaleDateString('fr-FR'),
+          tiers: item.counterparty ?? '',
+          reference: item.reference ?? '',
+          description: item.description ?? '',
+        }));
+
+    const header = Object.keys(rows[0] ?? { export: 'Aucune donnee' });
+    const csv = [header.join(';'), ...rows.map(row => header.map(key => String((row as any)[key] ?? '').replace(/;/g, ',')).join(';'))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `salam-tresorerie-${tab}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (overview.isError) {
     return (
@@ -95,17 +149,47 @@ export default function TresoreriePage() {
           <p className="mt-1 text-sm text-neutral-500">Vue transparente des ressources, depenses, dons et patrimoine de SALAM.</p>
         </div>
         <div className="flex gap-2">
-          <button className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700">
+          <button
+            onClick={() => setFiltersOpen(o => !o)}
+            disabled={tab === 'overview'}
+            className={`inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${filtersOpen ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-200 hover:text-emerald-700'}`}
+          >
             <Filter size={14} /> Filtres
           </button>
-          <button className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700">
+          <button
+            onClick={exportCsv}
+            disabled={tab === 'overview'}
+            className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
             <Download size={14} /> Exporter
           </button>
-          <button onClick={() => overview.refetch()} disabled={loading} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 disabled:opacity-50">
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Actualiser
+          <button onClick={handleRefresh} disabled={refreshing} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 disabled:opacity-50">
+            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} /> Actualiser
           </button>
         </div>
       </div>
+
+      {filtersOpen && tab !== 'overview' && (
+        <div className="relative">
+          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={tab === 'assets' ? 'Rechercher un element de patrimoine...' : 'Rechercher une operation...'}
+            className="h-10 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-9 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              title="Effacer la recherche"
+              className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      )}
 
       {pendingProposal && approvalRole && (
         <section className="rounded-2xl border border-amber-100 bg-amber-50/70 p-4 shadow-sm">
@@ -174,14 +258,11 @@ export default function TresoreriePage() {
               </div>
             </Card>
             <Card>
-              <CardTitle title="Taux de recouvrement adhesions" />
-              <div className="flex h-[220px] flex-col items-center justify-center text-center">
-                <div className="text-5xl font-black tracking-[-0.05em] text-emerald-700">
-                  {data?.kpis.recoveryRate ?? 0}
-                  <span className="text-2xl">%</span>
-                </div>
-                <p className="mt-3 text-sm font-semibold text-neutral-500">des frais d'adhesion encaisses</p>
-                <p className="mt-1 text-xs text-neutral-400">{formatFcfa(data?.kpis.pendingAdhesions ?? 0)} encore en attente</p>
+              <CardTitle title="Taux de recouvrement" />
+              <div className="grid grid-cols-3 gap-3">
+                <RecoveryRateBlock label="Frais adhesion" rate={data?.kpis.recoveryRate ?? 0} pending={data?.kpis.pendingAdhesions ?? 0} />
+                <RecoveryRateBlock label="Cotisation annuelle" rate={data?.kpis.recoveryRateAnnuelle ?? 0} pending={data?.kpis.pendingAnnuelles ?? 0} />
+                <RecoveryRateBlock label="Autres" rate={data?.kpis.recoveryRateOther ?? 0} />
               </div>
             </Card>
           </div>
@@ -212,10 +293,10 @@ export default function TresoreriePage() {
         </div>
       )}
 
-      {tab === 'income' && <TransactionList title="Encaissements" items={incomeItems} kind="income" loading={income.isLoading} />}
-      {tab === 'expense' && <TransactionList title="Decaissements" items={expenseItems} kind="expense" loading={expense.isLoading} />}
-      {tab === 'don' && <TransactionList title="Dons recus" items={donationItems} loading={income.isLoading} />}
-      {tab === 'assets' && <AssetList title="Patrimoine de l'association" items={assets.data?.data?.items ?? []} loading={assets.isLoading} />}
+      {tab === 'income' && <TransactionList title="Encaissements" items={filteredIncome} totalCount={incomeItems.length} kind="income" loading={income.isLoading} />}
+      {tab === 'expense' && <TransactionList title="Decaissements" items={filteredExpense} totalCount={expenseItems.length} kind="expense" loading={expense.isLoading} />}
+      {tab === 'don' && <TransactionList title="Dons recus" items={filteredDonations} totalCount={donationItems.length} loading={donations.isLoading} />}
+      {tab === 'assets' && <AssetList title="Patrimoine de l'association" items={filteredAssets} totalCount={assetItems.length} loading={assets.isLoading} />}
     </div>
   );
 }
@@ -258,15 +339,20 @@ function Kpi({ icon: Icon, label, value, sub, tone }: { icon: React.ElementType;
   );
 }
 
-function TransactionList({ title, items, kind, loading }: { title: string; items: TreasuryTransaction[]; kind?: TreasuryKind; loading?: boolean }) {
+function TransactionList({ title, items, totalCount, kind, loading }: { title: string; items: TreasuryTransaction[]; totalCount?: number; kind?: TreasuryKind; loading?: boolean }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const filtered = kind ? items.filter(i => i.kind === kind) : items;
+  const isFiltered = totalCount !== undefined && totalCount !== filtered.length;
   return (
     <Card>
-      <CardTitle title={title} subtitle={`${filtered.length} operation(s)`} />
+      <CardTitle title={title} subtitle={`${filtered.length} operation(s)${isFiltered ? ` sur ${totalCount}` : ''}`} />
       <div className="divide-y divide-neutral-50">
         {loading && <p className="py-6 text-sm text-neutral-400">Chargement...</p>}
-        {!loading && filtered.length === 0 && <p className="py-6 text-sm font-semibold text-neutral-400">Aucune donnee pour le moment.</p>}
+        {!loading && filtered.length === 0 && (
+          <p className="py-6 text-sm font-semibold text-neutral-400">
+            {isFiltered ? 'Aucun resultat pour cette recherche.' : 'Aucune donnee pour le moment.'}
+          </p>
+        )}
         {filtered.map(item => {
           const expanded = expandedId === item._id;
           const textCls = expanded ? 'whitespace-normal break-words' : 'truncate';
@@ -288,13 +374,18 @@ function TransactionList({ title, items, kind, loading }: { title: string; items
   );
 }
 
-function AssetList({ title, items, loading }: { title: string; items: TreasuryAsset[]; loading?: boolean }) {
+function AssetList({ title, items, totalCount, loading }: { title: string; items: TreasuryAsset[]; totalCount?: number; loading?: boolean }) {
+  const isFiltered = totalCount !== undefined && totalCount !== items.length;
   return (
     <Card>
-      <CardTitle title={title} subtitle={`${items.length} element(s)`} />
+      <CardTitle title={title} subtitle={`${items.length} element(s)${isFiltered ? ` sur ${totalCount}` : ''}`} />
       <div className="grid gap-3 sm:grid-cols-2">
         {loading && <p className="py-6 text-sm text-neutral-400">Chargement...</p>}
-        {!loading && items.length === 0 && <p className="py-6 text-sm font-semibold text-neutral-400">Aucun element de patrimoine renseigne.</p>}
+        {!loading && items.length === 0 && (
+          <p className="py-6 text-sm font-semibold text-neutral-400">
+            {isFiltered ? 'Aucun resultat pour cette recherche.' : 'Aucun element de patrimoine renseigne.'}
+          </p>
+        )}
         {items.map(item => (
           <div key={item._id} className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-3">
             <div className="flex items-start gap-3">

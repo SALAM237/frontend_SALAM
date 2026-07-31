@@ -13,6 +13,7 @@ import {
   type AppErrorLog, type AppErrorCategory,
 } from '@/lib/api/mail-errors';
 import { useAuthStore } from '@/store/auth.store';
+import { ListToolbar } from '@/components/shared/ListToolbar';
 
 const ALLOWED_EMAILS = ['salamcameroun237@gmail.com', 'vicklionel@yahoo.fr'];
 
@@ -241,12 +242,14 @@ function LogRow({
 export default function GestionErreursPage() {
   const user = useAuthStore(s => s.user);
   const [page,         setPage]         = useState(1);
+  const [pageSize,     setPageSize]     = useState(20);
+  const [search,       setSearch]       = useState('');
   const [category,     setCategory]     = useState<FilterKey>('all');
   const [showResolved, setShowResolved] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
   const catArg = category === 'all' ? undefined : category;
-  const { data, isLoading, refetch, isFetching } = useAppErrorLogs(page, catArg);
+  const { data, isLoading, refetch, isFetching } = useAppErrorLogs(page, catArg, { limit: pageSize, search });
   const deleteEntry  = useDeleteAppError();
   const clearAll     = useClearAppErrors();
   const resolveEntry = useResolveAppError();
@@ -335,6 +338,14 @@ export default function GestionErreursPage() {
           )}
         </div>
       </div>
+
+      <ListToolbar
+        search={search}
+        onSearchChange={v => { setSearch(v); setPage(1); }}
+        pageSize={pageSize}
+        onPageSizeChange={v => { setPageSize(v); setPage(1); }}
+        placeholder="Rechercher par message, membre, route..."
+      />
 
       {/* Category filter tabs */}
       <div className="flex flex-wrap gap-2">

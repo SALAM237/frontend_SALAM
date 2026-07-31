@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
-import { Gift, X, Search, Image as ImageIcon, Loader2, Send, Users, CheckSquare, Square, Calendar, Package, BarChart3, Eye, MousePointerClick, Smartphone, Tablet, Monitor, HelpCircle, ChevronDown } from 'lucide-react';
-import { useAdminCampaigns, useCreateCampaign, useUploadCampaignImage, useCampaignInsights, useCampaignGiftRewardedMembers, type CampaignDoc } from '@/lib/api/marketing';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Gift, X, Search, Image as ImageIcon, Loader2, Send, Users, CheckSquare, Square, Calendar, Package, BarChart3, Eye, MousePointerClick, Smartphone, Tablet, Monitor, HelpCircle, ChevronDown, Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react';
+import { useAdminCampaigns, useCreateCampaign, useUpdateCampaign, useDeleteCampaign, useUploadCampaignImage, useCampaignInsights, useCampaignGiftRewardedMembers, type CampaignDoc } from '@/lib/api/marketing';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { MemberFilterPanel, EMPTY_MEMBER_FILTERS, memberMatchesFilters, type MemberFilters } from '@/components/admin/MemberFilterPanel';
 import { formatFullName } from '@/lib/format-name';
@@ -56,16 +56,17 @@ function SectionAccordion({ header, children, defaultOpen = false }: {
    Objet + cadeau + nombre de colis + date limite + image optionnelle +
    sélection des destinataires (recherche + case à cocher + tout sélectionner,
    même logique que le sélecteur de destinataires en facturation). */
-function CampaignEditorModal({ onClose }: { onClose: () => void }) {
-  const [title, setTitle] = useState('🎁 Offre spéciale SALAM — Cadeau exclusif');
-  const [giftName, setGiftName] = useState('15 000 Cauris');
-  const [packageCount, setPackageCount] = useState(0);
-  const [cauriAmount, setCauriAmount] = useState(15000);
-  const [deadline, setDeadline] = useState('2026-07-20');
-  const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
+function CampaignEditorModal({ onClose, campaign }: { onClose: () => void; campaign?: CampaignDoc | null }) {
+  const isEditing = Boolean(campaign);
+  const [title, setTitle] = useState(campaign?.title ?? '🎁 Offre spéciale SALAM — Cadeau exclusif');
+  const [giftName, setGiftName] = useState(campaign?.giftName ?? '15 000 Cauris');
+  const [packageCount, setPackageCount] = useState(campaign?.packageCount ?? 0);
+  const [cauriAmount, setCauriAmount] = useState(campaign?.cauriAmount ?? 15000);
+  const [deadline, setDeadline] = useState(campaign?.deadline ? campaign.deadline.slice(0, 10) : '2026-07-20');
+  const [imageUrl, setImageUrl] = useState<string | undefined>(campaign?.imageUrl);
   const [memberSearch, setMemberSearch] = useState('');
   const [memberFilters, setMemberFilters] = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>((campaign?.recipients ?? []).map(r => r.userId));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -73,14 +74,15 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
   const members: MemberListItem[] = membersData?.data?.data ?? [];
   const uploadImage = useUploadCampaignImage();
   const createCampaign = useCreateCampaign();
+  const updateCampaign = useUpdateCampaign();
 
   const { data: rewardedData } = useCampaignGiftRewardedMembers();
   /* Un membre déjà crédité pour "Cadeau SALAM" (toutes campagnes de ce type
      confondues, voir hasReceivedCampaignGift côté backend) ne doit plus
      jamais pouvoir être resélectionné comme destinataire. */
   const rewardedIds = useMemo(() => new Set((rewardedData?.data ?? []).map(r => r.userId)), [rewardedData]);
-  const selectableMembers = useMemo(() => members.filter(m => !rewardedIds.has(m._id)), [members, rewardedIds]);
-  const excludedCount = members.length - selectableMembers.length;
+  const selectableMembers = useMemo(() => members.filter(m => !rewardedIds.has(m._id) || selected.includes(m._id)), [members, rewardedIds, selected]);
+  const excludedCount = members.filter(m => rewardedIds.has(m._id) && !selected.includes(m._id)).length;
 
   const filteredMembers = useMemo(() => {
     const q = normalizeName(memberSearch.trim());
@@ -122,18 +124,20 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
 
   const handleSend = () => {
     if (!validate()) return;
-    createCampaign.mutate(
-      {
-        title: title.trim(),
-        giftName: giftName.trim(),
-        packageCount: Math.max(0, Number(packageCount ?? 0)),
-        cauriAmount: Math.max(1, Number(cauriAmount ?? 0)),
-        deadline: new Date(deadline).toISOString(),
-        imageUrl,
-        recipientIds: selected,
-      },
-      { onSuccess: () => onClose() },
-    );
+    const body = {
+      title: title.trim(),
+      giftName: giftName.trim(),
+      packageCount: Math.max(0, Number(packageCount ?? 0)),
+      cauriAmount: Math.max(1, Number(cauriAmount ?? 0)),
+      deadline: new Date(deadline).toISOString(),
+      imageUrl,
+      recipientIds: selected,
+    };
+    if (isEditing && campaign) {
+      updateCampaign.mutate({ id: campaign._id, body }, { onSuccess: () => onClose() });
+      return;
+    }
+    createCampaign.mutate(body, { onSuccess: () => onClose() });
   };
 
   return (
@@ -144,7 +148,7 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-600"><Gift size={17} /></span>
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-rose-600">Campagne marketing</p>
-              <h3 className="text-lg font-black text-neutral-900">Cadeau SALAM</h3>
+              <h3 className="text-lg font-black text-neutral-900">{isEditing ? 'Modifier la campagne' : 'Cadeau SALAM'}</h3>
             </div>
           </div>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
@@ -245,10 +249,10 @@ function CampaignEditorModal({ onClose }: { onClose: () => void }) {
 
         <div className="flex items-center justify-end gap-3 border-t border-neutral-100 px-6 py-4">
           <button onClick={onClose} className="rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-600 hover:border-neutral-300">Annuler</button>
-          <button onClick={handleSend} disabled={createCampaign.isPending}
+          <button onClick={handleSend} disabled={createCampaign.isPending || updateCampaign.isPending}
             className="flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-rose-700 active:scale-[0.98] disabled:opacity-60">
-            {createCampaign.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-            Envoyer la campagne
+            {(createCampaign.isPending || updateCampaign.isPending) ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+            {isEditing ? 'Enregistrer' : 'Envoyer la campagne'}
           </button>
         </div>
       </div>
@@ -325,32 +329,102 @@ function RewardedAccordionHeader() {
   );
 }
 
-function CampaignHistoryRow({ campaign }: { campaign: CampaignDoc }) {
+function CampaignHistoryRow({ campaign, onView, onEdit, onDelete, deleting = false }: {
+  campaign: CampaignDoc;
+  onView: (campaign: CampaignDoc) => void;
+  onEdit: (campaign: CampaignDoc) => void;
+  onDelete: (campaign: CampaignDoc) => void;
+  deleting?: boolean;
+}) {
   const creditedNow = (campaign.recipients ?? []).filter(r => r.giftCreditedImmediately).length;
   return (
-    <div className="flex items-center gap-4 px-5 py-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 border border-rose-100">
-        <Gift size={16} className="text-rose-600" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-black text-neutral-900">{campaign.title}</p>
-        <p className="mt-0.5 text-[11px] text-neutral-400">
-          {/* giftName est déjà le texte complet saisi par l'admin (ex. "15 000 Cauris") —
-              ne jamais lui accoler cauriAmount à côté, sous peine de doublon visuel. */}
-          {campaign.giftName} · Échéance {fmt(campaign.deadline)} · {(campaign.recipients ?? []).length} destinataire{(campaign.recipients ?? []).length > 1 ? 's' : ''}
-        </p>
-        {creditedNow > 0 && (
-          <p className="mt-0.5 text-[11px] font-semibold text-emerald-600">{creditedNow} déjà crédité{creditedNow > 1 ? 's' : ''} immédiatement</p>
-        )}
-      </div>
-      <div className="shrink-0 text-right">
-        <p className="text-sm font-black text-emerald-700">{campaign.sentCount} envoyé{campaign.sentCount > 1 ? 's' : ''}</p>
-        {campaign.failedCount > 0 && <p className="text-[11px] font-semibold text-red-600">{campaign.failedCount} échec{campaign.failedCount > 1 ? 's' : ''}</p>}
+    <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
+      <button type="button" onClick={() => onView(campaign)}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left transition hover:bg-neutral-50 sm:gap-4">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 border border-rose-100">
+          <Gift size={16} className="text-rose-600" />
+        </span>
+        <span className="min-w-0 flex-1 py-1">
+          <span className="block truncate text-sm font-black text-neutral-900">{campaign.title}</span>
+          <span className="mt-0.5 block text-[11px] text-neutral-400">
+            {campaign.giftName} · Échéance {fmt(campaign.deadline)} · {(campaign.recipients ?? []).length} destinataire{(campaign.recipients ?? []).length > 1 ? 's' : ''}
+          </span>
+          {creditedNow > 0 && (
+            <span className="mt-0.5 block text-[11px] font-semibold text-emerald-600">{creditedNow} déjà crédité{creditedNow > 1 ? 's' : ''} immédiatement</span>
+          )}
+        </span>
+        <span className="hidden shrink-0 text-right sm:block">
+          <span className="block text-sm font-black text-emerald-700">{campaign.sentCount} envoyé{campaign.sentCount > 1 ? 's' : ''}</span>
+          {campaign.failedCount > 0 && <span className="block text-[11px] font-semibold text-red-600">{campaign.failedCount} échec{campaign.failedCount > 1 ? 's' : ''}</span>}
+        </span>
+      </button>
+      <div className="flex shrink-0 items-center gap-1">
+        <button type="button" onClick={() => onView(campaign)} title="Voir" className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"><Eye size={13} /></button>
+        <button type="button" onClick={() => onEdit(campaign)} title="Modifier" className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"><Pencil size={13} /></button>
+        <button type="button" onClick={() => onDelete(campaign)} disabled={deleting} title="Supprimer" className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 text-red-500 transition hover:border-red-300 hover:bg-red-50 disabled:opacity-50">{deleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}</button>
       </div>
     </div>
   );
 }
 
+function CampaignViewModal({ campaign, onClose }: { campaign: CampaignDoc; onClose: () => void }) {
+  const creditedNow = (campaign.recipients ?? []).filter(r => r.giftCreditedImmediately).length;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600"><Eye size={17} /></span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-rose-600">Visualisation campagne</p>
+              <h3 className="truncate text-lg font-black text-neutral-900">{campaign.title}</h3>
+            </div>
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+          <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+            <div className="space-y-4">
+              {campaign.imageUrl && <img src={campaign.imageUrl} alt="Campagne" className="max-h-64 w-full rounded-2xl border border-neutral-100 object-cover" />}
+              <div className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">Détails</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <p className="text-sm font-semibold text-neutral-700"><span className="block text-[10px] font-black uppercase text-neutral-400">Cadeau</span>{campaign.giftName}</p>
+                  <p className="text-sm font-semibold text-neutral-700"><span className="block text-[10px] font-black uppercase text-neutral-400">Cauris</span>{campaign.cauriAmount.toLocaleString('fr-FR')}</p>
+                  <p className="text-sm font-semibold text-neutral-700"><span className="block text-[10px] font-black uppercase text-neutral-400">Colis</span>{campaign.packageCount.toLocaleString('fr-FR')}</p>
+                  <p className="text-sm font-semibold text-neutral-700"><span className="block text-[10px] font-black uppercase text-neutral-400">Échéance</span>{fmt(campaign.deadline)}</p>
+                  <p className="text-sm font-semibold text-emerald-700"><span className="block text-[10px] font-black uppercase text-neutral-400">Envoyés</span>{campaign.sentCount.toLocaleString('fr-FR')}</p>
+                  <p className="text-sm font-semibold text-red-600"><span className="block text-[10px] font-black uppercase text-neutral-400">Échecs</span>{campaign.failedCount.toLocaleString('fr-FR')}</p>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">Historique des bénéficiaires</p>
+                <p className="mt-1 text-sm font-black text-emerald-800">{creditedNow} bénéficiaire{creditedNow > 1 ? 's' : ''} crédité{creditedNow > 1 ? 's' : ''} sur cette campagne</p>
+                <div className="mt-3"><RewardedMembersList /></div>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm">
+              <div className="border-b border-neutral-100 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">Historique des campagnes</p>
+                <p className="text-sm font-black text-neutral-900">Destinataires de cette campagne</p>
+              </div>
+              <div className="max-h-[420px] divide-y divide-neutral-50 overflow-y-auto">
+                {(campaign.recipients ?? []).length === 0 && <p className="px-4 py-8 text-center text-sm text-neutral-400">Aucun destinataire.</p>}
+                {(campaign.recipients ?? []).map(r => (
+                  <div key={r.userId} className="px-4 py-3">
+                    <p className="truncate text-xs font-black text-neutral-900">{r.email}</p>
+                    <p className={`mt-0.5 text-[11px] font-semibold ${r.status === 'sent' ? 'text-emerald-600' : 'text-red-600'}`}>{r.status === 'sent' ? 'Envoyé' : r.reason ?? 'Échec'}</p>
+                    {r.giftCreditedImmediately && <p className="mt-0.5 text-[11px] font-semibold text-emerald-700">Crédité immédiatement</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 /* ─── Insights de campagne (accès strictement réservé) ──────
    Backend refait la même vérification d'email — cette restriction frontend
    n'est qu'une commodité d'affichage, jamais la seule protection. */
@@ -358,6 +432,12 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(campaigns[0]?._id ?? null);
   const { data, isLoading, isError } = useCampaignInsights(selectedId);
   const insights = data?.data;
+
+  useEffect(() => {
+    if (campaigns.length > 0 && (!selectedId || !campaigns.some(c => c._id === selectedId))) {
+      setSelectedId(campaigns[0]._id);
+    }
+  }, [campaigns, selectedId]);
 
   if (campaigns.length === 0) {
     return <p className="rounded-2xl border border-neutral-100 bg-white px-5 py-8 text-center text-sm text-neutral-400">Aucune campagne à analyser.</p>;
@@ -511,11 +591,20 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
 
 export default function AdminMarketingPage() {
   const [showEditor, setShowEditor] = useState(false);
+  const [viewCampaign, setViewCampaign] = useState<CampaignDoc | null>(null);
+  const [editCampaign, setEditCampaign] = useState<CampaignDoc | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CampaignDoc | null>(null);
   const [tab, setTab] = useState<'campagnes' | 'insights'>('campagnes');
   const { data, isLoading } = useAdminCampaigns();
   const campaigns = data?.data ?? [];
   const user = useAuthStore(s => s.user);
+  const deleteCampaign = useDeleteCampaign();
   const canSeeInsights = user?.email === INSIGHTS_ALLOWED_EMAIL;
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteCampaign.mutate(deleteTarget._id, { onSuccess: () => setDeleteTarget(null) });
+  };
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -543,8 +632,8 @@ export default function AdminMarketingPage() {
         <>
           <button onClick={() => setShowEditor(true)}
             className="flex w-full flex-col items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-left transition hover:bg-rose-100 sm:w-1/2">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-600 text-white"><Gift size={18} /></span>
-            <span className="text-sm font-black text-rose-700">Campagne Cadeau SALAM</span>
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-600 text-white"><Plus size={18} /></span>
+            <span className="text-sm font-black text-rose-700">Créer campagne</span>
             <span className="text-xs font-semibold text-rose-600/80">Invitez les membres à finaliser leur profil pour bénéficier d&apos;un cadeau exclusif.</span>
           </button>
 
@@ -558,7 +647,7 @@ export default function AdminMarketingPage() {
                   <p className="px-5 py-8 text-center text-sm text-neutral-400">Aucune campagne envoyée pour le moment.</p>
                 )}
                 <div className="divide-y divide-neutral-50">
-                  {campaigns.map(c => <CampaignHistoryRow key={c._id} campaign={c} />)}
+                  {campaigns.map(c => <CampaignHistoryRow key={c._id} campaign={c} onView={setViewCampaign} onEdit={setEditCampaign} onDelete={setDeleteTarget} deleting={deleteCampaign.isPending && deleteCampaign.variables === c._id} />)}
                 </div>
               </div>
             </div>
@@ -578,7 +667,7 @@ export default function AdminMarketingPage() {
                 <p className="px-5 py-8 text-center text-sm text-neutral-400">Aucune campagne envoyée pour le moment.</p>
               )}
               <div className="divide-y divide-neutral-50 border-t border-neutral-100">
-                {campaigns.map(c => <CampaignHistoryRow key={c._id} campaign={c} />)}
+                {campaigns.map(c => <CampaignHistoryRow key={c._id} campaign={c} onView={setViewCampaign} onEdit={setEditCampaign} onDelete={setDeleteTarget} deleting={deleteCampaign.isPending && deleteCampaign.variables === c._id} />)}
               </div>
             </SectionAccordion>
           </div>
@@ -586,6 +675,25 @@ export default function AdminMarketingPage() {
       )}
 
       {showEditor && <CampaignEditorModal onClose={() => setShowEditor(false)} />}
+      {editCampaign && <CampaignEditorModal key={editCampaign._id} campaign={editCampaign} onClose={() => setEditCampaign(null)} />}
+      {viewCampaign && <CampaignViewModal campaign={viewCampaign} onClose={() => setViewCampaign(null)} />}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-neutral-200">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600"><AlertTriangle size={18} /></span>
+              <div className="min-w-0">
+                <h3 className="text-lg font-black text-neutral-900">Supprimer la campagne</h3>
+                <p className="mt-1 text-sm text-neutral-500">Cette action supprimera aussi les événements de suivi liés à <span className="font-semibold text-neutral-800">{deleteTarget.title}</span>.</p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-3">
+              <button type="button" onClick={() => setDeleteTarget(null)} className="rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-600 hover:border-neutral-300">Annuler</button>
+              <button type="button" onClick={confirmDelete} disabled={deleteCampaign.isPending} className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-black text-white hover:bg-red-700 disabled:opacity-60">{deleteCampaign.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Supprimer</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

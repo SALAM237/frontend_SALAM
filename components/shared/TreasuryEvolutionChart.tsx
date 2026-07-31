@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
   Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { CalendarRange, Loader2, RotateCcw } from 'lucide-react';
+import { CalendarRange, Loader2, RotateCcw, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   formatFcfa, useTreasuryChart,
@@ -139,6 +139,16 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
 
         {open && (
           <div className="mb-4 rounded-xl border border-neutral-200 bg-neutral-50/70 p-2.5 sm:p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[10px] font-black uppercase tracking-[0.08em] text-neutral-500 sm:text-[11px]">Choisir une periode</p>
+              <button
+                onClick={() => setOpen(false)}
+                title="Fermer"
+                className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 transition hover:bg-neutral-200/70 hover:text-neutral-600"
+              >
+                <X size={13} />
+              </button>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {(['month', 'year'] as TreasuryChartGranularity[]).map(g => (
                 <button

@@ -32,12 +32,15 @@ export interface AppErrorLog {
 // Backward-compat alias
 export type MailErrorLog = AppErrorLog;
 
-export function useAppErrorLogs(page = 1, category?: AppErrorCategory) {
+export function useAppErrorLogs(page = 1, category?: AppErrorCategory, options?: { limit?: number; search?: string }) {
   const token = useAuthStore(s => s.accessToken);
-  const qs    = new URLSearchParams({ page: String(page), limit: '20' });
+  const limit = options?.limit ?? 20;
+  const search = options?.search ?? '';
+  const qs    = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (category) qs.set('category', category);
+  if (search)   qs.set('search', search);
   return useQuery({
-    queryKey: ['app-error-logs', page, category ?? 'all'],
+    queryKey: ['app-error-logs', page, category ?? 'all', limit, search],
     queryFn:  () =>
       apiClient<{ logs: AppErrorLog[]; total: number; page: number; pages: number }>(
         `/api/v1/admin/app-errors?${qs}`,
