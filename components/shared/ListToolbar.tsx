@@ -39,7 +39,7 @@ export function ListToolbar({ search, onSearchChange, pageSize, onPageSizeChange
         <select
           value={pageSize}
           onChange={e => onPageSizeChange(Number(e.target.value))}
-          className="h-8 w-20 rounded-lg border border-neutral-200 bg-white px-1.5 text-[10px] font-bold text-neutral-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-16 sm:rounded-xl sm:px-2 sm:text-sm"
+          className="h-8 w-24 rounded-lg border border-neutral-200 bg-white px-1.5 text-[10px] font-bold text-neutral-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-28 sm:rounded-xl sm:px-2 sm:text-sm"
         >
           {PAGE_SIZE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
         </select>
