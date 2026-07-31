@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart,
+  Bar, BarChart, CartesianGrid,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import {
@@ -22,7 +22,7 @@ import {
   type TreasuryAsset,
 } from '@/lib/api/treasury';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
-import { TreasuryEvolutionChart } from '@/components/shared/TreasuryEvolutionChart';
+import { TreasuryEvolutionSection } from '@/components/shared/TreasuryEvolutionChart';
 
 type TabValue = 'overview' | 'income' | 'expense' | 'don' | 'assets';
 
@@ -142,37 +142,15 @@ export default function TresoreriePage() {
             <Kpi label="Patrimoine" value={formatFcfa(data?.kpis.assetsValue ?? 0)} icon={Package} tone="violet" sub={`${data?.kpis.assetsCount ?? 0} element(s)`} />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Card className="lg:col-span-2">
-              <TreasuryEvolutionChart admin={false} defaultChart={data?.chart ?? []} loading={overview.isLoading} gradientId="memberTreasury" />
-            </Card>
-
-            <Card>
-              <CardTitle title="Sources financieres" />
-              <div className="h-[210px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={sourceData} dataKey="amount" nameKey="source" innerRadius={56} outerRadius={84} paddingAngle={4}>
-                      {sourceData.map((_, i) => <Cell key={i} fill={sourceColors[i % sourceColors.length]} />)}
-                    </Pie>
-                    <Tooltip formatter={v => formatFcfa(Number(v ?? 0))} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-1 space-y-2">
-                {sourceData.length === 0 && <p className="text-xs font-semibold text-neutral-400">Aucune source renseignee.</p>}
-                {sourceData.map((source, i) => (
-                  <div key={source.source} className="flex items-center justify-between gap-3 text-xs">
-                    <span className="flex min-w-0 items-center gap-2 font-semibold text-neutral-500">
-                      <i className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: sourceColors[i % sourceColors.length] }} />
-                      <span className="truncate">{sourceLabels[source.source]}</span>
-                    </span>
-                    <b className="shrink-0 text-neutral-900">{formatFcfa(source.amount)}</b>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
+          <TreasuryEvolutionSection
+            admin={false}
+            defaultChart={data?.chart ?? []}
+            defaultSources={sourceData}
+            loading={overview.isLoading}
+            gradientId="memberTreasury"
+            sourceLabels={sourceLabels}
+            sourceColors={sourceColors}
+          />
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
@@ -281,6 +259,7 @@ function Kpi({ icon: Icon, label, value, sub, tone }: { icon: React.ElementType;
 }
 
 function TransactionList({ title, items, kind, loading }: { title: string; items: TreasuryTransaction[]; kind?: TreasuryKind; loading?: boolean }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const filtered = kind ? items.filter(i => i.kind === kind) : items;
   return (
     <Card>
@@ -288,18 +267,22 @@ function TransactionList({ title, items, kind, loading }: { title: string; items
       <div className="divide-y divide-neutral-50">
         {loading && <p className="py-6 text-sm text-neutral-400">Chargement...</p>}
         {!loading && filtered.length === 0 && <p className="py-6 text-sm font-semibold text-neutral-400">Aucune donnee pour le moment.</p>}
-        {filtered.map(item => (
-          <div key={item._id} className="flex items-center gap-3 py-3">
-            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${item.kind === 'expense' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
-              {item.kind === 'expense' ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-black text-neutral-900">{item.label || 'Operation'}</p>
-              <p className="truncate text-xs text-neutral-400">{sourceLabels[item.source] ?? item.category ?? 'Operation'} · {new Date(item.occurredAt).toLocaleDateString('fr-FR')}</p>
+        {filtered.map(item => {
+          const expanded = expandedId === item._id;
+          const textCls = expanded ? 'whitespace-normal break-words' : 'truncate';
+          return (
+            <div key={item._id} className="flex items-center gap-3 py-3 cursor-pointer" onClick={() => setExpandedId(expanded ? null : item._id)}>
+              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${item.kind === 'expense' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
+                {item.kind === 'expense' ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className={`text-xs font-black text-neutral-900 sm:text-sm ${textCls}`}>{item.label || 'Operation'}</p>
+                <p className={`text-[11px] text-neutral-400 sm:text-xs ${textCls}`}>{sourceLabels[item.source] ?? item.category ?? 'Operation'} · {new Date(item.occurredAt).toLocaleDateString('fr-FR')}</p>
+              </div>
+              <p className={`shrink-0 text-xs font-black sm:text-sm ${item.kind === 'expense' ? 'text-red-600' : 'text-emerald-700'}`}>{formatFcfa(item.amount)}</p>
             </div>
-            <p className={`shrink-0 text-sm font-black ${item.kind === 'expense' ? 'text-red-600' : 'text-emerald-700'}`}>{formatFcfa(item.amount)}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );

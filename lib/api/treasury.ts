@@ -76,6 +76,7 @@ export interface TreasuryChartResponse {
   from: string;
   to: string;
   chart: TreasuryChartPoint[];
+  sources: { source: TreasurySource; amount: number }[];
 }
 
 export interface MembershipFeeProposal {

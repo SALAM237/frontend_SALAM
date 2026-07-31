@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart,
+  Bar, BarChart, CartesianGrid,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import {
@@ -31,7 +31,7 @@ import {
   type TreasuryTransaction,
 } from '@/lib/api/treasury';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
-import { TreasuryEvolutionChart } from '@/components/shared/TreasuryEvolutionChart';
+import { TreasuryEvolutionSection } from '@/components/shared/TreasuryEvolutionChart';
 
 type TabValue = 'overview' | 'income' | 'expense' | 'don' | 'assets';
 type FormMode = 'income' | 'expense' | 'don' | 'asset' | null;
@@ -370,23 +370,23 @@ export default function AdminTresoreriePage() {
           <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Tresorerie</h1>
           <p className="mt-1 text-sm text-neutral-500">Pilotage des encaissements, decaissements, dons, justificatifs et patrimoine.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={() => openForm(tab === 'expense' ? 'expense' : tab === 'don' ? 'don' : tab === 'assets' ? 'asset' : 'income')} className="inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-600 px-3 text-xs font-black text-white shadow-sm transition hover:bg-emerald-700">
-            <Plus size={14} /> {tab === 'expense' ? 'Ajouter depense' : tab === 'don' ? 'Ajouter don' : tab === 'assets' ? 'Ajouter patrimoine' : 'Ajouter encaissement'}
+        <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
+          <button onClick={() => openForm(tab === 'expense' ? 'expense' : tab === 'don' ? 'don' : tab === 'assets' ? 'asset' : 'income')} className="inline-flex h-8 items-center justify-center gap-1 rounded-lg bg-emerald-600 px-2 text-[10px] font-black text-white shadow-sm transition hover:bg-emerald-700 sm:h-9 sm:gap-2 sm:rounded-xl sm:px-3 sm:text-xs">
+            <Plus className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" /> <span className="truncate">{tab === 'expense' ? 'Ajouter depense' : tab === 'don' ? 'Ajouter don' : tab === 'assets' ? 'Ajouter patrimoine' : 'Ajouter encaissement'}</span>
           </button>
-          <button onClick={() => csvImportRef.current?.click()} className="inline-flex h-9 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-black text-emerald-700 transition hover:bg-emerald-100">
-            <FileSpreadsheet size={14} /> Importer CSV/XLSX
+          <button onClick={() => csvImportRef.current?.click()} className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 text-[10px] font-black text-emerald-700 transition hover:bg-emerald-100 sm:h-9 sm:gap-2 sm:rounded-xl sm:px-3 sm:text-xs">
+            <FileSpreadsheet className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" /> <span className="truncate">Importer CSV/XLSX</span>
           </button>
-          <button onClick={() => importRef.current?.click()} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700">
-            <FileUp size={14} /> Justificatif
+          <button onClick={() => importRef.current?.click()} className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 text-[10px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:h-9 sm:gap-2 sm:rounded-xl sm:px-3 sm:text-xs">
+            <FileUp className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" /> <span className="truncate">Import document PDF</span>
           </button>
-          <button onClick={exportCsv} className="inline-flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700">
-            <Download size={14} /> Exporter
+          <button onClick={exportCsv} className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 text-[10px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:h-9 sm:gap-2 sm:rounded-xl sm:px-3 sm:text-xs">
+            <Download className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" /> <span className="truncate">Exporter</span>
           </button>
-          <button onClick={() => setSettingsOpen(true)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700" title="Parametres tresorerie">
-            <Settings2 size={15} />
+          <button onClick={() => setSettingsOpen(true)} className="col-span-2 flex h-8 items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white text-[10px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:col-auto sm:h-9 sm:w-9 sm:rounded-xl sm:text-xs" title="Parametres tresorerie">
+            <Settings2 className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" /> <span className="sm:hidden">Parametres</span>
           </button>
-          <input ref={importRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden" onChange={e => handleImport(e.target.files?.[0])} />
+          <input ref={importRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.heic,.doc,.docx,.xls,.xlsx,.txt" className="hidden" onChange={e => handleImport(e.target.files?.[0])} />
           <input ref={csvImportRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => handleImport(e.target.files?.[0])} />
         </div>
       </div>
@@ -458,37 +458,15 @@ export default function AdminTresoreriePage() {
 
       {tab === 'overview' && (
         <div className="space-y-5">
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Card className="lg:col-span-2">
-              <TreasuryEvolutionChart admin defaultChart={data?.chart ?? []} loading={overview.isLoading} gradientId="adminTreasury" />
-            </Card>
-
-            <Card>
-              <CardTitle title="Sources financieres" />
-              <div className="h-[210px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={sourceData} dataKey="amount" nameKey="source" innerRadius={56} outerRadius={84} paddingAngle={4}>
-                      {sourceData.map((_, i) => <Cell key={i} fill={sourceColors[i % sourceColors.length]} />)}
-                    </Pie>
-                    <Tooltip formatter={v => formatFcfa(Number(v ?? 0))} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-1 space-y-2">
-                {sourceData.length === 0 && <p className="text-xs font-semibold text-neutral-400">Aucune source renseignee.</p>}
-                {sourceData.map((source, i) => (
-                  <div key={source.source} className="flex items-center justify-between gap-3 text-xs">
-                    <span className="flex min-w-0 items-center gap-2 font-semibold text-neutral-500">
-                      <i className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: sourceColors[i % sourceColors.length] }} />
-                      <span className="truncate">{sourceLabels[source.source]}</span>
-                    </span>
-                    <b className="shrink-0 text-neutral-900">{formatFcfa(source.amount)}</b>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
+          <TreasuryEvolutionSection
+            admin
+            defaultChart={data?.chart ?? []}
+            defaultSources={sourceData}
+            loading={overview.isLoading}
+            gradientId="adminTreasury"
+            sourceLabels={sourceLabels}
+            sourceColors={sourceColors}
+          />
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
@@ -660,32 +638,32 @@ function ListToolbar({ search, onSearchChange, pageSize, onPageSizeChange }: {
   onPageSizeChange: (v: number) => void;
 }) {
   return (
-    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div className="relative sm:max-w-xs sm:flex-1">
-        <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+    <div className="mb-3 flex items-end gap-2">
+      <div className="relative min-w-0 flex-1 sm:max-w-xs lg:max-w-md">
+        <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 sm:left-3" />
         <input
           value={search}
           onChange={e => onSearchChange(e.target.value)}
           placeholder="Rechercher..."
-          className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-8 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+          className="h-8 w-full rounded-lg border border-neutral-200 bg-white pl-7 pr-7 text-xs outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:rounded-xl sm:pl-9 sm:pr-8 sm:text-sm"
         />
         {search && (
           <button
             type="button"
             onClick={() => onSearchChange('')}
             title="Effacer la recherche"
-            className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600"
+            className="absolute right-2 top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 sm:right-2.5 sm:h-5 sm:w-5"
           >
-            <X size={13} />
+            <X size={11} />
           </button>
         )}
       </div>
-      <label className="flex shrink-0 items-center gap-2 text-xs font-semibold text-neutral-500">
-        Lignes par page
+      <label className="flex shrink-0 flex-col gap-1">
+        <span className="text-[9px] font-black uppercase tracking-[0.06em] text-neutral-500 sm:text-[10px]">Lignes par page</span>
         <select
           value={pageSize}
           onChange={e => onPageSizeChange(Number(e.target.value))}
-          className="h-9 rounded-xl border border-neutral-200 bg-white px-2 text-sm font-bold text-neutral-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+          className="h-8 w-14 rounded-lg border border-neutral-200 bg-white px-1.5 text-xs font-bold text-neutral-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-16 sm:rounded-xl sm:px-2 sm:text-sm"
         >
           {PAGE_SIZE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
         </select>
@@ -697,6 +675,7 @@ function ListToolbar({ search, onSearchChange, pageSize, onPageSizeChange }: {
 function TransactionList({ title, items, kind, loading, onDelete, deletingId }: { title: string; items: TreasuryTransaction[]; kind?: TreasuryKind; loading?: boolean; onDelete?: (id: string) => void; deletingId?: string }) {
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = kind ? items.filter(i => i.kind === kind) : items;
   const q = search.trim().toLowerCase();
@@ -718,47 +697,54 @@ function TransactionList({ title, items, kind, loading, onDelete, deletingId }: 
             {q ? 'Aucun resultat pour cette recherche.' : 'Aucune donnee pour le moment.'}
           </p>
         )}
-        {visible.map(item => (
-          <div key={item._id} className="flex items-center gap-3 py-3">
-            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${item.kind === 'expense' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
-              {item.kind === 'expense' ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <p className="truncate text-sm font-black text-neutral-900">{item.label || 'Operation'}</p>
+        {visible.map(item => {
+          const expanded = expandedId === item._id;
+          const textCls = expanded ? 'whitespace-normal break-words' : 'truncate';
+          return (
+            <div key={item._id} className="flex items-center gap-3 py-3 cursor-pointer" onClick={() => setExpandedId(expanded ? null : item._id)}>
+              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${item.kind === 'expense' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
+                {item.kind === 'expense' ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <p className={`text-xs font-black text-neutral-900 sm:text-sm ${textCls}`}>{item.label || 'Operation'}</p>
+                </div>
+                <p className={`text-[11px] text-neutral-400 sm:text-xs ${textCls}`}>{sourceLabels[item.source] ?? item.category ?? 'Operation'} - {new Date(item.occurredAt).toLocaleDateString('fr-FR')}</p>
+                {item.description && <p className={`mt-0.5 text-[11px] italic text-neutral-400 sm:text-xs ${textCls}`}>{item.description}</p>}
               </div>
-              <p className="truncate text-xs text-neutral-400">{sourceLabels[item.source] ?? item.category ?? 'Operation'} - {new Date(item.occurredAt).toLocaleDateString('fr-FR')}</p>
-              {item.description && <p className="truncate text-xs italic text-neutral-400 mt-0.5">{item.description}</p>}
+              <p className={`shrink-0 text-xs font-black sm:text-sm ${item.kind === 'expense' ? 'text-red-600' : 'text-emerald-700'}`}>{formatFcfa(item.amount)}</p>
+              {onDelete && (
+                isFacturationManaged(item.source) ? (
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation();
+                      toast.info('Suppression indisponible ici', {
+                        description: `"${item.label || 'Cette operation'}" est gere depuis Facturation. Pour la supprimer, rendez-vous dans l'onglet Facturation -> Recus de paiement et supprimez le recu correspondant a ce membre.`,
+                        duration: 8000,
+                        closeButton: true,
+                      });
+                    }}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-neutral-100 bg-neutral-50 text-neutral-300 transition hover:border-neutral-200 hover:text-neutral-400"
+                    title="Suppression via Facturation"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); onDelete(item._id); }}
+                    disabled={deletingId === item._id}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-500 transition hover:bg-red-500 hover:text-white disabled:opacity-50"
+                    title="Supprimer"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )
+              )}
             </div>
-            <p className={`shrink-0 text-sm font-black ${item.kind === 'expense' ? 'text-red-600' : 'text-emerald-700'}`}>{formatFcfa(item.amount)}</p>
-            {onDelete && (
-              isFacturationManaged(item.source) ? (
-                <button
-                  type="button"
-                  onClick={() => toast.info('Suppression indisponible ici', {
-                    description: `"${item.label || 'Cette operation'}" est gere depuis Facturation. Pour la supprimer, rendez-vous dans l'onglet Facturation -> Recus de paiement et supprimez le recu correspondant a ce membre.`,
-                    duration: 8000,
-                    closeButton: true,
-                  })}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-neutral-100 bg-neutral-50 text-neutral-300 transition hover:border-neutral-200 hover:text-neutral-400"
-                  title="Suppression via Facturation"
-                >
-                  <Trash2 size={13} />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onDelete(item._id)}
-                  disabled={deletingId === item._id}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-500 transition hover:bg-red-500 hover:text-white disabled:opacity-50"
-                  title="Supprimer"
-                >
-                  <Trash2 size={13} />
-                </button>
-              )
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
       {searched.length > pageSize && (
         <p className="mt-3 text-center text-xs font-semibold text-neutral-400">
