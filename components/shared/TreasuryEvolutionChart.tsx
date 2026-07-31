@@ -15,11 +15,19 @@ type ChartPoint = { label: string; income: number; expense: number };
 type SourcePoint = { source: TreasurySource; amount: number };
 
 const CURRENT_YEAR = new Date().getFullYear();
-const YEAR_OPTIONS = Array.from({ length: 12 }).map((_, i) => CURRENT_YEAR - i);
-const MONTH_LABELS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+const MIN_YEAR = 2010;
+const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - MIN_YEAR + 1 }).map((_, i) => CURRENT_YEAR - i);
 
-const selectCls = 'h-7 rounded-lg border border-neutral-200 bg-white px-1.5 text-[10px] font-semibold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:rounded-xl sm:px-2.5 sm:text-xs';
+const selectCls = 'h-7 w-full rounded-lg border border-neutral-200 bg-white px-1.5 text-[10px] font-semibold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-24 sm:rounded-xl sm:px-2.5 sm:text-xs';
+const monthInputCls = 'h-7 w-full rounded-lg border border-neutral-200 bg-white px-1.5 text-[10px] font-semibold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:h-9 sm:w-32 sm:rounded-xl sm:px-2.5 sm:text-xs';
 const labelCls = 'text-[9px] font-black uppercase tracking-[0.08em] text-neutral-500 sm:text-[10px]';
+
+function monthInputToIso(value: string, boundary: 'start' | 'end') {
+  const [y, m] = value.split('-').map(Number);
+  if (!y || !m) return null;
+  const d = boundary === 'start' ? new Date(y, m - 1, 1) : new Date(y, m, 0);
+  return d.toISOString().slice(0, 10);
+}
 
 export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, loading = false, gradientId, sourceLabels, sourceColors }: {
   admin: boolean;
@@ -31,12 +39,11 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
   sourceColors: string[];
 }) {
   const now = new Date();
+  const currentMonthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [open, setOpen] = useState(false);
   const [granularity, setGranularity] = useState<TreasuryChartGranularity>('month');
-  const [mFromMonth, setMFromMonth] = useState(String(now.getMonth()));
-  const [mFromYear, setMFromYear] = useState(String(now.getFullYear()));
-  const [mToMonth, setMToMonth] = useState(String(now.getMonth()));
-  const [mToYear, setMToYear] = useState(String(now.getFullYear()));
+  const [mFrom, setMFrom] = useState(currentMonthValue);
+  const [mTo, setMTo] = useState(currentMonthValue);
   const [yFrom, setYFrom] = useState(String(CURRENT_YEAR - 1));
   const [yTo, setYTo] = useState(String(CURRENT_YEAR));
   const [filter, setFilter] = useState<TreasuryChartFilter | null>(null);
@@ -47,14 +54,18 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
   const isBusy = filter ? chartQuery.isLoading : loading;
 
   const applyFilter = () => {
-    let from: string;
-    let to: string;
+    let from: string | null;
+    let to: string | null;
     if (granularity === 'month') {
-      from = new Date(Number(mFromYear), Number(mFromMonth), 1).toISOString().slice(0, 10);
-      to = new Date(Number(mToYear), Number(mToMonth) + 1, 0).toISOString().slice(0, 10);
+      from = monthInputToIso(mFrom, 'start');
+      to = monthInputToIso(mTo, 'end');
     } else {
       from = new Date(Number(yFrom), 0, 1).toISOString().slice(0, 10);
       to = new Date(Number(yTo), 11, 31).toISOString().slice(0, 10);
+    }
+    if (!from || !to) {
+      toast.error('Renseignez une periode de debut et de fin.');
+      return;
     }
     if (from > to) {
       toast.error('La periode de debut doit preceder la periode de fin.');
@@ -125,38 +136,24 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
                 <>
                   <div className="min-w-0 space-y-1">
                     <span className={labelCls}>De</span>
-                    <div className="flex min-w-0 gap-1">
-                      <select value={mFromMonth} onChange={e => setMFromMonth(e.target.value)} className={`${selectCls} w-0 min-w-0 flex-1 sm:w-auto sm:flex-none`}>
-                        {MONTH_LABELS.map((m, i) => <option key={m} value={i}>{m}</option>)}
-                      </select>
-                      <select value={mFromYear} onChange={e => setMFromYear(e.target.value)} className={`${selectCls} w-14 shrink-0 sm:w-20`}>
-                        {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
-                      </select>
-                    </div>
+                    <input type="month" value={mFrom} min={`${MIN_YEAR}-01`} max={currentMonthValue} onChange={e => setMFrom(e.target.value)} className={monthInputCls} />
                   </div>
                   <div className="min-w-0 space-y-1">
                     <span className={labelCls}>À</span>
-                    <div className="flex min-w-0 gap-1">
-                      <select value={mToMonth} onChange={e => setMToMonth(e.target.value)} className={`${selectCls} w-0 min-w-0 flex-1 sm:w-auto sm:flex-none`}>
-                        {MONTH_LABELS.map((m, i) => <option key={m} value={i}>{m}</option>)}
-                      </select>
-                      <select value={mToYear} onChange={e => setMToYear(e.target.value)} className={`${selectCls} w-14 shrink-0 sm:w-20`}>
-                        {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
-                      </select>
-                    </div>
+                    <input type="month" value={mTo} min={`${MIN_YEAR}-01`} max={currentMonthValue} onChange={e => setMTo(e.target.value)} className={monthInputCls} />
                   </div>
                 </>
               ) : (
                 <>
                   <div className="min-w-0 space-y-1">
                     <span className={labelCls}>De</span>
-                    <select value={yFrom} onChange={e => setYFrom(e.target.value)} className={`${selectCls} w-full sm:w-24`}>
+                    <select value={yFrom} onChange={e => setYFrom(e.target.value)} className={selectCls}>
                       {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                   </div>
                   <div className="min-w-0 space-y-1">
                     <span className={labelCls}>À</span>
-                    <select value={yTo} onChange={e => setYTo(e.target.value)} className={`${selectCls} w-full sm:w-24`}>
+                    <select value={yTo} onChange={e => setYTo(e.target.value)} className={selectCls}>
                       {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                   </div>

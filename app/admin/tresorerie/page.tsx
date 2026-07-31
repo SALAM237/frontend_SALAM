@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import {
@@ -106,7 +106,12 @@ export default function AdminTresoreriePage() {
   const [feeReason, setFeeReason] = useState('');
   const importRef    = useRef<HTMLInputElement>(null);
   const csvImportRef = useRef<HTMLInputElement>(null);
+  const settingsRef  = useRef<HTMLDivElement>(null);
   const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
+
+  useEffect(() => {
+    if (settingsOpen) settingsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [settingsOpen]);
 
   const overview = useTreasuryOverview(true);
   const income = useTreasuryTransactions('income', true);
@@ -366,25 +371,33 @@ export default function AdminTresoreriePage() {
   return (
     <div className="mx-auto max-w-7xl space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Tresorerie</h1>
-          <p className="mt-1 text-sm text-neutral-500">Pilotage des encaissements, decaissements, dons, justificatifs et patrimoine.</p>
+          <p className="mt-1 text-sm text-neutral-500 sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap sm:text-[clamp(0.625rem,1.1vw,0.875rem)]">Pilotage des encaissements, decaissements, dons, justificatifs et patrimoine.</p>
         </div>
-        <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
-          <button onClick={() => openForm(tab === 'expense' ? 'expense' : tab === 'don' ? 'don' : tab === 'assets' ? 'asset' : 'income')} className="inline-flex h-8 items-center justify-center gap-1 rounded-lg bg-emerald-600 px-2 text-[10px] font-black text-white shadow-sm transition hover:bg-emerald-700 sm:h-9 sm:gap-2 sm:rounded-xl sm:px-3 sm:text-xs">
-            <Plus className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" /> <span className="truncate">{tab === 'expense' ? 'Ajouter depense' : tab === 'don' ? 'Ajouter don' : tab === 'assets' ? 'Ajouter patrimoine' : 'Ajouter encaissement'}</span>
+        <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:gap-1.5 lg:flex-nowrap">
+          {tab !== 'overview' && (
+            <button onClick={() => openForm(tab === 'expense' ? 'expense' : tab === 'don' ? 'don' : tab === 'assets' ? 'asset' : 'income')} className="inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-emerald-600 px-2 text-[10px] font-black text-white shadow-sm transition hover:bg-emerald-700 sm:h-8 sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px]">
+              <Plus className="h-3 w-3 shrink-0" /> <span className="truncate">{tab === 'expense' ? 'Ajouter depense' : tab === 'don' ? 'Ajouter don' : tab === 'assets' ? 'Ajouter patrimoine' : 'Ajouter encaissement'}</span>
+            </button>
+          )}
+          <button onClick={() => csvImportRef.current?.click()} className="inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-emerald-200 bg-emerald-50 px-2 text-[10px] font-black text-emerald-700 transition hover:bg-emerald-100 sm:h-8 sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px]">
+            <FileSpreadsheet className="h-3 w-3 shrink-0" />
+            <span className="sm:hidden">CSV/XLSX</span>
+            <span className="hidden sm:inline">Importer CSV/XLSX</span>
           </button>
-          <button onClick={() => csvImportRef.current?.click()} className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 text-[10px] font-black text-emerald-700 transition hover:bg-emerald-100 sm:h-9 sm:gap-2 sm:rounded-xl sm:px-3 sm:text-xs">
-            <FileSpreadsheet className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" /> <span className="truncate">Importer CSV/XLSX</span>
+          <button onClick={() => importRef.current?.click()} className="inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-neutral-200 bg-white px-2 text-[10px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:h-8 sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px]">
+            <FileUp className="h-3 w-3 shrink-0" />
+            <span className="sm:hidden">PDF</span>
+            <span className="hidden sm:inline">Import document PDF</span>
           </button>
-          <button onClick={() => importRef.current?.click()} className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 text-[10px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:h-9 sm:gap-2 sm:rounded-xl sm:px-3 sm:text-xs">
-            <FileUp className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" /> <span className="truncate">Import document PDF</span>
+          <button onClick={exportCsv} className="inline-flex h-8 items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-neutral-200 bg-white px-2 text-[10px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:h-8 sm:gap-1 sm:rounded-lg sm:px-2 sm:text-[11px]">
+            <Download className="h-3 w-3 shrink-0" />
+            <span className="sm:hidden">Export</span>
+            <span className="hidden sm:inline">Exporter</span>
           </button>
-          <button onClick={exportCsv} className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 text-[10px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:h-9 sm:gap-2 sm:rounded-xl sm:px-3 sm:text-xs">
-            <Download className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" /> <span className="truncate">Exporter</span>
-          </button>
-          <button onClick={() => setSettingsOpen(true)} className="col-span-2 flex h-8 items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white text-[10px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:col-auto sm:h-9 sm:w-9 sm:rounded-xl sm:text-xs" title="Parametres tresorerie">
-            <Settings2 className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" /> <span className="sm:hidden">Parametres</span>
+          <button onClick={() => setSettingsOpen(true)} className="col-span-2 flex h-8 items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white text-[10px] font-black text-neutral-600 transition hover:border-emerald-200 hover:text-emerald-700 sm:col-auto sm:h-8 sm:w-8 sm:shrink-0 sm:rounded-lg sm:text-[11px]" title="Parametres tresorerie">
+            <Settings2 className="h-3 w-3 shrink-0" /> <span className="sm:hidden">Parametres</span>
           </button>
           <input ref={importRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.heic,.doc,.docx,.xls,.xlsx,.txt" className="hidden" onChange={e => handleImport(e.target.files?.[0])} />
           <input ref={csvImportRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => handleImport(e.target.files?.[0])} />
@@ -405,6 +418,7 @@ export default function AdminTresoreriePage() {
       )}
 
       {settingsOpen && (
+        <div ref={settingsRef}>
         <FormPanel title="Parametres tresorerie" onClose={() => setSettingsOpen(false)}>
           <div className="grid gap-4 lg:grid-cols-[1fr_420px] lg:items-end">
             <div>
@@ -425,6 +439,7 @@ export default function AdminTresoreriePage() {
             </div>
           </div>
         </FormPanel>
+        </div>
       )}
 
       {formMode && (
@@ -580,16 +595,16 @@ function Kpi({ icon: Icon, label, value, sub, tone }: { icon: React.ElementType;
   const [amount, currency] = value.split(' F.CFA');
 
   return (
-    <div className="min-h-[118px] rounded-xl border border-neutral-200/70 bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500">{label}</span>
-        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${cls}`}><Icon size={14} /></span>
+    <div className="min-h-[100px] overflow-hidden rounded-xl border border-neutral-200/70 bg-white p-3 shadow-sm sm:min-h-[118px] sm:p-4">
+      <div className="flex items-center justify-between gap-1.5">
+        <span className="min-w-0 flex-1 text-[9px] font-bold uppercase tracking-[0.08em] text-neutral-500 sm:text-[10px] sm:tracking-[0.12em]">{label}</span>
+        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full sm:h-7 sm:w-7 ${cls}`}><Icon size={13} /></span>
       </div>
-      <p className="mt-3 tracking-[-0.04em]">
-        <span className="text-2xl font-black text-neutral-900">{amount}</span>
-        {currency !== undefined && <span className="ml-1 text-[11px] font-medium tracking-normal text-neutral-500">F.CFA</span>}
+      <p className="mt-2 flex flex-wrap items-baseline gap-x-1 tracking-[-0.04em] sm:mt-3">
+        <span className="break-words text-base font-black text-neutral-900 sm:text-2xl">{amount}</span>
+        {currency !== undefined && <span className="text-[10px] font-medium tracking-normal text-neutral-500 sm:text-[11px]">F.CFA</span>}
       </p>
-      {sub && <p className="mt-1 text-[10px] font-semibold text-neutral-400">{sub}</p>}
+      {sub && <p className="mt-1 text-[9px] font-semibold text-neutral-400 sm:text-[10px]">{sub}</p>}
     </div>
   );
 }
@@ -658,7 +673,7 @@ function ListToolbar({ search, onSearchChange, pageSize, onPageSizeChange }: {
           </button>
         )}
       </div>
-      <label className="flex shrink-0 flex-col gap-1">
+      <label className="ml-auto flex shrink-0 flex-col gap-1">
         <span className="text-[9px] font-black uppercase tracking-[0.06em] text-neutral-500 sm:text-[10px]">Lignes par page</span>
         <select
           value={pageSize}

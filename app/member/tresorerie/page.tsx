@@ -244,16 +244,16 @@ function Kpi({ icon: Icon, label, value, sub, tone }: { icon: React.ElementType;
   const [amount, currency] = value.split(' F.CFA');
 
   return (
-    <div className="min-h-[118px] rounded-xl border border-neutral-200/70 bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500">{label}</span>
-        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${cls}`}><Icon size={14} /></span>
+    <div className="min-h-[100px] overflow-hidden rounded-xl border border-neutral-200/70 bg-white p-3 shadow-sm sm:min-h-[118px] sm:p-4">
+      <div className="flex items-center justify-between gap-1.5">
+        <span className="min-w-0 flex-1 text-[9px] font-bold uppercase tracking-[0.08em] text-neutral-500 sm:text-[10px] sm:tracking-[0.12em]">{label}</span>
+        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full sm:h-7 sm:w-7 ${cls}`}><Icon size={13} /></span>
       </div>
-      <p className="mt-3 tracking-[-0.04em]">
-        <span className="text-2xl font-black text-neutral-900">{amount}</span>
-        {currency !== undefined && <span className="ml-1 text-[11px] font-medium tracking-normal text-neutral-500">F.CFA</span>}
+      <p className="mt-2 flex flex-wrap items-baseline gap-x-1 tracking-[-0.04em] sm:mt-3">
+        <span className="break-words text-base font-black text-neutral-900 sm:text-2xl">{amount}</span>
+        {currency !== undefined && <span className="text-[10px] font-medium tracking-normal text-neutral-500 sm:text-[11px]">F.CFA</span>}
       </p>
-      {sub && <p className="mt-1 text-[10px] font-semibold text-neutral-400">{sub}</p>}
+      {sub && <p className="mt-1 text-[9px] font-semibold text-neutral-400 sm:text-[10px]">{sub}</p>}
     </div>
   );
 }
