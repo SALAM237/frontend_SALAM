@@ -51,7 +51,7 @@ function humanizeAction(action: string) {
   return action.replace(/[._]/g, ' ');
 }
 
-function MemberFilterButton({ selectedIds, onChange }: { selectedIds: string[]; onChange: (ids: string[]) => void }) {
+function MemberFilterButton({ selectedIds, onChange }: { selectedIds: string[]; onChange: (ids: string[], labels: string[]) => void }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   // Selection brouillon — les cases cochées ne s'appliquent qu'au clic sur
@@ -86,13 +86,14 @@ function MemberFilterButton({ selectedIds, onChange }: { selectedIds: string[]; 
   };
 
   const handleApply = () => {
-    onChange(draft);
+    const labels = members.filter(m => draft.includes(m._id)).map(m => formatFullName(m.firstName, m.lastName));
+    onChange(draft, labels);
     setOpen(false);
   };
 
   const handleReset = () => {
     setDraft([]);
-    onChange([]);
+    onChange([], []);
     setOpen(false);
   };
 
@@ -176,11 +177,20 @@ export default function UserLogsPage() {
   const [search, setSearch] = useState('');
   const [eventType, setEventType] = useState('all');
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [selectedMemberLabels, setSelectedMemberLabels] = useState<string[]>([]);
 
   const activityQuery = useUserActivityLogs({ page, limit: pageSize, search, eventType, userIds: selectedUserIds });
   const auditQuery = useUserAuditLogs({ page, limit: pageSize, search, userIds: selectedUserIds });
 
-  const changeMemberFilter = (ids: string[]) => { setSelectedUserIds(ids); setPage(1); };
+  const changeMemberFilter = (ids: string[], labels: string[]) => {
+    setSelectedUserIds(ids);
+    setSelectedMemberLabels(labels);
+    setPage(1);
+  };
+
+  const memberFilterEmptyLabel = selectedMemberLabels.length > 0
+    ? `Aucun résultat pour ${selectedMemberLabels.join(', ')}`
+    : null;
 
   if (user?.email !== ALLOWED_EMAIL) {
     return (
@@ -237,7 +247,9 @@ export default function UserLogsPage() {
           <div className="divide-y divide-neutral-50">
             {activityQuery.isLoading && <p className="py-8 text-center text-sm text-neutral-400">Chargement…</p>}
             {activityQuery.isError && <p className="py-8 text-center text-sm text-red-500">Erreur de chargement.</p>}
-            {!activityQuery.isLoading && activityLogs.length === 0 && <p className="py-8 text-center text-sm text-neutral-400">Aucune activité.</p>}
+            {!activityQuery.isLoading && activityLogs.length === 0 && (
+              <p className="py-8 text-center text-sm text-neutral-400">{memberFilterEmptyLabel ?? 'Aucune activité.'}</p>
+            )}
             {activityLogs.map((log: UserActivityLogDoc) => {
               const { date, time } = fmt(log.createdAt);
               return (
@@ -293,7 +305,9 @@ export default function UserLogsPage() {
           <div className="divide-y divide-neutral-50">
             {auditQuery.isLoading && <p className="py-8 text-center text-sm text-neutral-400">Chargement…</p>}
             {auditQuery.isError && <p className="py-8 text-center text-sm text-red-500">Erreur de chargement.</p>}
-            {!auditQuery.isLoading && auditLogs.length === 0 && <p className="py-8 text-center text-sm text-neutral-400">Aucune entrée.</p>}
+            {!auditQuery.isLoading && auditLogs.length === 0 && (
+              <p className="py-8 text-center text-sm text-neutral-400">{memberFilterEmptyLabel ?? 'Aucune entrée.'}</p>
+            )}
             {auditLogs.map((log: UserAuditLogDoc) => {
               const { date, time } = fmt(log.createdAt);
               return (
