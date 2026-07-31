@@ -33,6 +33,8 @@ export function useAnalyticsOverview(days = 30) {
     queryKey: ['analytics-overview', days],
     queryFn: () => apiClient<AnalyticsOverview>(`/api/v1/admin/analytics/overview?days=${days}`, { token: token ?? '' }),
     enabled: !!token,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -48,5 +50,7 @@ export function useAnalyticsActivity(params: { page: number; limit: number; sear
     queryKey: ['analytics-activity', params.page, params.limit, params.search, params.eventType],
     queryFn: () => apiClient<PagedResult<AnalyticsActivityRow>>(`/api/v1/admin/analytics/activity?${qs.toString()}`, { token: token ?? '' }),
     enabled: !!token,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 }

@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useUserActivityLogs, useUserAuditLogs, type UserActivityLogDoc, type UserAuditLogDoc } from '@/lib/api/user-logs';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { ListToolbar } from '@/components/shared/ListToolbar';
+import { formatPageUrl } from '@/lib/format-url';
 
 const ALLOWED_EMAIL = 'salamcameroun237@gmail.com';
 
@@ -121,7 +122,7 @@ export default function UserLogsPage() {
                       <span className="text-xs text-neutral-400">{log.userEmail}</span>
                     </div>
                     <p className="mt-0.5 text-xs text-neutral-500">
-                      {log.eventType === 'page_view' ? `Page : ${log.path ?? '—'}` : log.eventType === 'login' ? 'Connexion' : 'Déconnexion'}
+                      {log.eventType === 'page_view' ? `Page : ${log.path ? formatPageUrl(log.path) : '—'}` : log.eventType === 'login' ? 'Connexion' : 'Déconnexion'}
                       {log.method && ` · ${log.method}`}
                       {log.statusCode && ` · ${log.statusCode}`}
                     </p>

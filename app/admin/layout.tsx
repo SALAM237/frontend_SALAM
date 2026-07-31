@@ -29,7 +29,7 @@ import { useAdminStats } from '@/lib/api/dashboard';
 import { useNotifications } from '@/lib/api/notifications';
 
 const ERRORS_ALLOWED_EMAILS = ['salamcameroun237@gmail.com', 'vicklionel@yahoo.fr'];
-const USER_LOG_ALLOWED_EMAIL = 'salamcameroun237@gmail.com';
+const SENSITIVE_ANALYTICS_ALLOWED_EMAIL = 'salamcameroun237@gmail.com';
 type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; adminOnly?: boolean; permissions?: string[]; hidden?: boolean; allowedEmails?: string[]; emailOnly?: string[] };
 
 const BASE_NAV: NavItem[] = [
@@ -50,8 +50,8 @@ const BASE_NAV: NavItem[] = [
   { label: 'IDP/ISP',           href: '/admin/idp-isp',           icon: Target },
   { label: 'Validations',       href: '/admin/validations',       icon: ShieldCheck, permissions: ['content.publish', 'gallery.publish', 'networking.publish', 'opportunities.publish'] },
   { label: 'Historique',        href: '/admin/historique',        icon: History },
-  { label: 'Analytics',         href: '/admin/analytics',         icon: BarChart3, adminOnly: true },
-  { label: 'User Log',          href: '/admin/user-logs',         icon: Eye, emailOnly: [USER_LOG_ALLOWED_EMAIL] },
+  { label: 'Analytics',         href: '/admin/analytics',         icon: BarChart3, emailOnly: [SENSITIVE_ANALYTICS_ALLOWED_EMAIL] },
+  { label: 'User Log',          href: '/admin/user-logs',         icon: Eye, emailOnly: [SENSITIVE_ANALYTICS_ALLOWED_EMAIL] },
   { label: 'Gestion Erreurs',   href: '/admin/erreurs',           icon: AlertTriangle, allowedEmails: ERRORS_ALLOWED_EMAILS },
   { label: 'Rôles & Accès',     href: '/admin/roles',             icon: Shield, superAdminOnly: true },
   { label: 'Bureau',            href: '/admin/bureau',            icon: Users },
@@ -332,6 +332,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/bureau-executif/connexion');
   };
 
+  const isSensitiveAnalyticsPage = pathname === '/admin/analytics' || pathname.startsWith('/admin/user-logs');
+  const canAccessSensitiveAnalytics = String(user?.email ?? '').trim().toLowerCase() === SENSITIVE_ANALYTICS_ALLOWED_EMAIL;
+
+  useEffect(() => {
+    if (!restoring && isSensitiveAnalyticsPage && !canAccessSensitiveAnalytics) {
+      router.replace('/admin/dashboard');
+    }
+  }, [restoring, isSensitiveAnalyticsPage, canAccessSensitiveAnalytics, router]);
+
   // Ecran de chargement pendant la restauration de session
   if (restoring) {
     return (
@@ -348,8 +357,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (n.adminOnly && !hasAdminRole(user)) return false;
     if (n.permissions && !hasAnyPermission(user, n.permissions)) return false;
     if (n.allowedEmails && !SA && !n.allowedEmails.includes(user?.email ?? '')) return false;
-    // emailOnly : aucun contournement super-admin — reserve a un email exact (User Log).
-    if (n.emailOnly && !n.emailOnly.includes(user?.email ?? '')) return false;
+    // emailOnly : aucun contournement super-admin - reserve a un email exact.
+    if (n.emailOnly && !n.emailOnly.includes(String(user?.email ?? '').trim().toLowerCase())) return false;
     return true;
   });
 
@@ -431,3 +440,5 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 }
+
+

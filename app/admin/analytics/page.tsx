@@ -7,6 +7,7 @@ import {
 import { Activity, Eye, Laptop, Monitor, Smartphone, Tablet, Users } from 'lucide-react';
 import { useAnalyticsOverview, useAnalyticsActivity, type AnalyticsActivityRow } from '@/lib/api/analytics';
 import { ListToolbar } from '@/components/shared/ListToolbar';
+import { formatPageUrl } from '@/lib/format-url';
 
 const CATEGORY_COLORS = ['#059669', '#2563eb', '#f59e0b', '#7c3aed', '#dc2626', '#0f766e', '#64748b'];
 
@@ -147,7 +148,7 @@ export default function AnalyticsPage() {
           <p className="mb-4 text-sm font-black text-neutral-900">Pages les plus visitées</p>
           {topPages.length === 0 && <p className="text-xs font-semibold text-neutral-400">Aucune donnée.</p>}
           <div className="space-y-3">
-            {topPages.map(p => <RankRow key={p.path} label={p.path} value={p.count} max={maxPage} />)}
+            {topPages.map(p => <RankRow key={p.path} label={formatPageUrl(p.path)} value={p.count} max={maxPage} />)}
           </div>
         </section>
         <section className="rounded-xl border border-neutral-200/70 bg-white p-5 shadow-sm">
@@ -185,7 +186,7 @@ export default function AnalyticsPage() {
             <div key={log._id} className="flex items-center gap-3 py-2.5">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500"><DeviceIcon type={log.device?.type} /></span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-black text-neutral-900">{log.path ?? log.eventType}</p>
+                <p className="truncate text-xs font-black text-neutral-900">{log.path ? formatPageUrl(log.path) : log.eventType}</p>
                 <p className="truncate text-[11px] text-neutral-400">{log.userName ?? 'Utilisateur'} · {log.device?.browser ?? '—'}</p>
               </div>
               <p className="shrink-0 text-[11px] font-semibold text-neutral-400">{new Date(log.createdAt).toLocaleDateString('fr-FR')}</p>

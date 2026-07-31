@@ -54,6 +54,8 @@ export function useUserActivityLogs(params: { page: number; limit: number; searc
     queryKey: ['user-logs-activity', params.page, params.limit, params.search, params.eventType],
     queryFn: () => apiClient<PagedResult<UserActivityLogDoc>>(`/api/v1/admin/user-logs/activity?${qs.toString()}`, { token: token ?? '' }),
     enabled: !!token,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -68,5 +70,7 @@ export function useUserAuditLogs(params: { page: number; limit: number; search?:
     queryKey: ['user-logs-audit', params.page, params.limit, params.search],
     queryFn: () => apiClient<PagedResult<UserAuditLogDoc>>(`/api/v1/admin/user-logs/audit?${qs.toString()}`, { token: token ?? '' }),
     enabled: !!token,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 }
