@@ -34,6 +34,7 @@ import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { TreasuryEvolutionSection } from '@/components/shared/TreasuryEvolutionChart';
 import { RecoveryRateBlock } from '@/components/shared/RecoveryRateBlock';
 import { ListToolbar } from '@/components/shared/ListToolbar';
+import { downloadCsv } from '@/lib/csv-export';
 
 type TabValue = 'overview' | 'income' | 'expense' | 'don' | 'assets';
 type FormMode = 'income' | 'expense' | 'don' | 'asset' | null;
@@ -347,15 +348,7 @@ export default function AdminTresoreriePage() {
           description: item.description ?? '',
         }));
 
-    const header = Object.keys(rows[0] ?? { export: 'Aucune donnee' });
-    const csv = [header.join(';'), ...rows.map(row => header.map(key => String((row as any)[key] ?? '').replace(/;/g, ',')).join(';'))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `salam-tresorerie-${tab}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(`salam-tresorerie-${tab}.csv`, rows);
   };
 
   if (overview.isError) {

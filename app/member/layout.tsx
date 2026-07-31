@@ -12,6 +12,7 @@ import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, me
 import MemberAccountTabs, { isMemberAccountPath } from '@/components/member/MemberAccountTabs';
 import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
 import { PdfLogoSync } from '@/components/shared/PdfLogoSync';
+import { RouteChangeTracker } from '@/components/shared/RouteChangeTracker';
 import { NotificationCenter } from '@/components/portal/NotificationCenter';
 import { CauriBadge } from '@/components/member/CauriWallet';
 import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
@@ -274,6 +275,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
     <div className="flex min-h-screen bg-[#f4f6f5]">
       <AuthSessionKeeper />
       <PdfLogoSync />
+      <RouteChangeTracker />
       <GlobalProfilePhotoLightbox />
       <MemberSidebar
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}

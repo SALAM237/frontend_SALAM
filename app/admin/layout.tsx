@@ -20,6 +20,7 @@ import { memberAvatarBorderClass, memberAvatarRingClass, memberInitialsClass, me
 import AdminAccountTabs from '@/components/admin/AdminAccountTabs';
 import AuthSessionKeeper from '@/components/auth/AuthSessionKeeper';
 import { PdfLogoSync } from '@/components/shared/PdfLogoSync';
+import { RouteChangeTracker } from '@/components/shared/RouteChangeTracker';
 import { NotificationCenter } from '@/components/portal/NotificationCenter';
 import { CauriBadge } from '@/components/member/CauriWallet';
 import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/AvatarLightbox';
@@ -364,6 +365,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="flex min-h-screen bg-[#f4f6f5]">
       <AuthSessionKeeper />
       <PdfLogoSync />
+      <RouteChangeTracker />
       <GlobalProfilePhotoLightbox />
       <AdminSidebar
         open={sidebarOpen} onClose={() => setSidebarOpen(false)}
