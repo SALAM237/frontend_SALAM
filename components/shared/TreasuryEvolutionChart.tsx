@@ -28,6 +28,21 @@ function toMonthInputValue(monthIdx: string, year: string) {
   return `${year}-${String(Number(monthIdx) + 1).padStart(2, '0')}`;
 }
 
+function parseIsoDateLocal(iso: string) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatRangeLabel(filter: TreasuryChartFilter) {
+  const from = parseIsoDateLocal(filter.from);
+  const to = parseIsoDateLocal(filter.to);
+  if (filter.granularity === 'year') {
+    return from.getFullYear() === to.getFullYear() ? `${from.getFullYear()}` : `${from.getFullYear()} - ${to.getFullYear()}`;
+  }
+  const fmt = (d: Date) => d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  return fmt(from) === fmt(to) ? fmt(from) : `${fmt(from)} - ${fmt(to)}`;
+}
+
 export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, loading = false, gradientId, sourceLabels, sourceColors }: {
   admin: boolean;
   defaultChart: ChartPoint[];
@@ -91,9 +106,12 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
           <div>
             <p className="text-sm font-black text-neutral-900">Evolution encaissements & depenses</p>
             {filter && (
-              <p className="mt-0.5 text-xs font-semibold text-emerald-600">
-                Periode personnalisee - {filter.granularity === 'month' ? 'par mois' : 'par annee'}
-              </p>
+              <>
+                <p className="mt-0.5 text-xs font-semibold text-emerald-600">
+                  Periode personnalisee - {filter.granularity === 'month' ? 'par mois' : 'par annee'}
+                </p>
+                <p className="mt-0.5 text-xs font-semibold text-neutral-500">{formatRangeLabel(filter)}</p>
+              </>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
@@ -212,7 +230,7 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
             </div>
           )}
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chart} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
+            <AreaChart data={chart} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id={`${gradientId}Income`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#059669" stopOpacity={0.28} />
@@ -225,7 +243,7 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-              <YAxis width={36} tick={{ fontSize: 11 }} tickFormatter={v => `${Math.round(Number(v) / 1000)}k`} />
+              <YAxis width={42} tick={{ fontSize: 11 }} tickFormatter={v => `${Math.round(Number(v) / 1000)}k`} />
               <Tooltip formatter={v => formatFcfa(Number(v ?? 0))} />
               <Area type="monotone" dataKey="income" stroke="#059669" fill={`url(#${gradientId}Income)`} strokeWidth={2} name="Encaissements" />
               <Area type="monotone" dataKey="expense" stroke="#dc2626" fill={`url(#${gradientId}Expense)`} strokeWidth={2} name="Depenses" />
@@ -242,7 +260,12 @@ export function TreasuryEvolutionSection({ admin, defaultChart, defaultSources, 
       <section className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-sm sm:p-5">
         <div className="mb-4">
           <p className="text-sm font-black text-neutral-900">Sources financieres</p>
-          {filter && <p className="mt-0.5 text-xs font-semibold text-emerald-600">Periode personnalisee</p>}
+          {filter && (
+            <>
+              <p className="mt-0.5 text-xs font-semibold text-emerald-600">Periode personnalisee</p>
+              <p className="mt-0.5 text-xs font-semibold text-neutral-500">{formatRangeLabel(filter)}</p>
+            </>
+          )}
         </div>
         <div className="relative h-[210px]">
           {isBusy && (

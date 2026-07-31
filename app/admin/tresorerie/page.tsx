@@ -425,7 +425,7 @@ export default function AdminTresoreriePage() {
       )}
 
       {settingsOpen && (
-        <div ref={settingsRef}>
+        <div ref={settingsRef} className="scroll-mt-20">
         <FormPanel title="Parametres tresorerie" onClose={() => setSettingsOpen(false)}>
           <div className="grid gap-4 lg:grid-cols-[1fr_420px] lg:items-end">
             <div>
@@ -450,7 +450,7 @@ export default function AdminTresoreriePage() {
       )}
 
       {formMode && (
-        <div ref={formRef}>
+        <div ref={formRef} className="scroll-mt-20">
         <FormPanel title={formMode === 'expense' ? 'Nouvelle depense' : formMode === 'don' ? 'Nouveau don' : formMode === 'asset' ? 'Nouveau patrimoine' : 'Nouvel encaissement'} onClose={() => setFormMode(null)}>
           {formMode === 'asset' ? (
             <div className="grid gap-3 md:grid-cols-2">
