@@ -78,9 +78,11 @@ export function downloadReceiptPdf(
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
     .card { border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; background: #fff; }
     .card h2 { margin: 0 0 14px; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: #64748b; }
-    table { width: 100%; border-collapse: collapse; margin-top: 24px; font-size: 13px; }
-    th { background: #0f172a; color: white; text-align: left; padding: 12px 10px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
-    td { border-bottom: 1px solid #eef2f7; padding: 12px 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 24px; font-size: clamp(9px, 1.35vw, 12px); table-layout: fixed; }
+    th { background: #0f172a; color: white; text-align: left; padding: 12px 8px; font-size: clamp(7px, 1.1vw, 10px); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+    td { border-bottom: 1px solid #eef2f7; padding: 12px 8px; vertical-align: middle; }
+    .fit-cell { max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(7px, 1.05vw, 11px); line-height: 1.2; }
+    .date-cell, .amount-cell { white-space: nowrap; font-size: clamp(8px, 1.1vw, 12px); }
     .right { text-align: right; }
     .paid { display: inline-flex; align-items:center; justify-content:center; border: 2px solid #059669; color: #047857; border-radius: 999px; padding: 10px 28px; font-weight: 900; letter-spacing: .18em; margin: 26px auto; }
     .thanks { margin-top: 24px; border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 18px; padding: 20px; color: #047857; font-weight: 700; line-height: 1.6; }
@@ -119,25 +121,26 @@ export function downloadReceiptPdf(
     </section>
     <div style="text-align:center"><span class="paid">${isCancelled ? 'ANNULÉ' : 'PAYÉ'}</span></div>
     <table>
+      <colgroup><col style="width:30%" /><col style="width:34%" /><col style="width:18%" /><col style="width:18%" /></colgroup>
       <thead><tr><th>Facture associée</th><th>Désignation</th><th>Date de paiement</th><th class="right">Montant payé</th></tr></thead>
       <tbody>
         ${previousTranches.length ? [...previousTranches].sort((a, b) => (a.trancheIndex ?? 0) - (b.trancheIndex ?? 0)).map(t => `
         <tr class="recap-row">
-          <td>${escReceipt((t as any).invoiceNumber ?? t.receiptNumber)}</td>
-          <td>${escReceipt((t as any).invoiceTitle || (t as any).invoiceDescription || `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}${t.trancheIndex != null ? ` - Tranche ${t.trancheIndex + 1}` : ''}`)}</td>
-          <td>${escReceipt(fmt(t.paidAt))}</td>
-          <td class="right">${escReceipt(formatCfa(t.amount))}</td>
+          <td class="fit-cell">${escReceipt((t as any).invoiceNumber ?? t.receiptNumber)}</td>
+          <td class="fit-cell">${escReceipt((t as any).invoiceTitle || (t as any).invoiceDescription || `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}${t.trancheIndex != null ? ` - Tranche ${t.trancheIndex + 1}` : ''}`)}</td>
+          <td class="date-cell">${escReceipt(fmt(t.paidAt))}</td>
+          <td class="right amount-cell">${escReceipt(formatCfa(t.amount))}</td>
         </tr>`).join('') : ''}
         <tr>
-          <td>${escReceipt(invoiceReference)}</td>
-          <td>${escReceipt(designation)}</td>
-          <td>${escReceipt(paidAt)}</td>
-          <td class="right"><strong>${escReceipt(formatCfa(receipt.amount))}</strong></td>
+          <td class="fit-cell">${escReceipt(invoiceReference)}</td>
+          <td class="fit-cell">${escReceipt(designation)}</td>
+          <td class="date-cell">${escReceipt(paidAt)}</td>
+          <td class="right amount-cell"><strong>${escReceipt(formatCfa(receipt.amount))}</strong></td>
         </tr>
         ${resteAPayer !== undefined ? `
         <tr>
           <td colspan="3" class="muted">Reste à payer (cotisation ${escReceipt(receipt.year)})</td>
-          <td class="right"><strong>${escReceipt(formatCfa(resteAPayer))}</strong></td>
+          <td class="right amount-cell"><strong>${escReceipt(formatCfa(resteAPayer))}</strong></td>
         </tr>` : ''}
       </tbody>
     </table>

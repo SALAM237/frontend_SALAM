@@ -278,17 +278,6 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
     <div className="flex flex-col items-center gap-1 py-1 text-center" onClick={e => e.stopPropagation()}>
       {!isUnfilledAndIrrelevant && dateControl}
 
-      <select
-        key={t.status}
-        value={t.status}
-        onChange={e => commitStatus(e.target.value as 'unpaid' | 'paid' | 'exempt')}
-        disabled={updateTranche.isPending || isUnfilledAndIrrelevant}
-        className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center font-black outline-none disabled:cursor-not-allowed disabled:opacity-60 ${sizes.badge} ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
-      >
-        <option value="unpaid" disabled={isFullySettled || t.amount > 0}>{isUnfilledAndIrrelevant ? 'N.C' : 'Impayé'}</option>
-        <option value="paid" disabled>Payé</option>
-        <option value="exempt">Exempté</option>
-      </select>
 
       {isUnfilledAndIrrelevant ? (
         <span className={`font-mono font-black text-neutral-300 ${sizes.amount}`}>—</span>
@@ -323,6 +312,17 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
         )
       )}
 
+      <select
+        key={t.status}
+        value={t.status}
+        onChange={e => commitStatus(e.target.value as 'unpaid' | 'paid' | 'exempt')}
+        disabled={updateTranche.isPending || isUnfilledAndIrrelevant}
+        className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center font-black outline-none disabled:cursor-not-allowed disabled:opacity-60 ${sizes.badge} ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
+      >
+        <option value="unpaid" disabled={isFullySettled || t.amount > 0}>{isUnfilledAndIrrelevant ? 'N.C' : 'Impayé'}</option>
+        <option value="paid" disabled>Payé</option>
+        <option value="exempt">Exempté</option>
+      </select>
       {isLastTranche && !isUnfilledAndIrrelevant && (
         <p className="text-[7px] font-semibold leading-tight text-amber-600">Doit boucler le solde total</p>
       )}
