@@ -378,6 +378,77 @@ function DetteCell({ tranches, annualFee }: { tranches?: Tranche[]; annualFee: n
   );
 }
 
+function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', onFeedback, onInvoiceRequired }: {
+  userId: string;
+  year: number;
+  status: CotisationStatus;
+  paidAt?: string | null;
+  variant?: 'desktop' | 'mobile';
+  onFeedback: (type: 'error' | 'warning' | 'success', message: string) => void;
+  onInvoiceRequired: (message: string) => void;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [draftDate, setDraftDate] = useState(paidAt ? paidAt.slice(0, 10) : today);
+  const updateCotisation = useUpdateCotisationStatus();
+  const sizes = variant === 'mobile'
+    ? { select: 'text-[10px]', date: 'text-[11px]' }
+    : { select: 'text-[8px]', date: 'text-[9px]' };
+  const cfg = cotisationConfig[status] ?? cotisationConfig.unpaid;
+
+  useEffect(() => {
+    setDraftDate(paidAt ? paidAt.slice(0, 10) : today);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paidAt]);
+
+  const submit = (nextStatus: CotisationStatus, nextDate = draftDate) => {
+    if (nextStatus === 'paid' && !nextDate) {
+      onFeedback('warning', 'La date de paiement est requise.');
+      return;
+    }
+    updateCotisation.mutate(
+      {
+        userId,
+        year,
+        status: nextStatus,
+        paidAt: nextStatus === 'paid' ? nextDate : undefined,
+      },
+      {
+        onSuccess: (res: any) => onFeedback('success', res?.message ?? 'Statut mis a jour'),
+        onError: (err: Error) => {
+          if (/Cr(e|é)ez d'abord une facture/i.test(err.message)) onInvoiceRequired(err.message);
+          else onFeedback('error', err.message);
+        },
+      },
+    );
+  };
+
+  return (
+    <div className="flex flex-col items-start gap-1" onClick={e => e.stopPropagation()}>
+      <select
+        value={status}
+        onChange={e => submit(e.target.value as CotisationStatus)}
+        disabled={updateCotisation.isPending}
+        className={`cursor-pointer appearance-none rounded-lg px-1.5 py-0.5 font-black focus:outline-none disabled:cursor-wait disabled:opacity-60 ${sizes.select} ${cfg.cls}`}
+      >
+        <option value="unpaid">Impayee</option>
+        <option value="paid">Payee</option>
+        <option value="exempt">Exempte</option>
+      </select>
+      <input
+        type="date"
+        value={draftDate}
+        max={today}
+        disabled={updateCotisation.isPending}
+        onChange={e => {
+          setDraftDate(e.target.value);
+          if (status === 'paid') submit('paid', e.target.value);
+        }}
+        className={`w-full min-w-[112px] rounded-md border px-1.5 py-0.5 text-center font-semibold text-neutral-600 outline-none focus:border-emerald-500 disabled:cursor-wait ${status === 'paid' ? 'border-emerald-300' : 'border-neutral-200'} ${sizes.date}`}
+      />
+    </div>
+  );
+}
+
 /* ── Popup de statut générique (erreur / avertissement / succès) ──
    Remplace les toasts (top-right, peu visibles) par une modale centrée :
    croix pour fermer, clic en dehors pour fermer, couleur selon le statut.
@@ -587,6 +658,12 @@ export default function AdminAdherentsPage() {
   const cotisAnnuelleRows: AdminCotisationAnnuelleRow[] = useMemo(() => cotisAnnuelleData?.data ?? [], [cotisAnnuelleData]);
   const activities: ActivityDoc[]                       = useMemo(() => activitiesData?.data?.activities ?? [], [activitiesData]);
 
+  const cotisMap = useMemo(() => {
+    const map = new Map<string, AdminCotisationRow['cotisation']>();
+    cotisRows.forEach(r => map.set(String(r.user._id), r.cotisation));
+    return map;
+  }, [cotisRows]);
+
   const cotisStatusMap = useMemo(() => {
     const map = new Map<string, CotisationStatus>();
     cotisRows.forEach(r => map.set(String(r.user._id), r.cotisation.status));
@@ -628,7 +705,6 @@ export default function AdminAdherentsPage() {
   const remindInscription  = useRemindPendingInscriptions();
   const backfillLogin      = useBackfillLastLogin();
   const remindPresence     = useRemindActivityInvitations();
-  const updateCotisation = useUpdateCotisationStatus();
   const adjustCauris     = useAdjustMemberCauris();
 
   /* ── Close filter panel on outside click ───────────────── */
@@ -774,26 +850,6 @@ export default function AdminAdherentsPage() {
   const handleResend      = (e: React.MouseEvent, id: string) => { e.preventDefault(); e.stopPropagation(); setConfirmModal({ title: "Renvoyer l'invitation", message: "Confirmer l'envoi du mail d'invitation à ce membre ?", onConfirm: () => resendInvitation.mutate(id) }); };
   const handleDeleteClick = (e: React.MouseEvent, id: string) => { e.preventDefault(); e.stopPropagation(); handleDelete(id); };
 
-  const handleCotisChange = (userId: string, status: CotisationStatus) => {
-    setConfirmModal({
-      title: 'Modifier le statut de cotisation',
-      message: 'Confirmer le changement de statut de cotisation pour ce membre ?',
-      onConfirm: () => updateCotisation.mutate(
-        { userId, year: cotisYear, status },
-        {
-          onSuccess: (res: any) => showFeedback('success', res?.message ?? 'Statut mis à jour'),
-          onError: (err: Error) => {
-            if (/Créez d'abord une facture/i.test(err.message)) {
-              const member = members.find(m => m._id === userId);
-              if (member) setInvoiceRequiredModal({ member, message: err.message, motif: 'cotisation', year: cotisYear });
-            } else {
-              showFeedback('error', err.message);
-            }
-          },
-        },
-      ),
-    });
-  };
 
   const handleSendRelance = () => {
     const ids = [...checkedIds];
@@ -1762,12 +1818,14 @@ export default function AdminAdherentsPage() {
                               </td>
                               <td className="px-2 py-3">
                                 {activeTab === 'frais' ? (
-                                  <select value={cotisSts} onChange={e => handleCotisChange(m._id, e.target.value as CotisationStatus)} onClick={e => e.stopPropagation()}
-                                    className={`cursor-pointer appearance-none rounded-lg px-1.5 py-0.5 text-[8px] font-black focus:outline-none ${c.cls}`}>
-                                    <option value="unpaid">Impayée</option>
-                                    <option value="paid">Payée</option>
-                                    <option value="exempt">Exempté</option>
-                                  </select>
+                                  <AdhesionFeeCell
+                                    userId={m._id}
+                                    year={cotisYear}
+                                    status={cotisSts}
+                                    paidAt={cotisMap.get(m._id)?.paidAt}
+                                    onFeedback={showFeedback}
+                                    onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation', year: cotisYear })}
+                                  />
                                 ) : (
                                   <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8px] font-black leading-none ${c.cls}`}>{c.label}</span>
                                 )}
@@ -1831,7 +1889,8 @@ export default function AdminAdherentsPage() {
                   {displayed.map(m => {
                     const s  = statusConfig[m.memberStatus] ?? statusConfig.pending;
                     const SI = s.icon;
-                    const c  = cotisationConfig[m.cotisationStatus] ?? cotisationConfig.unpaid;
+                    const cotisSts = activeTab === 'frais' ? (cotisStatusMap.get(m._id) ?? m.cotisationStatus) : m.cotisationStatus;
+                    const c  = cotisationConfig[cotisSts] ?? cotisationConfig.unpaid;
                     const cAnnuelle    = cotisAnnuelleConfig[m.cotisationAnnuelleStatus] ?? cotisAnnuelleConfig.unpaid;
                     const annuelleData = cotisAnnuelleMap.get(m._id);
                     const isConfirming = confirmDeleteId === m._id;
@@ -1915,6 +1974,20 @@ export default function AdminAdherentsPage() {
                                     <span className="text-[9px] font-black uppercase tracking-[0.1em] text-violet-500">Dette totale</span>
                                     <DetteCell tranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} />
                                   </div>
+                                </div>
+                              )}
+                              {activeTab === 'frais' && (
+                                <div className="mb-2.5 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2">
+                                  <p className="mb-1 text-[9px] font-black uppercase tracking-[0.1em] text-blue-500">Frais d'adhesion</p>
+                                  <AdhesionFeeCell
+                                    userId={m._id}
+                                    year={cotisYear}
+                                    status={cotisSts}
+                                    paidAt={cotisMap.get(m._id)?.paidAt}
+                                    variant="mobile"
+                                    onFeedback={showFeedback}
+                                    onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation', year: cotisYear })}
+                                  />
                                 </div>
                               )}
                               <div className="grid grid-cols-2 gap-2 text-[9px] text-neutral-500">

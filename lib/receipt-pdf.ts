@@ -48,9 +48,10 @@ export function downloadReceiptPdf(
   const memberName = formatFullName(user.firstName, user.lastName);
   const memberId = user.memberNumber ?? '-';
   const paidAt = fmt(receipt.paidAt);
-  const designation = receipt.trancheIndex != null
+  const baseDesignation = receipt.trancheIndex != null
     ? `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year} — Tranche ${receipt.trancheIndex + 1}`
     : `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}`;
+  const designation = receipt.invoiceNumber ? `Facture ${receipt.invoiceNumber}` : baseDesignation;
   const isCancelled = receipt.status === 'cancelled';
   /* Le solde restant est figé sur le reçu au moment de son édition (receipt.resteAPayer) —
      il ne doit jamais être recalculé après coup avec la mise à jour du solde de la dette.
@@ -123,7 +124,7 @@ export function downloadReceiptPdf(
         ${previousTranches.length ? [...previousTranches].sort((a, b) => (a.trancheIndex ?? 0) - (b.trancheIndex ?? 0)).map(t => `
         <tr class="recap-row">
           <td>${escReceipt(t.receiptNumber)}</td>
-          <td>${escReceipt(RECEIPT_TYPE_TITLE[receipt.type])} ${escReceipt(receipt.year)}${t.trancheIndex != null ? ` — Tranche ${t.trancheIndex + 1}` : ''}</td>
+          <td>${escReceipt((t as any).invoiceNumber ? `Facture ${(t as any).invoiceNumber}` : `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}${t.trancheIndex != null ? ` — Tranche ${t.trancheIndex + 1}` : ''}`)}</td>
           <td>${escReceipt(fmt(t.paidAt))}</td>
           <td class="right">${escReceipt(formatCfa(t.amount))}</td>
         </tr>`).join('') : ''}

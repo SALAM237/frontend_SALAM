@@ -94,6 +94,7 @@ export function useCreateInvoice() {
       isExempt?: boolean;
       description?: string;
       amount: number;
+      issuedAt?: string;
       dueDate: string;
       paymentLink?: string;
       recipientIds?: string[];
@@ -110,6 +111,8 @@ export function useCreateInvoice() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-invoices'] });
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['admin-receipts'] });
+      qc.invalidateQueries({ queryKey: ['member-receipts'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
@@ -129,9 +132,10 @@ export function useUpdateInvoice() {
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: {
       title?: string;
-      type?: 'cotisation' | 'event' | 'other';
+      type?: 'cotisation' | 'cotisation_annuelle' | 'event' | 'other' | 'avoir';
       description?: string;
       amount?: number;
+      issuedAt?: string;
       dueDate?: string;
       paymentLink?: string;
     } }) =>
@@ -143,6 +147,8 @@ export function useUpdateInvoice() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-invoices'] });
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['admin-receipts'] });
+      qc.invalidateQueries({ queryKey: ['member-receipts'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
@@ -168,6 +174,8 @@ export function useSendInvoice() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-invoices'] });
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['admin-receipts'] });
+      qc.invalidateQueries({ queryKey: ['member-receipts'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
@@ -191,6 +199,8 @@ export function useResendInvoiceRecipient() {
     onSuccess: res => {
       qc.invalidateQueries({ queryKey: ['admin-invoices'] });
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['admin-receipts'] });
+      qc.invalidateQueries({ queryKey: ['member-receipts'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
@@ -217,6 +227,8 @@ export function useDeleteInvoice() {
       qc.invalidateQueries({ queryKey: ['admin-treasury-transactions'] });
       qc.invalidateQueries({ queryKey: ['member-treasury-transactions'] });
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['admin-receipts'] });
+      qc.invalidateQueries({ queryKey: ['member-receipts'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
@@ -247,6 +259,8 @@ export function useRemoveInvoiceRecipient() {
       qc.invalidateQueries({ queryKey: ['admin-treasury-transactions'] });
       qc.invalidateQueries({ queryKey: ['member-treasury-transactions'] });
       qc.invalidateQueries({ queryKey: ['member-invoices'] });
+      qc.invalidateQueries({ queryKey: ['admin-receipts'] });
+      qc.invalidateQueries({ queryKey: ['member-receipts'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations'] });
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles'] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });

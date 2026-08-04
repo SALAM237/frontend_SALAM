@@ -269,6 +269,7 @@ function openSavedInvoicePdfLegacy(invoice: InvoiceDoc) {
     lines: [{ id: 1, designation: invoice.description || invoice.title, qty: 1, ht: invoice.amount, vat: 0 }],
     notes: 'Document généré depuis la facture enregistrée.',
     legal: 'Association SALAM — document généré électroniquement.',
+    issuedAt: invoice.issuedAt,
     dueDate: invoice.dueDate,
   }]);
 }
@@ -296,7 +297,8 @@ function openSavedInvoicePdf(invoice: InvoiceDoc) {
         lines,
         notes: 'Document genere depuis la facture enregistree.',
         legal: 'Association SALAM - document genere electroniquement.',
-        dueDate: invoice.dueDate,
+        issuedAt: invoice.issuedAt,
+    dueDate: invoice.dueDate,
       };
     })
     : [{
@@ -307,7 +309,8 @@ function openSavedInvoicePdf(invoice: InvoiceDoc) {
       lines,
       notes: 'Document genere depuis la facture enregistree.',
       legal: 'Association SALAM - document genere electroniquement.',
-      dueDate: invoice.dueDate,
+      issuedAt: invoice.issuedAt,
+    dueDate: invoice.dueDate,
     }];
   openInvoicePdfBatch(docs);
 }
@@ -699,6 +702,7 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
   const [association, setAssociation] = useState<AssociationInvoiceInfo>(() => loadAssociationInfo());
   const [invoiceTitle, setInvoiceTitle] = useState(cfg.title || 'Facture');
   const [description, setDescription] = useState(motif === 'other' ? "Frais et contribution liés aux activités de l'association." : resolvedDesignation);
+  const [issuedAt, setIssuedAt] = useState(today);
   const [dueDate, setDueDate] = useState(today);
   const [paymentLink, setPaymentLink] = useState('');
   const [recipientMode, setRecipientMode] = useState<'all' | 'select'>('select');
@@ -823,6 +827,7 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
   const validate = () => {
     const next: Record<string, string> = {};
     if (!invoiceTitle.trim()) next.title = 'Titre requis';
+    if (!issuedAt) next.issuedAt = 'Date d emission requise';
     if (!dueDate) next.dueDate = 'Échéance requise';
     if (!isExempt && totals.ttc <= 0) next.amount = 'Le total doit être supérieur à 0';
     if (recipientMode === 'select' && selected.length === 0 && selectedClients.length === 0) next.recipients = 'Sélectionnez au moins un destinataire';
@@ -838,6 +843,7 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
         title: invoiceTitle.trim(),
         description: description.trim() || notes.trim() || undefined,
         amount: totals.ttc,
+        issuedAt,
         dueDate,
         paymentLink: paymentLink.trim() || undefined,
         type: motif,
@@ -892,6 +898,7 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
       lines: pdfLines,
       notes,
       legal,
+      issuedAt,
       dueDate,
     }));
 
@@ -992,8 +999,12 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
                       )}
                       <div className="mt-5 grid grid-cols-2 gap-3">
                         <label className="block">
+                          <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Date d'emission</span>
+                          <input type="date" value={issuedAt} onChange={event => setIssuedAt(event.target.value)} className={inputCls(errors.issuedAt)} />
+                        </label>
+                        <label className="block">
                           <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Échéance</span>
-                          <input type="date" min={today} value={dueDate} onChange={event => setDueDate(event.target.value)} className={inputCls(errors.dueDate)} />
+                          <input type="date" min={issuedAt || today} value={dueDate} onChange={event => setDueDate(event.target.value)} className={inputCls(errors.dueDate)} />
                         </label>
                         <label className="block">
                           <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Lien paiement</span>
@@ -1090,7 +1101,7 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
                   <span className="text-xs font-black text-amber-800">Membre exempté (facture à 0 F.CFA)</span>
                 </label>
               </div>
-              {(errors.title || errors.amount || errors.recipients || errors.dueDate) && (
+              {(errors.title || errors.amount || errors.recipients || errors.issuedAt || errors.dueDate) && (
                 <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-3 text-xs font-semibold text-red-600">
                   {Object.values(errors).filter(Boolean).join(' · ')}
                 </div>
@@ -1194,12 +1205,14 @@ function EditInvoiceModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose: 
   const [title, setTitle] = useState(invoice.title);
   const [description, setDescription] = useState(invoice.description ?? '');
   const [amount, setAmount] = useState(String(invoice.amount ?? 0));
+  const [issuedAt, setIssuedAt] = useState(invoice.issuedAt ? invoice.issuedAt.slice(0, 10) : '');
   const [dueDate, setDueDate] = useState(invoice.dueDate ? invoice.dueDate.slice(0, 10) : '');
   const [paymentLink, setPaymentLink] = useState(invoice.paymentLink ?? '');
 
   const submit = () => {
     if (!title.trim()) return toast.error('Titre requis');
     if (!Number(amount)) return toast.error('Montant invalide');
+    if (!issuedAt) return toast.error('Date d emission requise');
     if (!dueDate) return toast.error('Date d echeance requise');
     updateInvoice.mutate({
       id: invoice._id,
@@ -1207,6 +1220,7 @@ function EditInvoiceModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose: 
         title: title.trim(),
         description: description.trim(),
         amount: Number(amount),
+        issuedAt,
         dueDate,
         paymentLink: paymentLink.trim(),
         type: invoice.type as 'cotisation' | 'event' | 'other',
@@ -1239,8 +1253,12 @@ function EditInvoiceModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose: 
               <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
             </label>
             <label className="block">
+              <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Date d'emission</span>
+              <input type="date" value={issuedAt} onChange={e => setIssuedAt(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+            </label>
+            <label className="block">
               <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Echeance</span>
-              <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+              <input type="date" min={issuedAt || undefined} value={dueDate} onChange={e => setDueDate(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
             </label>
           </div>
           <label className="block">
@@ -1265,6 +1283,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const [title,         setTitle]         = useState('');
   const [description,   setDescription]   = useState('');
   const [amount,        setAmount]        = useState('');
+  const [issuedAt,      setIssuedAt]      = useState(today);
   const [dueDate,       setDueDate]       = useState('');
   const [paymentLink,   setPaymentLink]   = useState('');
   const [recipientMode, setRecipientMode] = useState<'all' | 'select'>('all');
@@ -1307,6 +1326,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
     const e: Record<string, string> = {};
     if (!title.trim())                                          e.title      = 'Titre requis';
     if (!amount || Number(amount) <= 0)                         e.amount     = 'Montant invalide';
+    if (!issuedAt)                                              e.issuedAt   = 'Date d emission requise';
     if (!dueDate)                                               e.dueDate    = 'Échéance requise';
     if (recipientMode === 'select' && selected.length === 0)    e.recipients = 'Sélectionnez au moins un destinataire';
     setErrors(e);
@@ -1320,6 +1340,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
         title: title.trim(),
         description: description.trim() || undefined,
         amount: Number(amount),
+        issuedAt,
         dueDate,
         paymentLink: paymentLink.trim() || undefined,
         recipientIds: recipientMode === 'select' ? selected : undefined,
@@ -1370,10 +1391,20 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
               {errors.amount && <p className="text-[11px] text-red-500">{errors.amount}</p>}
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Échéance <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date d'emission <span className="text-red-500">*</span></label>
               <div className="relative">
                 <CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-                <input type="date" value={dueDate} min={today}
+                <input type="date" value={issuedAt}
+                  onChange={e => { setIssuedAt(e.target.value); setErrors(p => ({...p, issuedAt: ''})); }}
+                  className={`${inputCls(errors.issuedAt)} pl-9`} />
+              </div>
+              {errors.issuedAt && <p className="text-[11px] text-red-500">{errors.issuedAt}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Echeance <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                <input type="date" value={dueDate} min={issuedAt || today}
                   onChange={e => { setDueDate(e.target.value); setErrors(p => ({...p, dueDate: ''})); }}
                   className={`${inputCls(errors.dueDate)} pl-9`} />
               </div>

@@ -29,6 +29,7 @@ export type InvoicePdfDocument = {
   lines: InvoiceLine[];
   notes: string;
   legal: string;
+  issuedAt: string;
   dueDate: string;
 };
 
@@ -83,6 +84,12 @@ export function calcInvoiceTotals(lines: InvoiceLine[]) {
   return { ht, vat, ttc: ht + vat };
 }
 
+function fmtDate(value?: string) {
+  if (!value) return 'a renseigner';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).split('T')[0] || 'a renseigner';
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
 export function esc(value: unknown) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -104,6 +111,7 @@ export function openInvoicePdfPreview(params: {
   lines: InvoiceLine[];
   notes: string;
   legal: string;
+  issuedAt: string;
   dueDate: string;
 }) {
   const totals = calcInvoiceTotals(params.lines);
@@ -174,7 +182,7 @@ export function openInvoicePdfPreview(params: {
       <div class="eyebrow">${esc(params.association.name)}</div>
       <p class="white-muted">Solidaire Associative des Lauréats du Maroc</p>
       <h1>${esc(params.invoiceTitle)}</h1>
-      <p class="white-muted">${esc(params.invoiceNumber)} · Échéance ${esc(params.dueDate || 'à renseigner')}</p>
+      <p class="white-muted">${esc(params.invoiceNumber)} · Emise le ${esc(fmtDate(params.issuedAt))} · Échéance ${esc(fmtDate(params.dueDate))}</p>
     </header>
     <section class="grid">
       <div class="card">
@@ -256,7 +264,7 @@ export function openInvoicePdfBatch(documents: InvoicePdfDocument[]) {
             <div class="eyebrow">${esc(doc.association.name)}</div>
             <p class="white-muted">Solidaire Associative des Lauréats du Maroc</p>
             <h1>${esc(doc.invoiceTitle)}</h1>
-            <p class="white-muted">${esc(doc.invoiceNumber)} · Échéance ${esc(doc.dueDate || 'à renseigner')}</p>
+            <p class="white-muted">${esc(doc.invoiceNumber)} · Emise le ${esc(fmtDate(doc.issuedAt))} · Échéance ${esc(fmtDate(doc.dueDate))}</p>
           </header>
           <section class="grid">
             <div class="card compact"><h2>Émetteur</h2><div><span class="logo">${doc.association.logoUrl ? `<img src="${esc(doc.association.logoUrl)}" alt="Logo" />` : esc(doc.association.logo)}</span><strong>${esc(doc.association.title)}</strong></div><p class="muted">${esc(doc.association.address)}</p><p class="muted">${esc(doc.association.registration)}</p><p class="muted">${esc(doc.association.email)} · ${esc(doc.association.phone)}</p></div>
@@ -305,6 +313,7 @@ function buildMemberInvoicePdfDoc(invoice: MemberInvoiceDoc): InvoicePdfDocument
     lines: [{ id: 1, designation: invoice.description || invoice.title, qty: 1, ht: invoice.amount, vat: 0 }],
     notes: 'Document généré depuis la facture enregistrée.',
     legal: 'Association SALAM — document généré électroniquement.',
+    issuedAt: invoice.issuedAt,
     dueDate: invoice.dueDate,
   };
 }
