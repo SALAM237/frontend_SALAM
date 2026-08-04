@@ -38,6 +38,9 @@ import { downloadElementAsPng, memberCardMailto } from '@/lib/member-card-export
 /* ── Types ─────────────────────────────────────────────── */
 type ActiveTab  = 'relance' | 'frais' | 'cauris' | 'cartes' | 'cotisation-annuelle' | null;
 type RelanceSub = 'cotisation' | 'cotisation-annuelle' | 'inscription' | 'profil' | 'presence' | 'facture' | null;
+const ADHERENTS_UI_STATE_KEY = 'salam:admin:adherents:ui-state:v1';
+const ADHERENTS_UI_STATE_TTL_MS = 2 * 60 * 60 * 1000;
+
 
 /* ── Constants ──────────────────────────────────────────── */
 const statusConfig: Record<string, { label: string; labelF?: string; cls: string; icon: React.ElementType }> = {
@@ -516,15 +519,17 @@ function lastTrancheBlockedContent(resteAPayer: number) {
    Bloque le passage à payé/exempté tant qu'aucune facture n'est
    créée pour le motif concerné ; propose un raccourci direct
    vers l'éditeur de facture, motif et membre déjà pré-remplis. */
-function InvoiceRequiredModal({ member, message, motif, year, onClose }: {
+function InvoiceRequiredModal({ member, message, motif, year, onClose, onBeforeRedirect }: {
   member: MemberListItem;
   message: string;
   motif: 'cotisation' | 'cotisation_annuelle';
   year: number;
   onClose: () => void;
+  onBeforeRedirect?: () => void;
 }) {
   const router = useRouter();
   const goToInvoiceEditor = () => {
+    onBeforeRedirect?.();
     router.push(`/admin/facturation?motif=${motif}&memberId=${encodeURIComponent(member._id)}&year=${year}`);
     onClose();
   };
@@ -640,6 +645,8 @@ export default function AdminAdherentsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [expandedId,      setExpandedId]      = useState<string | null>(null);
   const [photoPreview,    setPhotoPreview]    = useState<{ src: string; name: string } | null>(null);
+  const [uiStateHydrated, setUiStateHydrated] = useState(false);
+
 
   const filterRef      = useRef<HTMLDivElement>(null);
   const desktopCardRef = useRef<HTMLDivElement>(null);
@@ -651,7 +658,6 @@ export default function AdminAdherentsPage() {
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
   const canBackfillLogin = user?.email?.trim().toLowerCase() === 'salamcameroun237@gmail.com';
 
-  /* ── Data hooks ─────────────────────────────────────────── */
   const { data, isLoading }            = useAdminMembers({ search: '', limit: 200 });
   const { data: cotisData }            = useAdminCotisations(cotisYear);
   const { data: cotisAnnuelleData }    = useAdminCotisationsAnnuelles(cotisAnnuelleYear);
@@ -666,6 +672,104 @@ export default function AdminAdherentsPage() {
   const cotisAnnuelleRows: AdminCotisationAnnuelleRow[] = useMemo(() => cotisAnnuelleData?.data ?? [], [cotisAnnuelleData]);
   const activities: ActivityDoc[]                       = useMemo(() => activitiesData?.data?.activities ?? [], [activitiesData]);
 
+  const restoreAdherentsUiState = () => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.sessionStorage.getItem(ADHERENTS_UI_STATE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { savedAt?: number; state?: any };
+      if (!saved?.savedAt || Date.now() - saved.savedAt > ADHERENTS_UI_STATE_TTL_MS) {
+        window.sessionStorage.removeItem(ADHERENTS_UI_STATE_KEY);
+        return;
+      }
+      const state = saved.state ?? {};
+      if ([null, 'relance', 'frais', 'cauris', 'cartes', 'cotisation-annuelle'].includes(state.activeTab)) setActiveTab(state.activeTab);
+      if (typeof state.showKpis === 'boolean') setShowKpis(state.showKpis);
+      if ([null, 'cotisation', 'cotisation-annuelle', 'inscription', 'profil', 'presence', 'facture'].includes(state.relanceSub)) setRelanceSub(state.relanceSub);
+      if (Number.isInteger(state.cotisYear)) setCotisYear(state.cotisYear);
+      if (Number.isInteger(state.cotisAnnuelleYear)) setCotisAnnuelleYear(state.cotisAnnuelleYear);
+      if (typeof state.showFraisParams === 'boolean') setShowFraisParams(state.showFraisParams);
+      if (typeof state.deadline === 'string') setDeadline(state.deadline.slice(0, 20));
+      if (typeof state.reminder === 'string') setReminder(state.reminder);
+      if (typeof state.showCotAnnuelleParams === 'boolean') setShowCotAnnuelleParams(state.showCotAnnuelleParams);
+      if (typeof state.cotAnnuelleDeadline === 'string') setCotAnnuelleDeadline(state.cotAnnuelleDeadline.slice(0, 20));
+      if (typeof state.cotAnnuelleReminder === 'string') setCotAnnuelleReminder(state.cotAnnuelleReminder);
+      if (state.caurisOp === 'add' || state.caurisOp === 'remove') setCaurisOp(state.caurisOp);
+      if (typeof state.caurisAmt === 'string') setCaurisAmt(state.caurisAmt.slice(0, 16));
+      if (typeof state.caurisReason === 'string') setCaurisReason(state.caurisReason.slice(0, 240));
+      if (typeof state.search === 'string') setSearch(state.search.slice(0, 120));
+      if (state.filters && typeof state.filters === 'object') setFilters({ ...EMPTY_FILTERS, ...state.filters });
+      if (Array.isArray(state.checkedIds)) setCheckedIds(new Set(state.checkedIds.filter((id: unknown) => typeof id === 'string')));
+      if (typeof state.showCheckboxes === 'boolean') setShowCheckboxes(state.showCheckboxes);
+      if (typeof state.showGroupsPanel === 'boolean') setShowGroupsPanel(state.showGroupsPanel);
+      if (Array.isArray(state.openGroupIds)) setOpenGroupIds(new Set(state.openGroupIds.filter((id: unknown) => typeof id === 'string')));
+      if (typeof state.expandedId === 'string' || state.expandedId === null) setExpandedId(state.expandedId);
+    } catch {
+      window.sessionStorage.removeItem(ADHERENTS_UI_STATE_KEY);
+    }
+  };
+
+  const saveAdherentsUiState = () => {
+    if (typeof window === 'undefined') return;
+    const state = {
+      activeTab,
+      showKpis,
+      relanceSub,
+      selectedActId: selectedAct?._id ?? null,
+      cotisYear,
+      cotisAnnuelleYear,
+      showFraisParams,
+      deadline,
+      reminder,
+      showCotAnnuelleParams,
+      cotAnnuelleDeadline,
+      cotAnnuelleReminder,
+      caurisOp,
+      caurisAmt,
+      caurisReason,
+      search,
+      filters,
+      checkedIds: [...checkedIds],
+      showCheckboxes,
+      showGroupsPanel,
+      openGroupIds: [...openGroupIds],
+      expandedId,
+      cardSelectedId: cardSelected?._id ?? null,
+      scrollY: window.scrollY,
+    };
+    window.sessionStorage.setItem(ADHERENTS_UI_STATE_KEY, JSON.stringify({ savedAt: Date.now(), state }));
+  };
+
+  useEffect(() => {
+    restoreAdherentsUiState();
+    setUiStateHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!uiStateHydrated) return;
+    saveAdherentsUiState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uiStateHydrated, activeTab, showKpis, relanceSub, selectedAct?._id, cotisYear, cotisAnnuelleYear, showFraisParams, deadline, reminder, showCotAnnuelleParams, cotAnnuelleDeadline, cotAnnuelleReminder, caurisOp, caurisAmt, caurisReason, search, filters, checkedIds, showCheckboxes, showGroupsPanel, openGroupIds, expandedId, cardSelected?._id]);
+
+  useEffect(() => {
+    if (!uiStateHydrated || typeof window === 'undefined') return;
+    try {
+      const raw = window.sessionStorage.getItem(ADHERENTS_UI_STATE_KEY);
+      const state = raw ? JSON.parse(raw)?.state : null;
+      if (state?.selectedActId && !selectedAct) {
+        const restored = activities.find(a => a._id === state.selectedActId);
+        if (restored) setSelectedAct(restored);
+      }
+      if (state?.cardSelectedId && !cardSelected) {
+        const restored = members.find(m => m._id === state.cardSelectedId);
+        if (restored) setCardSelected(restored);
+      }
+      if (Number.isFinite(state?.scrollY)) window.setTimeout(() => window.scrollTo({ top: state.scrollY, behavior: 'auto' }), 0);
+    } catch { /* ignore invalid optional restore */ }
+  }, [uiStateHydrated, activities, members, selectedAct, cardSelected]);
+
+  /* ── Data hooks ─────────────────────────────────────────── */
   const cotisMap = useMemo(() => {
     const map = new Map<string, AdminCotisationRow['cotisation']>();
     cotisRows.forEach(r => map.set(String(r.user._id), r.cotisation));
@@ -2074,6 +2178,7 @@ export default function AdminAdherentsPage() {
         motif={invoiceRequiredModal.motif}
         year={invoiceRequiredModal.year}
         onClose={() => setInvoiceRequiredModal(null)}
+        onBeforeRedirect={saveAdherentsUiState}
       />
     )}
     {statusPopup && (
