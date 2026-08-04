@@ -51,7 +51,8 @@ export function downloadReceiptPdf(
   const baseDesignation = receipt.trancheIndex != null
     ? `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year} — Tranche ${receipt.trancheIndex + 1}`
     : `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}`;
-  const designation = receipt.invoiceNumber ? `Facture ${receipt.invoiceNumber}` : baseDesignation;
+  const invoiceReference = receipt.invoiceNumber ?? receipt.receiptNumber;
+  const designation = receipt.invoiceTitle || receipt.invoiceDescription || baseDesignation;
   const isCancelled = receipt.status === 'cancelled';
   /* Le solde restant est figé sur le reçu au moment de son édition (receipt.resteAPayer) —
      il ne doit jamais être recalculé après coup avec la mise à jour du solde de la dette.
@@ -99,7 +100,7 @@ export function downloadReceiptPdf(
       <div class="eyebrow"><span class="logo"><img src="${RECEIPT_ASSOCIATION.logoUrl}" alt="Logo SALAM" /></span>${escReceipt(RECEIPT_ASSOCIATION.name)}</div>
       <p style="color:rgba(255,255,255,.72)">Solidaire Associative des Lauréats du Maroc</p>
       <h1>Reçu de paiement</h1>
-      <p style="color:rgba(255,255,255,.72)">${escReceipt(receipt.receiptNumber)} · ${escReceipt(paidAt)}</p>
+      <p style="color:rgba(255,255,255,.72)">Facture associée : ${escReceipt(invoiceReference)} - ${escReceipt(paidAt)}</p>
     </header>
     <section class="grid">
       <div class="card">
@@ -113,23 +114,22 @@ export function downloadReceiptPdf(
         <h2>Membre</h2>
         <strong>${escReceipt(memberName)}</strong>
         <p class="muted">N° membre : ${escReceipt(memberId)}</p>
-        ${receipt.invoiceNumber ? `<p class="muted">Facture : ${escReceipt(receipt.invoiceNumber)}</p>` : ''}
-        ${receipt.reference ? `<p class="muted">Référence : ${escReceipt(receipt.reference)}</p>` : ''}
+        <p class="muted">Facture associée : ${escReceipt(invoiceReference)}</p>
       </div>
     </section>
     <div style="text-align:center"><span class="paid">${isCancelled ? 'ANNULÉ' : 'PAYÉ'}</span></div>
     <table>
-      <thead><tr><th>Reçu</th><th>Désignation</th><th>Date de paiement</th><th class="right">Montant payé</th></tr></thead>
+      <thead><tr><th>Facture associée</th><th>Désignation</th><th>Date de paiement</th><th class="right">Montant payé</th></tr></thead>
       <tbody>
         ${previousTranches.length ? [...previousTranches].sort((a, b) => (a.trancheIndex ?? 0) - (b.trancheIndex ?? 0)).map(t => `
         <tr class="recap-row">
-          <td>${escReceipt(t.receiptNumber)}</td>
-          <td>${escReceipt((t as any).invoiceNumber ? `Facture ${(t as any).invoiceNumber}` : `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}${t.trancheIndex != null ? ` — Tranche ${t.trancheIndex + 1}` : ''}`)}</td>
+          <td>${escReceipt((t as any).invoiceNumber ?? t.receiptNumber)}</td>
+          <td>${escReceipt((t as any).invoiceTitle || (t as any).invoiceDescription || `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}${t.trancheIndex != null ? ` - Tranche ${t.trancheIndex + 1}` : ''}`)}</td>
           <td>${escReceipt(fmt(t.paidAt))}</td>
           <td class="right">${escReceipt(formatCfa(t.amount))}</td>
         </tr>`).join('') : ''}
         <tr>
-          <td>${escReceipt(receipt.receiptNumber)}</td>
+          <td>${escReceipt(invoiceReference)}</td>
           <td>${escReceipt(designation)}</td>
           <td>${escReceipt(paidAt)}</td>
           <td class="right"><strong>${escReceipt(formatCfa(receipt.amount))}</strong></td>

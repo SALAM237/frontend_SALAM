@@ -389,18 +389,21 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [draftDate, setDraftDate] = useState(paidAt ? paidAt.slice(0, 10) : today);
+  const [dateMode, setDateMode] = useState<'edit' | 'text'>(paidAt ? 'text' : 'edit');
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const updateCotisation = useUpdateCotisationStatus();
   const sizes = variant === 'mobile'
-    ? { select: 'text-[10px]', date: 'text-[11px]' }
-    : { select: 'text-[8px]', date: 'text-[9px]' };
+    ? { select: 'w-full text-[10px]', date: 'w-full text-[11px]' }
+    : { select: 'w-[74px] text-[8px]', date: 'w-[74px] text-[9px]' };
   const cfg = cotisationConfig[status] ?? cotisationConfig.unpaid;
 
   useEffect(() => {
     setDraftDate(paidAt ? paidAt.slice(0, 10) : today);
+    setDateMode(paidAt ? 'text' : 'edit');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paidAt]);
+  }, [paidAt, status]);
 
-  const submit = (nextStatus: CotisationStatus, nextDate = draftDate) => {
+  const submit = (nextStatus: CotisationStatus, nextDate = draftDate, successMessage = 'Statut mis a jour') => {
     if (nextStatus === 'paid' && !nextDate) {
       onFeedback('warning', 'La date de paiement est requise.');
       return;
@@ -413,7 +416,11 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
         paidAt: nextStatus === 'paid' ? nextDate : undefined,
       },
       {
-        onSuccess: (res: any) => onFeedback('success', res?.message ?? 'Statut mis a jour'),
+        onSuccess: (res: any) => {
+          if (nextStatus === 'paid') setDateMode('text');
+          else setDateMode('edit');
+          onFeedback('success', res?.message ?? successMessage);
+        },
         onError: (err: Error) => {
           if (/Cr(e|é)ez d'abord une facture/i.test(err.message)) onInvoiceRequired(err.message);
           else onFeedback('error', err.message);
@@ -422,8 +429,20 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
     );
   };
 
+  const confirmDate = () => {
+    if (!draftDate) {
+      onFeedback('warning', 'La date de paiement est requise.');
+      return;
+    }
+    if (status !== 'paid') {
+      onFeedback('warning', 'Passez le statut a Payee pour enregistrer cette date.');
+      return;
+    }
+    submit('paid', draftDate, 'Date mise a jour');
+  };
+
   return (
-    <div className="flex flex-col items-start gap-1" onClick={e => e.stopPropagation()}>
+    <div className={variant === 'mobile' ? "flex w-full flex-col items-start gap-1" : "flex w-fit flex-col items-start gap-1"} onClick={e => e.stopPropagation()}>
       <select
         value={status}
         onChange={e => submit(e.target.value as CotisationStatus)}
@@ -434,21 +453,36 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
         <option value="paid">Payee</option>
         <option value="exempt">Exempte</option>
       </select>
-      <input
-        type="date"
-        value={draftDate}
-        max={today}
-        disabled={updateCotisation.isPending}
-        onChange={e => {
-          setDraftDate(e.target.value);
-          if (status === 'paid') submit('paid', e.target.value);
-        }}
-        className={`w-full min-w-[112px] rounded-md border px-1.5 py-0.5 text-center font-semibold text-neutral-600 outline-none focus:border-emerald-500 disabled:cursor-wait ${status === 'paid' ? 'border-emerald-300' : 'border-neutral-200'} ${sizes.date}`}
-      />
+
+      {dateMode === 'edit' ? (
+        <div className={`group/adhesionDate relative ${sizes.date.split(' ')[0]}`}>
+          <div className="absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/adhesionDate:flex">
+            <button type="button" onMouseDown={e => e.preventDefault()} onClick={confirmDate} disabled={updateCotisation.isPending} title="Valider la date"
+              className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
+              <Check size={11} />
+            </button>
+          </div>
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={draftDate}
+            max={today}
+            disabled={updateCotisation.isPending}
+            onChange={e => setDraftDate(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmDate(); } }}
+            className={`min-w-0 rounded-md border px-1 py-0.5 text-center font-semibold text-neutral-600 outline-none focus:border-emerald-500 disabled:cursor-wait ${status === 'paid' ? 'border-emerald-300' : 'border-neutral-200'} ${sizes.date}`}
+          />
+        </div>
+      ) : (
+        <button type="button" onClick={() => { setDateMode('edit'); setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80); }} title="Modifier la date"
+          className={`flex items-center justify-center gap-1 truncate rounded-md px-1 py-0.5 text-center font-semibold text-neutral-500 transition hover:text-emerald-600 hover:underline ${sizes.date}`}>
+          {fmtDate(paidAt ?? draftDate)}
+          <PencilLine size={10} className="shrink-0 text-neutral-400" />
+        </button>
+      )}
     </div>
   );
 }
-
 /* ── Popup de statut générique (erreur / avertissement / succès) ──
    Remplace les toasts (top-right, peu visibles) par une modale centrée :
    croix pour fermer, clic en dehors pour fermer, couleur selon le statut.

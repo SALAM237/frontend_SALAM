@@ -26,6 +26,8 @@ export interface ReceiptDoc {
   paidAt: string;
   invoiceId?: string | null;
   invoiceNumber?: string | null;
+  invoiceTitle?: string | null;
+  invoiceDescription?: string | null;
   reference?: string | null;
   notes?: string | null;
   status: ReceiptStatus;
@@ -39,7 +41,7 @@ export interface ReceiptDoc {
   resteAPayer?: number | null;
   /* Récap des tranches précédentes actives — présent uniquement sur le reçu qui
      solde intégralement la dette (resteAPayer === 0). */
-  previousTranches?: { trancheIndex: number | null; receiptNumber: string; invoiceNumber?: string | null; amount: number; paidAt: string }[];
+  previousTranches?: { trancheIndex: number | null; receiptNumber: string; invoiceNumber?: string | null; invoiceTitle?: string | null; invoiceDescription?: string | null; amount: number; paidAt: string }[];
 }
 
 /* ── Admin ──────────────────────────────────────────────── */
