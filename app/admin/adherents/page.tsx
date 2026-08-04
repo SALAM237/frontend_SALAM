@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
@@ -649,6 +649,7 @@ export default function AdminAdherentsPage() {
 
   const user         = useAuthStore(s => s.user);
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
+  const canBackfillLogin = user?.email?.trim().toLowerCase() === 'salamcameroun237@gmail.com';
 
   /* ── Data hooks ─────────────────────────────────────────── */
   const { data, isLoading }            = useAdminMembers({ search: '', limit: 200 });
@@ -1614,15 +1615,17 @@ export default function AdminAdherentsPage() {
           )}
 
           {/* Backfill dernière connexion */}
-          <button
-            onClick={() => backfillLogin.mutate()}
-            disabled={backfillLogin.isPending}
-            title="Récupère la date de première connexion depuis l'historique pour les membres qui affichent Jamais"
-            className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-600 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 sm:px-4"
-          >
-            {backfillLogin.isPending ? <Loader2 size={13} className="animate-spin" /> : <Clock size={13} />}
-            Corriger connexions
-          </button>
+          {canBackfillLogin && (
+            <button
+              onClick={() => backfillLogin.mutate()}
+              disabled={backfillLogin.isPending}
+              title="Récupère la date de première connexion depuis l'historique pour les membres qui affichent Jamais"
+              className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-600 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 sm:px-4"
+            >
+              {backfillLogin.isPending ? <Loader2 size={13} className="animate-spin" /> : <Clock size={13} />}
+              Corriger connexions
+            </button>
+          )}
           {/* Export */}
           <button onClick={exportToCSV} disabled={displayed.length===0}
             className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-600 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40 sm:px-4">

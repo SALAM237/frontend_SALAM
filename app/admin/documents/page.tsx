@@ -9,6 +9,7 @@ import { MemberFilterPanel, EMPTY_MEMBER_FILTERS, memberMatchesFilters, type Mem
 import { useAdminAttestationTemplate, useSaveAttestationTemplate } from '@/lib/api/attestation';
 import { DocumentPreviewModal } from '@/components/portal/DocumentPreviewModal';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 /* ── Helpers ──────────────────────────────────────────── */
 function fmtSize(bytes: number) {
@@ -33,6 +34,11 @@ function mimeIcon(mime: string) {
   return '📎';
 }
 
+const ADMIN_DOCUMENT_TABS = [
+  { value: 'documents', label: 'Documents partages', icon: FileText },
+  { value: 'attestation', label: 'Attestation', icon: GraduationCap },
+] as const;
+type AdminDocumentTab = typeof ADMIN_DOCUMENT_TABS[number]['value'];
 /* ── Send Modal ───────────────────────────────────────── */
 function SendModal({ doc, onClose }: { doc: SharedDocument; onClose: () => void }) {
   const [search, setSearch]       = useState('');
@@ -314,6 +320,7 @@ export default function AdminDocumentsPage() {
   const [previewDoc,   setPreviewDoc]   = useState<SharedDocument | null>(null);
   const [renaming,     setRenaming]     = useState<string | null>(null);
   const [renameValue,  setRenameValue]  = useState('');
+  const [tab, setTab] = useState<AdminDocumentTab>('documents');
   const { data, isLoading } = useAdminDocuments();
   const deleteDoc  = useDeleteDocument();
   const renameDoc  = useRenameDocument();
@@ -337,10 +344,12 @@ export default function AdminDocumentsPage() {
         <p className="mt-0.5 text-sm text-neutral-500">Importez des documents et partagez-les avec les membres de l&apos;association.</p>
       </div>
 
-      <UploadZone />
-      <AttestationEditor />
+      <AnimatedTabBar items={[...ADMIN_DOCUMENT_TABS]} value={tab} onChange={setTab} />
 
-      <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+      {tab === 'documents' && <UploadZone />}
+      {tab === 'attestation' && <AttestationEditor />}
+
+      {tab === 'documents' && <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
         <div className="border-b border-neutral-100 bg-emerald-50/40 px-5 py-3.5">
           <p className="text-xs font-black uppercase text-neutral-500">
             {isLoading ? 'Chargement…' : `${documents.length} document(s)`}
@@ -463,7 +472,7 @@ export default function AdminDocumentsPage() {
             );
           })}
         </div>
-      </div>
+      </div>}
 
       {sendModal    && <SendModal doc={sendModal} onClose={() => setSendModal(null)} />}
       {previewDoc   && <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />}

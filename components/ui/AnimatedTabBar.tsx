@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 export type AnimatedTabItem<T extends string = string> = {
@@ -33,6 +33,35 @@ export function AnimatedTabBar<T extends string>({
   const navRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const prevValueRef = useRef<T>(value);
+  const [indicator, setIndicator] = useState({ left: 0, top: 0, width: 0, height: 0, ready: false });
+
+  const updateIndicator = () => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const nodes = nav.querySelectorAll<HTMLElement>('[data-animated-tab]');
+    const index = items.findIndex(item => item.value === value);
+    const node = nodes[index];
+    if (!node) return;
+    setIndicator({
+      left: node.offsetLeft,
+      top: node.offsetTop,
+      width: node.offsetWidth,
+      height: node.offsetHeight,
+      ready: true,
+    });
+  };
+
+  useLayoutEffect(() => {
+    updateIndicator();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, items]);
+
+  useEffect(() => {
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, items]);
 
   const smoothScroll = (targetLeft: number, duration = 380) => {
     const nav = navRef.current;
@@ -74,14 +103,24 @@ export function AnimatedTabBar<T extends string>({
     smoothScroll(target);
   };
 
-  const baseClass = 'relative inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-xs font-black transition-all duration-200';
+  const baseClass = 'relative z-10 inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-xs font-black transition-colors duration-200';
   const inactiveClass = 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800';
-  const activeClass = 'bg-emerald-600 text-white shadow-sm';
+  const activeClass = 'text-white';
 
   return (
     <div className={`overflow-x-auto rounded-2xl border border-neutral-100 bg-white p-1 shadow-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}>
       <div ref={navRef} className="scroll-smooth overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex min-w-max gap-1">
+        <div className="relative flex min-w-max gap-1">
+          <span
+            aria-hidden="true"
+            className="absolute rounded-xl bg-emerald-600 shadow-sm transition-all duration-300 ease-out"
+            style={{
+              width: indicator.width,
+              height: indicator.height,
+              transform: `translate(${indicator.left}px, ${indicator.top}px)`,
+              opacity: indicator.ready ? 1 : 0,
+            }}
+          />
           {items.map(item => {
             const active = value === item.value;
             const Icon = item.icon;
