@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import Papa from 'papaparse';
@@ -747,9 +747,9 @@ function TransactionList({ title, items, kind, loading, onDelete, deletingId }: 
         })}
       </div>
       {searched.length > pageSize && (
-        <p className="mt-3 text-center text-xs font-semibold text-neutral-400">
-          {pageSize} sur {searched.length} affichees - augmentez le nombre de lignes ci-dessus pour en voir plus.
-        </p>
+        <button type="button" onClick={() => setPageSize(v => Math.min(v + 20, searched.length))} className="mt-3 w-full text-center text-xs font-semibold text-emerald-700 hover:underline">
+          {pageSize} sur {searched.length} affichees - afficher 20 lignes supplementaires.
+        </button>
       )}
     </Card>
   );
@@ -800,9 +800,9 @@ function AssetList({ title, items, loading, onDelete, deletingId }: { title: str
         ))}
       </div>
       {searched.length > pageSize && (
-        <p className="mt-3 text-center text-xs font-semibold text-neutral-400">
-          {pageSize} sur {searched.length} affichés — augmentez le nombre de lignes ci-dessus pour en voir plus.
-        </p>
+        <button type="button" onClick={() => setPageSize(v => Math.min(v + 20, searched.length))} className="mt-3 w-full text-center text-xs font-semibold text-emerald-700 hover:underline">
+          {pageSize} sur {searched.length} affiches - afficher 20 lignes supplementaires.
+        </button>
       )}
     </Card>
   );

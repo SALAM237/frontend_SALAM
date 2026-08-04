@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import {
@@ -25,6 +25,7 @@ import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { TreasuryEvolutionSection } from '@/components/shared/TreasuryEvolutionChart';
 import { RecoveryRateBlock } from '@/components/shared/RecoveryRateBlock';
 import { downloadCsv } from '@/lib/csv-export';
+import { ListToolbar } from '@/components/shared/ListToolbar';
 
 type TabValue = 'overview' | 'income' | 'expense' | 'don' | 'assets';
 
@@ -286,10 +287,10 @@ export default function TresoreriePage() {
         </div>
       )}
 
-      {tab === 'income' && <TransactionList title="Encaissements" items={filteredIncome} totalCount={incomeItems.length} kind="income" loading={income.isLoading} />}
-      {tab === 'expense' && <TransactionList title="Decaissements" items={filteredExpense} totalCount={expenseItems.length} kind="expense" loading={expense.isLoading} />}
-      {tab === 'don' && <TransactionList title="Dons recus" items={filteredDonations} totalCount={donationItems.length} loading={donations.isLoading} />}
-      {tab === 'assets' && <AssetList title="Patrimoine de l'association" items={filteredAssets} totalCount={assetItems.length} loading={assets.isLoading} />}
+      {tab === 'income' && <TransactionList title="Encaissements" items={incomeItems} totalCount={incomeItems.length} kind="income" loading={income.isLoading} />}
+      {tab === 'expense' && <TransactionList title="Decaissements" items={expenseItems} totalCount={expenseItems.length} kind="expense" loading={expense.isLoading} />}
+      {tab === 'don' && <TransactionList title="Dons recus" items={donationItems} totalCount={donationItems.length} loading={donations.isLoading} />}
+      {tab === 'assets' && <AssetList title="Patrimoine de l'association" items={assetItems} totalCount={assetItems.length} loading={assets.isLoading} />}
     </div>
   );
 }
@@ -334,23 +335,31 @@ function Kpi({ icon: Icon, label, value, sub, tone }: { icon: React.ElementType;
 
 function TransactionList({ title, items, totalCount, kind, loading }: { title: string; items: TreasuryTransaction[]; totalCount?: number; kind?: TreasuryKind; loading?: boolean }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [pageSize, setPageSize] = useState(10);
   const filtered = kind ? items.filter(i => i.kind === kind) : items;
-  const isFiltered = totalCount !== undefined && totalCount !== filtered.length;
+  const q = search.trim().toLowerCase();
+  const searched = q
+    ? filtered.filter(item => [item.label, item.counterparty, item.reference, item.description, sourceLabels[item.source]].some(f => f?.toLowerCase().includes(q)))
+    : filtered;
+  const visible = searched.slice(0, pageSize);
+  const isFiltered = totalCount !== undefined && totalCount !== searched.length;
   return (
     <Card>
-      <CardTitle title={title} subtitle={`${filtered.length} operation(s)${isFiltered ? ` sur ${totalCount}` : ''}`} />
+      <CardTitle title={title} subtitle={`${searched.length} operation(s)${isFiltered ? ` sur ${totalCount}` : ''}`} />
+      <ListToolbar search={search} onSearchChange={setSearch} pageSize={pageSize} onPageSizeChange={setPageSize} />
       <div className="divide-y divide-neutral-50">
         {loading && <p className="py-6 text-sm text-neutral-400">Chargement...</p>}
-        {!loading && filtered.length === 0 && (
+        {!loading && searched.length === 0 && (
           <p className="py-6 text-sm font-semibold text-neutral-400">
-            {isFiltered ? 'Aucun resultat pour cette recherche.' : 'Aucune donnee pour le moment.'}
+            {q ? 'Aucun resultat pour cette recherche.' : 'Aucune donnee pour le moment.'}
           </p>
         )}
-        {filtered.map(item => {
+        {visible.map(item => {
           const expanded = expandedId === item._id;
           const textCls = expanded ? 'whitespace-normal break-words' : 'truncate';
           return (
-            <div key={item._id} className="flex items-center gap-3 py-3 cursor-pointer" onClick={() => setExpandedId(expanded ? null : item._id)}>
+            <div key={item._id} className="flex cursor-pointer items-center gap-3 py-3" onClick={() => setExpandedId(expanded ? null : item._id)}>
               <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${item.kind === 'expense' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
                 {item.kind === 'expense' ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
               </span>
@@ -363,23 +372,35 @@ function TransactionList({ title, items, totalCount, kind, loading }: { title: s
           );
         })}
       </div>
+      {searched.length > pageSize && (
+        <button type="button" onClick={() => setPageSize(v => Math.min(v + 20, searched.length))} className="mt-3 w-full text-center text-xs font-semibold text-emerald-700 hover:underline">
+          {pageSize} sur {searched.length} affichees - afficher 20 lignes supplementaires.
+        </button>
+      )}
     </Card>
   );
 }
-
 function AssetList({ title, items, totalCount, loading }: { title: string; items: TreasuryAsset[]; totalCount?: number; loading?: boolean }) {
-  const isFiltered = totalCount !== undefined && totalCount !== items.length;
+  const [search, setSearch] = useState('');
+  const [pageSize, setPageSize] = useState(10);
+  const q = search.trim().toLowerCase();
+  const searched = q
+    ? items.filter(item => [item.name, item.category, item.location, item.responsible].some(f => f?.toLowerCase().includes(q)))
+    : items;
+  const visible = searched.slice(0, pageSize);
+  const isFiltered = totalCount !== undefined && totalCount !== searched.length;
   return (
     <Card>
-      <CardTitle title={title} subtitle={`${items.length} element(s)${isFiltered ? ` sur ${totalCount}` : ''}`} />
+      <CardTitle title={title} subtitle={`${searched.length} element(s)${isFiltered ? ` sur ${totalCount}` : ''}`} />
+      <ListToolbar search={search} onSearchChange={setSearch} pageSize={pageSize} onPageSizeChange={setPageSize} />
       <div className="grid gap-3 sm:grid-cols-2">
         {loading && <p className="py-6 text-sm text-neutral-400">Chargement...</p>}
-        {!loading && items.length === 0 && (
+        {!loading && searched.length === 0 && (
           <p className="py-6 text-sm font-semibold text-neutral-400">
-            {isFiltered ? 'Aucun resultat pour cette recherche.' : 'Aucun element de patrimoine renseigne.'}
+            {q ? 'Aucun resultat pour cette recherche.' : 'Aucun element de patrimoine renseigne.'}
           </p>
         )}
-        {items.map(item => (
+        {visible.map(item => (
           <div key={item._id} className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-3">
             <div className="flex items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-700"><Package size={16} /></span>
@@ -392,10 +413,14 @@ function AssetList({ title, items, totalCount, loading }: { title: string; items
           </div>
         ))}
       </div>
+      {searched.length > pageSize && (
+        <button type="button" onClick={() => setPageSize(v => Math.min(v + 20, searched.length))} className="mt-3 w-full text-center text-xs font-semibold text-emerald-700 hover:underline">
+          {pageSize} sur {searched.length} affiches - afficher 20 lignes supplementaires.
+        </button>
+      )}
     </Card>
   );
 }
-
 function InfoRow({ icon: Icon, title, text, tone, compact = false }: { icon: React.ElementType; title: string; text: string; tone: 'amber' | 'emerald' | 'blue' | 'red'; compact?: boolean }) {
   const cls = {
     amber: 'bg-amber-50 text-amber-700',

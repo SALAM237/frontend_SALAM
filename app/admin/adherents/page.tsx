@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
@@ -127,30 +127,16 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
   onInvoiceRequired: (message: string) => void;
 }) {
   const t = tranche ?? EMPTY_TRANCHE;
-  /* Montant et date se valident INDÉPENDAMMENT l'un de l'autre : chacun a son propre
-     mode 'edit' (saisie) / 'text' (affiché, cliquable pour remodifier). Modifier
-     l'un ne force jamais une re-validation de l'autre — évite un aller-retour
-     serveur inutile pour le champ qui n'a pas changé. */
   const [amountMode, setAmountMode] = useState<'edit' | 'text'>(t.amount > 0 ? 'text' : 'edit');
-  const [dateMode,   setDateMode]   = useState<'edit' | 'text'>(t.paidAt ? 'text' : 'edit');
+  const [dateMode, setDateMode] = useState<'edit' | 'text'>(t.paidAt ? 'text' : 'edit');
   const [draftAmount, setDraftAmount] = useState(t.amount > 0 ? String(t.amount) : '');
-  const [draftDate, setDraftDate]     = useState(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
+  const [draftDate, setDraftDate] = useState(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
   const amountInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
-  /* 3 instances SÉPARÉES du hook de mutation (montant / date / statut) : TanStack Query
-     ne garde qu'UNE mutation "courante" par instance — un second .mutate() sur la MÊME
-     instance avant que le premier n'ait reçu sa réponse détache l'observateur de la
-     première mutation en cours (cf. MutationObserver.mutate() dans @tanstack/query-core),
-     ce qui fait taire SILENCIEUSEMENT son onSuccess/onError (montant validé mais
-     l'affichage ne bascule jamais, alors que la sauvegarde serveur a réussi). Avec des
-     instances séparées, valider le montant puis enchaîner sur la date ne peut plus
-     jamais interrompre l'accusé de réception de l'autre. */
   const updateAmount = useUpdateTranche();
   const updateDate = useUpdateTranche();
   const updateStatusMutation = useUpdateTranche();
   const updateTranche = { isPending: updateAmount.isPending || updateDate.isPending || updateStatusMutation.isPending };
-
-  /* Tailles adaptées : sur mobile, badge encore plus réduit, montant/date agrandis pour la lisibilité */
   const sizes = variant === 'mobile'
     ? { badge: 'text-[6px]', amount: 'text-[13px]', date: 'text-[12px]' }
     : { badge: 'text-[8px]', amount: 'text-[10px]', date: 'text-[9px]' };
@@ -163,41 +149,38 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
 
   useEffect(() => {
     if (dateMode !== 'text') return;
-    setDraftDate(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
+    setDraftDate(t.paidAt ? t.paidAt.slice(0, 10) : draftDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t.paidAt]);
 
-  /* Contrôle spécifique tranche 4 : elle doit boucler le solde total */
   const isLastTranche = index === 3;
   const othersPaidSum = (allTranches ?? DEFAULT_TRANCHES)
     .filter((_, i) => i !== 3)
     .reduce((acc, tr) => acc + (tr.status === 'paid' ? (tr.amount ?? 0) : 0), 0);
-  const lastTrancheBlocksPaid = isLastTranche && (othersPaidSum + t.amount) < annualFee;
   const resteAvantTranche4 = Math.max(0, annualFee - othersPaidSum);
-
-  /* Le total des 4 tranches ne doit jamais dépasser la cotisation annuelle (la
-     "dette totale") — contrôle générique (toutes tranches, pas seulement la 4ème),
-     vérifié ici pour un retour immédiat, et re-vérifié côté serveur (rejeté avant
-     toute écriture) en dernier rempart. */
   const othersPaidSumExcludingSelf = (allTranches ?? DEFAULT_TRANCHES)
     .filter((_, i) => i !== index)
     .reduce((acc, tr) => acc + (tr.status === 'paid' ? (tr.amount ?? 0) : 0), 0);
-
-  /* Dès que la dette totale (somme de tous les montants saisis) est soldée,
-     aucune des 4 tranches ne peut être repassée à "Impayé" (sécurité anti-incohérence). */
   const totalEnteredSum = (allTranches ?? DEFAULT_TRANCHES).reduce((acc, tr) => acc + Number(tr.amount || 0), 0);
   const isFullySettled = totalEnteredSum >= annualFee;
-  /* Une tranche jamais remplie alors que la dette est déjà totalement soldée par
-     les autres tranches n'a plus lieu d'être modifiée : elle est désactivée et
-     affichée "N.C" (non concerné) plutôt que "Impayé". */
   const isUnfilledAndIrrelevant = isFullySettled && !(t.amount > 0);
+  const dateConfirmed = dateMode === 'text' && !!draftDate;
 
   const handleMutationError = (err: Error) => {
-    if (/Créez une facture/i.test(err.message)) onInvoiceRequired(err.message);
+    if (/Cr(e|é)ez une facture/i.test(err.message)) onInvoiceRequired(err.message);
     else onFeedback('error', err.message);
   };
 
+  const requireConfirmedDate = () => {
+    if (dateConfirmed) return true;
+    onFeedback('warning', 'Validez d abord la date de paiement avant de changer ce statut.');
+    setDateMode('edit');
+    setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80);
+    return false;
+  };
+
   const commitStatus = (status: 'unpaid' | 'paid' | 'exempt') => {
+    if (status !== 'unpaid' && !requireConfirmedDate()) return;
     if (status === 'unpaid' && (isFullySettled || t.amount > 0)) {
       onFeedback('warning', "Un montant supérieur à 0 est déjà saisi pour cette tranche : cliquez sur le montant affiché pour le corriger si besoin, plutôt que de repasser en Impayé.");
       return;
@@ -207,7 +190,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
       return;
     }
     updateStatusMutation.mutate(
-      { userId, year, trancheIndex: index, amount: t.amount, status, paidAt: t.paidAt ?? undefined },
+      { userId, year, trancheIndex: index, amount: t.amount, status, paidAt: status !== 'unpaid' ? draftDate : undefined },
       {
         onSuccess: res => {
           const warning = (res as any).invoiceWarning;
@@ -219,28 +202,19 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
     );
   };
 
-  /* Valide UNIQUEMENT le montant — la date existante (ou aujourd'hui par défaut
-     si aucune n'a encore été confirmée) est réutilisée telle quelle, sans
-     redemander de la reconfirmer. */
   const commitAmount = (rawAmount: string) => {
     const amount = Math.max(0, Number(rawAmount) || 0);
+    if (amount > 0 && !requireConfirmedDate()) return;
     if (amount > 0 && othersPaidSumExcludingSelf + amount > annualFee) {
       const maxAllowed = Math.max(0, annualFee - othersPaidSumExcludingSelf);
       onFeedback('warning', `Le total des tranches ne peut pas dépasser la cotisation annuelle (${annualFee.toLocaleString('fr-FR')} F.CFA). Montant maximum possible pour cette tranche : ${maxAllowed.toLocaleString('fr-FR')} F.CFA.`);
       return;
     }
-    const paidAtToSend = t.paidAt ?? draftDate;
     updateAmount.mutate(
-      { userId, year, trancheIndex: index, amount, status: amount > 0 ? 'paid' : 'unpaid', paidAt: paidAtToSend },
+      { userId, year, trancheIndex: index, amount, status: amount > 0 ? 'paid' : 'unpaid', paidAt: amount > 0 ? draftDate : undefined },
       {
         onSuccess: res => {
           setAmountMode(amount > 0 ? 'text' : 'edit');
-          /* Première saisie (aucune date encore confirmée) : on avance vers le
-             champ date pour la faire confirmer — mais on ne dérange jamais une
-             date déjà validée juste parce que le montant a été modifié. */
-          if (amount > 0 && dateMode === 'edit') {
-            setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 100);
-          }
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
           else onFeedback('success', (res as any).message ?? 'Montant mis à jour');
@@ -249,13 +223,22 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
       },
     );
   };
+
   const confirmAmount = () => commitAmount(draftAmount);
   const clearAmount = () => { setDraftAmount(''); commitAmount(''); };
 
-  /* Valide UNIQUEMENT la date — le montant existant est réutilisé tel quel. */
   const commitDate = (nextDate: string) => {
+    if (!nextDate) {
+      onFeedback('warning', 'La date de paiement est requise.');
+      return;
+    }
+    if (!(t.amount > 0)) {
+      setDateMode('text');
+      onFeedback('success', 'Date validée');
+      return;
+    }
     updateDate.mutate(
-      { userId, year, trancheIndex: index, amount: t.amount, status: t.amount > 0 ? 'paid' : 'unpaid', paidAt: nextDate },
+      { userId, year, trancheIndex: index, amount: t.amount, status: 'paid', paidAt: nextDate },
       {
         onSuccess: res => {
           setDateMode('text');
@@ -268,15 +251,34 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
     );
   };
 
+  const dateControl = dateMode === 'edit' ? (
+    <div className="group/trancheDate relative w-full">
+      <div className="absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/trancheDate:flex">
+        <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => commitDate(draftDate)} disabled={updateTranche.isPending} title="Valider la date"
+          className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
+          <Check size={11} />
+        </button>
+      </div>
+      <input
+        ref={dateInputRef}
+        type="date" value={draftDate} disabled={updateTranche.isPending}
+        onChange={e => setDraftDate(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitDate(draftDate); } }}
+        className={`w-full min-w-0 rounded-md border border-emerald-300 px-1 py-0.5 text-center outline-none focus:border-emerald-500 disabled:cursor-wait ${sizes.date}`}
+      />
+    </div>
+  ) : (
+    <button type="button" onClick={() => { setDateMode('edit'); setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80); }} title="Modifier la date"
+      className={`truncate text-center font-semibold text-neutral-400 transition hover:text-emerald-600 hover:underline ${sizes.date}`}>
+      {fmtDate(t.paidAt ?? draftDate)}
+    </button>
+  );
+
   return (
     <div className="flex flex-col items-center gap-1 py-1 text-center" onClick={e => e.stopPropagation()}>
+      {!isUnfilledAndIrrelevant && dateControl}
+
       <select
-        /* key=t.status : force React à remonter proprement le <select> à chaque changement
-           de statut (déclenché par une mutation, pas par une interaction directe avec ce
-           contrôle) — certains navigateurs mobiles (WebKit) ne repeignent pas toujours le
-           libellé affiché d'un <select> fermé après une mise à jour purement programmatique
-           de sa `value`, ce qui donne l'impression que le badge "n'a pas suivi" alors que la
-           donnée est bien à jour en base et dans le cache. */
         key={t.status}
         value={t.status}
         onChange={e => commitStatus(e.target.value as 'unpaid' | 'paid' | 'exempt')}
@@ -284,80 +286,41 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
         className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center font-black outline-none disabled:cursor-not-allowed disabled:opacity-60 ${sizes.badge} ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
       >
         <option value="unpaid" disabled={isFullySettled || t.amount > 0}>{isUnfilledAndIrrelevant ? 'N.C' : 'Impayé'}</option>
-        {/* "Payé" ne doit jamais être choisi manuellement dans la liste — il se met
-            automatiquement dès qu'un montant validé couvre la tranche (cf. commitAmount).
-            Option conservée uniquement pour permettre l'affichage de la valeur courante. */}
         <option value="paid" disabled>Payé</option>
         <option value="exempt">Exempté</option>
       </select>
 
-      {/* Tranche jamais remplie mais dette déjà soldée par les autres tranches : plus rien à saisir. */}
       {isUnfilledAndIrrelevant ? (
         <span className={`font-mono font-black text-neutral-300 ${sizes.amount}`}>—</span>
       ) : (
-        <>
-          {/* Montant : mode 'edit' (saisie) ou 'text' (validé, cliquable pour remodifier) — indépendant de la date. */}
-          {amountMode === 'edit' ? (
-            <div className="group/tranche relative w-full">
-              {/* Boutons flottants juste au-dessus du champ de saisie : masqués par défaut, visibles uniquement au focus DE CE champ précis.
-                  Groupe nommé (group/tranche) car la <tr> de la ligne porte déjà "group" (survol) — un group-focus-within générique
-                  se déclencherait dès qu'un focus est détecté n'importe où dans la ligne (les 4 tranches en même temps). */}
-              <div className="absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/tranche:flex">
-                <button type="button" onMouseDown={e => e.preventDefault()} onClick={confirmAmount} disabled={updateTranche.isPending} title="Valider le montant"
-                  className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
-                  <Check size={11} />
-                </button>
-                <button type="button" onMouseDown={e => e.preventDefault()} onClick={clearAmount} disabled={updateTranche.isPending} title="Effacer la saisie"
-                  className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 transition hover:bg-red-100 hover:text-red-500">
-                  <X size={11} />
-                </button>
-              </div>
-              <input
-                ref={amountInputRef}
-                type="number" min={0} value={draftAmount} disabled={updateTranche.isPending}
-                onChange={e => setDraftAmount(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') confirmAmount(); }}
-                placeholder="Montant"
-                className={`w-full min-w-0 rounded-md border border-neutral-200 px-1 py-0.5 text-center outline-none focus:border-emerald-400 disabled:cursor-wait ${sizes.amount}`}
-              />
+        amountMode === 'edit' ? (
+          <div className="group/tranche relative w-full">
+            <div className="absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/tranche:flex">
+              <button type="button" onMouseDown={e => e.preventDefault()} onClick={confirmAmount} disabled={updateTranche.isPending} title="Valider le montant"
+                className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
+                <Check size={11} />
+              </button>
+              <button type="button" onMouseDown={e => e.preventDefault()} onClick={clearAmount} disabled={updateTranche.isPending} title="Effacer la saisie"
+                className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 transition hover:bg-red-100 hover:text-red-500">
+                <X size={11} />
+              </button>
             </div>
-          ) : (
-            <button type="button" onClick={() => { setAmountMode('edit'); setTimeout(() => amountInputRef.current?.focus(), 80); }} title="Modifier le montant"
-              className={`flex items-center justify-center gap-1 truncate font-mono font-black text-neutral-700 transition hover:text-emerald-700 hover:underline ${sizes.amount}`}>
-              {fmtNum(t.amount)} F
-              <PencilLine size={10} className="shrink-0 text-neutral-400" />
-            </button>
-          )}
-
-          {/* Date : n'apparaît qu'une fois un montant validé (> 0) — jamais avant, pour ne pas
-              changer la mise en page d'une tranche vierge. Mode 'edit'/'text' indépendant du montant. */}
-          {t.amount > 0 && (
-            dateMode === 'edit' ? (
-              <div className="group/trancheDate relative w-full">
-                <div className="absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/trancheDate:flex">
-                  <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => commitDate(draftDate)} disabled={updateTranche.isPending} title="Valider la date"
-                    className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
-                    <Check size={11} />
-                  </button>
-                </div>
-                <input
-                  ref={dateInputRef}
-                  type="date" value={draftDate} disabled={updateTranche.isPending}
-                  onChange={e => { setDraftDate(e.target.value); commitDate(e.target.value); }}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitDate(draftDate); } }}
-                  className={`w-full min-w-0 rounded-md border border-emerald-300 px-1 py-0.5 text-center outline-none focus:border-emerald-500 disabled:cursor-wait ${sizes.date}`}
-                />
-              </div>
-            ) : (
-              t.paidAt && (
-                <button type="button" onClick={() => { setDateMode('edit'); setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80); }} title="Modifier la date"
-                  className={`truncate text-center font-semibold text-neutral-400 transition hover:text-emerald-600 hover:underline ${sizes.date}`}>
-                  {fmtDate(t.paidAt)}
-                </button>
-              )
-            )
-          )}
-        </>
+            <input
+              ref={amountInputRef}
+              type="number" min={0} value={draftAmount} disabled={updateTranche.isPending}
+              onChange={e => setDraftAmount(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') confirmAmount(); }}
+              placeholder="Montant"
+              className={`w-full min-w-0 rounded-md border border-neutral-200 px-1 py-0.5 text-center outline-none focus:border-emerald-400 disabled:cursor-wait ${sizes.amount}`}
+            />
+          </div>
+        ) : (
+          <button type="button" onClick={() => { setAmountMode('edit'); setTimeout(() => amountInputRef.current?.focus(), 80); }} title="Modifier le montant"
+            className={`flex items-center justify-center gap-1 truncate font-mono font-black text-neutral-700 transition hover:text-emerald-700 hover:underline ${sizes.amount}`}>
+            {fmtNum(t.amount)} F
+            <PencilLine size={10} className="shrink-0 text-neutral-400" />
+          </button>
+        )
       )}
 
       {isLastTranche && !isUnfilledAndIrrelevant && (
@@ -366,7 +329,6 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
     </div>
   );
 }
-
 function DetteCell({ tranches, annualFee }: { tranches?: Tranche[]; annualFee: number }) {
   const sumEntered = (tranches ?? DEFAULT_TRANCHES).reduce((acc, t) => acc + Number(t.amount || 0), 0);
   const dette = Math.min(0, sumEntered - annualFee);
@@ -396,14 +358,24 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
     ? { select: 'w-full text-[10px]', date: 'w-full text-[11px]', dateShell: 'w-full' }
     : { select: 'w-[74px] text-[8px]', date: 'w-full text-[9px]', dateShell: 'w-[74px] max-w-[74px]' };
   const cfg = cotisationConfig[status] ?? cotisationConfig.unpaid;
+  const dateConfirmed = dateMode === 'text' && !!draftDate;
 
   useEffect(() => {
-    setDraftDate(paidAt ? paidAt.slice(0, 10) : today);
+    setDraftDate(paidAt ? paidAt.slice(0, 10) : draftDate || today);
     setDateMode(paidAt ? 'text' : 'edit');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paidAt, status]);
 
-  const submit = (nextStatus: CotisationStatus, nextDate = draftDate, successMessage = 'Statut mis a jour') => {
+  const requireConfirmedDate = () => {
+    if (dateConfirmed) return true;
+    onFeedback('warning', 'Validez d abord la date de paiement avant de changer ce statut.');
+    setDateMode('edit');
+    setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80);
+    return false;
+  };
+
+  const submit = (nextStatus: CotisationStatus, nextDate = draftDate, successMessage = 'Statut mis a jour', dateAlreadyConfirmed = false) => {
+    if ((nextStatus === 'paid' || nextStatus === 'exempt') && !dateAlreadyConfirmed && !requireConfirmedDate()) return;
     if (nextStatus === 'paid' && !nextDate) {
       onFeedback('warning', 'La date de paiement est requise.');
       return;
@@ -418,7 +390,7 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
       {
         onSuccess: (res: any) => {
           if (nextStatus === 'paid') setDateMode('text');
-          else setDateMode('edit');
+          else if (nextStatus === 'unpaid') setDateMode('edit');
           onFeedback('success', res?.message ?? successMessage);
         },
         onError: (err: Error) => {
@@ -434,26 +406,16 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
       onFeedback('warning', 'La date de paiement est requise.');
       return;
     }
-    if (status !== 'paid') {
-      onFeedback('warning', 'Passez le statut a Payee pour enregistrer cette date.');
+    if (status === 'paid') {
+      submit('paid', draftDate, 'Date mise a jour', true);
       return;
     }
-    submit('paid', draftDate, 'Date mise a jour');
+    setDateMode('text');
+    onFeedback('success', 'Date validée');
   };
 
   return (
     <div className={variant === 'mobile' ? "flex w-full flex-col items-start gap-1" : "flex w-fit flex-col items-start gap-1"} onClick={e => e.stopPropagation()}>
-      <select
-        value={status}
-        onChange={e => submit(e.target.value as CotisationStatus)}
-        disabled={updateCotisation.isPending}
-        className={`cursor-pointer appearance-none rounded-lg px-1.5 py-0.5 font-black focus:outline-none disabled:cursor-wait disabled:opacity-60 ${sizes.select} ${cfg.cls}`}
-      >
-        <option value="unpaid">Impayee</option>
-        <option value="paid">Payee</option>
-        <option value="exempt">Exempte</option>
-      </select>
-
       {dateMode === 'edit' ? (
         <div className={`group/adhesionDate relative ${sizes.dateShell}`}>
           <div className="absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/adhesionDate:flex">
@@ -480,6 +442,17 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
           <PencilLine size={10} className="shrink-0 text-neutral-400" />
         </button>
       )}
+
+      <select
+        value={status}
+        onChange={e => submit(e.target.value as CotisationStatus)}
+        disabled={updateCotisation.isPending}
+        className={`cursor-pointer appearance-none rounded-lg px-1.5 py-0.5 font-black focus:outline-none disabled:cursor-wait disabled:opacity-60 ${sizes.select} ${cfg.cls}`}
+      >
+        <option value="unpaid">Impayee</option>
+        <option value="paid">Payee</option>
+        <option value="exempt">Exempte</option>
+      </select>
     </div>
   );
 }
