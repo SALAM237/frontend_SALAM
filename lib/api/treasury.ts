@@ -19,6 +19,7 @@ export interface TreasuryTransaction {
   paymentMode?: string;
   reference?: string;
   counterparty?: string;
+  pendingDeletionAt?: string | null;
   visibility: 'members' | 'private';
 }
 

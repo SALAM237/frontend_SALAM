@@ -100,7 +100,7 @@ export function downloadReceiptPdf(
       <div class="eyebrow"><span class="logo"><img src="${RECEIPT_ASSOCIATION.logoUrl}" alt="Logo SALAM" /></span>${escReceipt(RECEIPT_ASSOCIATION.name)}</div>
       <p style="color:rgba(255,255,255,.72)">Solidaire Associative des Lauréats du Maroc</p>
       <h1>Reçu de paiement</h1>
-      <p style="color:rgba(255,255,255,.72)">Facture associée : ${escReceipt(invoiceReference)} - ${escReceipt(paidAt)}</p>
+      <p style="color:rgba(255,255,255,.72)">${escReceipt(receipt.receiptNumber)} · ${escReceipt(paidAt)}</p>
     </header>
     <section class="grid">
       <div class="card">

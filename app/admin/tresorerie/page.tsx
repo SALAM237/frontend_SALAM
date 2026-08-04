@@ -648,10 +648,28 @@ function Select({ label, value, onChange, options, disabled = false }: { label: 
   );
 }
 
+function deletionCountdown(deadline?: string | null, now = Date.now()) {
+  if (!deadline) return null;
+  const end = new Date(deadline).getTime();
+  if (!Number.isFinite(end)) return null;
+  const remaining = Math.max(0, end - now);
+  const minutes = Math.floor(remaining / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000);
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
 function TransactionList({ title, items, kind, loading, onDelete, deletingId }: { title: string; items: TreasuryTransaction[]; kind?: TreasuryKind; loading?: boolean; onDelete?: (id: string) => void; deletingId?: string }) {
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const hasPendingDeletion = items.some(item => item.pendingDeletionAt && new Date(item.pendingDeletionAt).getTime() > Date.now());
+    if (!hasPendingDeletion) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [items]);
 
   const filtered = kind ? items.filter(i => i.kind === kind) : items;
   const q = search.trim().toLowerCase();
@@ -676,17 +694,23 @@ function TransactionList({ title, items, kind, loading, onDelete, deletingId }: 
         {visible.map(item => {
           const expanded = expandedId === item._id;
           const textCls = expanded ? 'whitespace-normal break-words' : 'truncate';
+          const countdown = deletionCountdown(item.pendingDeletionAt, now);
           return (
-            <div key={item._id} className="flex items-center gap-3 py-3 cursor-pointer" onClick={() => setExpandedId(expanded ? null : item._id)}>
+            <div key={item._id} className={`flex cursor-pointer items-center gap-3 py-3 ${countdown ? 'rounded-xl bg-amber-50/70 px-2 sm:px-3' : ''}`} onClick={() => setExpandedId(expanded ? null : item._id)}>
               <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${item.kind === 'expense' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}>
                 {item.kind === 'expense' ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 min-w-0">
+                <div className="flex min-w-0 items-center gap-1.5">
                   <p className={`text-xs font-black text-neutral-900 sm:text-sm ${textCls}`}>{item.label || 'Operation'}</p>
                 </div>
                 <p className={`text-[11px] text-neutral-400 sm:text-xs ${textCls}`}>{sourceLabels[item.source] ?? item.category ?? 'Operation'} - {new Date(item.occurredAt).toLocaleDateString('fr-FR')}</p>
                 {item.description && <p className={`mt-0.5 text-[11px] italic text-neutral-400 sm:text-xs ${textCls}`}>{item.description}</p>}
+                {countdown && (
+                  <p className="mt-1 rounded-lg border border-amber-200 bg-white/80 px-2 py-1 text-[10px] font-black leading-snug text-amber-700 sm:inline-flex sm:text-[11px]">
+                    Suppression en cours : cette ligne disparaitra dans {countdown}.
+                  </p>
+                )}
               </div>
               <p className={`shrink-0 text-xs font-black sm:text-sm ${item.kind === 'expense' ? 'text-red-600' : 'text-emerald-700'}`}>{formatFcfa(item.amount)}</p>
               {onDelete && (
@@ -724,13 +748,12 @@ function TransactionList({ title, items, kind, loading, onDelete, deletingId }: 
       </div>
       {searched.length > pageSize && (
         <p className="mt-3 text-center text-xs font-semibold text-neutral-400">
-          {pageSize} sur {searched.length} affichées — augmentez le nombre de lignes ci-dessus pour en voir plus.
+          {pageSize} sur {searched.length} affichees - augmentez le nombre de lignes ci-dessus pour en voir plus.
         </p>
       )}
     </Card>
   );
 }
-
 function AssetList({ title, items, loading, onDelete, deletingId }: { title: string; items: TreasuryAsset[]; loading?: boolean; onDelete?: (id: string) => void; deletingId?: string }) {
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);

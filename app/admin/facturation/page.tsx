@@ -1638,7 +1638,13 @@ function ReceiptsTab() {
         <div className="relative w-full sm:min-w-[140px] sm:max-w-[240px]">
           <Search size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un reçu, un membre…"
-            className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" />
+            className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-9 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" />
+          {search && (
+            <button type="button" onClick={() => setSearch('')} title="Effacer la recherche"
+              className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600">
+              <X size={12} />
+            </button>
+          )}
         </div>
         <div className="flex flex-wrap gap-1.5">
           {([['all', 'Tous'], ['cotisation', "Frais d'adhésion"], ['cotisation_annuelle', 'Cotisation annuelle']] as const).map(([val, lbl]) => (
@@ -1906,8 +1912,14 @@ export default function FacturationAdminPage() {
           <Search size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher une facture…"
-            className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+            className="h-9 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-9 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
           />
+          {search && (
+            <button type="button" onClick={() => setSearch('')} title="Effacer la recherche"
+              className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600">
+              <X size={12} />
+            </button>
+          )}
         </div>
         <div ref={filterRef} className="relative">
           <button type="button" onClick={() => setShowFilterPanel(v => !v)}
