@@ -393,8 +393,8 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
   const dateInputRef = useRef<HTMLInputElement>(null);
   const updateCotisation = useUpdateCotisationStatus();
   const sizes = variant === 'mobile'
-    ? { select: 'w-full text-[10px]', date: 'w-full text-[11px]' }
-    : { select: 'w-[74px] text-[8px]', date: 'w-[74px] text-[9px]' };
+    ? { select: 'w-full text-[10px]', date: 'w-full text-[11px]', dateShell: 'w-full' }
+    : { select: 'w-[74px] text-[8px]', date: 'w-full text-[9px]', dateShell: 'w-[74px] max-w-[74px]' };
   const cfg = cotisationConfig[status] ?? cotisationConfig.unpaid;
 
   useEffect(() => {
@@ -455,7 +455,7 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
       </select>
 
       {dateMode === 'edit' ? (
-        <div className={`group/adhesionDate relative ${sizes.date.split(' ')[0]}`}>
+        <div className={`group/adhesionDate relative ${sizes.dateShell}`}>
           <div className="absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/adhesionDate:flex">
             <button type="button" onMouseDown={e => e.preventDefault()} onClick={confirmDate} disabled={updateCotisation.isPending} title="Valider la date"
               className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
@@ -470,12 +470,12 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
             disabled={updateCotisation.isPending}
             onChange={e => setDraftDate(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmDate(); } }}
-            className={`min-w-0 rounded-md border px-1 py-0.5 text-center font-semibold text-neutral-600 outline-none focus:border-emerald-500 disabled:cursor-wait ${status === 'paid' ? 'border-emerald-300' : 'border-neutral-200'} ${sizes.date}`}
+            className={`box-border min-w-0 max-w-full rounded-md border px-1 py-0.5 text-center font-semibold text-neutral-600 outline-none [min-inline-size:0] focus:border-emerald-500 disabled:cursor-wait [&::-webkit-calendar-picker-indicator]:m-0 [&::-webkit-calendar-picker-indicator]:h-3 [&::-webkit-calendar-picker-indicator]:w-3 ${status === 'paid' ? 'border-emerald-300' : 'border-neutral-200'} ${sizes.date}`}
           />
         </div>
       ) : (
         <button type="button" onClick={() => { setDateMode('edit'); setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80); }} title="Modifier la date"
-          className={`flex items-center justify-center gap-1 truncate rounded-md px-1 py-0.5 text-center font-semibold text-neutral-500 transition hover:text-emerald-600 hover:underline ${sizes.date}`}>
+          className={`box-border flex min-w-0 max-w-full items-center justify-center gap-1 truncate rounded-md px-1 py-0.5 text-center font-semibold text-neutral-500 transition hover:text-emerald-600 hover:underline ${sizes.dateShell} ${sizes.date}`}>
           {fmtDate(paidAt ?? draftDate)}
           <PencilLine size={10} className="shrink-0 text-neutral-400" />
         </button>
