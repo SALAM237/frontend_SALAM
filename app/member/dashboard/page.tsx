@@ -118,25 +118,28 @@ export default function MemberDashboardPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-900 via-[#0b1f15] to-[#061009] p-3 text-white sm:p-6">
-        <div className="flex items-center justify-between">
-          <p className="text-[10px] font-semibold text-white/50 sm:text-sm">
-            {civility ? `Bienvenue, ${civility}` : 'Bienvenue,'}
-          </p>
-          <p className="font-mono text-[8.5px] font-bold text-emerald-400 sm:text-[10px]">{memberId}</p>
-        </div>
-        <h1 className="mt-0.5 flex items-center gap-1.5 text-base font-black tracking-[-0.03em] sm:mt-1 sm:gap-2 sm:text-2xl">
-          <GenderIcon gender={gender} size={16} />
-          {firstName || lastName ? formatFullName(firstName, lastName) : 'Membre'}
-        </h1>
-        <p className="mt-0.5 text-[10px] text-white/50 sm:mt-1 sm:text-sm">Membre actif</p>
-        <div className="mt-2 h-px bg-white/[0.08] sm:mt-4" />
-        <div className="mt-2 flex gap-2 sm:mt-4 sm:gap-3">
-          <Link href="/member/carte" className="inline-flex h-7 items-center gap-1 rounded-full bg-emerald-500 px-3 text-[10px] font-black text-white transition-all hover:bg-emerald-400 sm:h-9 sm:gap-2 sm:px-5 sm:text-xs">
-            <CreditCard size={11} /> Ma carte membre
-          </Link>
-          <Link href="/member/activites" className="inline-flex h-7 items-center gap-1 rounded-full border border-white/15 px-3 text-[10px] font-semibold text-white/70 transition-all hover:border-white/30 hover:text-white sm:h-9 sm:gap-2 sm:px-5 sm:text-xs">
-            <CalendarDays size={11} /> Voir les activites
-          </Link>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold text-white/50 sm:text-sm">
+              {civility ? `Bienvenue, ${civility}` : 'Bienvenue,'}
+            </p>
+            <h1 className="mt-0.5 flex min-w-0 items-center gap-1.5 text-base font-black tracking-[-0.03em] sm:mt-1 sm:gap-2 sm:text-2xl">
+              <GenderIcon gender={gender} size={16} />
+              <span className="truncate">{firstName || lastName ? formatFullName(firstName, lastName) : 'Membre'}</span>
+            </h1>
+            <p className="mt-0.5 text-[10px] text-white/50 sm:mt-1 sm:text-sm">Membre actif</p>
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-1.5 sm:gap-2">
+            <p className="font-mono text-[8.5px] font-bold text-emerald-400 sm:text-[10px]">{memberId}</p>
+            <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:gap-2">
+              <Link href="/member/carte" className="inline-flex h-7 items-center gap-1 rounded-full bg-emerald-500 px-2.5 text-[9px] font-black text-white transition-all hover:bg-emerald-400 sm:h-8 sm:gap-1.5 sm:px-3 sm:text-[11px]">
+                <CreditCard size={11} /> Ma carte membre
+              </Link>
+              <Link href="/member/activites" className="inline-flex h-7 items-center gap-1 rounded-full border border-white/15 px-2.5 text-[9px] font-semibold text-white/70 transition-all hover:border-white/30 hover:text-white sm:h-8 sm:gap-1.5 sm:px-3 sm:text-[11px]">
+                <CalendarDays size={11} /> Voir les activites
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 

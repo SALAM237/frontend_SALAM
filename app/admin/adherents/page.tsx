@@ -950,11 +950,24 @@ export default function AdminAdherentsPage() {
   const handleBackToList = () => {
     setActiveTab(null);
     setShowKpis(true);
+    setSearch('');
+    setFilters(EMPTY_FILTERS);
     setCheckedIds(new Set());
     setShowCheckboxes(false);
     setRelanceSub(null);
+    setSelectedAct(null);
+    setShowActPicker(false);
     setShowFraisParams(false);
     setShowCotAnnuelleParams(false);
+    setShowFilterPanel(false);
+    setShowGroupsPanel(false);
+    setOpenGroupIds(new Set());
+    setExpandedId(null);
+    setCardSelected(null);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(ADHERENTS_UI_STATE_KEY);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   /* ── Action handlers ────────────────────────────────────── */
