@@ -31,6 +31,7 @@ export interface ReceiptDoc {
   reference?: string | null;
   notes?: string | null;
   status: ReceiptStatus;
+  pendingDeletionAt?: string | null;
   modifiedAt?: string | null;
   modifiedBy?: string | { _id: string; firstName?: string; lastName?: string } | null;
   cancelledAt?: string | null;

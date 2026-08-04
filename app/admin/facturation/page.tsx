@@ -1578,6 +1578,15 @@ function EditReceiptModal({ receipt, onClose }: { receipt: ReceiptDoc; onClose: 
   );
 }
 
+function receiptDeletionCountdown(deadline?: string | null, now = Date.now()) {
+  if (!deadline) return null;
+  const end = new Date(deadline).getTime();
+  if (!Number.isFinite(end)) return null;
+  const remaining = Math.max(0, end - now);
+  const minutes = Math.floor(remaining / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000);
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
 function ReceiptsTab() {
   const [search,          setSearch]          = useState('');
   const [typeFilter,      setTypeFilter]      = useState<'all' | 'cotisation' | 'cotisation_annuelle'>('all');
@@ -1586,12 +1595,20 @@ function ReceiptsTab() {
   const [selectMode,      setSelectMode]      = useState(false);
   const [selectedIds,     setSelectedIds]     = useState<Set<string>>(new Set());
   const [confirmBulkCancel, setConfirmBulkCancel] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasLongPress    = useRef(false);
 
   const { data, isLoading, isError } = useAdminReceipts(typeFilter === 'all' ? undefined : { type: typeFilter });
   const cancelReceipt = useCancelReceipt();
   const receipts = data?.data ?? [];
+
+  useEffect(() => {
+    const hasPendingDeletion = receipts.some(r => r.pendingDeletionAt && new Date(r.pendingDeletionAt).getTime() > Date.now());
+    if (!hasPendingDeletion) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [receipts]);
 
   const filtered = receipts.filter(r => {
     const name = receiptMemberName(r);
@@ -1695,6 +1712,7 @@ function ReceiptsTab() {
             const isCancelled = r.status === 'cancelled';
             const isChecked = selectedIds.has(r._id);
             const trancheLabel = r.trancheIndex != null ? ` · Tranche ${r.trancheIndex + 1}` : '';
+            const deletionCountdown = receiptDeletionCountdown(r.pendingDeletionAt, now);
             return (
               <div key={r._id}
                 className={`select-none flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-neutral-50/60 sm:flex-nowrap sm:gap-4 sm:px-5 sm:py-4 ${isCancelled ? 'opacity-60' : ''} ${isChecked ? 'bg-emerald-50/40' : ''}`}
@@ -1728,6 +1746,11 @@ function ReceiptsTab() {
                   <p className="mt-0.5 truncate font-mono text-[11px] text-neutral-400">
                     {r.receiptNumber}{r.invoiceNumber ? ` · Facture ${r.invoiceNumber}` : ''} · {fmt(r.paidAt)}
                   </p>
+                  {deletionCountdown && (
+                    <p className="mt-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-black leading-snug text-amber-700 sm:inline-flex sm:text-[11px]">
+                      Suppression en cours : cette ligne disparaitra dans {deletionCountdown}.
+                    </p>
+                  )}
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="font-black text-neutral-900">{fmtCfa(r.amount)}</p>
