@@ -546,8 +546,18 @@ export default function NetworkingPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Rechercher un secteur, une compétence, un domaine…"
-              className="h-11 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-4 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+              className="h-11 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-10 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label="Effacer la recherche"
+                className="absolute right-2.5 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           <DirectoryStatsSummary

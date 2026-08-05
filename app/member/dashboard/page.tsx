@@ -123,11 +123,13 @@ export default function MemberDashboardPage() {
             <p className="text-[10px] font-semibold text-white/50 sm:text-sm">
               {civility ? `Bienvenue, ${civility}` : 'Bienvenue,'}
             </p>
-            <h1 className="mt-0.5 flex min-w-0 items-center gap-1.5 text-base font-black tracking-[-0.03em] sm:mt-1 sm:gap-2 sm:text-2xl">
+            <div className="mt-0.5 grid grid-cols-[16px,minmax(0,1fr)] items-center gap-x-1.5 sm:mt-1 sm:gap-x-2">
               <GenderIcon gender={gender} size={16} />
-              <span className="truncate">{firstName || lastName ? formatFullName(firstName, lastName) : 'Membre'}</span>
-            </h1>
-            <p className="mt-0.5 text-[10px] text-white/50 sm:mt-1 sm:text-sm">Membre actif</p>
+              <h1 className="min-w-0 truncate text-base font-black tracking-[-0.03em] sm:text-2xl">
+                {firstName || lastName ? formatFullName(firstName, lastName) : 'Membre'}
+              </h1>
+              <p className="col-start-2 mt-0.5 text-[10px] text-white/50 sm:mt-1 sm:text-sm">Membre actif</p>
+            </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1 sm:gap-2">
             <p className="font-mono text-[8.5px] font-bold text-emerald-400 sm:text-[10px]">{memberId}</p>
