@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle2, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
+import { notifyDeviceVerificationEvent } from '@/components/auth/DeviceVerificationModal';
 
 
 function VerifyDeviceContent() {

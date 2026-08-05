@@ -1,11 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { CheckCircle2, Loader2, MailWarning, ShieldX, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { CheckCircle2, Loader2, MailWarning, RefreshCw, ShieldX, X } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import type { AuthUser } from '@/store/auth.store';
 
 type ChallengeStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+const DEVICE_VERIFY_EVENT_KEY = 'salam:device-verification:event';
+
+export function notifyDeviceVerificationEvent(status: 'approved' | 'rejected') {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(DEVICE_VERIFY_EVENT_KEY, JSON.stringify({ status, at: Date.now() }));
+  } catch { /* localStorage peut etre bloque, le polling/focus restent actifs */ }
+}
 
 export function DeviceVerificationModal({ challengeId, onApproved, onClose }: {
   challengeId: string;
@@ -14,49 +22,72 @@ export function DeviceVerificationModal({ challengeId, onApproved, onClose }: {
 }) {
   const [status, setStatus] = useState<ChallengeStatus>('pending');
   const [message, setMessage] = useState("Un email de verification vient d'etre envoye. Consultez votre boite mail, puis cliquez sur le bouton d'autorisation pour finaliser la connexion sur cet appareil.");
+  const [checking, setChecking] = useState(false);
+  const busyRef = useRef(false);
+  const doneRef = useRef(false);
+  const onApprovedRef = useRef(onApproved);
+
+  useEffect(() => { onApprovedRef.current = onApproved; }, [onApproved]);
+
+  const poll = useCallback(async () => {
+    if (!challengeId || busyRef.current || doneRef.current) return;
+    busyRef.current = true;
+    setChecking(true);
+    try {
+      const res = await apiClient<{ status: ChallengeStatus; accessToken?: string }>(`/api/v1/auth/device-challenge/${encodeURIComponent(challengeId)}/status`, { method: 'GET' });
+      if (doneRef.current) return;
+      if (res.data.status === 'pending') return;
+      doneRef.current = true;
+      setStatus(res.data.status);
+      if (res.data.status === 'approved') {
+        if (!res.data.accessToken) throw new Error('Session manquante apres autorisation.');
+        const sessionRes = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: JSON.stringify({ accessToken: res.data.accessToken }),
+        });
+        if (!sessionRes.ok) throw new Error('Impossible de finaliser la session.');
+        const sessionJson: { user?: AuthUser } = await sessionRes.json();
+        if (!sessionJson.user) throw new Error('Utilisateur introuvable apres autorisation.');
+        setMessage('Connexion autorisee. Redirection en cours...');
+        onApprovedRef.current(sessionJson.user, res.data.accessToken);
+        return;
+      }
+      setMessage(res.data.status === 'rejected'
+        ? 'Connexion refusee depuis votre email. La demande est annulee.'
+        : 'Le delai de verification est expire. Relancez la connexion.');
+    } catch (err) {
+      if (!doneRef.current) {
+        doneRef.current = true;
+        setStatus('expired');
+        setMessage(err instanceof Error ? err.message : 'Verification impossible. Relancez la connexion.');
+      }
+    } finally {
+      busyRef.current = false;
+      setChecking(false);
+    }
+  }, [challengeId]);
 
   useEffect(() => {
-    if (!challengeId || status !== 'pending') return;
-    let cancelled = false;
-    let busy = false;
-    const poll = async () => {
-      if (busy || cancelled) return;
-      busy = true;
-      try {
-        const res = await apiClient<{ status: ChallengeStatus; accessToken?: string }>(`/api/v1/auth/device-challenge/${encodeURIComponent(challengeId)}/status`, { method: 'GET' });
-        if (cancelled) return;
-        if (res.data.status === 'pending') return;
-        setStatus(res.data.status);
-        if (res.data.status === 'approved') {
-          if (!res.data.accessToken) throw new Error('Session manquante apres autorisation.');
-          const sessionRes = await fetch('/api/auth/session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json; charset=utf-8' },
-            body: JSON.stringify({ accessToken: res.data.accessToken }),
-          });
-          if (!sessionRes.ok) throw new Error('Impossible de finaliser la session.');
-          const sessionJson: { user?: AuthUser } = await sessionRes.json();
-          if (!sessionJson.user) throw new Error('Utilisateur introuvable apres autorisation.');
-          setMessage('Connexion autorisee. Redirection en cours...');
-          onApproved(sessionJson.user, res.data.accessToken);
-          return;
-        }
-        setMessage(res.data.status === 'rejected'
-          ? 'Connexion refusee depuis votre email. La demande est annulee.'
-          : 'Le delai de verification est expire. Relancez la connexion.');
-      } catch (err) {
-        if (!cancelled) {
-          setStatus('expired');
-          setMessage(err instanceof Error ? err.message : 'Verification impossible. Relancez la connexion.');
-        }
-      } finally {
-        busy = false;
-      }
+    doneRef.current = false;
+    setStatus('pending');
+    setMessage("Un email de verification vient d'etre envoye. Consultez votre boite mail, puis cliquez sur le bouton d'autorisation pour finaliser la connexion sur cet appareil.");
+    void poll();
+    const timer = window.setInterval(() => { void poll(); }, 3000);
+    const verifyNow = () => { if (!document.hidden) void poll(); };
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === DEVICE_VERIFY_EVENT_KEY) void poll();
     };
-    poll();
-    const timer = window.setInterval(poll, 3000);
-    return () => { cancelled = true; window.clearInterval(timer); };
-  }, [challengeId, onApproved, status]);
+    window.addEventListener('focus', verifyNow);
+    document.addEventListener('visibilitychange', verifyNow);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', verifyNow);
+      document.removeEventListener('visibilitychange', verifyNow);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [challengeId, poll]);
 
   const Icon = status === 'approved' ? CheckCircle2 : status === 'rejected' || status === 'expired' ? ShieldX : MailWarning;
   const tone = status === 'approved' ? 'emerald' : status === 'rejected' || status === 'expired' ? 'red' : 'amber';
@@ -94,10 +125,21 @@ export function DeviceVerificationModal({ challengeId, onApproved, onClose }: {
         <div className="space-y-3 p-5">
           <p className="text-sm leading-6 text-neutral-600">{message}</p>
           {status === 'pending' && (
-            <div className="flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5 text-xs font-semibold leading-5 text-amber-800">
-              <Loader2 size={13} className="shrink-0 animate-spin" />
-              En attente de validation...
-            </div>
+            <>
+              <div className="flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5 text-xs font-semibold leading-5 text-amber-800">
+                <Loader2 size={13} className="shrink-0 animate-spin" />
+                En attente de validation...
+              </div>
+              <button
+                type="button"
+                onClick={() => { void poll(); }}
+                disabled={checking}
+                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-3 text-xs font-black text-amber-700 transition hover:bg-amber-50 disabled:opacity-60"
+              >
+                {checking ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                J'ai autorise, verifier maintenant
+              </button>
+            </>
           )}
         </div>
       </div>
