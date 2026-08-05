@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
+import { getPostLoginRedirect } from '@/lib/auth/roles';
 
 function VerifyDeviceContent() {
   const router = useRouter();
@@ -55,7 +56,7 @@ function VerifyDeviceContent() {
         setAuth(sessionJson.user, res.data.accessToken);
         setStatus('approved');
         setMessage('Appareil verifie. Redirection vers votre espace...');
-        const target = res.data.nextUrl || '/choisir-espace';
+        const target = getPostLoginRedirect(sessionJson.user);
         let remaining = 4;
         const timer = window.setInterval(() => {
           remaining -= 1;

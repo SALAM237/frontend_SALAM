@@ -6,11 +6,11 @@ import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 
 const accountTabs = [
   { label: 'Mon profil', href: '/member/profil', icon: User },
-  { label: 'Securite', href: '/member/securite', icon: Shield },
   { label: 'Ma carte', href: '/member/carte', icon: CreditCard },
   { label: 'Cotisations', href: '/member/cotisations', icon: Banknote },
   { label: 'Mes factures', href: '/member/factures', icon: FileText },
   { label: 'Mes documents', href: '/member/documents', icon: FolderOpen },
+  { label: 'Securite', href: '/member/securite', icon: Shield },
 ];
 
 export function isMemberAccountPath(pathname: string) {

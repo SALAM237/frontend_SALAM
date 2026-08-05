@@ -8,9 +8,9 @@ import Image from 'next/image';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { hasAdminRole } from '@/lib/auth/roles';
+import { DeviceVerificationModal } from '@/components/auth/DeviceVerificationModal';
 
 const PENDING_MSG = 'Veuillez vérifier votre email avant de vous connecter';
-const DEVICE_VERIFY_MSG = 'Nouvel appareil ou pays de connexion detecte. Verifiez votre email pour autoriser cette connexion.';
 
 export default function BureauConnexionPage() {
   const router = useRouter();
@@ -259,13 +259,7 @@ export default function BureauConnexionPage() {
                   <p className="text-xs leading-relaxed text-red-700">{error}</p>
                 </div>
               )}
-
-              {needsDeviceVerify && (
-                <div role="status" className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                  <MailWarning size={15} className="mt-0.5 shrink-0 text-amber-600" />
-                  <p className="text-xs leading-relaxed text-amber-800">{DEVICE_VERIFY_MSG}</p>
-                </div>
-              )}
+              {needsDeviceVerify && <DeviceVerificationModal onClose={() => setNeedsDeviceVerify(false)} />}
 
               {/* Email non vérifié */}
               {needsVerify && (
