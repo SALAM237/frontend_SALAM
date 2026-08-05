@@ -194,7 +194,7 @@ export function useMemberDirectorySearch(search: string, limit = 20) {
   const token = useAuthStore(s => s.accessToken);
   const trimmed = search.trim();
   const qs = new URLSearchParams();
-  qs.set('search', trimmed);
+  if (trimmed) qs.set('search', trimmed);
   qs.set('limit', String(limit));
 
   return useQuery({
@@ -203,7 +203,7 @@ export function useMemberDirectorySearch(search: string, limit = 20) {
       apiClient<{ data: DirectoryMember[]; total: number; page: number; pages: number }>(`/api/v1/member/directory?${qs}`, {
         token: token ?? '',
       }),
-    enabled: !!token && trimmed.length >= 2,
+    enabled: !!token,
   });
 }
 

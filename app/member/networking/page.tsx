@@ -569,19 +569,12 @@ export default function NetworkingPage() {
             domains={domains}
           />
 
-          {trimmed.length < 2 && (
-            <div className="mt-8 flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 py-12 text-center">
-              <Handshake size={34} className="mb-3 text-neutral-200" />
-              <p className="text-sm font-black text-neutral-500">Tapez au moins 2 caractères.</p>
-              <p className="mt-1 max-w-md text-xs leading-6 text-neutral-400">Essayez un secteur, une compétence ou un domaine comme finance, React, marketing ou data.</p>
-            </div>
-          )}
-          {trimmed.length >= 2 && query.isLoading && (
+          {query.isLoading && (
             <div className="mt-8 flex items-center justify-center gap-2 rounded-2xl border border-neutral-100 py-10 text-sm font-bold text-neutral-400">
-              <Loader2 size={16} className="animate-spin" /> Recherche en cours…
+              <Loader2 size={16} className="animate-spin" /> Chargement du répertoire…
             </div>
           )}
-          {trimmed.length >= 2 && !query.isLoading && results.length === 0 && (
+          {!query.isLoading && results.length === 0 && (
             <div className="mt-8 flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 py-12 text-center">
               <Users size={34} className="mb-3 text-neutral-200" />
               <p className="text-sm font-black text-neutral-500">Aucun profil trouvé.</p>
