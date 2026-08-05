@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Eye, EyeOff, Laptop, Loader2, Lock, MapPin, Power, Shield, ShieldCheck, Trash2, X } from 'lucide-react';
-import { useChangeMemberPassword, useMyDevices, useRequestAccountDeletion, type MemberDevice } from '@/lib/api/members';
+import { useChangeMemberPassword, useDisconnectMyDevice, useMyDevices, useRequestAccountDeletion, type MemberDevice } from '@/lib/api/members';
 
 const PW_CHECKS = [
   { label: '8 caracteres minimum', test: (v: string) => v.length >= 8 },
@@ -79,18 +79,32 @@ function DeviceList({ devices, loading }: { devices: MemberDevice[]; loading: bo
 
 function DeviceCard({ device }: { device: MemberDevice }) {
   const connected = device.status === 'connected';
+  const disconnectDevice = useDisconnectMyDevice();
   return (
-    <article className="rounded-xl border border-neutral-100 bg-neutral-50/70 p-3 sm:p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <article className="min-w-0 overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50/70 p-3 sm:p-4">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="truncate text-sm font-black text-neutral-900">{device.label}</p>
-          <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-neutral-500"><MapPin size={12} /> {device.location || device.countryCode || 'Lieu non renseigne'}</p>
+          <p className="max-w-full truncate text-sm font-black text-neutral-900">{device.label}</p>
+          <p className="mt-1 flex min-w-0 items-center gap-1 text-xs font-semibold text-neutral-500"><MapPin size={12} className="shrink-0" /> <span className="min-w-0 truncate">{device.location || device.countryCode || 'Lieu non renseigne'}</span></p>
         </div>
-        <span className={`inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black ${connected ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>
-          <Power size={11} /> {connected ? 'Connecte' : 'Deconnecte'}
-        </span>
+        <div className="grid w-full min-w-0 grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+          <span className={`inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black ${connected ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>
+            <Power size={11} /> {connected ? 'Connecte' : 'Deconnecte'}
+          </span>
+          {connected && (
+            <button
+              type="button"
+              onClick={() => disconnectDevice.mutate(device.id)}
+              disabled={disconnectDevice.isPending}
+              className="inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-full border border-red-200 bg-white px-3 text-[10px] font-black text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+            >
+              {disconnectDevice.isPending ? <Loader2 size={11} className="animate-spin" /> : <Power size={11} />}
+              Deconnexion
+            </button>
+          )}
+        </div>
       </div>
-      <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
         <Info label="IP" value={device.ip || '-'} />
         <Info label="Verifie" value={fmt(device.verifiedAt)} />
         <Info label="Derniere connexion" value={fmt(device.lastUsed)} />
@@ -105,7 +119,12 @@ function DeviceCard({ device }: { device: MemberDevice }) {
 }
 
 function Info({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-lg bg-white px-3 py-2"><p className="text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400">{label}</p><p className="mt-0.5 break-words font-semibold text-neutral-700">{value}</p></div>;
+  return (
+    <div className="grid min-w-0 grid-cols-[minmax(0,7.25rem)_minmax(0,1fr)] items-center gap-1 rounded-lg bg-white px-2.5 py-2 text-[10px] sm:block sm:px-3 sm:text-xs">
+      <span className="min-w-0 truncate font-black uppercase tracking-[0.04em] text-neutral-400 sm:block sm:text-[9px] sm:tracking-[0.12em]" title={label}>{label} :</span>
+      <span className="min-w-0 truncate text-right font-semibold text-neutral-700 sm:mt-0.5 sm:block sm:text-left sm:break-words" title={value}>{value}</span>
+    </div>
+  );
 }
 
 function PasswordModal({ onClose }: { onClose: () => void }) {

@@ -627,6 +627,27 @@ export function useMyDevices() {
   });
 }
 
+
+export function useDisconnectMyDevice() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (deviceId: string) => apiClient<{ currentDevice: boolean }>(`/api/v1/member/devices/${deviceId}/disconnect`, {
+      method: 'POST',
+      token: token ?? '',
+    }),
+    onSuccess: async res => {
+      qc.invalidateQueries({ queryKey: ['member-devices'] });
+      toast.success('Appareil deconnecte');
+      if (res.data?.currentDevice && typeof window !== 'undefined') {
+        await fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
+        useAuthStore.getState().clearAuth();
+        window.location.href = '/auth/login';
+      }
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
 export function useAdminMemberDevices(memberId?: string | null, enabled = true) {
   const token = useAuthStore(s => s.accessToken);
   return useQuery({
