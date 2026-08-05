@@ -34,25 +34,25 @@ function LoginForm() {
 
   const [needsVerify, setNeedsVerify]   = useState(false);
   const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'sent'>('idle');
-  const [needsDeviceVerify, setNeedsDeviceVerify] = useState(false);
+  const [deviceChallengeId, setDeviceChallengeId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     trackEvent('login_click', { method: 'email' });
     setError('');
     setNeedsVerify(false);
-    setNeedsDeviceVerify(false);
+    setDeviceChallengeId(null);
     setResendStatus('idle');
     setLoading(true);
 
     try {
-      const res = await apiClient<{ accessToken?: string; requires2FA?: boolean; requiresDeviceVerification?: boolean }>(
+      const res = await apiClient<{ accessToken?: string; requires2FA?: boolean; requiresDeviceVerification?: boolean; challengeId?: string }>(
         '/api/v1/auth/login',
         { method: 'POST', body: JSON.stringify({ email, password }) },
       );
 
       if (res.data.requiresDeviceVerification) {
-        setNeedsDeviceVerify(true);
+        setDeviceChallengeId(res.data.challengeId ?? null);
         return;
       }
 
@@ -171,7 +171,7 @@ function LoginForm() {
             <p className="text-xs leading-relaxed text-red-700">{error}</p>
           </div>
         )}
-        {needsDeviceVerify && <DeviceVerificationModal onClose={() => setNeedsDeviceVerify(false)} />}
+        {deviceChallengeId && <DeviceVerificationModal challengeId={deviceChallengeId} onClose={() => setDeviceChallengeId(null)} onApproved={(approvedUser, token) => { setAuth(approvedUser, token); const fallback = getPostLoginRedirect(approvedUser); router.push(safeRedirect(searchParams.get('redirect'), fallback)); }} />}
 
         {/* Erreur email non vérifié + option de renvoi */}
         {needsVerify && (
