@@ -8,12 +8,12 @@ import {
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
   Plus, Minus, SlidersHorizontal, X, Bell, Banknote,
   Send, CalendarDays, AlertTriangle, Users,
-  FolderOpen, Folders, ChevronRight, Check, Wallet, HelpCircle,
+  FolderOpen, Folders, ChevronRight, Check, Wallet, HelpCircle, Laptop, MapPin, Power,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useAdminMembers, useHardDeleteMember, useResendInvitation,
-  useRemindIncompleteProfiles, useRemindPendingInscriptions, useBackfillLastLogin, type MemberListItem,
+  useRemindIncompleteProfiles, useRemindPendingInscriptions, useBackfillLastLogin, useAdminMemberDevices, type MemberListItem, type MemberDevice,
 } from '@/lib/api/members';
 import {
   useAdminCotisations, useUpdateCotisationStatus, useSendReminders,
@@ -36,7 +36,7 @@ import { GenderIcon } from '@/components/ui/GenderIcon';
 import { downloadElementAsPng, memberCardMailto } from '@/lib/member-card-export';
 
 /* ── Types ─────────────────────────────────────────────── */
-type ActiveTab  = 'relance' | 'frais' | 'cauris' | 'cartes' | 'cotisation-annuelle' | null;
+type ActiveTab  = 'relance' | 'frais' | 'cauris' | 'cartes' | 'cotisation-annuelle' | 'appareils' | null;
 type RelanceSub = 'cotisation' | 'cotisation-annuelle' | 'inscription' | 'profil' | 'presence' | 'facture' | null;
 const ADHERENTS_UI_STATE_KEY = 'salam:admin:adherents:ui-state:v1';
 const ADHERENTS_UI_STATE_TTL_MS = 2 * 60 * 60 * 1000;
@@ -101,6 +101,7 @@ const TAB_LABELS: Record<string, string> = {
   cauris:                'Gestion cauris',
   cartes:                'Cartes membres',
   'cotisation-annuelle': 'Cotisation annuelle',
+  appareils:             'Appareils',
 };
 
 /* ── Utilities ───────────────────────────────────────────── */
@@ -592,6 +593,71 @@ function easeTabScroll(t: number) {
   return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 }
 
+function formatDeviceDate(value?: string | null) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function AdminMemberDevicesPanel({ member, enabled }: { member: MemberListItem | null; enabled: boolean }) {
+  const devicesQuery = useAdminMemberDevices(member?._id, enabled && !!member);
+  const devices = devicesQuery.data?.data?.devices ?? [];
+  if (!member) {
+    return (
+      <div className="flex min-h-[260px] flex-col items-center justify-center gap-3 text-center">
+        <Laptop size={36} className="text-neutral-200" />
+        <div><p className="text-sm font-semibold text-neutral-400">Selectionnez un membre</p><p className="mt-0.5 text-xs text-neutral-300">pour consulter ses appareils</p></div>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-black text-neutral-900">{formatFullName(member.firstName, member.lastName)}</p>
+          <p className="mt-0.5 truncate font-mono text-xs text-neutral-400">{member.memberId}</p>
+        </div>
+        {devicesQuery.isLoading && <Loader2 size={16} className="shrink-0 animate-spin text-slate-600" />}
+      </div>
+      {!devicesQuery.isLoading && devices.length === 0 && (
+        <p className="rounded-xl border border-dashed border-neutral-200 px-3 py-8 text-center text-sm font-bold text-neutral-400">Aucun appareil enregistre.</p>
+      )}
+      <div className="grid gap-3">
+        {devices.map(device => <AdminDeviceCard key={device.id} device={device} />)}
+      </div>
+    </div>
+  );
+}
+
+function AdminDeviceCard({ device }: { device: MemberDevice }) {
+  const connected = device.status === 'connected';
+  return (
+    <article className="rounded-xl border border-neutral-100 bg-neutral-50/80 p-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between lg:flex-col lg:items-stretch">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-black text-neutral-900">{device.label}</p>
+          <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-neutral-500"><MapPin size={11} /> {device.location || device.countryCode || 'Lieu non renseigne'}</p>
+        </div>
+        <span className={`inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black ${connected ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>
+          <Power size={10} /> {connected ? 'Connecte' : 'Deconnecte'}
+        </span>
+      </div>
+      <div className="mt-3 grid gap-2 text-[10px] sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+        <DeviceInfo label="IP" value={device.ip || '-'} />
+        <DeviceInfo label="Verifie" value={formatDeviceDate(device.verifiedAt)} />
+        <DeviceInfo label="Connexion" value={formatDeviceDate(device.lastUsed)} />
+        <DeviceInfo label="Deconnexion" value={formatDeviceDate(device.lastLogout)} />
+        <DeviceInfo label="Expiration" value={formatDeviceDate(device.expiresAt)} />
+        <DeviceInfo label="Nombre" value={String(device.loginCount ?? 0)} />
+      </div>
+    </article>
+  );
+}
+
+function DeviceInfo({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-lg bg-white px-2.5 py-2"><p className="text-[8px] font-black uppercase tracking-[0.1em] text-neutral-400">{label}</p><p className="mt-0.5 break-words font-semibold text-neutral-700">{value}</p></div>;
+}
 export default function AdminAdherentsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -657,6 +723,7 @@ export default function AdminAdherentsPage() {
   const user         = useAuthStore(s => s.user);
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
   const canBackfillLogin = user?.email?.trim().toLowerCase() === 'salamcameroun237@gmail.com';
+  const canViewMemberDevices = canBackfillLogin;
 
   const { data, isLoading }            = useAdminMembers({ search: '', limit: 200 });
   const { data: cotisData }            = useAdminCotisations(cotisYear);
@@ -683,7 +750,7 @@ export default function AdminAdherentsPage() {
         return;
       }
       const state = saved.state ?? {};
-      if ([null, 'relance', 'frais', 'cauris', 'cartes', 'cotisation-annuelle'].includes(state.activeTab)) setActiveTab(state.activeTab);
+      if ([null, 'relance', 'frais', 'cauris', 'cartes', 'cotisation-annuelle', 'appareils'].includes(state.activeTab)) setActiveTab(state.activeTab);
       if (typeof state.showKpis === 'boolean') setShowKpis(state.showKpis);
       if ([null, 'cotisation', 'cotisation-annuelle', 'inscription', 'profil', 'presence', 'facture'].includes(state.relanceSub)) setRelanceSub(state.relanceSub);
       if (Number.isInteger(state.cotisYear)) setCotisYear(state.cotisYear);
@@ -829,8 +896,8 @@ export default function AdminAdherentsPage() {
 
   /* ── Auto-select first card when cartes tab opens ──────── */
   useEffect(() => {
-    if (activeTab === 'cartes') setCardSelected(prev => prev ?? members[0] ?? null);
-  }, [activeTab, members]);
+    if (activeTab === 'cartes' || (activeTab === 'appareils' && canViewMemberDevices)) setCardSelected(prev => prev ?? members[0] ?? null);
+  }, [activeTab, members, canViewMemberDevices]);
 
   /* ── Auto-sélection des invités en attente quand une activité est choisie ── */
   useEffect(() => {
@@ -1039,6 +1106,7 @@ export default function AdminAdherentsPage() {
       frais:   { active: 'border-blue-500 bg-blue-600 text-white',           inactive: 'border-blue-300 bg-blue-50 text-blue-600 lg:bg-white',          desktop: 'lg:border-blue-300 lg:text-blue-600'      },
       cauris:  { active: 'border-amber-500 bg-amber-500 text-white',         inactive: 'border-amber-300 bg-amber-50 text-amber-600 lg:bg-white',       desktop: 'lg:border-amber-300 lg:text-amber-600'    },
       cartes:  { active: 'border-yellow-400 bg-yellow-400 text-neutral-900', inactive: 'border-yellow-300 bg-yellow-50 text-yellow-700 lg:bg-white',    desktop: 'lg:border-yellow-300 lg:text-yellow-700'  },
+      appareils: { active: 'border-slate-700 bg-slate-800 text-white', inactive: 'border-slate-300 bg-slate-50 text-slate-700 lg:bg-white', desktop: 'lg:border-slate-300 lg:text-slate-700' },
       'cotisation-annuelle': { active: 'border-violet-500 bg-violet-600 text-white', inactive: 'border-violet-300 bg-violet-50 text-violet-600 lg:bg-white', desktop: 'lg:border-violet-300 lg:text-violet-600' },
     };
     const t = THEME[tab as string];
@@ -1050,7 +1118,7 @@ export default function AdminAdherentsPage() {
 
   /* Icon color when button is NOT active (inherits white when active from parent text-white) */
   const tabIconCls = (tab: ActiveTab): string => {
-    const ICON_CLR: Record<string, string> = { relance: 'text-orange-500', frais: 'text-blue-500', cauris: 'text-amber-500', cartes: 'text-yellow-500', 'cotisation-annuelle': 'text-violet-500' };
+    const ICON_CLR: Record<string, string> = { relance: 'text-orange-500', frais: 'text-blue-500', cauris: 'text-amber-500', cartes: 'text-yellow-500', appareils: 'text-slate-600', 'cotisation-annuelle': 'text-violet-500' };
     if (activeTab === tab) return ''; /* inherits text-white from button */
     return ICON_CLR[tab as string] ?? '';
   };
@@ -1138,7 +1206,15 @@ export default function AdminAdherentsPage() {
               Cartes membres
             </span>
           </button>
-
+          {canViewMemberDevices && (
+            <button type="button" data-tab-btn="appareils" onClick={() => handleTabClick('appareils')}
+              className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('appareils')}`}>
+              <Laptop size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('appareils')}`} />
+              <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'appareils' ? 'max-w-[85px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
+                Appareils
+              </span>
+            </button>
+          )}
           {/* Nouveau membre */}
           <Link href="/admin/adherents/nouveau"
             className="shrink-0 ml-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-2.5 py-1.5 text-[10px] font-black text-white shadow-sm transition-all hover:bg-emerald-700 lg:ml-3 lg:px-4 lg:py-2 lg:text-xs">
@@ -1834,10 +1910,10 @@ export default function AdminAdherentsPage() {
         {isLoading && <div className="flex items-center justify-center py-16"><Loader2 size={20} className="animate-spin text-emerald-600" /></div>}
 
         {!isLoading && (
-          <div className={activeTab === 'cartes' ? 'lg:flex' : ''}>
+          <div className={(activeTab === 'cartes' || activeTab === 'appareils') ? 'lg:flex' : ''}>
 
             {/* Member list */}
-            <div className={activeTab === 'cartes' ? 'min-w-0 flex-1 overflow-x-auto' : ''}>
+            <div className={(activeTab === 'cartes' || activeTab === 'appareils') ? 'min-w-0 flex-1 overflow-x-auto' : ''}>
 
               {/* ── Desktop table ──────────────────────────────── */}
               <div className="hidden lg:block">
@@ -1900,12 +1976,12 @@ export default function AdminAdherentsPage() {
                       const isConfirming = confirmDeleteId === m._id;
                       const photoUrl     = memberPhotoUrl(m);
                       const isChecked    = checkedIds.has(m._id);
-                      const isCardActive = activeTab === 'cartes' && cardSelected?._id === m._id;
+                      const isCardActive = (activeTab === 'cartes' || activeTab === 'appareils') && cardSelected?._id === m._id;
                       return (
                         <tr key={m._id}
                           className={`group transition-colors ${isCardActive ? 'bg-emerald-50' : isChecked ? 'bg-orange-50/40' : 'hover:bg-neutral-50/55'}`}
-                          onClick={activeTab === 'cartes' ? () => setCardSelected(m) : undefined}
-                          style={activeTab === 'cartes' ? { cursor: 'pointer' } : undefined}
+                          onClick={(activeTab === 'cartes' || activeTab === 'appareils') ? () => setCardSelected(m) : undefined}
+                          style={(activeTab === 'cartes' || activeTab === 'appareils') ? { cursor: 'pointer' } : undefined}
                         >
                           <td className="px-2 py-3"><input type="checkbox" checked={isChecked} onChange={e => { e.stopPropagation(); toggleOne(m._id); }} onClick={e => e.stopPropagation()} className="h-3.5 w-3.5 rounded border-neutral-300 accent-orange-500" /></td>
                           <td className="px-3 py-3">
@@ -2049,7 +2125,7 @@ export default function AdminAdherentsPage() {
                               if (wasLongPress.current) { wasLongPress.current = false; return; }
                               if ((event.target as HTMLElement).closest('[data-profile-photo]') && photoUrl) { setPhotoPreview({ src: photoUrl, name: formatFullName(m.firstName, m.lastName) }); return; }
                               if (showCheckboxesMobile) { toggleOne(m._id); return; }
-                              if (activeTab === 'cartes') { setCardSelected(m); }
+                              if (activeTab === 'cartes' || activeTab === 'appareils') { setCardSelected(m); }
                               setExpandedId(isExpanded ? null : m._id);
                             }}
                             className="flex min-w-0 flex-1 items-center gap-2 text-left transition active:scale-[0.995]"
@@ -2087,7 +2163,12 @@ export default function AdminAdherentsPage() {
                                   </div>
                                 </div>
                               )}
-                              {activeTab === 'cotisation-annuelle' && (
+                              {activeTab === 'appareils' && canViewMemberDevices && (
+                                <div className="mb-2.5 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2">
+                                  <p className="mb-2 text-[9px] font-black uppercase tracking-[0.1em] text-slate-500">Appareils</p>
+                                  <AdminMemberDevicesPanel member={m} enabled={isExpanded} />
+                                </div>
+                              )}                              {activeTab === 'cotisation-annuelle' && (
                                 <div className="mb-2.5 space-y-2">
                                   <div className="grid grid-cols-2 gap-1.5">
                                     {[0, 1, 2, 3].map(i => (
@@ -2148,6 +2229,13 @@ export default function AdminAdherentsPage() {
             </div>
 
             {/* ── Card aside — desktop cartes tab ───────────── */}
+            {activeTab === 'appareils' && canViewMemberDevices && (
+              <div className="hidden shrink-0 border-l border-neutral-100 lg:block lg:w-[420px]">
+                <div className="sticky top-20 h-fit p-5">
+                  <AdminMemberDevicesPanel member={cardSelected} enabled />
+                </div>
+              </div>
+            )}
             {activeTab === 'cartes' && (
               <div className="hidden shrink-0 border-l border-neutral-100 lg:block lg:w-[380px]">
                 <div className="sticky top-20 h-fit p-5">

@@ -601,3 +601,37 @@ export function useSendInternalMessageBulk() {
     onError: (err: Error) => toast.error(err.message),
   });
 }
+
+export interface MemberDevice {
+  id: string;
+  label: string;
+  device: string;
+  ip?: string | null;
+  location?: string | null;
+  countryCode?: string | null;
+  verifiedAt?: string | null;
+  lastUsed?: string | null;
+  lastLogout?: string | null;
+  expiresAt?: string | null;
+  loginCount: number;
+  isActive: boolean;
+  status: 'connected' | 'disconnected';
+}
+
+export function useMyDevices() {
+  const token = useAuthStore(s => s.accessToken);
+  return useQuery({
+    queryKey: ['member-devices'],
+    queryFn: () => apiClient<MemberDevice[]>('/api/v1/member/devices', { token: token ?? '' }),
+    enabled: !!token,
+  });
+}
+
+export function useAdminMemberDevices(memberId?: string | null, enabled = true) {
+  const token = useAuthStore(s => s.accessToken);
+  return useQuery({
+    queryKey: ['admin-member-devices', memberId],
+    queryFn: () => apiClient<{ member: { _id: string; firstName?: string; lastName?: string; email?: string; memberNumber?: string | null }; devices: MemberDevice[] }>(`/api/v1/admin/members/${memberId}/devices`, { token: token ?? '' }),
+    enabled: !!token && !!memberId && enabled,
+  });
+}

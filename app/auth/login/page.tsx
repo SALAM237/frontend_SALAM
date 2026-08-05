@@ -18,6 +18,7 @@ function safeRedirect(url: string | null, fallback: string): string {
 }
 
 const PENDING_MSG = 'Veuillez vérifier votre email avant de vous connecter';
+const DEVICE_VERIFY_MSG = 'Nouvel appareil ou pays de connexion detecte. Verifiez votre email pour autoriser cette connexion.';
 
 function LoginForm() {
   const router          = useRouter();
@@ -33,20 +34,32 @@ function LoginForm() {
 
   const [needsVerify, setNeedsVerify]   = useState(false);
   const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'sent'>('idle');
+  const [needsDeviceVerify, setNeedsDeviceVerify] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     trackEvent('login_click', { method: 'email' });
     setError('');
     setNeedsVerify(false);
+    setNeedsDeviceVerify(false);
     setResendStatus('idle');
     setLoading(true);
 
     try {
-      const res = await apiClient<{ accessToken: string; requires2FA: boolean }>(
+      const res = await apiClient<{ accessToken?: string; requires2FA?: boolean; requiresDeviceVerification?: boolean }>(
         '/api/v1/auth/login',
         { method: 'POST', body: JSON.stringify({ email, password }) },
       );
+
+      if (res.data.requiresDeviceVerification) {
+        setNeedsDeviceVerify(true);
+        return;
+      }
+
+      if (!res.data.accessToken) {
+        setError('Connexion en attente de validation.');
+        return;
+      }
 
       if (res.data.requires2FA) {
         setError('Authentification 2FA requise — fonctionnalité disponible prochainement.');
@@ -156,6 +169,13 @@ function LoginForm() {
           <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
             <div className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
             <p className="text-xs leading-relaxed text-red-700">{error}</p>
+          </div>
+        )}
+
+        {needsDeviceVerify && (
+          <div role="status" className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <MailWarning size={15} className="mt-0.5 shrink-0 text-amber-600" />
+            <p className="text-xs leading-relaxed text-amber-800">{DEVICE_VERIFY_MSG}</p>
           </div>
         )}
 

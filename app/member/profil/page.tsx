@@ -8,21 +8,17 @@ import {
   Camera,
   CheckCircle2,
   ChevronDown,
-  Eye,
-  EyeOff,
   Loader2,
-  Lock,
   Mail,
   MapPin,
   Phone,
   Save,
-  Shield,
   Tag,
   User,
   X,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
-import { useChangeMemberPassword, useRequestAccountDeletion, useSubmitActivitySectorProposal, useUpdateProfile } from '@/lib/api/members';
+import { useSubmitActivitySectorProposal, useUpdateProfile } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { assetUrl } from '@/lib/assets';
@@ -135,8 +131,6 @@ export default function ProfilPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [form, setForm] = useState<ProfileForm>(emptyForm);
   const [saved, setSaved] = useState(false);
-  const [passwordOpen, setPasswordOpen] = useState(false);
-  const [deletionOpen, setDeletionOpen] = useState(false);
   const updateProfile = useUpdateProfile();
   const sectorProposal = useSubmitActivitySectorProposal();
 
@@ -466,23 +460,6 @@ export default function ProfilPage() {
             <TextArea label="Motivation" value={form.motivation} onChange={set('motivation')} placeholder="Ce que vous souhaitez apporter a SALAM..." missing={missing.motivation} />
           </div>
         </Section>
-
-        <Section title="Securite">
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <button type="button" onClick={() => setPasswordOpen(true)} className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300 sm:w-auto sm:justify-start">
-              <Lock size={13} /> Changer le mot de passe
-            </button>
-            <button type="button" className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-neutral-200 px-4 text-xs font-semibold text-neutral-600 hover:border-neutral-300 sm:w-auto sm:justify-start">
-              <Shield size={13} /> Authentification 2FA
-            </button>
-          </div>
-          <div className="mt-4 border-t border-neutral-100 pt-4">
-            <button type="button" onClick={() => setDeletionOpen(true)} className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-full border border-red-200 px-4 text-xs font-semibold text-red-600 hover:bg-red-50 sm:w-auto sm:justify-start">
-              Supprimer mon compte
-            </button>
-          </div>
-        </Section>
-
         <button
           type="submit"
           disabled={updateProfile.isPending}
@@ -496,8 +473,6 @@ export default function ProfilPage() {
           <CauriWalletPanel />
         </aside>
       </div>
-      {passwordOpen && <PasswordModal onClose={() => setPasswordOpen(false)} />}
-      {deletionOpen && <AccountDeletionModal onClose={() => setDeletionOpen(false)} />}
     </div>
   );
 }
@@ -673,173 +648,4 @@ function TagInput({ icon: Icon, label, help, value, onChange, placeholder, missi
     </div>
   );
 }
-
-function AccountDeletionModal({ onClose }: { onClose: () => void }) {
-  const requestDeletion = useRequestAccountDeletion();
-  const [reason, setReason] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const canSubmit = confirm.trim().toUpperCase() === 'SUPPRIMER';
-
-  const submit = () => {
-    if (!canSubmit || requestDeletion.isPending) return;
-    requestDeletion.mutate(
-      { reason: reason.trim() || undefined },
-      { onSuccess: onClose },
-    );
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 backdrop-blur-sm sm:items-center" onClick={onClose}>
-      <div role="dialog" aria-modal="true" className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5" onClick={event => event.stopPropagation()}>
-        <div className="flex items-start justify-between border-b border-red-100 bg-red-50/70 p-5">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-600">Validation administrateur</p>
-            <h2 className="mt-1 text-lg font-black text-neutral-900">Demander la suppression du compte</h2>
-            <p className="mt-1 text-sm leading-6 text-red-700/80">Le compte ne sera pas supprime maintenant. La demande sera envoyee aux administrateurs autorises.</p>
-          </div>
-          <button type="button" onClick={onClose} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-400 hover:bg-white/80">
-            <X size={15} />
-          </button>
-        </div>
-        <div className="space-y-4 p-5">
-          <div>
-            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Motif optionnel</label>
-            <textarea value={reason} onChange={event => setReason(event.target.value)} rows={3} maxLength={1000} placeholder="Expliquez votre demande si necessaire..." className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-red-300 focus:ring-2 focus:ring-red-500/10" />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Tapez SUPPRIMER pour confirmer la demande</label>
-            <input value={confirm} onChange={event => setConfirm(event.target.value)} className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-red-300 focus:ring-2 focus:ring-red-500/10" />
-          </div>
-        </div>
-        <div className="flex flex-col gap-3 border-t border-neutral-100 p-5 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onClose} className="h-10 rounded-xl border border-neutral-200 px-4 text-sm font-bold text-neutral-600 hover:border-neutral-300">Annuler</button>
-          <button type="button" onClick={submit} disabled={!canSubmit || requestDeletion.isPending} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-sm font-black text-white transition hover:bg-red-700 disabled:opacity-50">
-            {requestDeletion.isPending && <Loader2 size={14} className="animate-spin" />}
-            Envoyer la demande
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-const PW_CHECKS = [
-  { label: 'Au moins 8 caractères', test: (p: string) => p.length >= 8 },
-  { label: 'Une majuscule',          test: (p: string) => /[A-Z]/.test(p) },
-  { label: 'Une minuscule',          test: (p: string) => /[a-z]/.test(p) },
-  { label: 'Un chiffre',             test: (p: string) => /[0-9]/.test(p) },
-  { label: 'Un caractère spécial',   test: (p: string) => /[^A-Za-z0-9]/.test(p) },
-];
-const STRENGTH_LABEL = ['', 'Très faible', 'Faible', 'Moyen', 'Fort', 'Excellent'];
-const STRENGTH_COLOR = ['', 'bg-red-500', 'bg-red-400', 'bg-orange-400', 'bg-emerald-500', 'bg-emerald-600'];
-
-function PasswordModal({ onClose }: { onClose: () => void }) {
-  const changePassword = useChangeMemberPassword();
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-
-  const checks   = PW_CHECKS.map(c => ({ ...c, valid: c.test(newPassword) }));
-  const strength = checks.filter(c => c.valid).length;
-  const valid    = currentPassword && strength === 5 && newPassword === confirmPassword;
-
-  const submit = () => {
-    if (!valid || changePassword.isPending) return;
-    changePassword.mutate({ currentPassword, newPassword }, { onSuccess: onClose });
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
-        <div className="flex items-center justify-between border-b border-neutral-100 bg-emerald-50/40 p-5">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Sécurité</p>
-            <h2 className="text-lg font-black text-neutral-900">Changer le mot de passe</h2>
-          </div>
-          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100">
-            <X size={15} />
-          </button>
-        </div>
-        <div className="space-y-3 p-5">
-          <PasswordField label="Mot de passe actuel *" value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />
-          <div>
-            <PasswordField label="Nouveau mot de passe *" value={newPassword} onChange={setNewPassword} autoComplete="new-password" showToggle />
-            {/* Strength gauge */}
-            {newPassword.length > 0 && (
-              <div className="mt-2 space-y-1.5">
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= strength ? STRENGTH_COLOR[strength] : 'bg-neutral-100'}`} />
-                  ))}
-                </div>
-                <p className="text-[10px] font-semibold text-neutral-500">
-                  Force : <span className={strength >= 4 ? 'text-emerald-600' : strength >= 3 ? 'text-orange-500' : 'text-red-500'}>{STRENGTH_LABEL[strength]}</span>
-                </p>
-                <ul className="mt-1 grid grid-cols-1 gap-0.5">
-                  {checks.map(c => (
-                    <li key={c.label} className={`flex items-center gap-1.5 text-[10px] ${c.valid ? 'text-emerald-600' : 'text-neutral-400'}`}>
-                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${c.valid ? 'bg-emerald-500' : 'bg-neutral-300'}`} />
-                      {c.label}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-          <PasswordField label="Confirmer le nouveau mot de passe *" value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" showToggle />
-          {confirmPassword && newPassword !== confirmPassword && (
-            <p className="text-xs font-semibold text-red-500">Les mots de passe ne correspondent pas.</p>
-          )}
-        </div>
-        <div className="flex gap-3 border-t border-neutral-100 p-5">
-          <button type="button" onClick={onClose} className="h-10 flex-1 rounded-xl border border-neutral-200 text-sm font-bold text-neutral-600 hover:border-neutral-300">Annuler</button>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!valid || changePassword.isPending}
-            className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-black text-white transition-all hover:bg-emerald-700 disabled:opacity-50"
-          >
-            {changePassword.isPending && <Loader2 size={14} className="animate-spin" />}
-            Enregistrer
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PasswordField({ label, value, onChange, autoComplete, showToggle = false }: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  autoComplete: string;
-  showToggle?: boolean;
-}) {
-  const [show, setShow] = useState(false);
-  return (
-    <div>
-      <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">{label}</label>
-      <div className="relative">
-        <input
-          type={show ? 'text' : 'password'}
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          autoComplete={autoComplete}
-          className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm text-neutral-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/10"
-          style={showToggle ? { paddingRight: '2.25rem' } : undefined}
-        />
-        {showToggle && (
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={() => setShow(v => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-          >
-            {show ? <EyeOff size={15} /> : <Eye size={15} />}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 
