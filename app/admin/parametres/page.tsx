@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth.store';
 import { isSuperAdmin, hasAnyPermission } from '@/lib/auth/roles';
 import { usePdfLogo, useUploadPdfLogo } from '@/lib/api/settings';
+import { loadAssociationInfo, saveAssociationInfo } from '@/lib/invoice-pdf';
+import { PhoneField } from '@/components/ui/PhoneField';
 
 export default function ParametresPage() {
   const router = useRouter();
@@ -15,8 +17,12 @@ export default function ParametresPage() {
   const user   = useAuthStore(s => s.user);
   const SA     = isSuperAdmin(user);
   const [saved, setSaved] = useState(false);
-  const [assocName, setAssocName] = useState('Association SALAM Cameroun');
-  const [email, setEmail] = useState('contact@salam-cameroun.com');
+  const [associationInfo, setAssociationInfo] = useState(() => loadAssociationInfo());
+  const [assocName, setAssocName] = useState(() => loadAssociationInfo().title || 'Association SALAM Cameroun');
+  const [email, setEmail] = useState(() => loadAssociationInfo().email || 'contact@salam-cameroun.com');
+  const [associationAddress, setAssociationAddress] = useState(() => loadAssociationInfo().address || '');
+  const [associationRegistration, setAssociationRegistration] = useState(() => loadAssociationInfo().registration || '');
+  const [associationPhone, setAssociationPhone] = useState(() => loadAssociationInfo().phone || '');
   const [notifNewMember, setNotifNewMember] = useState(true);
   const [notifNewMsg, setNotifNewMsg] = useState(true);
   const [notifActivite, setNotifActivite] = useState(false);
@@ -25,6 +31,17 @@ export default function ParametresPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     await new Promise(r => setTimeout(r, 700));
+    const nextAssociationInfo = {
+      ...associationInfo,
+      title: assocName.trim() || associationInfo.title,
+      name: assocName.trim() || associationInfo.name,
+      email: email.trim(),
+      address: associationAddress.trim(),
+      registration: associationRegistration.trim(),
+      phone: associationPhone.trim(),
+    };
+    saveAssociationInfo(nextAssociationInfo);
+    setAssociationInfo(nextAssociationInfo);
     setSaved(true);
     toast.success('Paramètres enregistrés');
     setTimeout(() => setSaved(false), 2500);
@@ -67,6 +84,9 @@ export default function ParametresPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Nom de l'association" value={assocName} onChange={e => setAssocName(e.target.value)} />
             <Field label="Email de contact"     value={email}     onChange={e => setEmail(e.target.value)}     type="email" />
+            <Field label="Adresse de l'association" value={associationAddress} onChange={e => setAssociationAddress(e.target.value)} />
+            <Field label="N° d'immatriculation" value={associationRegistration} onChange={e => setAssociationRegistration(e.target.value)} />
+            <PhoneAdminField label="Telephone" value={associationPhone} onChange={setAssociationPhone} />
           </div>
           <Field label="URL du site" value="https://salam-cameroun.com" onChange={() => {}} disabled />
         </Section>}
@@ -139,6 +159,15 @@ function Section({ icon: Icon, title, children }: { icon: React.ElementType; tit
         <p className="text-sm font-black text-neutral-900">{title}</p>
       </div>
       {children}
+    </div>
+  );
+}
+
+function PhoneAdminField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">{label}</label>
+      <PhoneField value={value} onChange={onChange} size="md" />
     </div>
   );
 }

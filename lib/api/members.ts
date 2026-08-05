@@ -60,6 +60,14 @@ export interface DirectoryMember {
   savedCount?: number;
 }
 
+export interface DirectoryStats {
+  total: number;
+  completeProfiles: number;
+  sectors: { label: string; count: number }[];
+  skills: { label: string; count: number }[];
+  domains: { label: string; count: number }[];
+}
+
 export interface UpdateProfilePayload {
   gender?: 'homme' | 'femme';
   firstName?: string;
@@ -169,6 +177,16 @@ export function useAdminMembers(params: {
         token: token ?? '',
       }),
     enabled: !!token,
+  });
+}
+
+export function useMemberDirectoryStats() {
+  const token = useAuthStore(s => s.accessToken);
+  return useQuery({
+    queryKey: ['member-directory-stats'],
+    queryFn: () => apiClient<DirectoryStats>('/api/v1/member/directory/stats', { token: token ?? '' }),
+    enabled: !!token,
+    staleTime: 60_000,
   });
 }
 

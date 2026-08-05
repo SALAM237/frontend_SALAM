@@ -7,7 +7,7 @@ import {
   FolderOpen, Handshake, Loader2, Mail, MapPin,
   MessageSquare, Plus, Search, Tags, Trash2, Users, X,
 } from 'lucide-react';
-import { useMemberDirectorySearch, type DirectoryMember } from '@/lib/api/members';
+import { useMemberDirectorySearch, useMemberDirectoryStats, type DirectoryMember } from '@/lib/api/members';
 import {
   useMyDirectories, useCreateDirectory, useDeleteDirectory,
   useAddToDirectory, useRemoveFromDirectory, type ContactDirectory,
@@ -35,6 +35,47 @@ function countValues(members: NetworkingMember[], getter: (m: NetworkingMember) 
     arr.filter(Boolean).forEach(item => map.set(item, (map.get(item) ?? 0) + 1));
   });
   return [...map.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+function DirectoryStatsSummary({
+  loading,
+  total,
+  completeProfiles,
+  sectors,
+  skills,
+  domains,
+}: {
+  loading: boolean;
+  total: number;
+  completeProfiles: number;
+  sectors: [string, number][];
+  skills: [string, number][];
+  domains: [string, number][];
+}) {
+  return (
+    <>
+      <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+        <div className="col-span-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-center sm:col-span-1 sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-emerald-700 sm:justify-start"><Users size={14} className="sm:hidden" /><Users size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Profils trouves</p></div><p className="mt-2 text-xl font-black text-emerald-900 sm:mt-3 sm:text-2xl">{loading ? '...' : total}</p><p className="mt-0.5 text-[10px] font-semibold text-emerald-900/60 sm:mt-1 sm:text-xs">{completeProfiles} profils bien renseignes</p></div>
+        <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-3 text-center sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-amber-700 sm:justify-start"><Tags size={14} className="sm:hidden" /><Tags size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Competences</p></div><p className="mt-2 text-xl font-black text-amber-900 sm:mt-3 sm:text-2xl">{skills.length}</p><p className="mt-0.5 text-[10px] font-semibold text-amber-900/60 sm:mt-1 sm:text-xs">mots-cles dominants</p></div>
+        <div className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-3 text-center sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-neutral-700 sm:justify-start"><Handshake size={14} className="sm:hidden" /><Handshake size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Secteurs</p></div><p className="mt-2 text-xl font-black text-neutral-900 sm:mt-3 sm:text-2xl">{sectors.length}</p><p className="mt-0.5 text-[10px] font-semibold text-neutral-500 sm:mt-1 sm:text-xs">secteurs detectes</p></div>
+      </div>
+      <div className="mt-4 grid gap-2 sm:mt-5 sm:gap-3 lg:grid-cols-3">
+        {[
+          { title: 'Top secteurs', items: sectors, cls: 'bg-emerald-50 text-emerald-700 ring-emerald-100' },
+          { title: 'Top competences', items: skills, cls: 'bg-amber-50 text-amber-700 ring-amber-100' },
+          { title: 'Top domaines', items: domains, cls: 'bg-violet-50 text-violet-700 ring-violet-100' },
+        ].map(block => (
+          <div key={block.title} className="rounded-2xl border border-neutral-100 p-3 sm:p-4">
+            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400 sm:text-xs sm:tracking-[0.14em]">{block.title}</p>
+            <div className="mt-2 flex flex-wrap gap-1 sm:mt-3 sm:gap-1.5">
+              {block.items.length === 0 && <span className="text-xs font-semibold text-neutral-400">Aucune donnee.</span>}
+              {block.items.map(([label, count]) => <span key={label} className={`rounded-full px-2 py-0.5 text-[9px] font-black ring-1 sm:px-2.5 sm:py-1 sm:text-[10px] ${block.cls}`}>{label} &middot; {count}</span>)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
 }
 
 function KeywordSection({ title, items, tone, action }: { title: string; items: string[]; tone: 'green' | 'amber' | 'violet'; action?: React.ReactNode }) {
@@ -215,15 +256,28 @@ function MemberNetworkingCard({
   const savedCount = member.savedCount ?? 0;
 
   return (
-    <article className="w-full overflow-hidden rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-100 hover:shadow-md">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(member)}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen(member);
+        }
+      }}
+      className="w-full cursor-pointer overflow-hidden rounded-2xl border border-neutral-100 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-100 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+    >
       <div className="flex min-w-0 items-start gap-3">
         {photo ? (
-          <AvatarLightbox src={photo} alt={name} className={'h-12 w-12 shrink-0 rounded-full border-2 object-cover ' + memberAvatarBorderClass(member.gender)} />
+          <span onClick={e => e.stopPropagation()} className="shrink-0">
+            <AvatarLightbox src={photo} alt={name} className={'h-12 w-12 shrink-0 rounded-full border-2 object-cover ' + memberAvatarBorderClass(member.gender)} />
+          </span>
         ) : (
           <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${memberInitialsClass(member.gender)}`}>{formatInitials(member.firstName, member.lastName, 'M')}</div>
         )}
         <div className="min-w-0 flex-1">
-          <button type="button" onClick={() => onOpen(member)} className="block w-full truncate text-left text-sm font-black text-neutral-900 transition hover:text-emerald-700">{name}</button>
+          <button type="button" onClick={e => { e.stopPropagation(); onOpen(member); }} className="block w-full truncate text-left text-sm font-black text-neutral-900 transition hover:text-emerald-700">{name}</button>
 
           {/* Secteur + compteur */}
           <div className="mt-0.5 flex items-center gap-2">
@@ -249,7 +303,7 @@ function MemberNetworkingCard({
           action={
             <button
               type="button"
-              onClick={() => onAddToDirectory(member)}
+              onClick={e => { e.stopPropagation(); onAddToDirectory(member); }}
               className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-black text-white transition hover:bg-emerald-700 active:scale-95"
             >
               <Plus size={9} /> Ajouter à mon répertoire
@@ -260,9 +314,9 @@ function MemberNetworkingCard({
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-neutral-100 pt-3">
-        <a href={`mailto:${member.email}`} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700"><Mail size={12} /> Email</a>
-        {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-2.5 text-xs font-black text-green-700 transition hover:bg-green-100">WhatsApp</a>}
-        <Link href={msgHref} className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-emerald-600 px-2.5 text-xs font-black text-white transition hover:bg-emerald-700"><MessageSquare size={12} /> Message</Link>
+        <a href={`mailto:${member.email}`} onClick={e => e.stopPropagation()} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700"><Mail size={12} /> Email</a>
+        {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-2.5 text-xs font-black text-green-700 transition hover:bg-green-100">WhatsApp</a>}
+        <Link href={msgHref} onClick={e => e.stopPropagation()} className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-emerald-600 px-2.5 text-xs font-black text-white transition hover:bg-emerald-700"><MessageSquare size={12} /> Message</Link>
         {member.antenne && <span className="text-[11px] font-bold text-neutral-400">Antenne {member.antenne}</span>}
       </div>
     </article>
@@ -460,13 +514,15 @@ export default function NetworkingPage() {
   const [addModal, setAddModal]     = useState<NetworkingMember | null>(null);
 
   const query   = useMemberDirectorySearch(search, 60);
+  const statsQuery = useMemberDirectoryStats();
   const results = query.data?.data?.data ?? [];
   const trimmed = search.trim();
 
-  const sectors          = useMemo(() => countValues(results, m => m.activitySector).slice(0, 8), [results]);
-  const skills           = useMemo(() => countValues(results, m => m.skills).slice(0, 8), [results]);
-  const domains          = useMemo(() => countValues(results, m => m.expertiseDomains).slice(0, 8), [results]);
-  const completeProfiles = results.filter(m => Boolean(m.activitySector) && Boolean(m.skills?.length) && Boolean(m.expertiseDomains?.length)).length;
+  const directoryStats = statsQuery.data?.data;
+  const sectors = useMemo(() => (directoryStats?.sectors ?? []).map(item => [item.label, item.count] as [string, number]), [directoryStats?.sectors]);
+  const skills = useMemo(() => (directoryStats?.skills ?? []).map(item => [item.label, item.count] as [string, number]), [directoryStats?.skills]);
+  const domains = useMemo(() => (directoryStats?.domains ?? []).map(item => [item.label, item.count] as [string, number]), [directoryStats?.domains]);
+  const completeProfiles = directoryStats?.completeProfiles ?? 0;
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
@@ -494,29 +550,14 @@ export default function NetworkingPage() {
             />
           </div>
 
-          {results.length > 0 && (
-            <>
-              <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-                <div className="col-span-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-center sm:col-span-1 sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-emerald-700 sm:justify-start"><Users size={14} className="sm:hidden" /><Users size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Profils trouvés</p></div><p className="mt-2 text-xl font-black text-emerald-900 sm:mt-3 sm:text-2xl">{results.length}</p><p className="mt-0.5 text-[10px] font-semibold text-emerald-900/60 sm:mt-1 sm:text-xs">{completeProfiles} profils bien renseignés</p></div>
-                <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-3 text-center sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-amber-700 sm:justify-start"><Tags size={14} className="sm:hidden" /><Tags size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Compétences</p></div><p className="mt-2 text-xl font-black text-amber-900 sm:mt-3 sm:text-2xl">{skills.length}</p><p className="mt-0.5 text-[10px] font-semibold text-amber-900/60 sm:mt-1 sm:text-xs">mots-clés dominants</p></div>
-                <div className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-3 text-center sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-neutral-700 sm:justify-start"><Handshake size={14} className="sm:hidden" /><Handshake size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Secteurs</p></div><p className="mt-2 text-xl font-black text-neutral-900 sm:mt-3 sm:text-2xl">{sectors.length}</p><p className="mt-0.5 text-[10px] font-semibold text-neutral-500 sm:mt-1 sm:text-xs">secteurs détectés</p></div>
-              </div>
-              <div className="mt-4 grid gap-2 sm:mt-5 sm:gap-3 lg:grid-cols-3">
-                {[
-                  { title: 'Top secteurs',    items: sectors, cls: 'bg-emerald-50 text-emerald-700 ring-emerald-100' },
-                  { title: 'Top compétences', items: skills,  cls: 'bg-amber-50  text-amber-700  ring-amber-100'  },
-                  { title: 'Top domaines',    items: domains, cls: 'bg-violet-50 text-violet-700 ring-violet-100' },
-                ].map(block => (
-                  <div key={block.title} className="rounded-2xl border border-neutral-100 p-3 sm:p-4">
-                    <p className="text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400 sm:text-xs sm:tracking-[0.14em]">{block.title}</p>
-                    <div className="mt-2 flex flex-wrap gap-1 sm:mt-3 sm:gap-1.5">
-                      {block.items.map(([label, count]) => <span key={label} className={`rounded-full px-2 py-0.5 text-[9px] font-black ring-1 sm:px-2.5 sm:py-1 sm:text-[10px] ${block.cls}`}>{label} · {count}</span>)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          <DirectoryStatsSummary
+            loading={statsQuery.isLoading}
+            total={directoryStats?.total ?? 0}
+            completeProfiles={completeProfiles}
+            sectors={sectors}
+            skills={skills}
+            domains={domains}
+          />
 
           {trimmed.length < 2 && (
             <div className="mt-8 flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 py-12 text-center">

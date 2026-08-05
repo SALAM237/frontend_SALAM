@@ -129,14 +129,14 @@ export default function MemberDashboardPage() {
             </h1>
             <p className="mt-0.5 text-[10px] text-white/50 sm:mt-1 sm:text-sm">Membre actif</p>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-1.5 sm:gap-2">
+          <div className="flex shrink-0 flex-col items-end gap-1 sm:gap-2">
             <p className="font-mono text-[8.5px] font-bold text-emerald-400 sm:text-[10px]">{memberId}</p>
-            <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:gap-2">
-              <Link href="/member/carte" className="inline-flex h-7 items-center gap-1 rounded-full bg-emerald-500 px-2.5 text-[9px] font-black text-white transition-all hover:bg-emerald-400 sm:h-8 sm:gap-1.5 sm:px-3 sm:text-[11px]">
-                <CreditCard size={11} /> Ma carte membre
+            <div className="flex flex-col items-end gap-1 sm:flex-row sm:gap-2">
+              <Link href="/member/carte" className="inline-flex h-5 items-center gap-0.5 rounded-full bg-emerald-500 px-1.5 text-[8px] font-black text-white transition-all hover:bg-emerald-400 sm:h-8 sm:gap-1.5 sm:px-3 sm:text-[11px]">
+                <CreditCard size={10} className="sm:h-[11px] sm:w-[11px]" /> Ma carte membre
               </Link>
-              <Link href="/member/activites" className="inline-flex h-7 items-center gap-1 rounded-full border border-white/15 px-2.5 text-[9px] font-semibold text-white/70 transition-all hover:border-white/30 hover:text-white sm:h-8 sm:gap-1.5 sm:px-3 sm:text-[11px]">
-                <CalendarDays size={11} /> Voir les activites
+              <Link href="/member/activites" className="inline-flex h-5 items-center gap-0.5 rounded-full border border-white/15 px-1.5 text-[8px] font-semibold text-white/70 transition-all hover:border-white/30 hover:text-white sm:h-8 sm:gap-1.5 sm:px-3 sm:text-[11px]">
+                <CalendarDays size={10} className="sm:h-[11px] sm:w-[11px]" /> Voir les activites
               </Link>
             </div>
           </div>
