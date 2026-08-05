@@ -4,14 +4,26 @@ export const dynamic = 'force-dynamic';
 
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { notifyDeviceVerificationEvent } from '@/components/auth/DeviceVerificationModal';
+import {
+  clearDeviceChallenge,
+  finalizeDeviceChallengeSession,
+  readDeviceChallenge,
+} from '@/lib/auth/device-verification';
+import { getPostLoginRedirect } from '@/lib/auth/roles';
+import { useAuthStore } from '@/store/auth.store';
 
+function wait(ms: number) {
+  return new Promise(resolve => window.setTimeout(resolve, ms));
+}
 
 function VerifyDeviceContent() {
   const params = useSearchParams();
+  const router = useRouter();
+  const { setAuth } = useAuthStore();
   const [status, setStatus] = useState<'loading' | 'approved' | 'rejected' | 'error'>('loading');
   const [message, setMessage] = useState('Validation de la connexion en cours...');
 
@@ -19,6 +31,52 @@ function VerifyDeviceContent() {
     let cancelled = false;
     const token = params.get('token') ?? '';
     const action = params.get('action') === 'reject' ? 'reject' : 'approve';
+
+    async function finalizeSameBrowserSession(): Promise<boolean> {
+      const localChallenge = readDeviceChallenge();
+      if (!localChallenge) return false;
+
+      setMessage('Connexion autorisee. Finalisation securisee de la session...');
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        if (cancelled) return true;
+        try {
+          const result = await finalizeDeviceChallengeSession(localChallenge);
+          if (cancelled) return true;
+
+          if (result.status === 'pending') {
+            await wait(600);
+            continue;
+          }
+
+          if (result.status === 'approved' && result.user && result.accessToken) {
+            clearDeviceChallenge(localChallenge);
+            setAuth(result.user, result.accessToken);
+            notifyDeviceVerificationEvent('approved');
+            setStatus('approved');
+            setMessage('Connexion autorisee. Redirection vers votre espace...');
+            router.replace(getPostLoginRedirect(result.user));
+            return true;
+          }
+
+          if (result.status === 'rejected') {
+            clearDeviceChallenge(localChallenge);
+            notifyDeviceVerificationEvent('rejected');
+            setStatus('rejected');
+            setMessage('Connexion refusee. Votre compte a ete securise.');
+            return true;
+          }
+
+          clearDeviceChallenge(localChallenge);
+          return false;
+        } catch {
+          clearDeviceChallenge(localChallenge);
+          return false;
+        }
+      }
+
+      return false;
+    }
 
     async function run() {
       if (!token) {
@@ -35,12 +93,17 @@ function VerifyDeviceContent() {
         if (cancelled) return;
 
         if (res.data.action === 'rejected') {
+          clearDeviceChallenge();
+          notifyDeviceVerificationEvent('rejected');
           setStatus('rejected');
           setMessage(res.message || 'Connexion refusee. Votre compte a ete securise.');
           return;
         }
 
         setStatus('approved');
+        const finalizedHere = await finalizeSameBrowserSession();
+        if (cancelled || finalizedHere) return;
+
         setMessage(res.message || 'Connexion autorisee. Retournez sur l appareil qui a demande la connexion pour finaliser l acces.');
       } catch (err) {
         if (cancelled) return;
@@ -51,7 +114,7 @@ function VerifyDeviceContent() {
 
     run();
     return () => { cancelled = true; };
-  }, [params]);
+  }, [params, router, setAuth]);
 
   const Icon = status === 'approved' ? CheckCircle2 : status === 'rejected' ? ShieldX : status === 'loading' ? Loader2 : ShieldX;
   const iconClass = status === 'approved' ? 'text-emerald-600' : status === 'rejected' || status === 'error' ? 'text-red-600' : 'animate-spin text-emerald-600';

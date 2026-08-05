@@ -9,6 +9,7 @@ import { apiClient } from '@/lib/api/client';
 import { useAuthStore, type AuthUser } from '@/store/auth.store';
 import { hasAdminRole } from '@/lib/auth/roles';
 import { DeviceVerificationModal } from '@/components/auth/DeviceVerificationModal';
+import { clearDeviceChallenge, saveDeviceChallenge } from '@/lib/auth/device-verification';
 
 const PENDING_MSG = 'Veuillez vérifier votre email avant de vous connecter';
 
@@ -31,17 +32,23 @@ export default function BureauConnexionPage() {
     setError('');
     setNeedsVerify(false);
     setDeviceChallengeId(null);
+    clearDeviceChallenge();
     setResendStatus('idle');
     setLoading(true);
 
     try {
-      const res = await apiClient<{ accessToken?: string; requires2FA?: boolean; requiresDeviceVerification?: boolean; challengeId?: string }>(
+      const res = await apiClient<{ accessToken?: string; requires2FA?: boolean; requiresDeviceVerification?: boolean; challengeId?: string; expiresAt?: string }>(
         '/api/v1/auth/login',
         { method: 'POST', body: JSON.stringify({ email, password }) },
       );
 
       if (res.data.requiresDeviceVerification) {
-        setDeviceChallengeId(res.data.challengeId ?? null);
+        if (!res.data.challengeId) {
+          setError('Verification appareil impossible. Relancez la connexion.');
+          return;
+        }
+        saveDeviceChallenge(res.data.challengeId, res.data.expiresAt ?? null);
+        setDeviceChallengeId(res.data.challengeId);
         return;
       }
 
@@ -259,7 +266,7 @@ export default function BureauConnexionPage() {
                   <p className="text-xs leading-relaxed text-red-700">{error}</p>
                 </div>
               )}
-              {deviceChallengeId && <DeviceVerificationModal challengeId={deviceChallengeId} onClose={() => setDeviceChallengeId(null)} onApproved={(approvedUser, token) => { if (!hasAdminRole(approvedUser)) { setError('Acces refuse. Cette page est reservee aux membres du Bureau Executif.'); setDeviceChallengeId(null); return; } setAuth(approvedUser, token); router.push('/admin/dashboard'); }} />}
+              {deviceChallengeId && <DeviceVerificationModal challengeId={deviceChallengeId} onClose={() => setDeviceChallengeId(null)} onApproved={(approvedUser, token) => { clearDeviceChallenge(deviceChallengeId); if (!hasAdminRole(approvedUser)) { setError('Acces refuse. Cette page est reservee aux membres du Bureau Executif.'); setDeviceChallengeId(null); return; } setAuth(approvedUser, token); router.push('/admin/dashboard'); }} />}
 
               {/* Email non vérifié */}
               {needsVerify && (
@@ -316,4 +323,5 @@ export default function BureauConnexionPage() {
     </div>
   );
 }
+
 

@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Loader2, MailWarning, RefreshCw, ShieldX, X } from 'lucide-react';
-import { apiClient } from '@/lib/api/client';
 import type { AuthUser } from '@/store/auth.store';
+import {
+  clearDeviceChallenge,
+  finalizeDeviceChallengeSession,
+  type DeviceChallengeStatus,
+} from '@/lib/auth/device-verification';
 
-type ChallengeStatus = 'pending' | 'approved' | 'rejected' | 'expired';
 const DEVICE_VERIFY_EVENT_KEY = 'salam:device-verification:event';
 
 export function notifyDeviceVerificationEvent(status: 'approved' | 'rejected') {
@@ -20,7 +23,7 @@ export function DeviceVerificationModal({ challengeId, onApproved, onClose }: {
   onApproved: (user: AuthUser, accessToken: string) => void;
   onClose: () => void;
 }) {
-  const [status, setStatus] = useState<ChallengeStatus>('pending');
+  const [status, setStatus] = useState<DeviceChallengeStatus>('pending');
   const [message, setMessage] = useState("Un email de verification vient d'etre envoye. Consultez votre boite mail, puis cliquez sur le bouton d'autorisation pour finaliser la connexion sur cet appareil.");
   const [checking, setChecking] = useState(false);
   const busyRef = useRef(false);
@@ -34,26 +37,19 @@ export function DeviceVerificationModal({ challengeId, onApproved, onClose }: {
     busyRef.current = true;
     setChecking(true);
     try {
-      const res = await apiClient<{ status: ChallengeStatus; accessToken?: string }>(`/api/v1/auth/device-challenge/${encodeURIComponent(challengeId)}/status`, { method: 'GET' });
+      const result = await finalizeDeviceChallengeSession(challengeId);
       if (doneRef.current) return;
-      if (res.data.status === 'pending') return;
+      if (result.status === 'pending') return;
       doneRef.current = true;
-      setStatus(res.data.status);
-      if (res.data.status === 'approved') {
-        if (!res.data.accessToken) throw new Error('Session manquante apres autorisation.');
-        const sessionRes = await fetch('/api/auth/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          body: JSON.stringify({ accessToken: res.data.accessToken }),
-        });
-        if (!sessionRes.ok) throw new Error('Impossible de finaliser la session.');
-        const sessionJson: { user?: AuthUser } = await sessionRes.json();
-        if (!sessionJson.user) throw new Error('Utilisateur introuvable apres autorisation.');
+      setStatus(result.status);
+      if (result.status === 'approved') {
+        if (!result.accessToken || !result.user) throw new Error('Session manquante apres autorisation.');
         setMessage('Connexion autorisee. Redirection en cours...');
-        onApprovedRef.current(sessionJson.user, res.data.accessToken);
+        onApprovedRef.current(result.user, result.accessToken);
         return;
       }
-      setMessage(res.data.status === 'rejected'
+      clearDeviceChallenge(challengeId);
+      setMessage(result.status === 'rejected'
         ? 'Connexion refusee depuis votre email. La demande est annulee.'
         : 'Le delai de verification est expire. Relancez la connexion.');
     } catch (err) {
@@ -76,7 +72,27 @@ export function DeviceVerificationModal({ challengeId, onApproved, onClose }: {
     const timer = window.setInterval(() => { void poll(); }, 3000);
     const verifyNow = () => { if (!document.hidden) void poll(); };
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === DEVICE_VERIFY_EVENT_KEY) void poll();
+      if (event.key !== DEVICE_VERIFY_EVENT_KEY) return;
+      try {
+        const payload = event.newValue ? JSON.parse(event.newValue) as { status?: string } : null;
+        if (payload?.status === 'approved') {
+          doneRef.current = true;
+          setStatus('approved');
+          setMessage('Connexion autorisee et finalisee dans un autre onglet de ce navigateur.');
+          clearDeviceChallenge(challengeId);
+          return;
+        }
+        if (payload?.status === 'rejected') {
+          doneRef.current = true;
+          setStatus('rejected');
+          setMessage('Connexion refusee depuis votre email. La demande est annulee.');
+          clearDeviceChallenge(challengeId);
+          return;
+        }
+      } catch {
+        // Ancien signal local : on retombe sur la verification serveur.
+      }
+      void poll();
     };
     window.addEventListener('focus', verifyNow);
     document.addEventListener('visibilitychange', verifyNow);
@@ -146,3 +162,4 @@ export function DeviceVerificationModal({ challengeId, onApproved, onClose }: {
     </div>
   );
 }
+
