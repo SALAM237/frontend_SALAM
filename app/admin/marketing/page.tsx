@@ -428,10 +428,47 @@ function CampaignViewModal({ campaign, onClose }: { campaign: CampaignDoc; onClo
 /* ─── Insights de campagne (accès strictement réservé) ──────
    Backend refait la même vérification d'email — cette restriction frontend
    n'est qu'une commodité d'affichage, jamais la seule protection. */
+
+function TextSearchBox({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
+  return (
+    <div className="relative w-full sm:max-w-sm">
+      <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+        className="h-10 w-full rounded-xl border border-neutral-200 bg-white pl-8 pr-9 text-xs font-semibold text-neutral-700 outline-none transition placeholder:text-neutral-300 focus:border-rose-400 focus:ring-2 focus:ring-rose-500/15 sm:text-sm" />
+      {value && (
+        <button type="button" onClick={() => onChange('')} className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700">
+          <X size={12} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function matchesMemberFilters(userId: string | null | undefined, memberMap: Map<string, MemberListItem>, filters: MemberFilters) {
+  const hasFilters = Object.values(filters).some(values => values.length > 0);
+  if (!hasFilters) return true;
+  if (!userId) return false;
+  const member = memberMap.get(userId);
+  return member ? memberMatchesFilters(member, filters) : false;
+}
+
 function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(campaigns[0]?._id ?? null);
+  const [search, setSearch] = useState('');
+  const [memberFilters, setMemberFilters] = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
   const { data, isLoading, isError } = useCampaignInsights(selectedId);
+  const { data: membersData } = useAdminMembers({ limit: 500 });
+  const members = membersData?.data?.data ?? [];
+  const memberMap = useMemo(() => new Map(members.map(m => [m._id, m])), [members]);
   const insights = data?.data;
+  const filteredInsightRecipients = useMemo(() => {
+    const q = normalizeName(search.trim());
+    const source = insights?.recipients ?? [];
+    return source.filter(r => {
+      const haystack = normalizeName([r.firstName, r.lastName, r.email].join(' '));
+      return (!q || haystack.includes(q)) && matchesMemberFilters(r.userId, memberMap, memberFilters);
+    });
+  }, [insights, search, memberMap, memberFilters]);
 
   useEffect(() => {
     if (campaigns.length > 0 && (!selectedId || !campaigns.some(c => c._id === selectedId))) {
@@ -445,16 +482,22 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
 
   return (
     <div className="space-y-4">
-      <select value={selectedId ?? ''} onChange={e => setSelectedId(e.target.value)}
-        className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm font-semibold outline-none focus:border-rose-400 sm:w-auto">
-        {campaigns.map(c => <option key={c._id} value={c._id}>{c.title}</option>)}
-      </select>
+      <div className="flex flex-col gap-2 rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm lg:flex-row lg:items-start lg:justify-between">
+        <select value={selectedId ?? ''} onChange={e => setSelectedId(e.target.value)}
+          className="h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm font-semibold outline-none focus:border-rose-400 lg:w-[340px]">
+          {campaigns.map(c => <option key={c._id} value={c._id}>{c.title}</option>)}
+        </select>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+          <TextSearchBox value={search} onChange={setSearch} placeholder="Rechercher un membre..." />
+          <MemberFilterPanel filters={memberFilters} onChange={setMemberFilters} />
+        </div>
+      </div>
 
       {isLoading && <p className="py-8 text-center text-sm text-neutral-400">Chargement…</p>}
       {isError && <p className="rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-center text-sm text-red-600">Accès refusé ou erreur de chargement.</p>}
 
       {insights && (
-        <div className="hidden overflow-x-auto rounded-2xl border border-neutral-100 bg-white shadow-sm lg:block">
+        <div className="hidden rounded-2xl border border-neutral-100 bg-white shadow-sm lg:block">
           <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="border-b border-neutral-100 bg-neutral-50/60 text-left text-[11px] font-black uppercase tracking-wide text-neutral-500">
@@ -466,7 +509,7 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-50">
-              {insights.recipients.map(r => {
+              {filteredInsightRecipients.map(r => {
                 /* Historique complet de chaque ouverture/clic, avec sa propre date/heure —
                    jamais un simple agrégat "dernier événement" qui ferait disparaître les
                    précédents. Pareil pour l'appareil : chaque événement (ouverture OU clic)
@@ -540,7 +583,7 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
           font-semibold text-neutral-700). */}
       {insights && (
         <div className="space-y-2 lg:hidden">
-          {insights.recipients.map(r => {
+          {filteredInsightRecipients.map(r => {
             const deviceEvents = [...r.opens, ...r.clicks].sort(
               (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
             );
@@ -645,8 +688,23 @@ function EmailLocationList({ events }: { events: MarketingEmailEvent[] }) {
 }
 
 function MarketingEmailsView() {
-  const { data, isLoading, isError } = useMarketingEmailInsights();
+  const [selectedType, setSelectedType] = useState('');
+  const [search, setSearch] = useState('');
+  const [memberFilters, setMemberFilters] = useState<MemberFilters>(EMPTY_MEMBER_FILTERS);
+  const { data, isLoading, isError } = useMarketingEmailInsights(selectedType || undefined);
+  const { data: membersData } = useAdminMembers({ limit: 500 });
+  const members = membersData?.data?.data ?? [];
+  const memberMap = useMemo(() => new Map(members.map(m => [m._id, m])), [members]);
   const rows = data?.data?.rows ?? [];
+  const types = data?.data?.types ?? [];
+  const filteredRows = useMemo(() => {
+    const q = normalizeName(search.trim());
+    return rows.filter(row => {
+      const haystack = normalizeName([row.firstName, row.lastName, row.email, row.memberNumber ?? '', row.campaignTitle, row.type ?? ''].join(' '));
+      return (!q || haystack.includes(q)) && matchesMemberFilters(row.userId, memberMap, memberFilters);
+    });
+  }, [rows, search, memberMap, memberFilters]);
+  const totalTypes = types.reduce((sum, item) => sum + item.count, 0);
 
   const mergedEvents = (row: MarketingEmailInsightRow) => [...row.opens, ...row.clicks].sort(
     (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
@@ -660,18 +718,34 @@ function MarketingEmailsView() {
           <div className="min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-rose-600">Emails</p>
             <h2 className="text-sm font-black text-neutral-900 sm:text-base">Suivi des mails envoyes aux membres</h2>
-            <p className="mt-1 text-xs font-semibold leading-5 text-rose-700/80">Ouvertures, clics, appareil et position approximative via IP pour les emails marketing traces.</p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-rose-700/80">Ouvertures, clics, appareil et position approximative via IP pour tous les mails sortants traces.</p>
           </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-4">
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-neutral-400">Filtrer par intitule</p>
+          <p className="mt-0.5 text-xs font-semibold text-neutral-500">{filteredRows.length} mail{filteredRows.length > 1 ? 's' : ''} affiche{filteredRows.length > 1 ? 's' : ''}</p>
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-start">
+          <TextSearchBox value={search} onChange={setSearch} placeholder="Rechercher membre, mail, intitule..." />
+          <MemberFilterPanel filters={memberFilters} onChange={setMemberFilters} />
+          <select value={selectedType} onChange={e => setSelectedType(e.target.value)}
+            className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-700 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-500/15 sm:w-[260px] sm:text-sm">
+            <option value="">Tous les emails ({totalTypes})</option>
+            {types.map(item => <option key={item.type} value={item.type}>{item.type} ({item.count})</option>)}
+          </select>
         </div>
       </div>
 
       {isLoading && <p className="py-8 text-center text-sm text-neutral-400">Chargement...</p>}
       {isError && <p className="rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-center text-sm text-red-600">Acces refuse ou erreur de chargement.</p>}
-      {!isLoading && !isError && rows.length === 0 && <p className="rounded-2xl border border-neutral-100 bg-white px-5 py-8 text-center text-sm text-neutral-400">Aucun email trace pour le moment.</p>}
+      {!isLoading && !isError && filteredRows.length === 0 && <p className="rounded-2xl border border-neutral-100 bg-white px-5 py-8 text-center text-sm text-neutral-400">Aucun email trace pour le moment.</p>}
 
-      {rows.length > 0 && (
-        <div className="hidden overflow-x-auto rounded-2xl border border-neutral-100 bg-white shadow-sm lg:block">
-          <table className="w-full min-w-[980px] text-sm">
+      {filteredRows.length > 0 && (
+        <div className="hidden rounded-2xl border border-neutral-100 bg-white shadow-sm lg:block">
+          <table className="w-full table-fixed text-sm">
             <thead>
               <tr className="border-b border-neutral-100 bg-neutral-50/60 text-left text-[11px] font-black uppercase tracking-wide text-neutral-500">
                 <th className="px-4 py-3">Membre</th>
@@ -683,7 +757,7 @@ function MarketingEmailsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-50">
-              {rows.map(row => {
+              {filteredRows.map(row => {
                 const events = mergedEvents(row);
                 return (
                   <tr key={row.id} className="align-top">
@@ -709,9 +783,9 @@ function MarketingEmailsView() {
         </div>
       )}
 
-      {rows.length > 0 && (
+      {filteredRows.length > 0 && (
         <div className="space-y-2 lg:hidden">
-          {rows.map(row => {
+          {filteredRows.map(row => {
             const events = mergedEvents(row);
             return (
               <SectionAccordion key={row.id}
@@ -756,8 +830,18 @@ export default function AdminMarketingPage() {
   const [editCampaign, setEditCampaign] = useState<CampaignDoc | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CampaignDoc | null>(null);
   const [tab, setTab] = useState<'campagnes' | 'insights' | 'emails'>('campagnes');
+  const [campaignSearch, setCampaignSearch] = useState('');
+  const [campaignStatus, setCampaignStatus] = useState<'all' | 'sent' | 'failed'>('all');
   const { data, isLoading } = useAdminCampaigns();
   const campaigns = data?.data ?? [];
+  const filteredCampaigns = useMemo(() => {
+    const q = normalizeName(campaignSearch.trim());
+    return campaigns.filter(c => {
+      const haystack = normalizeName([c.title, c.giftName].join(' '));
+      const statusOk = campaignStatus === 'all' || (campaignStatus === 'failed' ? c.failedCount > 0 : c.sentCount > 0 && c.failedCount === 0);
+      return (!q || haystack.includes(q)) && statusOk;
+    });
+  }, [campaigns, campaignSearch, campaignStatus]);
   const user = useAuthStore(s => s.user);
   const deleteCampaign = useDeleteCampaign();
   const canSeeInsights = user?.email === INSIGHTS_ALLOWED_EMAIL;
@@ -768,7 +852,7 @@ export default function AdminMarketingPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <div>
         <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Marketing</h1>
         <p className="mt-1 text-sm text-neutral-500">Campagnes promotionnelles envoyées par email aux membres.</p>
@@ -797,6 +881,16 @@ export default function AdminMarketingPage() {
         <MarketingEmailsView />
       ) : (
         <>
+          <div className="flex flex-col gap-2 rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+            <TextSearchBox value={campaignSearch} onChange={setCampaignSearch} placeholder="Rechercher une campagne..." />
+            <select value={campaignStatus} onChange={e => setCampaignStatus(e.target.value as 'all' | 'sent' | 'failed')}
+              className="h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-xs font-black text-neutral-700 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-500/15 sm:w-[220px] sm:text-sm">
+              <option value="all">Toutes les campagnes</option>
+              <option value="sent">Envoyees sans echec</option>
+              <option value="failed">Avec echecs</option>
+            </select>
+          </div>
+
           <button onClick={() => setShowEditor(true)}
             className="flex w-full flex-col items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-left transition hover:bg-rose-100 sm:w-1/2">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-600 text-white"><Plus size={18} /></span>
@@ -810,11 +904,11 @@ export default function AdminMarketingPage() {
               <h2 className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-neutral-500">Historique des campagnes</h2>
               <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
                 {isLoading && <p className="px-5 py-8 text-center text-sm text-neutral-400">Chargement…</p>}
-                {!isLoading && campaigns.length === 0 && (
+                {!isLoading && filteredCampaigns.length === 0 && (
                   <p className="px-5 py-8 text-center text-sm text-neutral-400">Aucune campagne envoyée pour le moment.</p>
                 )}
                 <div className="divide-y divide-neutral-50">
-                  {campaigns.map(c => <CampaignHistoryRow key={c._id} campaign={c} onView={setViewCampaign} onEdit={setEditCampaign} onDelete={setDeleteTarget} deleting={deleteCampaign.isPending && deleteCampaign.variables === c._id} />)}
+                  {filteredCampaigns.map(c => <CampaignHistoryRow key={c._id} campaign={c} onView={setViewCampaign} onEdit={setEditCampaign} onDelete={setDeleteTarget} deleting={deleteCampaign.isPending && deleteCampaign.variables === c._id} />)}
                 </div>
               </div>
             </div>
@@ -830,11 +924,11 @@ export default function AdminMarketingPage() {
 
             <SectionAccordion header={<p className="text-xs font-black uppercase tracking-[0.16em] text-neutral-500">Historique des campagnes</p>}>
               {isLoading && <p className="px-5 py-8 text-center text-sm text-neutral-400">Chargement…</p>}
-              {!isLoading && campaigns.length === 0 && (
+              {!isLoading && filteredCampaigns.length === 0 && (
                 <p className="px-5 py-8 text-center text-sm text-neutral-400">Aucune campagne envoyée pour le moment.</p>
               )}
               <div className="divide-y divide-neutral-50 border-t border-neutral-100">
-                {campaigns.map(c => <CampaignHistoryRow key={c._id} campaign={c} onView={setViewCampaign} onEdit={setEditCampaign} onDelete={setDeleteTarget} deleting={deleteCampaign.isPending && deleteCampaign.variables === c._id} />)}
+                {filteredCampaigns.map(c => <CampaignHistoryRow key={c._id} campaign={c} onView={setViewCampaign} onEdit={setEditCampaign} onDelete={setDeleteTarget} deleting={deleteCampaign.isPending && deleteCampaign.variables === c._id} />)}
               </div>
             </SectionAccordion>
           </div>

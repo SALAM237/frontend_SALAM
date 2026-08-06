@@ -189,29 +189,40 @@ export interface MarketingEmailEvent {
   targetUrl?: string | null;
 }
 
+export interface MarketingEmailTypeOption {
+  type: string;
+  count: number;
+  lastSentAt?: string | null;
+}
+
 export interface MarketingEmailInsightRow {
   id: string;
-  campaignId: string;
+  campaignId: string | null;
   campaignTitle: string;
+  subject?: string;
+  type?: string;
   sentAt: string;
-  userId: string;
+  userId: string | null;
   firstName: string;
   lastName: string;
   email: string;
   memberNumber?: string | null;
   emailStatus: 'sent' | 'failed';
+  status?: 'pending' | 'sent' | 'failed';
   reason?: string | null;
+  failureReason?: string | null;
   openCount: number;
   clickCount: number;
   opens: MarketingEmailEvent[];
   clicks: MarketingEmailEvent[];
 }
 
-export function useMarketingEmailInsights() {
+export function useMarketingEmailInsights(type?: string) {
   const token = useAuthStore(s => s.accessToken);
+  const query = type ? `?type=${encodeURIComponent(type)}` : '';
   return useQuery({
-    queryKey: ['admin-marketing-email-insights'],
-    queryFn: () => apiClient<{ rows: MarketingEmailInsightRow[] }>('/api/v1/admin/marketing/emails', { token: token ?? '' }),
+    queryKey: ['admin-marketing-email-insights', type ?? 'all'],
+    queryFn: () => apiClient<{ rows: MarketingEmailInsightRow[]; types: MarketingEmailTypeOption[] }>(`/api/v1/admin/marketing/emails${query}`, { token: token ?? '' }),
     enabled: !!token,
   });
 }

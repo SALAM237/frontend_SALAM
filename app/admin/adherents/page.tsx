@@ -1921,7 +1921,10 @@ export default function AdminAdherentsPage() {
 
               {/* ── Desktop table ──────────────────────────────── */}
               <div className="hidden lg:block">
-                {(() => { const isTrancheTab = activeTab === 'cotisation-annuelle'; return (
+                {(() => {
+                  const isTrancheTab = activeTab === 'cotisation-annuelle';
+                  const hidePaymentColsForCards = activeTab === 'cartes';
+                  return (
                 <table className="w-full table-fixed text-[11px]">
                   {isTrancheTab ? (
                     <colgroup>
@@ -1932,10 +1935,20 @@ export default function AdminAdherentsPage() {
                     </colgroup>
                   ) : (
                     <colgroup>
-                      <col className="w-[3%]" /><col className="w-[13%]" /><col className="w-[6%]" />
-                      <col className="w-[11%]" /><col className="w-[6%]" /><col className="w-[6%]" />
-                      <col className="w-[7%]" /><col className="w-[7%]" /><col className="w-[7%]" />
-                      <col className="w-[6%]" /><col className="w-[7%]" /><col className="w-[7%]" />
+                      {hidePaymentColsForCards ? (
+                        <>
+                          <col className="w-[3%]" /><col className="w-[22%]" /><col className="w-[7%]" />
+                          <col className="w-[18%]" /><col className="w-[8%]" /><col className="w-[8%]" />
+                          <col className="w-[10%]" /><col className="w-[12%]" /><col className="w-[9%]" /><col className="w-[3%]" />
+                        </>
+                      ) : (
+                        <>
+                          <col className="w-[3%]" /><col className="w-[13%]" /><col className="w-[6%]" />
+                          <col className="w-[11%]" /><col className="w-[6%]" /><col className="w-[6%]" />
+                          <col className="w-[7%]" /><col className="w-[7%]" /><col className="w-[7%]" />
+                          <col className="w-[6%]" /><col className="w-[7%]" /><col className="w-[7%]" /><col className="w-[4%]" />
+                        </>
+                      )}
                     </colgroup>
                   )}
                   <thead>
@@ -1958,9 +1971,9 @@ export default function AdminAdherentsPage() {
                       ) : (
                         <>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Statut</th>
-                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Frais d&apos;adh.</th>
-                          <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Cotis. annuelle</th>
-                          <th className="px-2 py-3 text-left text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-400">Reste &agrave; payer cotisation annuelle</th>
+                          <th className={`${hidePaymentColsForCards ? 'hidden' : ''} px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400`}>Frais d&apos;adh.</th>
+                          <th className={`${hidePaymentColsForCards ? 'hidden' : ''} px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400`}>Cotis. annuelle</th>
+                          <th className={`${hidePaymentColsForCards ? 'hidden' : ''} px-2 py-3 text-left text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-400`}>Reste &agrave; payer cotisation annuelle</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Profil</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Dern. connexion</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Date inscr.</th>
@@ -2023,7 +2036,7 @@ export default function AdminAdherentsPage() {
                                   <SI size={8} /><span className="truncate">{genderedLabel(s, m.gender)}</span>
                                 </span>
                               </td>
-                              <td className="px-2 py-3">
+                              <td className={`${hidePaymentColsForCards ? 'hidden' : ''} px-2 py-3`}>
                                 {activeTab === 'frais' ? (
                                   <AdhesionFeeCell
                                     userId={m._id}
@@ -2037,10 +2050,10 @@ export default function AdminAdherentsPage() {
                                   <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8px] font-black leading-none ${c.cls}`}>{c.label}</span>
                                 )}
                               </td>
-                              <td className="px-2 py-3">
+                              <td className={`${hidePaymentColsForCards ? 'hidden' : ''} px-2 py-3`}>
                                 <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8px] font-black leading-none ${cAnnuelle.cls}`}>{cAnnuelle.label}</span>
                               </td>
-                              <td className="px-2 py-3">
+                              <td className={`${hidePaymentColsForCards ? 'hidden' : ''} px-2 py-3`}>
                                 <span className={`inline-flex max-w-full items-center whitespace-nowrap text-[8px] font-black leading-none ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</span>
                               </td>
                               <td className="px-2 py-3">
