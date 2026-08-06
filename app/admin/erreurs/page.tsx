@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  useAppErrorLogs, useDeleteAppError, useClearAppErrors, useResolveAppError, useBulkDeleteAppErrors, useBulkResolveAppErrors,
+  useAppErrorLogs, useDeleteAppError, useClearAppErrors, useResolveAppError, useFetchAppErrorIds, useBulkDeleteAppErrors, useBulkResolveAppErrors,
   type AppErrorLog, type AppErrorCategory, type AppErrorScope,
 } from '@/lib/api/mail-errors';
 import { useAuthStore } from '@/store/auth.store';
@@ -272,12 +272,14 @@ export default function GestionErreursPage() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [allSelectableIds, setAllSelectableIds] = useState<string[]>([]);
 
   const catArg = category === 'all' ? undefined : category;
   const { data, isLoading, refetch, isFetching } = useAppErrorLogs(page, catArg, { limit: pageSize, search, scope: errorScope });
   const deleteEntry  = useDeleteAppError();
   const clearAll     = useClearAppErrors();
   const resolveEntry = useResolveAppError();
+  const fetchErrorIds = useFetchAppErrorIds();
   const bulkDelete   = useBulkDeleteAppErrors();
   const bulkResolve  = useBulkResolveAppErrors();
 
@@ -287,13 +289,13 @@ export default function GestionErreursPage() {
   const pages   = data?.data?.pages ?? 1;
   const showingExternalScans = errorScope === 'external_scans';
   const visibleIds = logs.map(log => log._id);
-  const selectedVisibleCount = visibleIds.filter(id => selectedIds.includes(id)).length;
-  const allVisibleSelected = visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
+  const allFilteredSelected = allSelectableIds.length > 0 && allSelectableIds.every(id => selectedIds.includes(id));
   const selectedCount = selectedIds.length;
 
   useEffect(() => {
     setSelectedIds([]);
     setConfirmBulkDelete(false);
+    setAllSelectableIds([]);
   }, [page, pageSize, search, category, errorScope, showResolved]);
 
   const email        = user?.email ?? '';
@@ -317,6 +319,7 @@ export default function GestionErreursPage() {
       if (!next) {
         setSelectedIds([]);
         setConfirmBulkDelete(false);
+        setAllSelectableIds([]);
       }
       return next;
     });
@@ -325,21 +328,32 @@ export default function GestionErreursPage() {
     setConfirmBulkDelete(false);
     setSelectedIds(ids => ids.includes(id) ? ids.filter(item => item !== id) : [...ids, id]);
   };
-  const toggleSelectAllVisible = () => {
+  const toggleSelectAllFiltered = () => {
     setConfirmBulkDelete(false);
-    setSelectedIds(ids => {
-      if (allVisibleSelected) return ids.filter(id => !visibleIds.includes(id));
-      return [...new Set([...ids, ...visibleIds])];
-    });
+    if (allFilteredSelected) {
+      setSelectedIds(ids => ids.filter(id => !allSelectableIds.includes(id)));
+      setAllSelectableIds([]);
+      return;
+    }
+    fetchErrorIds.mutate(
+      { category: catArg, search, scope: errorScope, includeResolved: showResolved },
+      {
+        onSuccess: (res: any) => {
+          const ids = ((res as any)?.data?.ids ?? []) as string[];
+          setAllSelectableIds(ids);
+          setSelectedIds(ids);
+        },
+      },
+    );
   };
   const handleBulkResolve = () => {
     if (selectedIds.length === 0) return toast.error('Selectionnez au moins une erreur');
-    bulkResolve.mutate(selectedIds, { onSuccess: () => { setSelectedIds([]); setConfirmBulkDelete(false); } });
+    bulkResolve.mutate(selectedIds, { onSuccess: () => { setSelectedIds([]); setAllSelectableIds([]); setConfirmBulkDelete(false); } });
   };
   const handleBulkDelete = () => {
     if (selectedIds.length === 0) return toast.error('Selectionnez au moins une erreur');
     if (!confirmBulkDelete) { setConfirmBulkDelete(true); return; }
-    bulkDelete.mutate(selectedIds, { onSuccess: () => { setSelectedIds([]); setConfirmBulkDelete(false); } });
+    bulkDelete.mutate(selectedIds, { onSuccess: () => { setSelectedIds([]); setAllSelectableIds([]); setConfirmBulkDelete(false); } });
   };
   const handleClearAll = () => {
     if (!confirmClear) { setConfirmClear(true); return; }
@@ -429,65 +443,62 @@ export default function GestionErreursPage() {
         pageSize={pageSize}
         onPageSizeChange={v => { setPageSize(v); setPage(1); }}
         placeholder="Rechercher par message, membre, route..."
-      />
-
-      {logs.length > 0 && (
-        <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
+        filterSlot={logs.length > 0 ? (
+          <div className="flex min-w-0 flex-1 flex-wrap items-end gap-1.5 sm:flex-none">
             <button
               type="button"
               onClick={toggleSelectionMode}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
+              className={`inline-flex h-8 items-center gap-1 rounded-lg border px-2 text-[11px] font-black leading-none transition-colors sm:h-9 sm:px-2.5 sm:text-xs ${
                 selectionMode
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                   : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50'
               }`}
             >
-              {selectionMode ? <CheckSquare2 size={14} /> : <Square size={14} />}
-              {selectionMode ? 'Annuler selection' : 'Selectionner'}
+              {selectionMode ? <CheckSquare2 size={13} /> : <Square size={13} />}
+              <span className="whitespace-nowrap">{selectionMode ? 'Annuler' : 'Selectionner'}</span>
             </button>
 
             {selectionMode && (
-              <button
-                type="button"
-                onClick={toggleSelectAllVisible}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm font-semibold text-neutral-600 transition-colors hover:bg-neutral-50"
-              >
-                {allVisibleSelected ? <CheckSquare2 size={14} /> : <Square size={14} />}
-                {allVisibleSelected ? 'Tout deselectionner' : 'Tout selectionner'}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={toggleSelectAllFiltered}
+                  disabled={fetchErrorIds.isPending}
+                  className="inline-flex h-8 items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 text-[11px] font-black leading-none text-neutral-600 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:px-2.5 sm:text-xs"
+                >
+                  {fetchErrorIds.isPending ? <Loader2 size={13} className="animate-spin" /> : allFilteredSelected ? <CheckSquare2 size={13} /> : <Square size={13} />}
+                  <span className="whitespace-nowrap">{allFilteredSelected ? 'Deselectionner' : 'Tout selectionner'}</span>
+                </button>
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 px-1.5 py-1 sm:px-2">
+                  <span className="whitespace-nowrap px-1 text-[10px] font-black text-neutral-500 sm:text-[11px]">{selectedCount}</span>
+                  <button
+                    type="button"
+                    onClick={handleBulkResolve}
+                    disabled={selectedCount === 0 || bulkResolve.isPending}
+                    className="inline-flex h-7 items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-1.5 text-[10px] font-black leading-none text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-2 sm:text-[11px]"
+                  >
+                    {bulkResolve.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                    <span className="whitespace-nowrap">Resolues</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkDelete}
+                    disabled={selectedCount === 0 || bulkDelete.isPending}
+                    className={`inline-flex h-7 items-center gap-1 rounded-md border px-1.5 text-[10px] font-black leading-none transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:px-2 sm:text-[11px] ${
+                      confirmBulkDelete
+                        ? 'border-red-600 bg-red-600 text-white hover:bg-red-700'
+                        : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+                    }`}
+                  >
+                    {bulkDelete.isPending ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                    <span className="whitespace-nowrap">{confirmBulkDelete ? 'Confirmer' : 'Supprimer'}</span>
+                  </button>
+                </div>
+              </>
             )}
           </div>
-
-          {selectionMode && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-neutral-500">{selectedCount} selectionnee(s)</span>
-              <button
-                type="button"
-                onClick={handleBulkResolve}
-                disabled={selectedCount === 0 || bulkResolve.isPending}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {bulkResolve.isPending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                Marquer resolues
-              </button>
-              <button
-                type="button"
-                onClick={handleBulkDelete}
-                disabled={selectedCount === 0 || bulkDelete.isPending}
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                  confirmBulkDelete
-                    ? 'border-red-600 bg-red-600 text-white hover:bg-red-700'
-                    : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
-                }`}
-              >
-                {bulkDelete.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                {confirmBulkDelete ? 'Confirmer suppression' : 'Supprimer'}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+        ) : null}
+      />
 
       {/* Category filter tabs */}
       {!showingExternalScans && (

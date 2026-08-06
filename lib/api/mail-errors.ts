@@ -109,6 +109,20 @@ export function useResolveAppError() {
   });
 }
 
+export function useFetchAppErrorIds() {
+  const token = useAuthStore(s => s.accessToken);
+  return useMutation({
+    mutationFn: (params: { category?: AppErrorCategory; search?: string; scope?: AppErrorScope; includeResolved?: boolean }) => {
+      const qs = new URLSearchParams();
+      if (params.category) qs.set('category', params.category);
+      if (params.search) qs.set('search', params.search);
+      if (params.scope && params.scope !== 'errors') qs.set('scope', params.scope);
+      if (params.includeResolved) qs.set('includeResolved', 'true');
+      return apiClient<{ ids: string[]; total: number }>(`/api/v1/admin/app-errors/ids?${qs}`, { token: token ?? '' });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
 export function useBulkDeleteAppErrors() {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
