@@ -66,7 +66,7 @@ export function useUpdateReceipt() {
   const token = useAuthStore(s => s.accessToken);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: { amount?: number; paidAt?: string; notes?: string; reference?: string } }) =>
+    mutationFn: ({ id, body }: { id: string; body: { amount?: number; paidAt?: string; notes?: string; reference?: string; deleteJustification?: boolean } }) =>
       apiClient(`/api/v1/admin/receipts/${id}`, {
         method: 'PUT',
         body: JSON.stringify(body),

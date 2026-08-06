@@ -52,6 +52,7 @@ export function downloadReceiptPdf(
     ? `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year} — Tranche ${receipt.trancheIndex + 1}`
     : `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}`;
   const invoiceReference = receipt.invoiceNumber ?? receipt.receiptNumber;
+  const paymentReference = receipt.reference?.trim() || 'Non renseign?e';
   const withTrancheLabel = (source: unknown, trancheIndex?: number | null) => {
     const text = String(source || `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}`);
     if (receipt.type !== 'cotisation_annuelle' || trancheIndex == null || /tranche/i.test(text)) return text;

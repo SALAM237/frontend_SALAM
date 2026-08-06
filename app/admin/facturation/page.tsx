@@ -1525,6 +1525,56 @@ function receiptMemberInfo(r: ReceiptDoc): { firstName: string; lastName: string
   return { firstName: u?.firstName ?? '', lastName: u?.lastName ?? '', memberNumber: u?.memberNumber };
 }
 
+function ReceiptJustificationModal({ receipt, onClose }: { receipt: ReceiptDoc; onClose: () => void }) {
+  const updateReceipt = useUpdateReceipt();
+  const url = receipt.justificationUrl ?? '';
+  const name = receipt.justificationName || 'justificatif-paiement';
+  const isImage = /\.(png|jpe?g)$/i.test(url) || /\.(png|jpe?g)$/i.test(name);
+  const remove = () => {
+    updateReceipt.mutate(
+      { id: receipt._id, body: { deleteJustification: true } },
+      { onSuccess: () => onClose() },
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-5" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className="flex h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-4 py-3 sm:px-5">
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Justificatif de paiement</p>
+            <p className="truncate text-sm font-black text-neutral-900">{name}</p>
+            <p className="truncate font-mono text-[10px] text-neutral-400">{receipt.receiptNumber}</p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <a href={url} download={name} target="_blank" rel="noopener noreferrer" title="Télécharger"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition hover:bg-emerald-600 hover:text-white">
+              <Download size={15} />
+            </a>
+            <button type="button" onClick={remove} disabled={updateReceipt.isPending} title="Supprimer le justificatif"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-500 hover:text-white disabled:opacity-60">
+              {updateReceipt.isPending ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+            </button>
+            <button type="button" onClick={onClose} title="Fermer"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500 transition hover:bg-neutral-900 hover:text-white">
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 bg-neutral-100 p-2 sm:p-4">
+          {isImage ? (
+            <div className="flex h-full items-center justify-center overflow-auto rounded-xl bg-white">
+              <img src={url} alt={name} className="max-h-full max-w-full object-contain" />
+            </div>
+          ) : (
+            <iframe src={url} title={name} className="h-full w-full rounded-xl border-0 bg-white" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EditReceiptModal({ receipt, onClose }: { receipt: ReceiptDoc; onClose: () => void }) {
   const updateReceipt = useUpdateReceipt();
   const [amount, setAmount] = useState(String(receipt.amount));
@@ -1591,6 +1641,7 @@ function ReceiptsTab() {
   const [search,          setSearch]          = useState('');
   const [typeFilter,      setTypeFilter]      = useState<'all' | 'cotisation' | 'cotisation_annuelle'>('all');
   const [editing,         setEditing]         = useState<ReceiptDoc | null>(null);
+  const [viewJustification, setViewJustification] = useState<ReceiptDoc | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [selectMode,      setSelectMode]      = useState(false);
   const [selectedIds,     setSelectedIds]     = useState<Set<string>>(new Set());
@@ -1761,15 +1812,14 @@ function ReceiptsTab() {
                     <Eye size={12} />
                   </button>
                   {r.justificationUrl && (
-                    <a
-                      href={r.justificationUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => setViewJustification(r)}
                       title={r.justificationName ? 'Voir le justificatif : ' + r.justificationName : 'Voir le justificatif'}
                       className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500 transition hover:bg-blue-500 hover:text-white"
                     >
                       <FileText size={12} />
-                    </a>
+                    </button>
                   )}
                   <button onClick={() => setEditing(r)} disabled={isCancelled} title="Modifier"
                     className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-50 text-neutral-500 transition hover:bg-yellow-400 hover:text-neutral-950 disabled:cursor-not-allowed disabled:opacity-40">
@@ -1787,6 +1837,7 @@ function ReceiptsTab() {
       </div>
 
       {editing && <EditReceiptModal receipt={editing} onClose={() => setEditing(null)} />}
+      {viewJustification && <ReceiptJustificationModal receipt={viewJustification} onClose={() => setViewJustification(null)} />}
     </>
   );
 }
