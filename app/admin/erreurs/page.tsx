@@ -375,6 +375,26 @@ export default function GestionErreursPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {(showingExternalScans || showResolved) && (
+            <button
+              type="button"
+              onClick={() => {
+                setErrorScope('errors');
+                setShowResolved(false);
+                setCategory('all');
+                setPage(1);
+                setConfirmClear(false);
+                setConfirmBulkDelete(false);
+                setSelectedIds([]);
+                setAllSelectableIds([]);
+              }}
+              className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-neutral-200 bg-white text-neutral-700 transition-colors hover:bg-neutral-50"
+            >
+              <AlertTriangle size={14} />
+              Erreurs
+            </button>
+          )}
+
           <button
             onClick={() => {
               setErrorScope(v => v === 'external_scans' ? 'errors' : 'external_scans');
