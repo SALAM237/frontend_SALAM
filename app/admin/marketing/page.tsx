@@ -673,16 +673,27 @@ function EmailDeviceList({ events }: { events: MarketingEmailEvent[] }) {
 }
 
 function EmailLocationList({ events }: { events: MarketingEmailEvent[] }) {
-  const located = events.filter(eventLocation);
+  const located = events.filter(event => eventLocation(event) || (event.latitude != null && event.longitude != null));
   if (!located.length) return <span className="text-neutral-300">---</span>;
   return (
     <div className="space-y-1.5">
-      {located.map((event, i) => (
-        <p key={i} className="flex max-w-[240px] items-center gap-1 text-[11px] font-semibold text-neutral-600">
-          <MapPin size={12} className="shrink-0 text-rose-500" />
-          <span className="truncate">{eventLocation(event)}</span>
-        </p>
-      ))}
+      {located.map((event, i) => {
+        const coords = event.latitude != null && event.longitude != null ? event.latitude.toFixed(4) + ', ' + event.longitude.toFixed(4) : null;
+        const source = event.locationSource && event.locationSource !== 'none' ? event.locationSource : null;
+        return (
+          <div key={i} className="max-w-[260px] text-[11px] font-semibold text-neutral-600">
+            <p className="flex items-center gap-1">
+              <MapPin size={12} className="shrink-0 text-rose-500" />
+              <span className="truncate">{eventLocation(event) || 'Position IP approximative'}</span>
+            </p>
+            {(coords || source || event.privacyProxy) && (
+              <p className="pl-4 text-[9px] font-bold text-neutral-400">
+                {coords ? 'Coord. IP : ' + coords : ''}{coords && source ? ' - ' : ''}{source ? 'source ' + source : ''}{(coords || source) && event.privacyProxy ? ' - ' : ''}{event.privacyProxy ? 'proxy mail probable' : ''}
+              </p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

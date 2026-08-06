@@ -706,6 +706,7 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
   const [dueDate, setDueDate] = useState(today);
   const [issuedAtValidated, setIssuedAtValidated] = useState(false);
   const [dueDateValidated, setDueDateValidated] = useState(false);
+  const [focusedInvoiceDate, setFocusedInvoiceDate] = useState<'issuedAt' | 'dueDate' | null>(null);
   const [paymentLink, setPaymentLink] = useState('');
   const [recipientMode, setRecipientMode] = useState<'all' | 'select'>('select');
   const [selected, setSelected] = useState<string[]>(presetMemberId ? [presetMemberId] : []);
@@ -913,7 +914,7 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
     `w-full rounded-xl border bg-white px-3 py-2.5 text-sm outline-none transition focus:ring-2 ${err ? 'border-red-400 bg-red-50/40 focus:border-red-500 focus:ring-red-500/15' : valid ? 'border-emerald-400 bg-emerald-50/40 focus:border-emerald-500 focus:ring-emerald-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`;
   const dateValidateBtnCls = (valid: boolean, err?: string) =>
     (valid ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm shadow-emerald-600/20' : err ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100') +
-    ' inline-flex h-10 min-w-10 items-center justify-center rounded-xl border px-3 transition';
+    ' relative z-30 inline-flex h-10 min-w-10 items-center justify-center rounded-xl border px-3 transition';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 p-3 backdrop-blur-sm">
@@ -1008,16 +1009,16 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
                         <label className="block">
                           <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Date d&apos;&eacute;mission</span>
                           <div className="mt-1 flex gap-2">
-                            <input type="date" value={issuedAt} onChange={event => { setIssuedAt(event.target.value); setIssuedAtValidated(false); setDueDateValidated(false); setErrors(prev => ({ ...prev, issuedAt: '', dueDate: '' })); }} className={inputCls(errors.issuedAt, issuedAtValidated)} />
-                            <button type="button" aria-label="Valider la date d'&eacute;mission" onClick={() => { if (!issuedAt) setErrors(prev => ({ ...prev, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(prev => ({ ...prev, issuedAt: '' })); } }} className={dateValidateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>
+                            <input type="date" value={issuedAt} onFocus={() => setFocusedInvoiceDate('issuedAt')} onBlur={() => window.setTimeout(() => setFocusedInvoiceDate(current => current === 'issuedAt' ? null : current), 120)} onChange={event => { setIssuedAt(event.target.value); setIssuedAtValidated(false); setDueDateValidated(false); setErrors(prev => ({ ...prev, issuedAt: '', dueDate: '' })); }} className={inputCls(errors.issuedAt, issuedAtValidated)} />
+                            {focusedInvoiceDate === 'issuedAt' && <button type="button" aria-label="Valider la date d'&eacute;mission" onMouseDown={event => event.preventDefault()} onClick={() => { if (!issuedAt) setErrors(prev => ({ ...prev, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(prev => ({ ...prev, issuedAt: '' })); setFocusedInvoiceDate(null); } }} className={dateValidateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>}
                           </div>
                           {errors.issuedAt && <p className="mt-1 text-[10px] font-semibold text-red-500">{errors.issuedAt}</p>}
                         </label>
                         <label className="block">
                           <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">&Eacute;ch&eacute;ance</span>
                           <div className="mt-1 flex gap-2">
-                            <input type="date" min={issuedAt || today} value={dueDate} onChange={event => { setDueDate(event.target.value); setDueDateValidated(false); setErrors(prev => ({ ...prev, dueDate: '' })); }} className={inputCls(errors.dueDate, dueDateValidated)} />
-                            <button type="button" aria-label="Valider la date d'&eacute;ch&eacute;ance" onClick={() => { if (!dueDate) setErrors(prev => ({ ...prev, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(prev => ({ ...prev, dueDate: '' })); } }} className={dateValidateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>
+                            <input type="date" min={issuedAt || today} value={dueDate} onFocus={() => setFocusedInvoiceDate('dueDate')} onBlur={() => window.setTimeout(() => setFocusedInvoiceDate(current => current === 'dueDate' ? null : current), 120)} onChange={event => { setDueDate(event.target.value); setDueDateValidated(false); setErrors(prev => ({ ...prev, dueDate: '' })); }} className={inputCls(errors.dueDate, dueDateValidated)} />
+                            {focusedInvoiceDate === 'dueDate' && <button type="button" aria-label="Valider la date d'&eacute;ch&eacute;ance" onMouseDown={event => event.preventDefault()} onClick={() => { if (!dueDate) setErrors(prev => ({ ...prev, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(prev => ({ ...prev, dueDate: '' })); setFocusedInvoiceDate(null); } }} className={dateValidateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>}
                           </div>
                           {errors.dueDate && <p className="mt-1 text-[10px] font-semibold text-red-500">{errors.dueDate}</p>}
                         </label>
@@ -1224,13 +1225,14 @@ function EditInvoiceModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose: 
   const [dueDate, setDueDate] = useState(invoice.dueDate ? invoice.dueDate.slice(0, 10) : '');
   const [issuedAtValidated, setIssuedAtValidated] = useState(Boolean(invoice.issuedAt));
   const [dueDateValidated, setDueDateValidated] = useState(Boolean(invoice.dueDate));
+  const [focusedInvoiceDate, setFocusedInvoiceDate] = useState<'issuedAt' | 'dueDate' | null>(null);
   const [paymentLink, setPaymentLink] = useState(invoice.paymentLink ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const editInputCls = (err?: string, valid = false) =>
     'mt-1 h-10 w-full rounded-xl border px-3 text-sm outline-none transition focus:ring-2 ' + (err ? 'border-red-400 bg-red-50/40 focus:border-red-500 focus:ring-red-500/15' : valid ? 'border-emerald-400 bg-emerald-50/40 focus:border-emerald-500 focus:ring-emerald-500/15' : 'border-neutral-200 focus:border-emerald-400 focus:ring-emerald-500/15');
   const editDateBtnCls = (valid: boolean, err?: string) =>
-    (valid ? 'border-emerald-500 bg-emerald-600 text-white' : err ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100') + ' mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition';
+    (valid ? 'border-emerald-500 bg-emerald-600 text-white' : err ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100') + ' relative z-30 mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition';
 
   const submit = () => {
     const next: Record<string, string> = {};
@@ -1285,16 +1287,16 @@ function EditInvoiceModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose: 
             <label className="block">
               <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Date d'emission</span>
               <div className="flex gap-2">
-                <input type="date" value={issuedAt} onChange={e => { setIssuedAt(e.target.value); setIssuedAtValidated(false); setDueDateValidated(false); setErrors(prev => ({ ...prev, issuedAt: '', dueDate: '' })); }} className={editInputCls(errors.issuedAt, issuedAtValidated)} />
-                <button type="button" aria-label="Valider la date d'&eacute;mission" onClick={() => { if (!issuedAt) setErrors(prev => ({ ...prev, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(prev => ({ ...prev, issuedAt: '' })); } }} className={editDateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>
+                <input type="date" value={issuedAt} onFocus={() => setFocusedInvoiceDate('issuedAt')} onBlur={() => window.setTimeout(() => setFocusedInvoiceDate(current => current === 'issuedAt' ? null : current), 120)} onChange={e => { setIssuedAt(e.target.value); setIssuedAtValidated(false); setDueDateValidated(false); setErrors(prev => ({ ...prev, issuedAt: '', dueDate: '' })); }} className={editInputCls(errors.issuedAt, issuedAtValidated)} />
+                {focusedInvoiceDate === 'issuedAt' && <button type="button" aria-label="Valider la date d'&eacute;mission" onMouseDown={event => event.preventDefault()} onClick={() => { if (!issuedAt) setErrors(prev => ({ ...prev, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(prev => ({ ...prev, issuedAt: '' })); setFocusedInvoiceDate(null); } }} className={editDateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>}
               </div>
               {errors.issuedAt && <p className="mt-1 text-[11px] text-red-500">{errors.issuedAt}</p>}
             </label>
             <label className="block">
               <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Echeance</span>
               <div className="flex gap-2">
-                <input type="date" min={issuedAt || undefined} value={dueDate} onChange={e => { setDueDate(e.target.value); setDueDateValidated(false); setErrors(prev => ({ ...prev, dueDate: '' })); }} className={editInputCls(errors.dueDate, dueDateValidated)} />
-                <button type="button" aria-label="Valider la date d'&eacute;ch&eacute;ance" onClick={() => { if (!dueDate) setErrors(prev => ({ ...prev, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(prev => ({ ...prev, dueDate: '' })); } }} className={editDateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>
+                <input type="date" min={issuedAt || undefined} value={dueDate} onFocus={() => setFocusedInvoiceDate('dueDate')} onBlur={() => window.setTimeout(() => setFocusedInvoiceDate(current => current === 'dueDate' ? null : current), 120)} onChange={e => { setDueDate(e.target.value); setDueDateValidated(false); setErrors(prev => ({ ...prev, dueDate: '' })); }} className={editInputCls(errors.dueDate, dueDateValidated)} />
+                {focusedInvoiceDate === 'dueDate' && <button type="button" aria-label="Valider la date d'&eacute;ch&eacute;ance" onMouseDown={event => event.preventDefault()} onClick={() => { if (!dueDate) setErrors(prev => ({ ...prev, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(prev => ({ ...prev, dueDate: '' })); setFocusedInvoiceDate(null); } }} className={editDateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>}
               </div>
               {errors.dueDate && <p className="mt-1 text-[11px] text-red-500">{errors.dueDate}</p>}
             </label>
@@ -1325,6 +1327,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const [dueDate,       setDueDate]       = useState('');
   const [issuedAtValidated, setIssuedAtValidated] = useState(false);
   const [dueDateValidated,  setDueDateValidated]  = useState(false);
+  const [focusedInvoiceDate, setFocusedInvoiceDate] = useState<'issuedAt' | 'dueDate' | null>(null);
   const [paymentLink,   setPaymentLink]   = useState('');
   const [recipientMode, setRecipientMode] = useState<'all' | 'select'>('all');
   const [selected,      setSelected]      = useState<string[]>([]);
@@ -1394,7 +1397,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const inputCls = (err?: string, valid = false) =>
     `w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition-all focus:ring-2 placeholder:text-neutral-300 ${err ? 'border-red-400 bg-red-50/40 focus:border-red-500 focus:ring-red-500/15' : valid ? 'border-emerald-400 bg-emerald-50/40 focus:border-emerald-500 focus:ring-emerald-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`;
   const dateValidateBtnCls = (valid: boolean, err?: string) =>
-    (valid ? 'border-emerald-500 bg-emerald-600 text-white' : err ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100') + ' inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition';
+    (valid ? 'border-emerald-500 bg-emerald-600 text-white' : err ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100') + ' relative z-30 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -1440,10 +1443,12 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
                 <div className="relative min-w-0 flex-1">
                   <CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                   <input type="date" value={issuedAt}
+                    onFocus={() => setFocusedInvoiceDate('issuedAt')}
+                    onBlur={() => window.setTimeout(() => setFocusedInvoiceDate(current => current === 'issuedAt' ? null : current), 120)}
                     onChange={e => { setIssuedAt(e.target.value); setIssuedAtValidated(false); setDueDateValidated(false); setErrors(p => ({...p, issuedAt: '', dueDate: ''})); }}
                     className={`${inputCls(errors.issuedAt, issuedAtValidated)} pl-9 pr-2`} />
                 </div>
-                <button type="button" aria-label="Valider la date d'&eacute;mission" onClick={() => { if (!issuedAt) setErrors(p => ({ ...p, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(p => ({ ...p, issuedAt: '' })); } }} className={dateValidateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>
+                {focusedInvoiceDate === 'issuedAt' && <button type="button" aria-label="Valider la date d'&eacute;mission" onMouseDown={event => event.preventDefault()} onClick={() => { if (!issuedAt) setErrors(p => ({ ...p, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(p => ({ ...p, issuedAt: '' })); setFocusedInvoiceDate(null); } }} className={dateValidateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>}
               </div>
               {errors.issuedAt && <p className="text-[11px] text-red-500">{errors.issuedAt}</p>}
             </div>
@@ -1453,10 +1458,12 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
                 <div className="relative min-w-0 flex-1">
                   <CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                   <input type="date" value={dueDate} min={issuedAt || today}
+                    onFocus={() => setFocusedInvoiceDate('dueDate')}
+                    onBlur={() => window.setTimeout(() => setFocusedInvoiceDate(current => current === 'dueDate' ? null : current), 120)}
                     onChange={e => { setDueDate(e.target.value); setDueDateValidated(false); setErrors(p => ({...p, dueDate: ''})); }}
                     className={`${inputCls(errors.dueDate, dueDateValidated)} pl-9 pr-2`} />
                 </div>
-                <button type="button" aria-label="Valider la date d'&eacute;ch&eacute;ance" onClick={() => { if (!dueDate) setErrors(p => ({ ...p, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(p => ({ ...p, dueDate: '' })); } }} className={dateValidateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>
+                {focusedInvoiceDate === 'dueDate' && <button type="button" aria-label="Valider la date d'&eacute;ch&eacute;ance" onMouseDown={event => event.preventDefault()} onClick={() => { if (!dueDate) setErrors(p => ({ ...p, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(p => ({ ...p, dueDate: '' })); setFocusedInvoiceDate(null); } }} className={dateValidateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>}
               </div>
               {errors.dueDate && <p className="text-[11px] text-red-500">{errors.dueDate}</p>}
             </div>

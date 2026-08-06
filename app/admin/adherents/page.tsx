@@ -126,6 +126,29 @@ const TRANCHE_BADGE_CLS: Record<string, string> = {
 
 type PaymentConfirmData = { paidAt: string; reference: string; notes: string; justification?: File | null; amount?: number };
 
+type StoredPaymentDraft = Pick<PaymentConfirmData, 'paidAt' | 'reference' | 'notes' | 'amount'>;
+const PAYMENT_DRAFT_KEY_PREFIX = 'salam:admin:payment-draft:v1';
+const paymentDraftKey = (type: 'cotisation' | 'cotisation_annuelle', userId: string, year: number, trancheIndex?: number) =>
+  [PAYMENT_DRAFT_KEY_PREFIX, type, userId, year, trancheIndex ?? 'adhesion'].join(':');
+function readPaymentDraft(key: string): StoredPaymentDraft | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as { savedAt?: number; data?: StoredPaymentDraft };
+    if (!saved?.savedAt || Date.now() - saved.savedAt > 60 * 60 * 1000) { window.sessionStorage.removeItem(key); return null; }
+    return saved.data ?? null;
+  } catch { window.sessionStorage.removeItem(key); return null; }
+}
+function savePaymentDraft(key: string, data: StoredPaymentDraft) {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), data }));
+}
+function clearPaymentDraft(key: string) {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.removeItem(key);
+}
+
 type PaymentConfirmErrorField = 'date' | 'amount' | 'file' | null;
 
 function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memberNumber, initialDate, initialReference = '', initialNotes = '', initialAmount = '', requireAmount = false, amountLabel = 'Montant pay\u00e9', loading, onClose, onConfirm }: {
@@ -218,7 +241,7 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
           )}
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">R&eacute;f&eacute;rence <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><input value={reference} onChange={e => setReference(e.target.value)} placeholder="Ex: VIR-BNP-0215, PAYPAL-XXXXX..." className="h-11 w-full rounded-xl border border-neutral-200 px-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Commentaire <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={"Pay\u00e9 par OM, virement, esp\u00e8ce..."} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
-          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Justificatif <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><label className={(errorField === 'file' ? 'border-red-300 bg-red-50/40 ' : 'border-neutral-200 bg-neutral-50 hover:border-emerald-300 hover:bg-emerald-50/30 ') + 'flex cursor-pointer items-center gap-3 rounded-xl border border-dashed px-4 py-3 transition'}><Upload size={15} className="shrink-0 text-neutral-400" /><span className="min-w-0 flex-1 truncate text-sm text-neutral-500">{file?.name || 'S&eacute;lectionner un fichier...'}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => pickFile(e.target.files?.[0])} className="sr-only" />{file && <button type="button" onClick={e => { e.preventDefault(); pickFile(null); }} className="text-neutral-300 hover:text-neutral-600"><X size={12} /></button>}</label><p className="text-[10px] text-neutral-400">PDF, JPG ou PNG &middot; max 5 Mo</p></div>
+          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Justificatif <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><label className={(errorField === 'file' ? 'border-red-300 bg-red-50/40 ' : 'border-neutral-200 bg-neutral-50 hover:border-emerald-300 hover:bg-emerald-50/30 ') + 'flex cursor-pointer items-center gap-3 rounded-xl border border-dashed px-4 py-3 transition'}><Upload size={15} className="shrink-0 text-neutral-400" /><span className="min-w-0 flex-1 truncate text-sm text-neutral-500">{file?.name || 'S\u00e9lectionner un fichier...'}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => pickFile(e.target.files?.[0])} className="sr-only" />{file && <button type="button" onClick={e => { e.preventDefault(); pickFile(null); }} className="text-neutral-300 hover:text-neutral-600"><X size={12} /></button>}</label><p className="text-[10px] text-neutral-400">PDF, JPG ou PNG &middot; max 5 Mo</p></div>
           {error && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">{error}</p>}
           <div className="flex gap-2 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3"><AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-500" /><p className="text-[11px] leading-relaxed text-amber-700">Un re&ccedil;u de paiement sera automatiquement envoy&eacute; &agrave; l&apos;adh&eacute;rent par email.</p></div>
         </div>
@@ -240,6 +263,8 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
   const [draftAmount, setDraftAmount] = useState(t.amount > 0 ? String(t.amount) : '');
   const [draftDate, setDraftDate] = useState(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const paymentStorageKey = paymentDraftKey('cotisation_annuelle', userId, year, index);
+  const [restoredPaymentDraft, setRestoredPaymentDraft] = useState<StoredPaymentDraft | null>(() => readPaymentDraft(paymentStorageKey));
   const amountInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const updateAmount = useUpdateTranche();
@@ -261,6 +286,14 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
     setDraftDate(t.paidAt ? t.paidAt.slice(0, 10) : draftDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t.paidAt]);
+
+  useEffect(() => {
+    if (!restoredPaymentDraft || t.status === 'paid') return;
+    setDraftDate(restoredPaymentDraft.paidAt || draftDate);
+    if (restoredPaymentDraft.amount != null) setDraftAmount(String(restoredPaymentDraft.amount));
+    setPaymentModalOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isLastTranche = index === 3;
   const othersPaidSum = (allTranches ?? DEFAULT_TRANCHES)
@@ -323,6 +356,8 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
       {
         onSuccess: res => {
           setAmountMode('text');
+          clearPaymentDraft(paymentStorageKey);
+          setRestoredPaymentDraft(null);
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
           else onFeedback('success', (res as any).message ?? 'Montant mis \u00e0 jour');
@@ -334,6 +369,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
   const confirmTranchePayment = (data: PaymentConfirmData) => {
     const amount = Math.max(0, Number(data.amount) || 0);
     if (!validatePaymentAmount(amount)) return;
+    savePaymentDraft(paymentStorageKey, { paidAt: data.paidAt, reference: data.reference, notes: data.notes, amount });
     updateAmount.mutate(
       { userId, year, trancheIndex: index, amount, status: 'paid', paidAt: data.paidAt, reference: data.reference, notes: data.notes, justification: data.justification },
       {
@@ -343,6 +379,8 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
           setDraftDate(data.paidAt);
           setDateMode('text');
           setAmountMode('text');
+          clearPaymentDraft(paymentStorageKey);
+          setRestoredPaymentDraft(null);
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
           else onFeedback('success', (res as any).message ?? 'Paiement confirm\u00e9');
@@ -455,12 +493,14 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
           title={`Confirmer le paiement - Tranche ${index + 1}`}
           memberName={memberName}
           memberNumber={memberNumber}
-          initialDate={draftDate}
-          initialAmount={draftAmount || t.amount || ''}
+          initialDate={restoredPaymentDraft?.paidAt || draftDate}
+          initialReference={restoredPaymentDraft?.reference ?? ''}
+          initialNotes={restoredPaymentDraft?.notes ?? ''}
+          initialAmount={restoredPaymentDraft?.amount ?? (draftAmount || t.amount || '')}
           requireAmount
-          amountLabel="Montant pay&eacute;"
+          amountLabel={"Montant pay\u00e9"}
           loading={updateTranche.isPending}
-          onClose={() => setPaymentModalOpen(false)}
+          onClose={() => { clearPaymentDraft(paymentStorageKey); setRestoredPaymentDraft(null); setPaymentModalOpen(false); }}
           onConfirm={confirmTranchePayment}
         />
       )}
@@ -492,6 +532,8 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
   const today = new Date().toISOString().slice(0, 10);
   const [draftDate, setDraftDate] = useState(paidAt ? paidAt.slice(0, 10) : today);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const paymentStorageKey = paymentDraftKey('cotisation', userId, year);
+  const [restoredPaymentDraft, setRestoredPaymentDraft] = useState<StoredPaymentDraft | null>(() => readPaymentDraft(paymentStorageKey));
   const updateCotisation = useUpdateCotisationStatus();
   const sizes = variant === 'mobile'
     ? { select: 'w-full text-[10px]' }
@@ -503,11 +545,19 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paidAt, status]);
 
+  useEffect(() => {
+    if (!restoredPaymentDraft || status === 'paid') return;
+    setDraftDate(restoredPaymentDraft.paidAt || draftDate);
+    setPaymentModalOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const submit = (nextStatus: CotisationStatus, nextDate = draftDate, successMessage = 'Statut mis \u00e0 jour', extra?: PaymentConfirmData) => {
     if (nextStatus === 'paid' && !nextDate) {
       onFeedback('warning', 'La date de paiement est requise.');
       return;
     }
+    if (nextStatus === 'paid' && extra) savePaymentDraft(paymentStorageKey, { paidAt: nextDate, reference: extra.reference, notes: extra.notes });
     updateCotisation.mutate(
       {
         userId,
@@ -520,11 +570,11 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
       },
       {
         onSuccess: (res: any) => {
-          if (nextStatus === 'paid') { setDraftDate(nextDate); setPaymentModalOpen(false); }
+          if (nextStatus === 'paid') { setDraftDate(nextDate); setPaymentModalOpen(false); clearPaymentDraft(paymentStorageKey); setRestoredPaymentDraft(null); }
           onFeedback('success', res?.message ?? successMessage);
         },
         onError: (err: Error) => {
-          if (/facture/i.test(err.message)) onInvoiceRequired(err.message);
+          if (/facture/i.test(err.message)) { setPaymentModalOpen(false); onInvoiceRequired(err.message); }
           else onFeedback('error', err.message);
         },
       },
@@ -549,9 +599,11 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
         <PaymentConfirmModal
           memberName={memberName}
           memberNumber={memberNumber}
-          initialDate={draftDate}
+          initialDate={restoredPaymentDraft?.paidAt || draftDate}
+          initialReference={restoredPaymentDraft?.reference ?? ''}
+          initialNotes={restoredPaymentDraft?.notes ?? ''}
           loading={updateCotisation.isPending}
-          onClose={() => setPaymentModalOpen(false)}
+          onClose={() => { clearPaymentDraft(paymentStorageKey); setRestoredPaymentDraft(null); setPaymentModalOpen(false); }}
           onConfirm={confirmPayment}
         />
       )}

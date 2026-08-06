@@ -2,6 +2,33 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
+function forwardedTrackingHeaders(req: NextRequest): HeadersInit {
+  const names = [
+    'user-agent',
+    'x-forwarded-for',
+    'x-real-ip',
+    'x-client-ip',
+    'cf-connecting-ip',
+    'true-client-ip',
+    'cf-ipcountry',
+    'cf-ipcity',
+    'cf-city',
+    'cf-region',
+    'cf-region-code',
+    'cf-latitude',
+    'cf-longitude',
+    'cf-iplatitude',
+    'cf-iplongitude',
+  ];
+  const headers: Record<string, string> = {};
+  for (const name of names) {
+    const value = req.headers.get(name);
+    if (value) headers[name] = value;
+  }
+  return headers;
+}
+
+
 /**
  * GET /api/track/click/:campaignId/:userId?to=...
  * Relais côté FRONTEND pour le clic sur le bouton CTA des campagnes marketing.
@@ -33,7 +60,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ camp
 
   try {
     await fetch(`${API}/api/v1/t/c/${campaignId}/${userId}?to=${encodeURIComponent(safeTarget)}`, {
-      headers: { 'user-agent': req.headers.get('user-agent') ?? '' },
+      headers: forwardedTrackingHeaders(req),
       redirect: 'manual',
       signal: AbortSignal.timeout(4000),
     });

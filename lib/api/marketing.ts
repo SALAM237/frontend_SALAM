@@ -186,6 +186,10 @@ export interface MarketingEmailEvent {
   ip?: string | null;
   location?: string | null;
   countryCode?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  locationSource?: 'cloudflare' | 'vercel' | 'geoip-lite' | 'none' | string | null;
+  privacyProxy?: boolean | null;
   targetUrl?: string | null;
 }
 
