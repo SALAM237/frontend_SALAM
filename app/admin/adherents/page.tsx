@@ -1138,7 +1138,7 @@ export default function AdminAdherentsPage() {
       <div>
         <div className="flex flex-wrap items-baseline gap-2">
           <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Adhérents</h1>
-          {activeTab && <span className="text-sm font-semibold text-neutral-400">&gt; {TAB_LABELS[activeTab]}</span>}
+          {activeTab && <span className="text-xs font-semibold text-neutral-400 sm:text-sm">&gt; {TAB_LABELS[activeTab]}</span>}
         </div>
         <p className="mt-0.5 text-sm text-neutral-500">
           {isLoading ? 'Chargement…' : `${data?.data?.total ?? members.length} membres au total`}
@@ -1149,7 +1149,7 @@ export default function AdminAdherentsPage() {
           {/* Liste adhérents — display none par défaut, visible seulement dans un onglet ; icône seule sur mobile/tablette comme les autres onglets */}
           {activeTab && (
             <button type="button" onClick={handleBackToList}
-              className="shrink-0 inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-1.5 text-[10px] font-semibold text-neutral-600 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:bg-neutral-50 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm">
+              className="shrink-0 inline-flex items-center gap-0.5 rounded-full border border-neutral-200 bg-white px-1.5 py-1 text-[9px] font-semibold text-neutral-600 shadow-sm transition-all duration-200 hover:border-neutral-300 hover:bg-neutral-50 sm:px-2 sm:py-1.5 sm:text-[10px] lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm">
               <Users size={12} className="shrink-0 text-neutral-500 lg:size-[14px]" />
               <span className="max-w-0 overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 lg:max-w-none lg:ml-0.5">
                 Liste adhérents
@@ -1166,7 +1166,7 @@ export default function AdminAdherentsPage() {
 
           {/* Relance */}
           <button type="button" data-tab-btn="relance" onClick={() => handleTabClick('relance')}
-            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('relance')}`}>
+            className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-1 text-[9px] font-semibold shadow-sm transition-all duration-200 sm:px-2 sm:py-1.5 sm:text-[10px] lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('relance')}`}>
             <Bell size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('relance')}`} />
             <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'relance' ? 'max-w-[80px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
               Relance
@@ -1175,7 +1175,7 @@ export default function AdminAdherentsPage() {
 
           {/* Frais d'adhésion */}
           <button type="button" data-tab-btn="frais" onClick={() => handleTabClick('frais')}
-            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('frais')}`}>
+            className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-1 text-[9px] font-semibold shadow-sm transition-all duration-200 sm:px-2 sm:py-1.5 sm:text-[10px] lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('frais')}`}>
             <Banknote size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('frais')}`} />
             <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'frais' ? 'max-w-[130px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
               Frais d&apos;adhésion
@@ -1184,7 +1184,7 @@ export default function AdminAdherentsPage() {
 
           {/* Cotisation annuelle */}
           <button type="button" data-tab-btn="cotisation-annuelle" onClick={() => handleTabClick('cotisation-annuelle')}
-            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cotisation-annuelle')}`}>
+            className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-1 text-[9px] font-semibold shadow-sm transition-all duration-200 sm:px-2 sm:py-1.5 sm:text-[10px] lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cotisation-annuelle')}`}>
             <Wallet size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('cotisation-annuelle')}`} />
             <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cotisation-annuelle' ? 'max-w-[150px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
               Cotisation annuelle
@@ -1193,7 +1193,7 @@ export default function AdminAdherentsPage() {
 
           {/* Gestion cauris */}
           <button type="button" data-tab-btn="cauris" onClick={() => handleTabClick('cauris')}
-            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cauris')}`}>
+            className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-1 text-[9px] font-semibold shadow-sm transition-all duration-200 sm:px-2 sm:py-1.5 sm:text-[10px] lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cauris')}`}>
             <span className={`shrink-0 ${activeTab === 'cauris' ? '' : tabIconCls('cauris')}`}>
               <CauriImg size={12} />
             </span>
@@ -1204,7 +1204,7 @@ export default function AdminAdherentsPage() {
 
           {/* Cartes membres */}
           <button type="button" data-tab-btn="cartes" onClick={() => handleTabClick('cartes')}
-            className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cartes')}`}>
+            className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-1 text-[9px] font-semibold shadow-sm transition-all duration-200 sm:px-2 sm:py-1.5 sm:text-[10px] lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('cartes')}`}>
             <CreditCard size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('cartes')}`} />
             <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'cartes' ? 'max-w-[110px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
               Cartes membres
@@ -1212,7 +1212,7 @@ export default function AdminAdherentsPage() {
           </button>
           {canViewMemberDevices && (
             <button type="button" data-tab-btn="appareils" onClick={() => handleTabClick('appareils')}
-              className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold shadow-sm transition-all duration-200 lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('appareils')}`}>
+              className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-1 text-[9px] font-semibold shadow-sm transition-all duration-200 sm:px-2 sm:py-1.5 sm:text-[10px] lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('appareils')}`}>
               <Laptop size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('appareils')}`} />
               <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'appareils' ? 'max-w-[85px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
                 Appareils
@@ -1960,7 +1960,7 @@ export default function AdminAdherentsPage() {
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Statut</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Frais d&apos;adh.</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Cotis. annuelle</th>
-                          <th className="px-2 py-3 text-left text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-400">Reste ? payer cotisation annuelle</th>
+                          <th className="px-2 py-3 text-left text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-400">Reste &agrave; payer cotisation annuelle</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Profil</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Dern. connexion</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Date inscr.</th>
@@ -2215,7 +2215,7 @@ export default function AdminAdherentsPage() {
                                 <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Tél.</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{m.phone ?? 'Non renseigné'}</p></div>
                                 <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Dern. connexion</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{fmtDate(m.lastLoginAt)}</p></div>
                                 <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Date inscr.</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{fmt(m.createdAt)}</p></div>
-                                <div><p className="truncate text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-300">Reste ? payer cotisation annuelle</p><p className={`mt-0.5 truncate font-semibold ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</p></div>
+                                <div><p className="truncate text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-300">Reste &agrave; payer cotisation annuelle</p><p className={`mt-0.5 truncate font-semibold ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</p></div>
                                 <div>
                                   <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Actions</p>
                                   <div className="mt-1 flex items-center gap-1">
