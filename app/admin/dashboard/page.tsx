@@ -43,9 +43,9 @@ export default function AdminDashboardPage() {
   const statCards = [
     { label: 'Adherents actifs', value: stats?.members.active ?? 0, detail: stats ? stats.members.total + ' au total' : '-', icon: Users, color: 'bg-emerald-100 text-emerald-700', href: '/admin/adherents?status=active' },
     { label: 'Nouvelles demandes', value: stats?.requests.pending ?? 0, detail: 'A valider', icon: UserPlus, color: 'bg-blue-100 text-blue-700', href: '/admin/validations' },
-    { label: 'Cotisations en attente', value: stats?.cotisations.pendingInvoices ?? 0, detail: 'Echeance a venir', icon: Clock, color: 'bg-amber-100 text-amber-700', href: '/admin/facturation?payment=pending' },
-    { label: 'Cotisations impayees', value: stats?.cotisations.overdueInvoices ?? 0, detail: 'Echeance depassee', icon: AlertTriangle, color: 'bg-red-100 text-red-700', href: '/admin/facturation?payment=overdue' },
-    { label: 'Cotisations payees', value: stats?.cotisations.paid ?? 0, detail: String(stats?.cotisations.year ?? ''), icon: CreditCard, color: 'bg-yellow-100 text-yellow-700', href: '/admin/cotisations?status=paid' },
+    { label: 'Cotisations en attente', value: stats?.cotisations.pendingInvoices ?? 0, detail: 'Echeance a venir', icon: Clock, color: 'bg-amber-100 text-amber-700', href: '/admin/adherents' },
+    { label: 'Cotisations impayees', value: stats?.cotisations.overdueInvoices ?? 0, detail: 'Echeance depassee', icon: AlertTriangle, color: 'bg-red-100 text-red-700', href: '/admin/adherents' },
+    { label: 'Cotisations payees', value: stats?.cotisations.paid ?? 0, detail: String(stats?.cotisations.year ?? ''), icon: CreditCard, color: 'bg-yellow-100 text-yellow-700', href: '/admin/adherents?tab=frais' },
     { label: 'Messages non lus', value: stats?.messages.unread ?? 0, detail: 'A consulter', icon: MessageSquare, color: 'bg-cyan-100 text-cyan-700', href: '/admin/messages?unread=1' },
     { label: 'Activites a venir', value: stats?.activities.upcoming ?? 0, detail: 'Programmees', icon: CalendarDays, color: 'bg-violet-100 text-violet-700', href: '/admin/activites?period=upcoming' },
     { label: 'Recommandations IA', value: stats?.recommendations.unread ?? 0, detail: 'Non consultees', icon: Sparkles, color: 'bg-fuchsia-100 text-fuchsia-700', href: '/admin/assistant-ia' },

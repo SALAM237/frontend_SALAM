@@ -126,6 +126,8 @@ const TRANCHE_BADGE_CLS: Record<string, string> = {
 
 type PaymentConfirmData = { paidAt: string; reference: string; notes: string; justification?: File | null; amount?: number };
 
+type PaymentConfirmErrorField = 'date' | 'amount' | 'file' | null;
+
 function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memberNumber, initialDate, initialReference = '', initialNotes = '', initialAmount = '', requireAmount = false, amountLabel = 'Montant pay\u00e9', loading, onClose, onConfirm }: {
   title?: string;
   memberName: string;
@@ -149,24 +151,39 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
   const [notes, setNotes] = useState(initialNotes);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
+  const [errorField, setErrorField] = useState<PaymentConfirmErrorField>(null);
+  const fieldCls = (field: PaymentConfirmErrorField, validated = false) => {
+    if (errorField === field) return 'border-red-400 bg-red-50/40 focus:border-red-500 focus:ring-red-500/15 ';
+    if (validated) return 'border-emerald-400 bg-emerald-50/40 focus:border-emerald-500 focus:ring-emerald-500/15 ';
+    return 'border-neutral-200 bg-white focus:border-emerald-500 focus:ring-emerald-500/15 ';
+  };
   const pickFile = (next?: File | null) => {
     setError('');
+    setErrorField(null);
     if (!next) { setFile(null); return; }
-    if (!['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'].includes(next.type)) { setError('Formats accept\u00e9s : PDF, JPG ou PNG.'); return; }
-    if (next.size > 5 * 1024 * 1024) { setError('Le justificatif ne doit pas d\u00e9passer 5 Mo.'); return; }
+    if (!['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'].includes(next.type)) { setError('Formats accept\u00e9s : PDF, JPG ou PNG.'); setErrorField('file'); return; }
+    if (next.size > 5 * 1024 * 1024) { setError('Le justificatif ne doit pas d\u00e9passer 5 Mo.'); setErrorField('file'); return; }
     setFile(next);
   };
   const parsedAmount = Math.max(0, Number(amount) || 0);
   const validateAmount = () => {
-    if (!parsedAmount) { setError('Le montant pay\u00e9 est obligatoire.'); return; }
+    if (!parsedAmount) { setError('Le montant pay\u00e9 est obligatoire.'); setErrorField('amount'); return; }
     setAmountValidated(true);
     setError('');
+    setErrorField(null);
+  };
+  const validateDate = () => {
+    if (!paidAt) { setError('La date de paiement est obligatoire.'); setErrorField('date'); return; }
+    setDateValidated(true);
+    setError('');
+    setErrorField(null);
   };
   const submit = () => {
-    if (!paidAt) { setError('La date de paiement est obligatoire.'); return; }
-    if (!dateValidated) { setError("Validez d'abord la date de paiement avant de confirmer."); return; }
-    if (requireAmount && !parsedAmount) { setError('Le montant pay\u00e9 est obligatoire.'); return; }
-    if (requireAmount && !amountValidated) { setError("Validez d'abord le montant pay\u00e9 avant de confirmer."); return; }
+    if (!paidAt) { setError('La date de paiement est obligatoire.'); setErrorField('date'); return; }
+    if (!dateValidated) { setError("Validez d'abord la date de paiement avant de confirmer."); setErrorField('date'); return; }
+    if (requireAmount && !parsedAmount) { setError('Le montant pay\u00e9 est obligatoire.'); setErrorField('amount'); return; }
+    if (requireAmount && !amountValidated) { setError("Validez d'abord le montant pay\u00e9 avant de confirmer."); setErrorField('amount'); return; }
+    setErrorField(null);
     onConfirm({ paidAt, reference, notes, justification: file, amount: requireAmount ? parsedAmount : undefined });
   };
   return (
@@ -177,11 +194,31 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
         </div>
         <div className="space-y-4 px-6 py-5">
-          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date de paiement re&ccedil;ue <span className="text-red-500">*</span></label><div className="flex gap-2"><div className="relative min-w-0 flex-1"><CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" /><input type="date" value={paidAt} max={today} onChange={e => { setPaidAt(e.target.value); setDateValidated(false); setError(''); }} className={(dateValidated ? 'border-emerald-400 bg-emerald-50/40 ' : 'border-neutral-200 bg-white ') + 'h-11 w-full rounded-xl border pl-9 pr-3 text-sm outline-none transition-all duration-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15'} /></div><button type="button" onClick={() => { if (!paidAt) setError('La date de paiement est obligatoire.'); else { setDateValidated(true); setError(''); } }} className={(dateValidated ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'inline-flex h-11 min-w-[76px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all duration-300'}>{dateValidated ? <><CheckCircle2 size={14} className="motion-safe:animate-pulse" />Valid&eacute;e</> : 'Valider'}</button></div></div>
-          {requireAmount && <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">{amountLabel} <span className="text-red-500">*</span></label><div className="flex gap-2"><div className="relative min-w-0 flex-1"><Banknote size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" /><input type="number" min={0} value={amount} onChange={e => { setAmount(e.target.value); setAmountValidated(false); setError(''); }} placeholder="Ex: 10000" className={(amountValidated ? 'border-emerald-400 bg-emerald-50/40 ' : 'border-neutral-200 bg-white ') + 'h-11 w-full rounded-xl border pl-9 pr-3 text-sm outline-none transition-all duration-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15'} /></div><button type="button" onClick={validateAmount} className={(amountValidated ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'inline-flex h-11 min-w-[76px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all duration-300'}>{amountValidated ? <><CheckCircle2 size={14} className="motion-safe:animate-pulse" />Valid&eacute;</> : 'Valider'}</button></div></div>}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date de paiement re&ccedil;ue <span className="text-red-500">*</span></label>
+            <div className="flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                <input type="date" value={paidAt} max={today} onChange={e => { setPaidAt(e.target.value); setDateValidated(false); setError(''); setErrorField(null); }} className={fieldCls('date', dateValidated) + 'h-11 w-full rounded-xl border pl-9 pr-3 text-sm outline-none transition-all duration-300 focus:ring-2'} />
+              </div>
+              <button type="button" onClick={validateDate} className={(dateValidated ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 ' : errorField === 'date' ? 'border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'inline-flex h-11 min-w-[76px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all duration-300'}>{dateValidated ? <><CheckCircle2 size={14} className="motion-safe:animate-pulse" />Valid&eacute;e</> : 'Valider'}</button>
+            </div>
+          </div>
+          {requireAmount && (
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">{amountLabel} <span className="text-red-500">*</span></label>
+              <div className="flex gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Banknote size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                  <input type="number" min={0} value={amount} onChange={e => { setAmount(e.target.value); setAmountValidated(false); setError(''); setErrorField(null); }} placeholder="Ex: 10000" className={fieldCls('amount', amountValidated) + 'h-11 w-full rounded-xl border pl-9 pr-3 text-sm outline-none transition-all duration-300 focus:ring-2'} />
+                </div>
+                <button type="button" onClick={validateAmount} className={(amountValidated ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 ' : errorField === 'amount' ? 'border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'inline-flex h-11 min-w-[76px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all duration-300'}>{amountValidated ? <><CheckCircle2 size={14} className="motion-safe:animate-pulse" />Valid&eacute;</> : 'Valider'}</button>
+              </div>
+            </div>
+          )}
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">R&eacute;f&eacute;rence <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><input value={reference} onChange={e => setReference(e.target.value)} placeholder="Ex: VIR-BNP-0215, PAYPAL-XXXXX..." className="h-11 w-full rounded-xl border border-neutral-200 px-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Commentaire <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={"Pay\u00e9 par OM, virement, esp\u00e8ce..."} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
-          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Justificatif <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-3 transition hover:border-emerald-300 hover:bg-emerald-50/30"><Upload size={15} className="shrink-0 text-neutral-400" /><span className="min-w-0 flex-1 truncate text-sm text-neutral-500">{file?.name || 'S\u00e9lectionner un fichier...'}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => pickFile(e.target.files?.[0])} className="sr-only" />{file && <button type="button" onClick={e => { e.preventDefault(); pickFile(null); }} className="text-neutral-300 hover:text-neutral-600"><X size={12} /></button>}</label><p className="text-[10px] text-neutral-400">PDF, JPG ou PNG &middot; max 5 Mo</p></div>
+          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Justificatif <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><label className={(errorField === 'file' ? 'border-red-300 bg-red-50/40 ' : 'border-neutral-200 bg-neutral-50 hover:border-emerald-300 hover:bg-emerald-50/30 ') + 'flex cursor-pointer items-center gap-3 rounded-xl border border-dashed px-4 py-3 transition'}><Upload size={15} className="shrink-0 text-neutral-400" /><span className="min-w-0 flex-1 truncate text-sm text-neutral-500">{file?.name || 'S&eacute;lectionner un fichier...'}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => pickFile(e.target.files?.[0])} className="sr-only" />{file && <button type="button" onClick={e => { e.preventDefault(); pickFile(null); }} className="text-neutral-300 hover:text-neutral-600"><X size={12} /></button>}</label><p className="text-[10px] text-neutral-400">PDF, JPG ou PNG &middot; max 5 Mo</p></div>
           {error && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">{error}</p>}
           <div className="flex gap-2 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3"><AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-500" /><p className="text-[11px] leading-relaxed text-amber-700">Un re&ccedil;u de paiement sera automatiquement envoy&eacute; &agrave; l&apos;adh&eacute;rent par email.</p></div>
         </div>
@@ -870,7 +907,14 @@ export default function AdminAdherentsPage() {
   };
 
   useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    const forcedTab: ActiveTab = tabParam === 'frais' || tabParam === 'cotisation-annuelle' ? tabParam : null;
     restoreAdherentsUiState();
+    if (forcedTab) {
+      setActiveTab(forcedTab);
+      setShowKpis(false);
+      router.replace('/admin/adherents');
+    }
     setUiStateHydrated(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

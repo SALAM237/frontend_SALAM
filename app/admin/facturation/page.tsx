@@ -704,6 +704,8 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
   const [description, setDescription] = useState(motif === 'other' ? "Frais et contribution liés aux activités de l'association." : resolvedDesignation);
   const [issuedAt, setIssuedAt] = useState(today);
   const [dueDate, setDueDate] = useState(today);
+  const [issuedAtValidated, setIssuedAtValidated] = useState(false);
+  const [dueDateValidated, setDueDateValidated] = useState(false);
   const [paymentLink, setPaymentLink] = useState('');
   const [recipientMode, setRecipientMode] = useState<'all' | 'select'>('select');
   const [selected, setSelected] = useState<string[]>(presetMemberId ? [presetMemberId] : []);
@@ -827,8 +829,10 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
   const validate = () => {
     const next: Record<string, string> = {};
     if (!invoiceTitle.trim()) next.title = 'Titre requis';
-    if (!issuedAt) next.issuedAt = 'Date d emission requise';
-    if (!dueDate) next.dueDate = 'Échéance requise';
+    if (!issuedAt) next.issuedAt = 'Date d\u2019\u00e9mission requise';
+    else if (!issuedAtValidated) next.issuedAt = 'Validez la date d\u2019\u00e9mission.';
+    if (!dueDate) next.dueDate = 'Date d\u2019\u00e9ch\u00e9ance requise';
+    else if (!dueDateValidated) next.dueDate = 'Validez la date d\u2019\u00e9ch\u00e9ance.';
     if (!isExempt && totals.ttc <= 0) next.amount = 'Le total doit être supérieur à 0';
     if (recipientMode === 'select' && selected.length === 0 && selectedClients.length === 0) next.recipients = 'Sélectionnez au moins un destinataire';
     setErrors(next);
@@ -905,8 +909,11 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
     openInvoicePdfBatch(docs);
   };
 
-  const inputCls = (err?: string) =>
-    `w-full rounded-xl border bg-white px-3 py-2.5 text-sm outline-none transition focus:ring-2 ${err ? 'border-red-300 focus:ring-red-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`;
+  const inputCls = (err?: string, valid = false) =>
+    `w-full rounded-xl border bg-white px-3 py-2.5 text-sm outline-none transition focus:ring-2 ${err ? 'border-red-400 bg-red-50/40 focus:border-red-500 focus:ring-red-500/15' : valid ? 'border-emerald-400 bg-emerald-50/40 focus:border-emerald-500 focus:ring-emerald-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`;
+  const dateValidateBtnCls = (valid: boolean, err?: string) =>
+    (valid ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm shadow-emerald-600/20' : err ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100') +
+    ' inline-flex h-10 min-w-10 items-center justify-center rounded-xl border px-3 transition';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 p-3 backdrop-blur-sm">
@@ -999,12 +1006,20 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
                       )}
                       <div className="mt-5 grid grid-cols-2 gap-3">
                         <label className="block">
-                          <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Date d'emission</span>
-                          <input type="date" value={issuedAt} onChange={event => setIssuedAt(event.target.value)} className={inputCls(errors.issuedAt)} />
+                          <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Date d&apos;&eacute;mission</span>
+                          <div className="mt-1 flex gap-2">
+                            <input type="date" value={issuedAt} onChange={event => { setIssuedAt(event.target.value); setIssuedAtValidated(false); setDueDateValidated(false); setErrors(prev => ({ ...prev, issuedAt: '', dueDate: '' })); }} className={inputCls(errors.issuedAt, issuedAtValidated)} />
+                            <button type="button" aria-label="Valider la date d'&eacute;mission" onClick={() => { if (!issuedAt) setErrors(prev => ({ ...prev, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(prev => ({ ...prev, issuedAt: '' })); } }} className={dateValidateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>
+                          </div>
+                          {errors.issuedAt && <p className="mt-1 text-[10px] font-semibold text-red-500">{errors.issuedAt}</p>}
                         </label>
                         <label className="block">
-                          <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Échéance</span>
-                          <input type="date" min={issuedAt || today} value={dueDate} onChange={event => setDueDate(event.target.value)} className={inputCls(errors.dueDate)} />
+                          <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">&Eacute;ch&eacute;ance</span>
+                          <div className="mt-1 flex gap-2">
+                            <input type="date" min={issuedAt || today} value={dueDate} onChange={event => { setDueDate(event.target.value); setDueDateValidated(false); setErrors(prev => ({ ...prev, dueDate: '' })); }} className={inputCls(errors.dueDate, dueDateValidated)} />
+                            <button type="button" aria-label="Valider la date d'&eacute;ch&eacute;ance" onClick={() => { if (!dueDate) setErrors(prev => ({ ...prev, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(prev => ({ ...prev, dueDate: '' })); } }} className={dateValidateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>
+                          </div>
+                          {errors.dueDate && <p className="mt-1 text-[10px] font-semibold text-red-500">{errors.dueDate}</p>}
                         </label>
                         <label className="block">
                           <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Lien paiement</span>
@@ -1207,13 +1222,26 @@ function EditInvoiceModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose: 
   const [amount, setAmount] = useState(String(invoice.amount ?? 0));
   const [issuedAt, setIssuedAt] = useState(invoice.issuedAt ? invoice.issuedAt.slice(0, 10) : '');
   const [dueDate, setDueDate] = useState(invoice.dueDate ? invoice.dueDate.slice(0, 10) : '');
+  const [issuedAtValidated, setIssuedAtValidated] = useState(Boolean(invoice.issuedAt));
+  const [dueDateValidated, setDueDateValidated] = useState(Boolean(invoice.dueDate));
   const [paymentLink, setPaymentLink] = useState(invoice.paymentLink ?? '');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const editInputCls = (err?: string, valid = false) =>
+    'mt-1 h-10 w-full rounded-xl border px-3 text-sm outline-none transition focus:ring-2 ' + (err ? 'border-red-400 bg-red-50/40 focus:border-red-500 focus:ring-red-500/15' : valid ? 'border-emerald-400 bg-emerald-50/40 focus:border-emerald-500 focus:ring-emerald-500/15' : 'border-neutral-200 focus:border-emerald-400 focus:ring-emerald-500/15');
+  const editDateBtnCls = (valid: boolean, err?: string) =>
+    (valid ? 'border-emerald-500 bg-emerald-600 text-white' : err ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100') + ' mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition';
 
   const submit = () => {
-    if (!title.trim()) return toast.error('Titre requis');
-    if (!Number(amount)) return toast.error('Montant invalide');
-    if (!issuedAt) return toast.error('Date d emission requise');
-    if (!dueDate) return toast.error('Date d echeance requise');
+    const next: Record<string, string> = {};
+    if (!title.trim()) next.title = 'Titre requis';
+    if (!Number(amount)) next.amount = 'Montant invalide';
+    if (!issuedAt) next.issuedAt = 'Date d\u2019\u00e9mission requise';
+    else if (!issuedAtValidated) next.issuedAt = 'Validez la date d\u2019\u00e9mission.';
+    if (!dueDate) next.dueDate = 'Date d\u2019\u00e9ch\u00e9ance requise';
+    else if (!dueDateValidated) next.dueDate = 'Validez la date d\u2019\u00e9ch\u00e9ance.';
+    setErrors(next);
+    if (Object.keys(next).length) { toast.error(Object.values(next)[0]); return; }
     updateInvoice.mutate({
       id: invoice._id,
       body: {
@@ -1241,7 +1269,8 @@ function EditInvoiceModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose: 
         <div className="space-y-3 px-5 py-4">
           <label className="block">
             <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Titre</span>
-            <input value={title} onChange={e => setTitle(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+            <input value={title} onChange={e => { setTitle(e.target.value); setErrors(prev => ({ ...prev, title: '' })); }} className={editInputCls(errors.title)} />
+            {errors.title && <p className="mt-1 text-[11px] text-red-500">{errors.title}</p>}
           </label>
           <label className="block">
             <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Description</span>
@@ -1250,15 +1279,24 @@ function EditInvoiceModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose: 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
               <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Montant</span>
-              <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+              <input type="number" value={amount} onChange={e => { setAmount(e.target.value); setErrors(prev => ({ ...prev, amount: '' })); }} className={editInputCls(errors.amount)} />
+              {errors.amount && <p className="mt-1 text-[11px] text-red-500">{errors.amount}</p>}
             </label>
             <label className="block">
               <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Date d'emission</span>
-              <input type="date" value={issuedAt} onChange={e => setIssuedAt(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+              <div className="flex gap-2">
+                <input type="date" value={issuedAt} onChange={e => { setIssuedAt(e.target.value); setIssuedAtValidated(false); setDueDateValidated(false); setErrors(prev => ({ ...prev, issuedAt: '', dueDate: '' })); }} className={editInputCls(errors.issuedAt, issuedAtValidated)} />
+                <button type="button" aria-label="Valider la date d'&eacute;mission" onClick={() => { if (!issuedAt) setErrors(prev => ({ ...prev, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(prev => ({ ...prev, issuedAt: '' })); } }} className={editDateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>
+              </div>
+              {errors.issuedAt && <p className="mt-1 text-[11px] text-red-500">{errors.issuedAt}</p>}
             </label>
             <label className="block">
               <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Echeance</span>
-              <input type="date" min={issuedAt || undefined} value={dueDate} onChange={e => setDueDate(e.target.value)} className="mt-1 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm outline-none focus:border-emerald-400" />
+              <div className="flex gap-2">
+                <input type="date" min={issuedAt || undefined} value={dueDate} onChange={e => { setDueDate(e.target.value); setDueDateValidated(false); setErrors(prev => ({ ...prev, dueDate: '' })); }} className={editInputCls(errors.dueDate, dueDateValidated)} />
+                <button type="button" aria-label="Valider la date d'&eacute;ch&eacute;ance" onClick={() => { if (!dueDate) setErrors(prev => ({ ...prev, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(prev => ({ ...prev, dueDate: '' })); } }} className={editDateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>
+              </div>
+              {errors.dueDate && <p className="mt-1 text-[11px] text-red-500">{errors.dueDate}</p>}
             </label>
           </div>
           <label className="block">
@@ -1285,6 +1323,8 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
   const [amount,        setAmount]        = useState('');
   const [issuedAt,      setIssuedAt]      = useState(today);
   const [dueDate,       setDueDate]       = useState('');
+  const [issuedAtValidated, setIssuedAtValidated] = useState(false);
+  const [dueDateValidated,  setDueDateValidated]  = useState(false);
   const [paymentLink,   setPaymentLink]   = useState('');
   const [recipientMode, setRecipientMode] = useState<'all' | 'select'>('all');
   const [selected,      setSelected]      = useState<string[]>([]);
@@ -1326,8 +1366,10 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
     const e: Record<string, string> = {};
     if (!title.trim())                                          e.title      = 'Titre requis';
     if (!amount || Number(amount) <= 0)                         e.amount     = 'Montant invalide';
-    if (!issuedAt)                                              e.issuedAt   = 'Date d emission requise';
-    if (!dueDate)                                               e.dueDate    = 'Échéance requise';
+    if (!issuedAt)                                              e.issuedAt   = 'Date d\u2019\u00e9mission requise';
+    else if (!issuedAtValidated)                                e.issuedAt   = 'Validez la date d\u2019\u00e9mission.';
+    if (!dueDate)                                               e.dueDate    = 'Date d\u2019\u00e9ch\u00e9ance requise';
+    else if (!dueDateValidated)                                 e.dueDate    = 'Validez la date d\u2019\u00e9ch\u00e9ance.';
     if (recipientMode === 'select' && selected.length === 0)    e.recipients = 'Sélectionnez au moins un destinataire';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -1349,8 +1391,10 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
     );
   };
 
-  const inputCls = (err?: string) =>
-    `w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition-all focus:ring-2 placeholder:text-neutral-300 ${err ? 'border-red-300 focus:ring-red-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`;
+  const inputCls = (err?: string, valid = false) =>
+    `w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none transition-all focus:ring-2 placeholder:text-neutral-300 ${err ? 'border-red-400 bg-red-50/40 focus:border-red-500 focus:ring-red-500/15' : valid ? 'border-emerald-400 bg-emerald-50/40 focus:border-emerald-500 focus:ring-emerald-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`;
+  const dateValidateBtnCls = (valid: boolean, err?: string) =>
+    (valid ? 'border-emerald-500 bg-emerald-600 text-white' : err ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100') + ' inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -1392,21 +1436,27 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
             </div>
             <div className="space-y-1.5">
               <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date d'emission <span className="text-red-500">*</span></label>
-              <div className="relative">
-                <CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-                <input type="date" value={issuedAt}
-                  onChange={e => { setIssuedAt(e.target.value); setErrors(p => ({...p, issuedAt: ''})); }}
-                  className={`${inputCls(errors.issuedAt)} pl-9`} />
+              <div className="flex gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                  <input type="date" value={issuedAt}
+                    onChange={e => { setIssuedAt(e.target.value); setIssuedAtValidated(false); setDueDateValidated(false); setErrors(p => ({...p, issuedAt: '', dueDate: ''})); }}
+                    className={`${inputCls(errors.issuedAt, issuedAtValidated)} pl-9 pr-2`} />
+                </div>
+                <button type="button" aria-label="Valider la date d'&eacute;mission" onClick={() => { if (!issuedAt) setErrors(p => ({ ...p, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(p => ({ ...p, issuedAt: '' })); } }} className={dateValidateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>
               </div>
               {errors.issuedAt && <p className="text-[11px] text-red-500">{errors.issuedAt}</p>}
             </div>
             <div className="space-y-1.5">
               <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Echeance <span className="text-red-500">*</span></label>
-              <div className="relative">
-                <CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-                <input type="date" value={dueDate} min={issuedAt || today}
-                  onChange={e => { setDueDate(e.target.value); setErrors(p => ({...p, dueDate: ''})); }}
-                  className={`${inputCls(errors.dueDate)} pl-9`} />
+              <div className="flex gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                  <input type="date" value={dueDate} min={issuedAt || today}
+                    onChange={e => { setDueDate(e.target.value); setDueDateValidated(false); setErrors(p => ({...p, dueDate: ''})); }}
+                    className={`${inputCls(errors.dueDate, dueDateValidated)} pl-9 pr-2`} />
+                </div>
+                <button type="button" aria-label="Valider la date d'&eacute;ch&eacute;ance" onClick={() => { if (!dueDate) setErrors(p => ({ ...p, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(p => ({ ...p, dueDate: '' })); } }} className={dateValidateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>
               </div>
               {errors.dueDate && <p className="text-[11px] text-red-500">{errors.dueDate}</p>}
             </div>
