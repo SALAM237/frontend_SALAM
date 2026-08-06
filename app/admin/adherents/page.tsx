@@ -164,7 +164,7 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
         </div>
         <div className="space-y-4 px-6 py-5">
-          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date de paiement re&ccedil;ue <span className="text-red-500">*</span></label><div className="flex gap-2"><div className="relative min-w-0 flex-1"><CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" /><input type="date" value={paidAt} max={today} onChange={e => { setPaidAt(e.target.value); setDateValidated(false); setError(''); }} className="h-11 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div><button type="button" onClick={() => { if (!paidAt) setError('La date de paiement est obligatoire.'); else { setDateValidated(true); setError(''); } }} className={(dateValidated ? 'bg-emerald-600 text-white ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'h-11 rounded-xl px-3 text-xs font-black transition'}>Valider</button></div></div>
+          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date de paiement re&ccedil;ue <span className="text-red-500">*</span></label><div className="flex gap-2"><div className="relative min-w-0 flex-1"><CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" /><input type="date" value={paidAt} max={today} onChange={e => { setPaidAt(e.target.value); setDateValidated(false); setError(''); }} className={(dateValidated ? 'border-emerald-400 bg-emerald-50/40 ' : 'border-neutral-200 bg-white ') + 'h-11 w-full rounded-xl border pl-9 pr-3 text-sm outline-none transition-all duration-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15'} /></div><button type="button" onClick={() => { if (!paidAt) setError('La date de paiement est obligatoire.'); else { setDateValidated(true); setError(''); } }} className={(dateValidated ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'inline-flex h-11 min-w-[76px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all duration-300'}>{dateValidated ? <><CheckCircle2 size={14} className="motion-safe:animate-pulse" />Valid&eacute;e</> : 'Valider'}</button></div></div>
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">R&eacute;f&eacute;rence <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><input value={reference} onChange={e => setReference(e.target.value)} placeholder="Ex: VIR-BNP-0215, PAYPAL-XXXXX..." className="h-11 w-full rounded-xl border border-neutral-200 px-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Commentaire <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={"Pay\u00e9 par OM, virement, esp\u00e8ce..."} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Justificatif <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-3 transition hover:border-emerald-300 hover:bg-emerald-50/30"><Upload size={15} className="shrink-0 text-neutral-400" /><span className="min-w-0 flex-1 truncate text-sm text-neutral-500">{file?.name || 'S\u00e9lectionner un fichier...'}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => pickFile(e.target.files?.[0])} className="sr-only" />{file && <button type="button" onClick={e => { e.preventDefault(); pickFile(null); }} className="text-neutral-300 hover:text-neutral-600"><X size={12} /></button>}</label><p className="text-[10px] text-neutral-400">PDF, JPG ou PNG &middot; max 5 Mo</p></div>
@@ -225,7 +225,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
   const dateConfirmed = dateMode === 'text' && !!draftDate;
 
   const handleMutationError = (err: Error) => {
-    if (/Cr(e|é)ez une facture/i.test(err.message)) onInvoiceRequired(err.message);
+    if (/facture/i.test(err.message)) onInvoiceRequired(err.message);
     else onFeedback('error', err.message);
   };
 
@@ -430,32 +430,19 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [draftDate, setDraftDate] = useState(paidAt ? paidAt.slice(0, 10) : today);
-  const [dateMode, setDateMode] = useState<'edit' | 'text'>(paidAt ? 'text' : 'edit');
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const dateInputRef = useRef<HTMLInputElement>(null);
   const updateCotisation = useUpdateCotisationStatus();
   const sizes = variant === 'mobile'
-    ? { select: 'w-full text-[10px]', date: 'w-full text-[11px]', dateShell: 'w-full' }
-    : { select: 'w-[74px] text-[8px]', date: 'w-full text-[9px]', dateShell: 'w-[74px] max-w-[74px]' };
+    ? { select: 'w-full text-[10px]' }
+    : { select: 'w-[74px] text-[8px]' };
   const cfg = cotisationConfig[status] ?? cotisationConfig.unpaid;
-  const dateConfirmed = dateMode === 'text' && !!draftDate;
 
   useEffect(() => {
     setDraftDate(paidAt ? paidAt.slice(0, 10) : draftDate || today);
-    setDateMode(paidAt ? 'text' : 'edit');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paidAt, status]);
 
-  const requireConfirmedDate = () => {
-    if (dateConfirmed) return true;
-    onFeedback('warning', "Validez d'abord la date de paiement avant de changer ce statut.");
-    setDateMode('edit');
-    setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80);
-    return false;
-  };
-
-  const submit = (nextStatus: CotisationStatus, nextDate = draftDate, successMessage = 'Statut mis \u00e0 jour', dateAlreadyConfirmed = false, extra?: PaymentConfirmData) => {
-    if ((nextStatus === 'paid' || nextStatus === 'exempt') && !dateAlreadyConfirmed && !requireConfirmedDate()) return;
+  const submit = (nextStatus: CotisationStatus, nextDate = draftDate, successMessage = 'Statut mis \u00e0 jour', extra?: PaymentConfirmData) => {
     if (nextStatus === 'paid' && !nextDate) {
       onFeedback('warning', 'La date de paiement est requise.');
       return;
@@ -472,66 +459,21 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
       },
       {
         onSuccess: (res: any) => {
-          if (nextStatus === 'paid') { setDateMode('text'); setDraftDate(nextDate); setPaymentModalOpen(false); }
-          else if (nextStatus === 'unpaid') setDateMode('edit');
+          if (nextStatus === 'paid') { setDraftDate(nextDate); setPaymentModalOpen(false); }
           onFeedback('success', res?.message ?? successMessage);
         },
         onError: (err: Error) => {
-          if (/Cr(e|é)ez d'abord une facture/i.test(err.message)) onInvoiceRequired(err.message);
+          if (/facture/i.test(err.message)) onInvoiceRequired(err.message);
           else onFeedback('error', err.message);
         },
       },
     );
   };
 
-  const confirmPayment = (data: PaymentConfirmData) => submit('paid', data.paidAt, 'Paiement confirm\u00e9', true, data);
-
-  const confirmDate = () => {
-    if (!draftDate) {
-      onFeedback('warning', 'La date de paiement est requise.');
-      return;
-    }
-    if (status === 'paid') {
-      submit('paid', draftDate, 'Date mise \u00e0 jour', true);
-      return;
-    }
-    setDateMode('text');
-    onFeedback('success', 'Date validée');
-  };
+  const confirmPayment = (data: PaymentConfirmData) => submit('paid', data.paidAt, 'Paiement confirm\u00e9', data);
 
   return (
     <div className={variant === 'mobile' ? "flex w-full flex-col items-start gap-1" : "flex w-fit flex-col items-start gap-1"} onClick={e => e.stopPropagation()}>
-      {dateMode === 'edit' ? (
-        <div className={`group/adhesionDate relative flex flex-col gap-1 ${sizes.dateShell}`}>
-          <input
-            ref={dateInputRef}
-            type="date"
-            value={draftDate}
-            max={today}
-            disabled={updateCotisation.isPending}
-            onChange={e => setDraftDate(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmDate(); } }}
-            className={`box-border min-w-0 max-w-full rounded-md border px-1 py-0.5 text-center font-semibold text-neutral-600 outline-none [min-inline-size:0] focus:border-emerald-500 disabled:cursor-wait [&::-webkit-calendar-picker-indicator]:m-0 [&::-webkit-calendar-picker-indicator]:h-3 [&::-webkit-calendar-picker-indicator]:w-3 ${status === 'paid' ? 'border-emerald-300' : 'border-neutral-200'} ${sizes.date}`}
-          />
-          <button
-            type="button"
-            onMouseDown={e => e.preventDefault()}
-            onClick={confirmDate}
-            disabled={updateCotisation.isPending || !draftDate}
-            title="Valider la date selectionnee"
-            className="box-border inline-flex h-6 w-full min-w-0 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 px-1 text-[8px] font-black leading-none text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 sm:text-[9px]"
-          >
-            Valider
-          </button>
-        </div>
-      ) : (
-        <button type="button" onClick={() => { setDateMode('edit'); setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80); }} title="Modifier la date"
-          className={`box-border flex min-w-0 max-w-full items-center justify-center gap-1 truncate rounded-md px-1 py-0.5 text-center font-semibold text-neutral-500 transition hover:text-emerald-600 hover:underline ${sizes.dateShell} ${sizes.date}`}>
-          {fmtDate(paidAt ?? draftDate)}
-          <PencilLine size={10} className="shrink-0 text-neutral-400" />
-        </button>
-      )}
-
       <select
         value={status}
         onChange={e => { const next = e.target.value as CotisationStatus; if (next === 'paid' && status !== 'paid') setPaymentModalOpen(true); else submit(next); }}
@@ -555,6 +497,7 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
     </div>
   );
 }
+
 /* ── Popup de statut générique (erreur / avertissement / succès) ──
    Remplace les toasts (top-right, peu visibles) par une modale centrée :
    croix pour fermer, clic en dehors pour fermer, couleur selon le statut.

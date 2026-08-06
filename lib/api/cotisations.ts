@@ -84,7 +84,8 @@ export function useUpdateCotisationStatus() {
       });
     },
     onSuccess: (res, vars) => {
-      qc.invalidateQueries({ queryKey: ['admin-cotisations', vars.year] });
+      const year = vars?.year ?? new Date().getFullYear();
+      qc.invalidateQueries({ queryKey: ['admin-cotisations', year] });
       qc.invalidateQueries({ queryKey: ['cotisation-logs'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });
       qc.invalidateQueries({ queryKey: ['member-treasury-overview'] });

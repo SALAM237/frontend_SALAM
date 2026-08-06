@@ -22,9 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ publ
   const { publicId } = await params;
   const target = safeTarget(req, req.nextUrl.searchParams.get('to') ?? '/');
   try {
-    await fetch(`
-      ${API}/api/v1/t/m/c/${encodeURIComponent(publicId)}?to=${encodeURIComponent(target)}
-    `.replace(/s+/g, ''), {
+    await fetch(`${API}/api/v1/t/m/c/${encodeURIComponent(publicId)}?to=${encodeURIComponent(target)}`, {
       headers: {
         'user-agent': req.headers.get('user-agent') ?? '',
         'x-forwarded-for': req.headers.get('x-forwarded-for') ?? '',

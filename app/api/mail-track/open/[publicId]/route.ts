@@ -9,9 +9,7 @@ const TRANSPARENT_PIXEL = Buffer.from(
 export async function GET(req: NextRequest, { params }: { params: Promise<{ publicId: string }> }) {
   const { publicId } = await params;
   try {
-    const backendRes = await fetch(`
-      ${API}/api/v1/t/m/o/${encodeURIComponent(publicId)}
-    `.replace(/s+/g, ''), {
+    const backendRes = await fetch(`${API}/api/v1/t/m/o/${encodeURIComponent(publicId)}`, {
       headers: {
         'user-agent': req.headers.get('user-agent') ?? '',
         'x-forwarded-for': req.headers.get('x-forwarded-for') ?? '',
