@@ -178,6 +178,44 @@ export function useCampaignInsights(campaignId: string | null) {
   });
 }
 
+export interface MarketingEmailEvent {
+  occurredAt: string;
+  deviceType: 'mobile' | 'tablet' | 'desktop' | 'unknown' | string;
+  device?: string | null;
+  userAgent?: string | null;
+  ip?: string | null;
+  location?: string | null;
+  countryCode?: string | null;
+  targetUrl?: string | null;
+}
+
+export interface MarketingEmailInsightRow {
+  id: string;
+  campaignId: string;
+  campaignTitle: string;
+  sentAt: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  memberNumber?: string | null;
+  emailStatus: 'sent' | 'failed';
+  reason?: string | null;
+  openCount: number;
+  clickCount: number;
+  opens: MarketingEmailEvent[];
+  clicks: MarketingEmailEvent[];
+}
+
+export function useMarketingEmailInsights() {
+  const token = useAuthStore(s => s.accessToken);
+  return useQuery({
+    queryKey: ['admin-marketing-email-insights'],
+    queryFn: () => apiClient<{ rows: MarketingEmailInsightRow[] }>('/api/v1/admin/marketing/emails', { token: token ?? '' }),
+    enabled: !!token,
+  });
+}
+
 export function useUploadCampaignImage() {
   const token = useAuthStore(s => s.accessToken);
   return useMutation({

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Gift, X, Search, Image as ImageIcon, Loader2, Send, Users, CheckSquare, Square, Calendar, Package, BarChart3, Eye, MousePointerClick, Smartphone, Tablet, Monitor, HelpCircle, ChevronDown, Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react';
-import { useAdminCampaigns, useCreateCampaign, useUpdateCampaign, useDeleteCampaign, useUploadCampaignImage, useCampaignInsights, useCampaignGiftRewardedMembers, type CampaignDoc } from '@/lib/api/marketing';
+import { Gift, X, Search, Image as ImageIcon, Loader2, Send, Users, CheckSquare, Square, Calendar, Package, BarChart3, Eye, MousePointerClick, Smartphone, Tablet, Monitor, HelpCircle, ChevronDown, Plus, Pencil, Trash2, AlertTriangle, Mail, MapPin } from 'lucide-react';
+import { useAdminCampaigns, useCreateCampaign, useUpdateCampaign, useDeleteCampaign, useUploadCampaignImage, useCampaignInsights, useCampaignGiftRewardedMembers, useMarketingEmailInsights, type CampaignDoc, type MarketingEmailEvent, type MarketingEmailInsightRow } from '@/lib/api/marketing';
 import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
 import { MemberFilterPanel, EMPTY_MEMBER_FILTERS, memberMatchesFilters, type MemberFilters } from '@/components/admin/MemberFilterPanel';
 import { formatFullName } from '@/lib/format-name';
@@ -589,12 +589,173 @@ function CampaignInsightsView({ campaigns }: { campaigns: CampaignDoc[] }) {
   );
 }
 
+function eventLocation(event: MarketingEmailEvent) {
+  return event.location || event.countryCode || event.ip || null;
+}
+
+function EmailEventList({ events, type }: { events: MarketingEmailEvent[]; type: 'open' | 'click' }) {
+  const Icon = type === 'open' ? Eye : MousePointerClick;
+  const color = type === 'open' ? 'text-emerald-600' : 'text-violet-600';
+  if (!events.length) return <span className="text-neutral-300">---</span>;
+  return (
+    <div className="space-y-1.5">
+      {events.map((event, i) => (
+        <p key={i} className="flex items-center gap-1 whitespace-nowrap text-[11px] text-neutral-500">
+          <Icon size={12} className={`shrink-0 ${color}`} />
+          <span>{fmtDateTime(event.occurredAt)}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function EmailDeviceList({ events }: { events: MarketingEmailEvent[] }) {
+  if (!events.length) return <span className="text-neutral-300">---</span>;
+  return (
+    <div className="space-y-1.5">
+      {events.map((event, i) => {
+        const DeviceIcon = DEVICE_ICON[event.deviceType ?? 'unknown'] ?? HelpCircle;
+        return (
+          <div key={i} className="min-w-0">
+            <p className="flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-neutral-700">
+              <DeviceIcon size={12} className="shrink-0 text-neutral-400" />
+              <span className="truncate">{event.device || event.deviceType || 'unknown'}</span>
+            </p>
+            {event.ip && <p className="truncate pl-4 text-[10px] text-neutral-300">IP : {event.ip}</p>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function EmailLocationList({ events }: { events: MarketingEmailEvent[] }) {
+  const located = events.filter(eventLocation);
+  if (!located.length) return <span className="text-neutral-300">---</span>;
+  return (
+    <div className="space-y-1.5">
+      {located.map((event, i) => (
+        <p key={i} className="flex max-w-[240px] items-center gap-1 text-[11px] font-semibold text-neutral-600">
+          <MapPin size={12} className="shrink-0 text-rose-500" />
+          <span className="truncate">{eventLocation(event)}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function MarketingEmailsView() {
+  const { data, isLoading, isError } = useMarketingEmailInsights();
+  const rows = data?.data?.rows ?? [];
+
+  const mergedEvents = (row: MarketingEmailInsightRow) => [...row.opens, ...row.clicks].sort(
+    (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 sm:px-5">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white"><Mail size={16} /></span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-rose-600">Emails</p>
+            <h2 className="text-sm font-black text-neutral-900 sm:text-base">Suivi des mails envoyes aux membres</h2>
+            <p className="mt-1 text-xs font-semibold leading-5 text-rose-700/80">Ouvertures, clics, appareil et position approximative via IP pour les emails marketing traces.</p>
+          </div>
+        </div>
+      </div>
+
+      {isLoading && <p className="py-8 text-center text-sm text-neutral-400">Chargement...</p>}
+      {isError && <p className="rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-center text-sm text-red-600">Acces refuse ou erreur de chargement.</p>}
+      {!isLoading && !isError && rows.length === 0 && <p className="rounded-2xl border border-neutral-100 bg-white px-5 py-8 text-center text-sm text-neutral-400">Aucun email trace pour le moment.</p>}
+
+      {rows.length > 0 && (
+        <div className="hidden overflow-x-auto rounded-2xl border border-neutral-100 bg-white shadow-sm lg:block">
+          <table className="w-full min-w-[980px] text-sm">
+            <thead>
+              <tr className="border-b border-neutral-100 bg-neutral-50/60 text-left text-[11px] font-black uppercase tracking-wide text-neutral-500">
+                <th className="px-4 py-3">Membre</th>
+                <th className="px-4 py-3">Mail</th>
+                <th className="px-4 py-3">Ouvertures</th>
+                <th className="px-4 py-3">Clic (date/heure)</th>
+                <th className="px-4 py-3">Appareil</th>
+                <th className="px-4 py-3">Position</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-50">
+              {rows.map(row => {
+                const events = mergedEvents(row);
+                return (
+                  <tr key={row.id} className="align-top">
+                    <td className="px-4 py-3">
+                      <p className="font-black text-neutral-900">{formatFullName(row.firstName, row.lastName)}</p>
+                      <p className="text-[11px] text-neutral-400">{row.email}</p>
+                      {row.memberNumber && <p className="mt-0.5 font-mono text-[10px] text-neutral-300">{row.memberNumber}</p>}
+                    </td>
+                    <td className="max-w-[260px] px-4 py-3">
+                      <p className="truncate font-semibold text-neutral-800">{row.campaignTitle}</p>
+                      <p className="text-[11px] text-neutral-400">Envoye : {fmtDateTime(row.sentAt)}</p>
+                      {row.emailStatus === 'failed' && <p className="mt-1 text-[11px] font-semibold text-red-600">Echec : {row.reason || 'raison inconnue'}</p>}
+                    </td>
+                    <td className="px-4 py-3"><EmailEventList events={row.opens} type="open" /></td>
+                    <td className="px-4 py-3"><EmailEventList events={row.clicks} type="click" /></td>
+                    <td className="px-4 py-3"><EmailDeviceList events={events} /></td>
+                    <td className="px-4 py-3"><EmailLocationList events={events} /></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <div className="space-y-2 lg:hidden">
+          {rows.map(row => {
+            const events = mergedEvents(row);
+            return (
+              <SectionAccordion key={row.id}
+                header={
+                  <div className="flex min-w-0 items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-[11px] font-black leading-tight text-neutral-900">{formatFullName(row.firstName, row.lastName)}</p>
+                      <p className="truncate text-[9px] text-neutral-400">{row.email}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-[9px] font-black uppercase tracking-[0.08em] text-neutral-300">Actions</p>
+                      <p className="text-[9px] font-black text-rose-600">{row.openCount} / {row.clickCount}</p>
+                    </div>
+                  </div>
+                }
+              >
+                <div className="mx-3 mb-3 space-y-2 rounded-2xl border border-neutral-100 bg-neutral-50/80 p-2.5 text-neutral-500 sm:mx-4 sm:mb-4">
+                  <div className="min-w-0">
+                    <p className="mb-1 text-[9px] font-black uppercase tracking-[0.06em] text-neutral-300">Mail</p>
+                    <p className="truncate text-[10px] font-semibold text-neutral-800">{row.campaignTitle}</p>
+                    <p className="text-[9px] text-neutral-400">{fmtDateTime(row.sentAt)}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[9px] sm:grid-cols-4">
+                    <div className="min-w-0"><p className="mb-1 font-black uppercase tracking-[0.06em] text-neutral-300">Ouvertures</p><EmailEventList events={row.opens} type="open" /></div>
+                    <div className="min-w-0"><p className="mb-1 font-black uppercase tracking-[0.06em] text-neutral-300">Clic</p><EmailEventList events={row.clicks} type="click" /></div>
+                    <div className="min-w-0"><p className="mb-1 font-black uppercase tracking-[0.06em] text-neutral-300">Appareil</p><EmailDeviceList events={events} /></div>
+                    <div className="min-w-0"><p className="mb-1 font-black uppercase tracking-[0.06em] text-neutral-300">Position</p><EmailLocationList events={events} /></div>
+                  </div>
+                </div>
+              </SectionAccordion>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminMarketingPage() {
   const [showEditor, setShowEditor] = useState(false);
   const [viewCampaign, setViewCampaign] = useState<CampaignDoc | null>(null);
   const [editCampaign, setEditCampaign] = useState<CampaignDoc | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CampaignDoc | null>(null);
-  const [tab, setTab] = useState<'campagnes' | 'insights'>('campagnes');
+  const [tab, setTab] = useState<'campagnes' | 'insights' | 'emails'>('campagnes');
   const { data, isLoading } = useAdminCampaigns();
   const campaigns = data?.data ?? [];
   const user = useAuthStore(s => s.user);
@@ -623,11 +784,17 @@ export default function AdminMarketingPage() {
             className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${tab === 'insights' ? 'bg-white text-rose-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>
             <BarChart3 size={13} /> Insights
           </button>
+          <button onClick={() => setTab('emails')}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${tab === 'emails' ? 'bg-white text-rose-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>
+            <Mail size={13} /> Emails
+          </button>
         </div>
       )}
 
       {tab === 'insights' && canSeeInsights ? (
         <CampaignInsightsView campaigns={campaigns} />
+      ) : tab === 'emails' && canSeeInsights ? (
+        <MarketingEmailsView />
       ) : (
         <>
           <button onClick={() => setShowEditor(true)}
