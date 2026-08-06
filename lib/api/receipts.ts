@@ -30,6 +30,8 @@ export interface ReceiptDoc {
   invoiceDescription?: string | null;
   reference?: string | null;
   notes?: string | null;
+  justificationUrl?: string | null;
+  justificationName?: string | null;
   status: ReceiptStatus;
   pendingDeletionAt?: string | null;
   modifiedAt?: string | null;

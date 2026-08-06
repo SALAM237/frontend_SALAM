@@ -1760,6 +1760,17 @@ function ReceiptsTab() {
                     className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-50 text-neutral-500 transition hover:bg-emerald-500 hover:text-white">
                     <Eye size={12} />
                   </button>
+                  {r.justificationUrl && (
+                    <a
+                      href={r.justificationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={r.justificationName ? 'Voir le justificatif : ' + r.justificationName : 'Voir le justificatif'}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500 transition hover:bg-blue-500 hover:text-white"
+                    >
+                      <FileText size={12} />
+                    </a>
+                  )}
                   <button onClick={() => setEditing(r)} disabled={isCancelled} title="Modifier"
                     className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-50 text-neutral-500 transition hover:bg-yellow-400 hover:text-neutral-950 disabled:cursor-not-allowed disabled:opacity-40">
                     <Pencil size={12} />

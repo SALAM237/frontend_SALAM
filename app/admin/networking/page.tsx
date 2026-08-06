@@ -3,20 +3,10 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Briefcase, Handshake, Loader2, Mail, MapPin, MessageSquare, Search, ShieldCheck, Tags, Users, X } from 'lucide-react';
-import { useAdminMembers, type MemberListItem } from '@/lib/api/members';
+import { useAdminDirectorySearch, useAdminDirectoryStats, type DirectoryMember } from '@/lib/api/members';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
 import { AvatarLightbox } from '@/components/portal/AvatarLightbox';
-
-function countValues(members: MemberListItem[], getter: (member: MemberListItem) => string[] | string | undefined) {
-  const map = new Map<string, number>();
-  members.forEach(member => {
-    const value = getter(member);
-    const values = Array.isArray(value) ? value : value ? [value] : [];
-    values.filter(Boolean).forEach(item => map.set(item, (map.get(item) ?? 0) + 1));
-  });
-  return [...map.entries()].sort((a, b) => b[1] - a[1]);
-}
 
 function KeywordSection({ title, items, tone }: { title: string; items: string[]; tone: 'green' | 'amber' | 'violet' }) {
   const cls = {
@@ -37,7 +27,7 @@ function KeywordSection({ title, items, tone }: { title: string; items: string[]
   );
 }
 
-function MemberProfileModal({ member, onClose }: { member: MemberListItem; onClose: () => void }) {
+function MemberProfileModal({ member, onClose }: { member: DirectoryMember; onClose: () => void }) {
   const name = formatFullName(member.firstName, member.lastName);
   const photo = memberPhotoUrl(member);
   const location = [member.residenceCity || member.city, member.country].filter(Boolean).join(', ') || 'Residence non renseignee';
@@ -55,8 +45,8 @@ function MemberProfileModal({ member, onClose }: { member: MemberListItem; onClo
             <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-neutral-500"><MapPin size={14} /> {location}</p>
             <p className="mt-2 inline-flex rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white">{member.activitySector || 'Secteur non renseigne'}</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <a href={`mailto:${member.email}`} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700"><Mail size={12} /> Email</a>
-              {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-2.5 text-xs font-black text-green-700 transition hover:bg-green-100">WhatsApp</a>}
+              <a href={`mailto:${member.email}`} onClick={event => event.stopPropagation()} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700"><Mail size={12} /> Email</a>
+              {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-2.5 text-xs font-black text-green-700 transition hover:bg-green-100">WhatsApp</a>}
               <Link href={modalMessageHref} className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-emerald-600 px-2.5 text-xs font-black text-white transition hover:bg-emerald-700"><MessageSquare size={12} /> Message</Link>
             </div>
           </div>
@@ -71,7 +61,7 @@ function MemberProfileModal({ member, onClose }: { member: MemberListItem; onClo
   );
 }
 
-function AdminNetworkingCard({ member, onOpen }: { member: MemberListItem; onOpen: (member: MemberListItem) => void }) {
+function AdminNetworkingCard({ member, onOpen }: { member: DirectoryMember; onOpen: (member: DirectoryMember) => void }) {
   const name = formatFullName(member.firstName, member.lastName);
   const photo = memberPhotoUrl(member);
   const location = [member.residenceCity || member.city, member.country].filter(Boolean).join(', ');
@@ -79,11 +69,17 @@ function AdminNetworkingCard({ member, onOpen }: { member: MemberListItem; onOpe
   const messageHref = `/admin/messages?to=${encodeURIComponent(member._id)}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(member.email)}`;
 
   return (
-    <article className="w-full overflow-hidden rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-100 hover:shadow-md">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(member)}
+      onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen(member); } }}
+      className="w-full cursor-pointer overflow-hidden rounded-2xl border border-neutral-100 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-100 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+    >
       <div className="flex min-w-0 items-start gap-3">
-        {photo ? <AvatarLightbox src={photo} alt={name} className={'h-12 w-12 shrink-0 rounded-full border-2 object-cover ' + memberAvatarBorderClass(member.gender)} /> : <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${memberInitialsClass(member.gender)}`}>{formatInitials(member.firstName, member.lastName, 'M')}</div>}
+        {photo ? <span onClick={event => event.stopPropagation()} className="shrink-0"><AvatarLightbox src={photo} alt={name} className={'h-12 w-12 shrink-0 rounded-full border-2 object-cover ' + memberAvatarBorderClass(member.gender)} /></span> : <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${memberInitialsClass(member.gender)}`}>{formatInitials(member.firstName, member.lastName, 'M')}</div>}
         <div className="min-w-0 flex-1">
-          <button type="button" onClick={() => onOpen(member)} className="block w-full truncate text-left text-sm font-black text-neutral-900 transition hover:text-emerald-700">{name}</button>
+          <button type="button" onClick={event => { event.stopPropagation(); onOpen(member); }} className="block w-full truncate text-left text-sm font-black text-neutral-900 transition hover:text-emerald-700">{name}</button>
           <p className="mt-0.5 truncate text-xs font-semibold text-emerald-700">{member.activitySector || 'Secteur non renseigne'}</p>
           {location && <p className="mt-1 flex items-center gap-1 truncate text-[11px] font-semibold text-neutral-400"><MapPin size={11} /> {location}</p>}
         </div>
@@ -95,9 +91,9 @@ function AdminNetworkingCard({ member, onOpen }: { member: MemberListItem; onOpe
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-neutral-100 pt-3">
-        <a href={`mailto:${member.email}`} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700"><Mail size={12} /> Email</a>
-        {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center rounded-xl border border-green-200 bg-green-50 px-2.5 text-xs font-black text-green-700 hover:bg-green-100">WhatsApp</a>}
-        <Link href={messageHref} className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-emerald-600 px-2.5 text-xs font-black text-white hover:bg-emerald-700"><MessageSquare size={12} /> Message</Link>
+        <a href={`mailto:${member.email}`} onClick={event => event.stopPropagation()} className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 text-xs font-black text-neutral-700 transition hover:border-emerald-300 hover:text-emerald-700"><Mail size={12} /> Email</a>
+        {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()} className="inline-flex h-8 items-center rounded-xl border border-green-200 bg-green-50 px-2.5 text-xs font-black text-green-700 hover:bg-green-100">WhatsApp</a>}
+        <Link href={messageHref} onClick={event => event.stopPropagation()} className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-emerald-600 px-2.5 text-xs font-black text-white hover:bg-emerald-700"><MessageSquare size={12} /> Message</Link>
         {member.memberId && <span className="font-mono text-[10px] text-neutral-400">{member.memberId}</span>}
       </div>
     </article>
@@ -106,14 +102,17 @@ function AdminNetworkingCard({ member, onOpen }: { member: MemberListItem; onOpe
 
 export default function AdminNetworkingPage() {
   const [search, setSearch] = useState('');
-  const [selectedMember, setSelectedMember] = useState<MemberListItem | null>(null);
-  const membersQuery = useAdminMembers({ search, limit: 60 });
+  const [selectedMember, setSelectedMember] = useState<DirectoryMember | null>(null);
+  const membersQuery = useAdminDirectorySearch(search, 500);
+  const statsQuery = useAdminDirectoryStats();
   const members = membersQuery.data?.data?.data ?? [];
+  const directoryStats = statsQuery.data?.data;
 
-  const sectors = useMemo(() => countValues(members, member => member.activitySector).slice(0, 8), [members]);
-  const skills = useMemo(() => countValues(members, member => member.skills).slice(0, 8), [members]);
-  const domains = useMemo(() => countValues(members, member => member.expertiseDomains).slice(0, 8), [members]);
-  const completeProfiles = members.filter(member => Boolean(member.activitySector) && Boolean(member.skills?.length) && Boolean(member.expertiseDomains?.length)).length;
+  const sectors = useMemo(() => (directoryStats?.sectors ?? []).map(item => [item.label, item.count] as [string, number]), [directoryStats?.sectors]);
+  const skills = useMemo(() => (directoryStats?.skills ?? []).map(item => [item.label, item.count] as [string, number]), [directoryStats?.skills]);
+  const domains = useMemo(() => (directoryStats?.domains ?? []).map(item => [item.label, item.count] as [string, number]), [directoryStats?.domains]);
+  const completeProfiles = directoryStats?.completeProfiles ?? 0;
+  const totalProfiles = directoryStats?.total ?? members.length;
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
@@ -125,7 +124,7 @@ export default function AdminNetworkingPage() {
       <section className="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
         <div className="relative"><Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Rechercher un secteur, une competence, un domaine..." className="h-11 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-4 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10" /></div>
         <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-          <div className="col-span-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-center sm:col-span-1 sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-emerald-700 sm:justify-start"><Users size={14} className="sm:hidden" /><Users size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Profils trouves</p></div><p className="mt-2 text-xl font-black text-emerald-900 sm:mt-3 sm:text-2xl">{membersQuery.isLoading ? '…' : members.length}</p><p className="mt-0.5 text-[10px] font-semibold text-emerald-900/60 sm:mt-1 sm:text-xs">{completeProfiles} profils bien renseignes</p></div>
+          <div className="col-span-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-center sm:col-span-1 sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-emerald-700 sm:justify-start"><Users size={14} className="sm:hidden" /><Users size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Profils trouves</p></div><p className="mt-2 text-xl font-black text-emerald-900 sm:mt-3 sm:text-2xl">{statsQuery.isLoading ? '...' : totalProfiles}</p><p className="mt-0.5 text-[10px] font-semibold text-emerald-900/60 sm:mt-1 sm:text-xs">{completeProfiles} profils bien renseignes</p></div>
           <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-3 text-center sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-amber-700 sm:justify-start"><Tags size={14} className="sm:hidden" /><Tags size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Competences</p></div><p className="mt-2 text-xl font-black text-amber-900 sm:mt-3 sm:text-2xl">{skills.length}</p><p className="mt-0.5 text-[10px] font-semibold text-amber-900/60 sm:mt-1 sm:text-xs">mots-cles dominants</p></div>
           <div className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-3 text-center sm:p-4 sm:text-left"><div className="flex items-center justify-center gap-1.5 text-neutral-700 sm:justify-start"><Handshake size={14} className="sm:hidden" /><Handshake size={18} className="hidden sm:block" /><p className="text-xs font-black sm:text-sm">Secteurs</p></div><p className="mt-2 text-xl font-black text-neutral-900 sm:mt-3 sm:text-2xl">{sectors.length}</p><p className="mt-0.5 text-[10px] font-semibold text-neutral-500 sm:mt-1 sm:text-xs">secteurs detectes</p></div>
         </div>

@@ -8,7 +8,7 @@ import {
   Download, Loader2, Trash2, Mail, ChevronDown, PencilLine,
   Plus, Minus, SlidersHorizontal, X, Bell, Banknote,
   Send, CalendarDays, AlertTriangle, Users,
-  FolderOpen, Folders, ChevronRight, Check, Wallet, HelpCircle, Laptop, MapPin, Power,
+  FolderOpen, Folders, ChevronRight, Check, Wallet, HelpCircle, Laptop, MapPin, Power, Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -124,9 +124,62 @@ const TRANCHE_BADGE_CLS: Record<string, string> = {
   exempt: 'bg-neutral-50 text-neutral-400 border-neutral-200',
 };
 
-function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, variant = 'desktop', onFeedback, onInvoiceRequired }: {
+type PaymentConfirmData = { paidAt: string; reference: string; notes: string; justification?: File | null };
+
+function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memberNumber, initialDate, initialReference = '', initialNotes = '', loading, onClose, onConfirm }: {
+  title?: string;
+  memberName: string;
+  memberNumber?: string | null;
+  initialDate: string;
+  initialReference?: string;
+  initialNotes?: string;
+  loading?: boolean;
+  onClose: () => void;
+  onConfirm: (data: PaymentConfirmData) => void;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [paidAt, setPaidAt] = useState(initialDate || today);
+  const [dateValidated, setDateValidated] = useState(false);
+  const [reference, setReference] = useState(initialReference);
+  const [notes, setNotes] = useState(initialNotes);
+  const [file, setFile] = useState<File | null>(null);
+  const [error, setError] = useState('');
+  const pickFile = (next?: File | null) => {
+    setError('');
+    if (!next) { setFile(null); return; }
+    if (!['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'].includes(next.type)) { setError('Formats accept\u00e9s : PDF, JPG ou PNG.'); return; }
+    if (next.size > 5 * 1024 * 1024) { setError('Le justificatif ne doit pas d\u00e9passer 5 Mo.'); return; }
+    setFile(next);
+  };
+  const submit = () => {
+    if (!paidAt) { setError('La date de paiement est obligatoire.'); return; }
+    if (!dateValidated) { setError("Validez d'abord la date de paiement avant de confirmer."); return; }
+    onConfirm({ paidAt, reference, notes, justification: file });
+  };
+  return (
+    <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+          <div className="min-w-0"><h3 className="font-black text-neutral-900">{title}</h3><p className="mt-0.5 truncate text-xs text-neutral-500">{memberName}{memberNumber ? ' - ' + memberNumber : ''}</p></div>
+          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
+        </div>
+        <div className="space-y-4 px-6 py-5">
+          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date de paiement re&ccedil;ue <span className="text-red-500">*</span></label><div className="flex gap-2"><div className="relative min-w-0 flex-1"><CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" /><input type="date" value={paidAt} max={today} onChange={e => { setPaidAt(e.target.value); setDateValidated(false); setError(''); }} className="h-11 w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div><button type="button" onClick={() => { if (!paidAt) setError('La date de paiement est obligatoire.'); else { setDateValidated(true); setError(''); } }} className={(dateValidated ? 'bg-emerald-600 text-white ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'h-11 rounded-xl px-3 text-xs font-black transition'}>Valider</button></div></div>
+          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">R&eacute;f&eacute;rence <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><input value={reference} onChange={e => setReference(e.target.value)} placeholder="Ex: VIR-BNP-0215, PAYPAL-XXXXX..." className="h-11 w-full rounded-xl border border-neutral-200 px-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
+          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Commentaire <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={"Pay\u00e9 par OM, virement, esp\u00e8ce..."} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
+          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Justificatif <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-3 transition hover:border-emerald-300 hover:bg-emerald-50/30"><Upload size={15} className="shrink-0 text-neutral-400" /><span className="min-w-0 flex-1 truncate text-sm text-neutral-500">{file?.name || 'S\u00e9lectionner un fichier...'}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => pickFile(e.target.files?.[0])} className="sr-only" />{file && <button type="button" onClick={e => { e.preventDefault(); pickFile(null); }} className="text-neutral-300 hover:text-neutral-600"><X size={12} /></button>}</label><p className="text-[10px] text-neutral-400">PDF, JPG ou PNG &middot; max 5 Mo</p></div>
+          {error && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">{error}</p>}
+          <div className="flex gap-2 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3"><AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-500" /><p className="text-[11px] leading-relaxed text-amber-700">Un re&ccedil;u de paiement sera automatiquement envoy&eacute; &agrave; l&apos;adh&eacute;rent par email.</p></div>
+        </div>
+        <div className="flex gap-3 border-t border-neutral-100 px-6 py-4"><button type="button" onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 bg-white py-2.5 text-sm font-semibold text-neutral-600 hover:border-neutral-300">Annuler</button><button type="button" onClick={submit} disabled={loading} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60">{loading && <Loader2 size={14} className="animate-spin" />} Confirmer le paiement</button></div>
+      </div>
+    </div>
+  );
+}
+
+function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, memberName, memberNumber, variant = 'desktop', onFeedback, onInvoiceRequired }: {
   userId: string; year: number; index: number; tranche?: Tranche;
-  allTranches?: Tranche[]; annualFee: number; variant?: 'desktop' | 'mobile';
+  allTranches?: Tranche[]; annualFee: number; memberName: string; memberNumber?: string | null; variant?: 'desktop' | 'mobile';
   onFeedback: (type: 'error' | 'warning' | 'success', message: string, content?: React.ReactNode) => void;
   onInvoiceRequired: (message: string) => void;
 }) {
@@ -135,6 +188,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
   const [dateMode, setDateMode] = useState<'edit' | 'text'>(t.paidAt ? 'text' : 'edit');
   const [draftAmount, setDraftAmount] = useState(t.amount > 0 ? String(t.amount) : '');
   const [draftDate, setDraftDate] = useState(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
+  const [paymentModalAmount, setPaymentModalAmount] = useState<number | null>(null);
   const amountInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const updateAmount = useUpdateTranche();
@@ -177,7 +231,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
 
   const requireConfirmedDate = () => {
     if (dateConfirmed) return true;
-    onFeedback('warning', 'Validez d abord la date de paiement avant de changer ce statut.');
+    onFeedback('warning', "Validez d'abord la date de paiement avant de changer ce statut.");
     setDateMode('edit');
     setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80);
     return false;
@@ -208,7 +262,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
 
   const commitAmount = (rawAmount: string) => {
     const amount = Math.max(0, Number(rawAmount) || 0);
-    if (amount > 0 && !requireConfirmedDate()) return;
+    if (amount > 0) { setPaymentModalAmount(amount); return; }
     if (amount > 0 && othersPaidSumExcludingSelf + amount > annualFee) {
       const maxAllowed = Math.max(0, annualFee - othersPaidSumExcludingSelf);
       onFeedback('warning', `Le total des tranches ne peut pas dépasser la cotisation annuelle (${annualFee.toLocaleString('fr-FR')} F.CFA). Montant maximum possible pour cette tranche : ${maxAllowed.toLocaleString('fr-FR')} F.CFA.`);
@@ -222,6 +276,25 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, var
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
           else onFeedback('success', (res as any).message ?? 'Montant mis à jour');
+        },
+        onError: handleMutationError,
+      },
+    );
+  };
+
+  const confirmTranchePayment = (data: PaymentConfirmData) => {
+    const amount = paymentModalAmount ?? Math.max(0, Number(draftAmount) || 0);
+    updateAmount.mutate(
+      { userId, year, trancheIndex: index, amount, status: 'paid', paidAt: data.paidAt, reference: data.reference, notes: data.notes, justification: data.justification },
+      {
+        onSuccess: res => {
+          setPaymentModalAmount(null);
+          setDraftDate(data.paidAt);
+          setDateMode('text');
+          setAmountMode('text');
+          const warning = (res as any).invoiceWarning;
+          if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
+          else onFeedback('success', (res as any).message ?? 'Montant mis ? jour');
         },
         onError: handleMutationError,
       },
@@ -344,11 +417,13 @@ function DetteCell({ tranches, annualFee }: { tranches?: Tranche[]; annualFee: n
   );
 }
 
-function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', onFeedback, onInvoiceRequired }: {
+function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumber, variant = 'desktop', onFeedback, onInvoiceRequired }: {
   userId: string;
   year: number;
   status: CotisationStatus;
   paidAt?: string | null;
+  memberName: string;
+  memberNumber?: string | null;
   variant?: 'desktop' | 'mobile';
   onFeedback: (type: 'error' | 'warning' | 'success', message: string) => void;
   onInvoiceRequired: (message: string) => void;
@@ -356,6 +431,7 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
   const today = new Date().toISOString().slice(0, 10);
   const [draftDate, setDraftDate] = useState(paidAt ? paidAt.slice(0, 10) : today);
   const [dateMode, setDateMode] = useState<'edit' | 'text'>(paidAt ? 'text' : 'edit');
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const updateCotisation = useUpdateCotisationStatus();
   const sizes = variant === 'mobile'
@@ -372,13 +448,13 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
 
   const requireConfirmedDate = () => {
     if (dateConfirmed) return true;
-    onFeedback('warning', 'Validez d abord la date de paiement avant de changer ce statut.');
+    onFeedback('warning', "Validez d'abord la date de paiement avant de changer ce statut.");
     setDateMode('edit');
     setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80);
     return false;
   };
 
-  const submit = (nextStatus: CotisationStatus, nextDate = draftDate, successMessage = 'Statut mis a jour', dateAlreadyConfirmed = false) => {
+  const submit = (nextStatus: CotisationStatus, nextDate = draftDate, successMessage = 'Statut mis \u00e0 jour', dateAlreadyConfirmed = false, extra?: PaymentConfirmData) => {
     if ((nextStatus === 'paid' || nextStatus === 'exempt') && !dateAlreadyConfirmed && !requireConfirmedDate()) return;
     if (nextStatus === 'paid' && !nextDate) {
       onFeedback('warning', 'La date de paiement est requise.');
@@ -390,10 +466,13 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
         year,
         status: nextStatus,
         paidAt: nextStatus === 'paid' ? nextDate : undefined,
+        reference: extra?.reference,
+        notes: extra?.notes,
+        justification: extra?.justification,
       },
       {
         onSuccess: (res: any) => {
-          if (nextStatus === 'paid') setDateMode('text');
+          if (nextStatus === 'paid') { setDateMode('text'); setDraftDate(nextDate); setPaymentModalOpen(false); }
           else if (nextStatus === 'unpaid') setDateMode('edit');
           onFeedback('success', res?.message ?? successMessage);
         },
@@ -405,13 +484,15 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
     );
   };
 
+  const confirmPayment = (data: PaymentConfirmData) => submit('paid', data.paidAt, 'Paiement confirm\u00e9', true, data);
+
   const confirmDate = () => {
     if (!draftDate) {
       onFeedback('warning', 'La date de paiement est requise.');
       return;
     }
     if (status === 'paid') {
-      submit('paid', draftDate, 'Date mise a jour', true);
+      submit('paid', draftDate, 'Date mise \u00e0 jour', true);
       return;
     }
     setDateMode('text');
@@ -453,14 +534,24 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
 
       <select
         value={status}
-        onChange={e => submit(e.target.value as CotisationStatus)}
+        onChange={e => { const next = e.target.value as CotisationStatus; if (next === 'paid' && status !== 'paid') setPaymentModalOpen(true); else submit(next); }}
         disabled={updateCotisation.isPending}
         className={`cursor-pointer appearance-none rounded-lg px-1.5 py-0.5 font-black focus:outline-none disabled:cursor-wait disabled:opacity-60 ${sizes.select} ${cfg.cls}`}
       >
-        <option value="unpaid">Impayee</option>
-        <option value="paid">Payee</option>
-        <option value="exempt">Exempte</option>
+        <option value="unpaid">Impay&eacute;e</option>
+        <option value="paid">Pay&eacute;e</option>
+        <option value="exempt">Exempt&eacute;</option>
       </select>
+      {paymentModalOpen && (
+        <PaymentConfirmModal
+          memberName={memberName}
+          memberNumber={memberNumber}
+          initialDate={draftDate}
+          loading={updateCotisation.isPending}
+          onClose={() => setPaymentModalOpen(false)}
+          onConfirm={confirmPayment}
+        />
+      )}
     </div>
   );
 }
@@ -1973,7 +2064,7 @@ export default function AdminAdherentsPage() {
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Statut</th>
                           <th className={`${hidePaymentColsForCards ? 'hidden' : ''} px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400`}>Frais d&apos;adh.</th>
                           <th className={`${hidePaymentColsForCards ? 'hidden' : ''} px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400`}>Cotis. annuelle</th>
-                          <th className={`${hidePaymentColsForCards ? 'hidden' : ''} px-2 py-3 text-left text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-400`}>Reste &agrave; payer cotisation annuelle</th>
+                          <th className={`${hidePaymentColsForCards ? 'hidden' : ''} w-[72px] max-w-[72px] px-1.5 py-3 text-left text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-400`}><span className="block">Reste &agrave;</span><span className="block">payer cotisation annuelle</span></th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Profil</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Dern. connexion</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Date inscr.</th>
@@ -2022,7 +2113,7 @@ export default function AdminAdherentsPage() {
                             <>
                               {[0, 1, 2, 3].map(i => (
                                 <td key={i} className="px-1.5 py-1 align-top">
-                                  <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} onFeedback={showFeedback} onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation_annuelle', year: cotisAnnuelleYear })} />
+                                  <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} memberName={formatFullName(m.firstName, m.lastName)} memberNumber={m.memberId} onFeedback={showFeedback} onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation_annuelle', year: cotisAnnuelleYear })} />
                                 </td>
                               ))}
                               <td className="px-2 py-3 align-top">
@@ -2043,6 +2134,8 @@ export default function AdminAdherentsPage() {
                                     year={cotisYear}
                                     status={cotisSts}
                                     paidAt={cotisMap.get(m._id)?.paidAt}
+                                    memberName={formatFullName(m.firstName, m.lastName)}
+                                    memberNumber={m.memberId}
                                     onFeedback={showFeedback}
                                     onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation', year: cotisYear })}
                                   />
@@ -2200,7 +2293,7 @@ export default function AdminAdherentsPage() {
                                     {[0, 1, 2, 3].map(i => (
                                       <div key={i} className="rounded-xl border border-violet-100 bg-white p-1.5 text-center">
                                         <p className="mb-0.5 text-[10px] font-black uppercase tracking-[0.1em] text-violet-400">Tranche {i + 1}</p>
-                                        <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} variant="mobile" onFeedback={showFeedback} onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation_annuelle', year: cotisAnnuelleYear })} />
+                                        <TrancheCell userId={m._id} year={cotisAnnuelleYear} index={i} tranche={annuelleData?.tranches?.[i]} allTranches={annuelleData?.tranches} annualFee={annuelleData?.amount ?? ANNUAL_FEE} memberName={formatFullName(m.firstName, m.lastName)} memberNumber={m.memberId} variant="mobile" onFeedback={showFeedback} onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation_annuelle', year: cotisAnnuelleYear })} />
                                       </div>
                                     ))}
                                   </div>
@@ -2218,6 +2311,8 @@ export default function AdminAdherentsPage() {
                                     year={cotisYear}
                                     status={cotisSts}
                                     paidAt={cotisMap.get(m._id)?.paidAt}
+                                    memberName={formatFullName(m.firstName, m.lastName)}
+                                    memberNumber={m.memberId}
                                     variant="mobile"
                                     onFeedback={showFeedback}
                                     onInvoiceRequired={message => setInvoiceRequiredModal({ member: m, message, motif: 'cotisation', year: cotisYear })}

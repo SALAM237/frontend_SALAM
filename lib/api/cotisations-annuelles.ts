@@ -77,12 +77,23 @@ export function useUpdateCotisationAnnuelleStatus() {
       paidAt?: string;
       reference?: string;
       notes?: string;
-    }) =>
-      apiClient(`/api/v1/admin/cotisations-annuelles/${vars.userId}`, {
+      justification?: File | null;
+    }) => {
+      const body = vars.justification ? new FormData() : null;
+      if (body) {
+        body.append('year', String(vars.year));
+        body.append('status', vars.status);
+        if (vars.paidAt) body.append('paidAt', vars.paidAt);
+        if (vars.reference) body.append('reference', vars.reference);
+        if (vars.notes) body.append('notes', vars.notes);
+        if (vars.justification) body.append('justification', vars.justification);
+      }
+      return apiClient(`/api/v1/admin/cotisations-annuelles/${vars.userId}`, {
         method: 'PUT',
-        body: JSON.stringify(vars),
+        body: body ?? JSON.stringify(vars),
         token: token ?? '',
-      }),
+      });
+    },
     onSuccess: (res, vars) => {
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles', vars.year] });
       qc.invalidateQueries({ queryKey: ['cotisation-annuelle-logs'] });
@@ -211,15 +222,28 @@ export function useUpdateTranche() {
       paidAt?: string;
       status?: 'unpaid' | 'paid' | 'exempt';
       reference?: string;
-    }) =>
-      apiClient<CotisationAnnuelleDoc & { invoiceWarning?: string | null }>(
+      notes?: string;
+      justification?: File | null;
+    }) => {
+      const body = vars.justification ? new FormData() : null;
+      if (body) {
+        body.append('year', String(vars.year));
+        body.append('amount', String(vars.amount));
+        if (vars.paidAt) body.append('paidAt', vars.paidAt);
+        if (vars.status) body.append('status', vars.status);
+        if (vars.reference) body.append('reference', vars.reference);
+        if (vars.notes) body.append('notes', vars.notes);
+        if (vars.justification) body.append('justification', vars.justification);
+      }
+      return apiClient<CotisationAnnuelleDoc & { invoiceWarning?: string | null }>(
         `/api/v1/admin/cotisations-annuelles/${vars.userId}/tranche/${vars.trancheIndex}`,
         {
           method: 'PUT',
-          body: JSON.stringify({ year: vars.year, amount: vars.amount, paidAt: vars.paidAt, status: vars.status, reference: vars.reference }),
+          body: body ?? JSON.stringify({ year: vars.year, amount: vars.amount, paidAt: vars.paidAt, status: vars.status, reference: vars.reference, notes: vars.notes }),
           token: token ?? '',
         },
-      ),
+      );
+    },
     onSuccess: (res, vars) => {
       /* Patch synchrone du cache AVANT l'invalidation : invalidateQueries ne fait que
          planifier un refetch asynchrone, ce qui laisse une fenêtre (le temps du

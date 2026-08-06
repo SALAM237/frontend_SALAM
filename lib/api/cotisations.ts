@@ -66,12 +66,23 @@ export function useUpdateCotisationStatus() {
       paidAt?: string;
       reference?: string;
       notes?: string;
-    }) =>
-      apiClient(`/api/v1/admin/cotisations/${vars.userId}`, {
+      justification?: File | null;
+    }) => {
+      const body = vars.justification ? new FormData() : null;
+      if (body) {
+        body.append('year', String(vars.year));
+        body.append('status', vars.status);
+        if (vars.paidAt) body.append('paidAt', vars.paidAt);
+        if (vars.reference) body.append('reference', vars.reference);
+        if (vars.notes) body.append('notes', vars.notes);
+        if (vars.justification) body.append('justification', vars.justification);
+      }
+      return apiClient(`/api/v1/admin/cotisations/${vars.userId}`, {
         method: 'PUT',
-        body: JSON.stringify(vars),
+        body: body ?? JSON.stringify(vars),
         token: token ?? '',
-      }),
+      });
+    },
     onSuccess: (res, vars) => {
       qc.invalidateQueries({ queryKey: ['admin-cotisations', vars.year] });
       qc.invalidateQueries({ queryKey: ['cotisation-logs'] });

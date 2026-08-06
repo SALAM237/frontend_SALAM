@@ -852,7 +852,7 @@ export default function AdminMarketingPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Marketing</h1>
         <p className="mt-1 text-sm text-neutral-500">Campagnes promotionnelles envoyées par email aux membres.</p>
