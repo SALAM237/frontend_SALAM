@@ -239,8 +239,10 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
   const showValidatedFields = !isUnfilledAndIrrelevant && (t.status === 'paid' || t.amount > 0 || !!t.paidAt);
 
   const handleMutationError = (err: Error) => {
-    if (/facture/i.test(err.message)) onInvoiceRequired(err.message);
-    else onFeedback('error', err.message);
+    if (/facture/i.test(err.message)) {
+      setPaymentModalOpen(false);
+      onInvoiceRequired(err.message);
+    } else onFeedback('error', err.message);
   };
 
   const validatePaymentAmount = (amount: number) => {
@@ -264,12 +266,8 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
       setPaymentModalOpen(true);
       return;
     }
-    if (status === 'unpaid' && (isFullySettled || t.amount > 0)) {
-      onFeedback('warning', "Un montant sup\u00e9rieur \u00e0 0 est d\u00e9j\u00e0 saisi pour cette tranche : cliquez sur le montant affich\u00e9 pour le corriger si besoin, plut\u00f4t que de repasser en Impay\u00e9.");
-      return;
-    }
     updateStatusMutation.mutate(
-      { userId, year, trancheIndex: index, amount: t.amount, status, paidAt: undefined },
+      { userId, year, trancheIndex: index, amount: status === 'unpaid' ? 0 : t.amount, status, paidAt: undefined },
       {
         onSuccess: res => {
           const warning = (res as any).invoiceWarning;
@@ -600,7 +598,7 @@ function InvoiceRequiredModal({ member, message, motif, year, onClose, onBeforeR
   };
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
