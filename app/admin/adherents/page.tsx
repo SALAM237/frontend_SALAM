@@ -486,7 +486,7 @@ function StatusPopup({ type, message, content, onClose }: { type: StatusPopupTyp
   }, [type, onClose]);
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div onClick={e => e.stopPropagation()} className={`relative w-full max-w-sm rounded-2xl border-2 bg-white p-6 shadow-2xl ${theme.border}`}>
         <button type="button" onClick={onClose} title="Fermer"
           className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600">
