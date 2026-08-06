@@ -636,6 +636,30 @@ function eventLocation(event: MarketingEmailEvent) {
   return event.location || event.countryCode || event.ip || null;
 }
 
+function ExpandableText({ value, className = '', icon }: { value: string; className?: string; icon?: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} title={value}
+        className={'inline-flex min-w-0 max-w-full items-center gap-1 text-left transition hover:text-rose-600 hover:underline ' + className}>
+        {icon}
+        <span className="min-w-0 truncate">{value}</span>
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
+          <div className="w-full max-w-lg rounded-2xl border border-neutral-100 bg-white p-5 text-left shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-rose-600">{"D\u00e9tail"}</p>
+              <button type="button" onClick={() => setOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700"><X size={16} /></button>
+            </div>
+            <p className="break-words text-sm font-semibold leading-6 text-neutral-800">{value}</p>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function EmailEventList({ events, type }: { events: MarketingEmailEvent[]; type: 'open' | 'click' }) {
   const Icon = type === 'open' ? Eye : MousePointerClick;
   const color = type === 'open' ? 'text-emerald-600' : 'text-violet-600';
@@ -660,11 +684,10 @@ function EmailDeviceList({ events }: { events: MarketingEmailEvent[] }) {
         const DeviceIcon = DEVICE_ICON[event.deviceType ?? 'unknown'] ?? HelpCircle;
         return (
           <div key={i} className="min-w-0">
-            <p className="flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-neutral-700">
-              <DeviceIcon size={12} className="shrink-0 text-neutral-400" />
-              <span className="truncate">{event.device || event.deviceType || 'unknown'}</span>
-            </p>
-            {event.ip && <p className="truncate pl-4 text-[10px] text-neutral-300">IP : {event.ip}</p>}
+            <div className="min-w-0">
+              <ExpandableText value={event.device || event.deviceType || 'unknown'} className="w-full whitespace-nowrap text-[11px] font-semibold text-neutral-700" icon={<DeviceIcon size={12} className="shrink-0 text-neutral-400" />} />
+            </div>
+            {event.ip && <ExpandableText value={'IP : ' + event.ip} className="w-full pl-4 text-[10px] text-neutral-300" />}
           </div>
         );
       })}
@@ -682,14 +705,12 @@ function EmailLocationList({ events }: { events: MarketingEmailEvent[] }) {
         const source = event.locationSource && event.locationSource !== 'none' ? event.locationSource : null;
         return (
           <div key={i} className="max-w-[260px] text-[11px] font-semibold text-neutral-600">
-            <p className="flex items-center gap-1">
-              <MapPin size={12} className="shrink-0 text-rose-500" />
-              <span className="truncate">{eventLocation(event) || 'Position IP approximative'}</span>
-            </p>
+            <ExpandableText value={eventLocation(event) || 'Position IP approximative'} className="w-full text-[11px] font-semibold text-neutral-600" icon={<MapPin size={12} className="shrink-0 text-rose-500" />} />
             {(coords || source || event.privacyProxy) && (
-              <p className="pl-4 text-[9px] font-bold text-neutral-400">
-                {coords ? 'Coord. IP : ' + coords : ''}{coords && source ? ' - ' : ''}{source ? 'source ' + source : ''}{(coords || source) && event.privacyProxy ? ' - ' : ''}{event.privacyProxy ? 'proxy mail probable' : ''}
-              </p>
+              <ExpandableText
+                value={(coords ? 'Coord. IP : ' + coords : '') + (coords && source ? ' - ' : '') + (source ? 'source ' + source : '') + ((coords || source) && event.privacyProxy ? ' - ' : '') + (event.privacyProxy ? 'proxy mail probable' : '')}
+                className="w-full pl-4 text-[9px] font-bold text-neutral-400"
+              />
             )}
           </div>
         );

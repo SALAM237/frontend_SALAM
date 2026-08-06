@@ -211,7 +211,7 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
   };
   return (
     <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-2xl bg-white text-left shadow-2xl ring-1 ring-neutral-200" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
           <div className="min-w-0"><h3 className="font-black text-neutral-900">{title}</h3><p className="mt-0.5 truncate text-xs text-neutral-500">{memberName}{memberNumber ? ' - ' + memberNumber : ''}</p></div>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
