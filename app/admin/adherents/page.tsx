@@ -421,13 +421,7 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
   return (
     <div className={variant === 'mobile' ? "flex w-full flex-col items-start gap-1" : "flex w-fit flex-col items-start gap-1"} onClick={e => e.stopPropagation()}>
       {dateMode === 'edit' ? (
-        <div className={`group/adhesionDate relative ${sizes.dateShell}`}>
-          <div className="absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/adhesionDate:flex">
-            <button type="button" onMouseDown={e => e.preventDefault()} onClick={confirmDate} disabled={updateCotisation.isPending} title="Valider la date"
-              className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200 disabled:opacity-50">
-              <Check size={11} />
-            </button>
-          </div>
+        <div className={`group/adhesionDate relative flex flex-col gap-1 ${sizes.dateShell}`}>
           <input
             ref={dateInputRef}
             type="date"
@@ -438,6 +432,16 @@ function AdhesionFeeCell({ userId, year, status, paidAt, variant = 'desktop', on
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmDate(); } }}
             className={`box-border min-w-0 max-w-full rounded-md border px-1 py-0.5 text-center font-semibold text-neutral-600 outline-none [min-inline-size:0] focus:border-emerald-500 disabled:cursor-wait [&::-webkit-calendar-picker-indicator]:m-0 [&::-webkit-calendar-picker-indicator]:h-3 [&::-webkit-calendar-picker-indicator]:w-3 ${status === 'paid' ? 'border-emerald-300' : 'border-neutral-200'} ${sizes.date}`}
           />
+          <button
+            type="button"
+            onMouseDown={e => e.preventDefault()}
+            onClick={confirmDate}
+            disabled={updateCotisation.isPending || !draftDate}
+            title="Valider la date selectionnee"
+            className="box-border inline-flex h-6 w-full min-w-0 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 px-1 text-[8px] font-black leading-none text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 sm:text-[9px]"
+          >
+            Valider
+          </button>
         </div>
       ) : (
         <button type="button" onClick={() => { setDateMode('edit'); setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80); }} title="Modifier la date"
