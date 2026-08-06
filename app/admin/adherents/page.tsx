@@ -1517,13 +1517,13 @@ export default function AdminAdherentsPage() {
             </button>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:justify-start sm:gap-1.5">
           {/* Filtre panel */}
           <div ref={filterRef} className="relative">
             <button type="button" onClick={() => setShowFilterPanel(v => !v)}
-              className={`relative flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all sm:px-4 ${activeFilterCount > 0 ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300 hover:text-emerald-700'}`}>
-              <SlidersHorizontal size={13} /> Filtrer
-              {activeFilterCount > 0 && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-black text-emerald-700">{activeFilterCount}</span>}
+              className={`relative flex h-7 items-center gap-1 rounded-lg border px-2 text-[10px] font-black leading-none transition-all sm:h-9 sm:gap-2 sm:rounded-xl sm:px-4 sm:text-xs sm:font-bold ${activeFilterCount > 0 ? 'border-emerald-500 bg-emerald-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-emerald-300 hover:text-emerald-700'}`}>
+              <SlidersHorizontal size={11} className="sm:h-[13px] sm:w-[13px]" /> Filtrer
+              {activeFilterCount > 0 && <span className="flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-white px-1 text-[9px] font-black leading-none text-emerald-700 sm:h-4 sm:min-w-4 sm:text-[10px]">{activeFilterCount}</span>}
             </button>
             {showFilterPanel && (
               <div className="absolute left-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-2xl ring-1 ring-black/5 sm:left-auto sm:right-0">
@@ -1817,21 +1817,21 @@ export default function AdminAdherentsPage() {
               onClick={() => backfillLogin.mutate()}
               disabled={backfillLogin.isPending}
               title="Récupère la date de première connexion depuis l'historique pour les membres qui affichent Jamais"
-              className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-600 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 sm:px-4"
+              className="flex h-7 items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 text-[10px] font-black leading-none text-neutral-600 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 sm:h-9 sm:gap-2 sm:rounded-xl sm:px-4 sm:text-xs sm:font-bold"
             >
-              {backfillLogin.isPending ? <Loader2 size={13} className="animate-spin" /> : <Clock size={13} />}
+              {backfillLogin.isPending ? <Loader2 size={11} className="animate-spin sm:h-[13px] sm:w-[13px]" /> : <Clock size={11} className="sm:h-[13px] sm:w-[13px]" />}
               Corriger connexions
             </button>
           )}
           {/* Export */}
           <button onClick={exportToCSV} disabled={displayed.length===0}
-            className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-600 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40 sm:px-4">
-            <Download size={13} /> Exporter ({displayed.length})
+            className="flex h-7 items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 text-[10px] font-black leading-none text-neutral-600 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40 sm:h-9 sm:gap-2 sm:rounded-xl sm:px-4 sm:text-xs sm:font-bold">
+            <Download size={11} className="sm:h-[13px] sm:w-[13px]" /> Exporter ({displayed.length})
           </button>
           {/* Groupes */}
           <button onClick={() => setShowGroupsPanel(v => !v)}
-            className={`flex h-9 shrink-0 items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-all sm:px-4 ${showGroupsPanel ? 'border-violet-500 bg-violet-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-violet-400 hover:bg-violet-50 hover:text-violet-700'}`}>
-            <Folders size={13} /> Groupes{groups.length > 0 && <span className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-black ${showGroupsPanel ? 'bg-white text-violet-700' : 'bg-violet-100 text-violet-700'}`}>{groups.length}</span>}
+            className={`flex h-7 shrink-0 items-center gap-1 rounded-lg border px-2 text-[10px] font-black leading-none transition-all sm:h-9 sm:gap-2 sm:rounded-xl sm:px-4 sm:text-xs sm:font-bold ${showGroupsPanel ? 'border-violet-500 bg-violet-600 text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:border-violet-400 hover:bg-violet-50 hover:text-violet-700'}`}>
+            <Folders size={11} className="sm:h-[13px] sm:w-[13px]" /> Groupes{groups.length > 0 && <span className={`flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 text-[9px] font-black leading-none sm:h-4 sm:min-w-4 sm:text-[10px] ${showGroupsPanel ? 'bg-white text-violet-700' : 'bg-violet-100 text-violet-700'}`}>{groups.length}</span>}
           </button>
         </div>
       </div>
@@ -1960,7 +1960,7 @@ export default function AdminAdherentsPage() {
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Statut</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Frais d&apos;adh.</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Cotis. annuelle</th>
-                          <th className="px-2 py-3 text-left text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-400">Reste à payer cotisation</th>
+                          <th className="px-2 py-3 text-left text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-400">Reste ? payer cotisation annuelle</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Profil</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Dern. connexion</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Date inscr.</th>
@@ -2091,6 +2091,15 @@ export default function AdminAdherentsPage() {
                   {!showCheckboxesMobile && (
                     <span className="ml-1 text-[9px] text-neutral-300">(Maintenir le doigt pour sélectionner)</span>
                   )}
+                  {showCheckboxesMobile && (
+                    <button
+                      type="button"
+                      onClick={() => { setCheckedIds(new Set()); setShowCheckboxes(false); }}
+                      className="ml-auto text-[9px] font-black uppercase tracking-[0.08em] text-orange-600 underline-offset-2 hover:underline"
+                    >
+                      Deselectionner
+                    </button>
+                  )}
                 </div>
                 <div className="divide-y divide-neutral-50">
                   {displayed.map(m => {
@@ -2206,7 +2215,7 @@ export default function AdminAdherentsPage() {
                                 <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Tél.</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{m.phone ?? 'Non renseigné'}</p></div>
                                 <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Dern. connexion</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{fmtDate(m.lastLoginAt)}</p></div>
                                 <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Date inscr.</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{fmt(m.createdAt)}</p></div>
-                                <div><p className="truncate text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-300">Reste à payer cotisation</p><p className={`mt-0.5 truncate font-semibold ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</p></div>
+                                <div><p className="truncate text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-300">Reste ? payer cotisation annuelle</p><p className={`mt-0.5 truncate font-semibold ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</p></div>
                                 <div>
                                   <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Actions</p>
                                   <div className="mt-1 flex items-center gap-1">

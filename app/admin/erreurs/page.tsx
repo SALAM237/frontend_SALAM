@@ -374,7 +374,7 @@ export default function GestionErreursPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
           {(showingExternalScans || showResolved) && (
             <button
               type="button"
@@ -388,7 +388,7 @@ export default function GestionErreursPage() {
                 setSelectedIds([]);
                 setAllSelectableIds([]);
               }}
-              className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-neutral-200 bg-white text-neutral-700 transition-colors hover:bg-neutral-50"
+              className="flex h-7 items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 text-[10px] font-black leading-none text-neutral-700 transition-colors hover:bg-neutral-50 sm:h-auto sm:gap-1.5 sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-semibold"
             >
               <AlertTriangle size={14} />
               Erreurs
@@ -402,7 +402,7 @@ export default function GestionErreursPage() {
               setPage(1);
               setConfirmClear(false);
             }}
-            className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors ${
+            className={`flex h-7 items-center gap-1 rounded-md border px-2 text-[10px] font-black leading-none transition-colors sm:h-auto sm:gap-1.5 sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-semibold ${
               showingExternalScans
                 ? 'bg-slate-900 text-white border-slate-900'
                 : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
@@ -414,7 +414,7 @@ export default function GestionErreursPage() {
 
           <button
             onClick={() => setShowResolved(v => !v)}
-            className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${
+            className={`h-7 rounded-md border px-2 text-[10px] font-black leading-none transition-colors sm:h-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-semibold ${
               showResolved
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                 : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50'
@@ -426,7 +426,7 @@ export default function GestionErreursPage() {
           <button
             onClick={() => { void refetch(); }}
             disabled={isFetching}
-            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-600 disabled:opacity-50 transition-colors"
+            className="flex h-7 items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 text-[10px] font-black leading-none text-neutral-600 transition-colors hover:bg-neutral-50 disabled:opacity-50 sm:h-auto sm:gap-1.5 sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-semibold"
           >
             {isFetching ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
             Actualiser
@@ -436,7 +436,7 @@ export default function GestionErreursPage() {
             <button
               onClick={handleClearAll}
               disabled={clearAll.isPending}
-              className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors ${
+              className={`flex h-7 items-center gap-1 rounded-md border px-2 text-[10px] font-black leading-none transition-colors sm:h-auto sm:gap-1.5 sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-semibold ${
                 confirmClear
                   ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
                   : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
@@ -449,7 +449,7 @@ export default function GestionErreursPage() {
           {confirmClear && (
             <button
               onClick={() => setConfirmClear(false)}
-              className="text-sm px-3 py-1.5 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-600"
+              className="h-7 rounded-md border border-neutral-200 bg-white px-2 text-[10px] font-black leading-none text-neutral-600 transition hover:bg-neutral-50 sm:h-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-semibold"
             >
               Annuler
             </button>
@@ -522,14 +522,14 @@ export default function GestionErreursPage() {
 
       {/* Category filter tabs */}
       {!showingExternalScans && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1 sm:gap-2">
         {FILTER_TABS.map(key => {
           const cfg = CATEGORY_CFG[key];
           return (
             <button
               key={key}
               onClick={() => { setCategory(key); setPage(1); }}
-              className={`text-sm px-3 py-1.5 rounded-lg border transition-colors ${
+              className={`h-7 rounded-md border px-2 text-[10px] font-black leading-none transition-colors sm:h-auto sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm sm:font-semibold ${
                 category === key
                   ? 'bg-neutral-900 text-white border-neutral-900'
                   : 'bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50'
