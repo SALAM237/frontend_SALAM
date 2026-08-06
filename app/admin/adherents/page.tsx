@@ -124,15 +124,18 @@ const TRANCHE_BADGE_CLS: Record<string, string> = {
   exempt: 'bg-neutral-50 text-neutral-400 border-neutral-200',
 };
 
-type PaymentConfirmData = { paidAt: string; reference: string; notes: string; justification?: File | null };
+type PaymentConfirmData = { paidAt: string; reference: string; notes: string; justification?: File | null; amount?: number };
 
-function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memberNumber, initialDate, initialReference = '', initialNotes = '', loading, onClose, onConfirm }: {
+function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memberNumber, initialDate, initialReference = '', initialNotes = '', initialAmount = '', requireAmount = false, amountLabel = 'Montant pay\u00e9', loading, onClose, onConfirm }: {
   title?: string;
   memberName: string;
   memberNumber?: string | null;
   initialDate: string;
   initialReference?: string;
   initialNotes?: string;
+  initialAmount?: string | number;
+  requireAmount?: boolean;
+  amountLabel?: string;
   loading?: boolean;
   onClose: () => void;
   onConfirm: (data: PaymentConfirmData) => void;
@@ -140,6 +143,8 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
   const today = new Date().toISOString().slice(0, 10);
   const [paidAt, setPaidAt] = useState(initialDate || today);
   const [dateValidated, setDateValidated] = useState(false);
+  const [amount, setAmount] = useState(initialAmount === 0 ? '' : String(initialAmount || ''));
+  const [amountValidated, setAmountValidated] = useState(!requireAmount);
   const [reference, setReference] = useState(initialReference);
   const [notes, setNotes] = useState(initialNotes);
   const [file, setFile] = useState<File | null>(null);
@@ -151,10 +156,18 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
     if (next.size > 5 * 1024 * 1024) { setError('Le justificatif ne doit pas d\u00e9passer 5 Mo.'); return; }
     setFile(next);
   };
+  const parsedAmount = Math.max(0, Number(amount) || 0);
+  const validateAmount = () => {
+    if (!parsedAmount) { setError('Le montant pay\u00e9 est obligatoire.'); return; }
+    setAmountValidated(true);
+    setError('');
+  };
   const submit = () => {
     if (!paidAt) { setError('La date de paiement est obligatoire.'); return; }
     if (!dateValidated) { setError("Validez d'abord la date de paiement avant de confirmer."); return; }
-    onConfirm({ paidAt, reference, notes, justification: file });
+    if (requireAmount && !parsedAmount) { setError('Le montant pay\u00e9 est obligatoire.'); return; }
+    if (requireAmount && !amountValidated) { setError("Validez d'abord le montant pay\u00e9 avant de confirmer."); return; }
+    onConfirm({ paidAt, reference, notes, justification: file, amount: requireAmount ? parsedAmount : undefined });
   };
   return (
     <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
@@ -165,6 +178,7 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
         </div>
         <div className="space-y-4 px-6 py-5">
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date de paiement re&ccedil;ue <span className="text-red-500">*</span></label><div className="flex gap-2"><div className="relative min-w-0 flex-1"><CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" /><input type="date" value={paidAt} max={today} onChange={e => { setPaidAt(e.target.value); setDateValidated(false); setError(''); }} className={(dateValidated ? 'border-emerald-400 bg-emerald-50/40 ' : 'border-neutral-200 bg-white ') + 'h-11 w-full rounded-xl border pl-9 pr-3 text-sm outline-none transition-all duration-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15'} /></div><button type="button" onClick={() => { if (!paidAt) setError('La date de paiement est obligatoire.'); else { setDateValidated(true); setError(''); } }} className={(dateValidated ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'inline-flex h-11 min-w-[76px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all duration-300'}>{dateValidated ? <><CheckCircle2 size={14} className="motion-safe:animate-pulse" />Valid&eacute;e</> : 'Valider'}</button></div></div>
+          {requireAmount && <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">{amountLabel} <span className="text-red-500">*</span></label><div className="flex gap-2"><div className="relative min-w-0 flex-1"><Banknote size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" /><input type="number" min={0} value={amount} onChange={e => { setAmount(e.target.value); setAmountValidated(false); setError(''); }} placeholder="Ex: 10000" className={(amountValidated ? 'border-emerald-400 bg-emerald-50/40 ' : 'border-neutral-200 bg-white ') + 'h-11 w-full rounded-xl border pl-9 pr-3 text-sm outline-none transition-all duration-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15'} /></div><button type="button" onClick={validateAmount} className={(amountValidated ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'inline-flex h-11 min-w-[76px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all duration-300'}>{amountValidated ? <><CheckCircle2 size={14} className="motion-safe:animate-pulse" />Valid&eacute;</> : 'Valider'}</button></div></div>}
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">R&eacute;f&eacute;rence <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><input value={reference} onChange={e => setReference(e.target.value)} placeholder="Ex: VIR-BNP-0215, PAYPAL-XXXXX..." className="h-11 w-full rounded-xl border border-neutral-200 px-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Commentaire <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={"Pay\u00e9 par OM, virement, esp\u00e8ce..."} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Justificatif <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-3 transition hover:border-emerald-300 hover:bg-emerald-50/30"><Upload size={15} className="shrink-0 text-neutral-400" /><span className="min-w-0 flex-1 truncate text-sm text-neutral-500">{file?.name || 'S\u00e9lectionner un fichier...'}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => pickFile(e.target.files?.[0])} className="sr-only" />{file && <button type="button" onClick={e => { e.preventDefault(); pickFile(null); }} className="text-neutral-300 hover:text-neutral-600"><X size={12} /></button>}</label><p className="text-[10px] text-neutral-400">PDF, JPG ou PNG &middot; max 5 Mo</p></div>
@@ -188,7 +202,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
   const [dateMode, setDateMode] = useState<'edit' | 'text'>(t.paidAt ? 'text' : 'edit');
   const [draftAmount, setDraftAmount] = useState(t.amount > 0 ? String(t.amount) : '');
   const [draftDate, setDraftDate] = useState(t.paidAt ? t.paidAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
-  const [paymentModalAmount, setPaymentModalAmount] = useState<number | null>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const amountInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const updateAmount = useUpdateTranche();
@@ -222,87 +236,88 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
   const totalEnteredSum = (allTranches ?? DEFAULT_TRANCHES).reduce((acc, tr) => acc + Number(tr.amount || 0), 0);
   const isFullySettled = totalEnteredSum >= annualFee;
   const isUnfilledAndIrrelevant = isFullySettled && !(t.amount > 0);
-  const dateConfirmed = dateMode === 'text' && !!draftDate;
+  const showValidatedFields = !isUnfilledAndIrrelevant && (t.status === 'paid' || t.amount > 0 || !!t.paidAt);
 
   const handleMutationError = (err: Error) => {
     if (/facture/i.test(err.message)) onInvoiceRequired(err.message);
     else onFeedback('error', err.message);
   };
 
-  const requireConfirmedDate = () => {
-    if (dateConfirmed) return true;
-    onFeedback('warning', "Validez d'abord la date de paiement avant de changer ce statut.");
-    setDateMode('edit');
-    setTimeout(() => { dateInputRef.current?.focus(); dateInputRef.current?.showPicker?.(); }, 80);
-    return false;
+  const validatePaymentAmount = (amount: number) => {
+    if (!amount || amount <= 0) {
+      onFeedback('warning', 'Le montant pay\u00e9 est obligatoire.');
+      return false;
+    }
+    if (othersPaidSumExcludingSelf + amount > annualFee) {
+      const maxAllowed = Math.max(0, annualFee - othersPaidSumExcludingSelf);
+      onFeedback('warning', `Le total des tranches ne peut pas d\u00e9passer la cotisation annuelle (${annualFee.toLocaleString('fr-FR')} F.CFA). Montant maximum possible pour cette tranche : ${maxAllowed.toLocaleString('fr-FR')} F.CFA.`);
+      return false;
+    }
+    if (isLastTranche && (othersPaidSum + amount) < annualFee) {
+      onFeedback('warning', 'Impossible de passer \u00e0 Pay\u00e9', lastTrancheBlockedContent(resteAvantTranche4));
+      return false;
+    }
+    return true;
   };
-
   const commitStatus = (status: 'unpaid' | 'paid' | 'exempt') => {
-    if (status !== 'unpaid' && !requireConfirmedDate()) return;
-    if (status === 'unpaid' && (isFullySettled || t.amount > 0)) {
-      onFeedback('warning', "Un montant supérieur à 0 est déjà saisi pour cette tranche : cliquez sur le montant affiché pour le corriger si besoin, plutôt que de repasser en Impayé.");
+    if (status === 'paid') {
+      setPaymentModalOpen(true);
       return;
     }
-    if (status === 'paid' && isLastTranche && (othersPaidSum + t.amount) < annualFee) {
-      onFeedback('warning', 'Impossible de passer à Payé', lastTrancheBlockedContent(resteAvantTranche4));
+    if (status === 'unpaid' && (isFullySettled || t.amount > 0)) {
+      onFeedback('warning', "Un montant sup\u00e9rieur \u00e0 0 est d\u00e9j\u00e0 saisi pour cette tranche : cliquez sur le montant affich\u00e9 pour le corriger si besoin, plut\u00f4t que de repasser en Impay\u00e9.");
       return;
     }
     updateStatusMutation.mutate(
-      { userId, year, trancheIndex: index, amount: t.amount, status, paidAt: status !== 'unpaid' ? draftDate : undefined },
+      { userId, year, trancheIndex: index, amount: t.amount, status, paidAt: undefined },
       {
         onSuccess: res => {
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
-          else onFeedback('success', (res as any).message ?? 'Statut mis à jour');
+          else onFeedback('success', (res as any).message ?? 'Statut mis \u00e0 jour');
         },
         onError: handleMutationError,
       },
     );
   };
-
   const commitAmount = (rawAmount: string) => {
     const amount = Math.max(0, Number(rawAmount) || 0);
-    if (amount > 0) { setPaymentModalAmount(amount); return; }
-    if (amount > 0 && othersPaidSumExcludingSelf + amount > annualFee) {
-      const maxAllowed = Math.max(0, annualFee - othersPaidSumExcludingSelf);
-      onFeedback('warning', `Le total des tranches ne peut pas dépasser la cotisation annuelle (${annualFee.toLocaleString('fr-FR')} F.CFA). Montant maximum possible pour cette tranche : ${maxAllowed.toLocaleString('fr-FR')} F.CFA.`);
-      return;
-    }
+    if (!validatePaymentAmount(amount)) return;
     updateAmount.mutate(
-      { userId, year, trancheIndex: index, amount, status: amount > 0 ? 'paid' : 'unpaid', paidAt: amount > 0 ? draftDate : undefined },
+      { userId, year, trancheIndex: index, amount, status: 'paid', paidAt: draftDate },
       {
         onSuccess: res => {
-          setAmountMode(amount > 0 ? 'text' : 'edit');
+          setAmountMode('text');
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
-          else onFeedback('success', (res as any).message ?? 'Montant mis à jour');
+          else onFeedback('success', (res as any).message ?? 'Montant mis \u00e0 jour');
         },
         onError: handleMutationError,
       },
     );
   };
-
   const confirmTranchePayment = (data: PaymentConfirmData) => {
-    const amount = paymentModalAmount ?? Math.max(0, Number(draftAmount) || 0);
+    const amount = Math.max(0, Number(data.amount) || 0);
+    if (!validatePaymentAmount(amount)) return;
     updateAmount.mutate(
       { userId, year, trancheIndex: index, amount, status: 'paid', paidAt: data.paidAt, reference: data.reference, notes: data.notes, justification: data.justification },
       {
         onSuccess: res => {
-          setPaymentModalAmount(null);
+          setPaymentModalOpen(false);
+          setDraftAmount(String(amount));
           setDraftDate(data.paidAt);
           setDateMode('text');
           setAmountMode('text');
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
-          else onFeedback('success', (res as any).message ?? 'Montant mis ? jour');
+          else onFeedback('success', (res as any).message ?? 'Paiement confirm\u00e9');
         },
         onError: handleMutationError,
       },
     );
   };
-
   const confirmAmount = () => commitAmount(draftAmount);
-  const clearAmount = () => { setDraftAmount(''); commitAmount(''); };
+  const clearAmount = () => { setDraftAmount(''); };
 
   const commitDate = (nextDate: string) => {
     if (!nextDate) {
@@ -353,13 +368,10 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
 
   return (
     <div className="flex flex-col items-center gap-1 py-1 text-center" onClick={e => e.stopPropagation()}>
-      {!isUnfilledAndIrrelevant && dateControl}
+      {showValidatedFields && dateControl}
 
 
-      {isUnfilledAndIrrelevant ? (
-        <span className={`font-mono font-black text-neutral-300 ${sizes.amount}`}>—</span>
-      ) : (
-        amountMode === 'edit' ? (
+      {showValidatedFields && (amountMode === 'edit' ? (
           <div className="group/tranche relative w-full">
             <div className="absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 items-center gap-1 rounded-lg border border-neutral-200 bg-white p-0.5 shadow-lg group-focus-within/tranche:flex">
               <button type="button" onMouseDown={e => e.preventDefault()} onClick={confirmAmount} disabled={updateTranche.isPending} title="Valider le montant"
@@ -397,11 +409,25 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
         className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center font-black outline-none disabled:cursor-not-allowed disabled:opacity-60 ${sizes.badge} ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
       >
         <option value="unpaid" disabled={isFullySettled || t.amount > 0}>{isUnfilledAndIrrelevant ? 'N.C' : 'Impayé'}</option>
-        <option value="paid" disabled>Payé</option>
+        <option value="paid">Pay&eacute;</option>
         <option value="exempt">Exempté</option>
       </select>
       {isLastTranche && !isUnfilledAndIrrelevant && (
         <p className="text-[7px] font-semibold leading-tight text-amber-600">Doit boucler le solde total</p>
+      )}
+      {paymentModalOpen && (
+        <PaymentConfirmModal
+          title={`Confirmer le paiement - Tranche ${index + 1}`}
+          memberName={memberName}
+          memberNumber={memberNumber}
+          initialDate={draftDate}
+          initialAmount={draftAmount || t.amount || ''}
+          requireAmount
+          amountLabel="Montant pay&eacute;"
+          loading={updateTranche.isPending}
+          onClose={() => setPaymentModalOpen(false)}
+          onConfirm={confirmTranchePayment}
+        />
       )}
     </div>
   );
