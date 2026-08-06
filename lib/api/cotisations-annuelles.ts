@@ -278,6 +278,14 @@ export function useUpdateTranche() {
           };
         });
       }
+      [
+        ['admin-receipts'],
+        ['member-receipts'],
+        ['admin-treasury-transactions'],
+        ['member-treasury-transactions'],
+        ['admin-treasury-overview'],
+        ['member-treasury-overview'],
+      ].forEach(queryKey => qc.removeQueries({ queryKey }));
       qc.invalidateQueries({ queryKey: ['admin-cotisations-annuelles', vars.year] });
       qc.invalidateQueries({ queryKey: ['admin-members'] });
       qc.invalidateQueries({ queryKey: ['admin-treasury-overview'] });

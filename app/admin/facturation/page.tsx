@@ -1525,10 +1525,28 @@ function receiptMemberInfo(r: ReceiptDoc): { firstName: string; lastName: string
   return { firstName: u?.firstName ?? '', lastName: u?.lastName ?? '', memberNumber: u?.memberNumber };
 }
 
+function readableUploadName(value?: string | null) {
+  const raw = String(value || 'justificatif-paiement');
+  const looksBroken = raw.includes('?') || raw.includes('?') || raw.includes('?');
+  if (!looksBroken) return raw;
+  try {
+    return decodeURIComponent(escape(raw));
+  } catch {
+    return raw
+      .split('???').join("'")
+      .split('??').join('?')
+      .split('??').join('?')
+      .split('??').join('?')
+      .split('? ').join('?')
+      .split('??').join('?')
+      .split('??').join('?');
+  }
+}
+
 function ReceiptJustificationModal({ receipt, onClose }: { receipt: ReceiptDoc; onClose: () => void }) {
   const updateReceipt = useUpdateReceipt();
   const url = receipt.justificationUrl ?? '';
-  const name = receipt.justificationName || 'justificatif-paiement';
+  const name = readableUploadName(receipt.justificationName);
   const isImage = /\.(png|jpe?g)$/i.test(url) || /\.(png|jpe?g)$/i.test(name);
   const remove = () => {
     updateReceipt.mutate(
@@ -1815,7 +1833,7 @@ function ReceiptsTab() {
                     <button
                       type="button"
                       onClick={() => setViewJustification(r)}
-                      title={r.justificationName ? 'Voir le justificatif : ' + r.justificationName : 'Voir le justificatif'}
+                      title={r.justificationName ? 'Voir le justificatif : ' + readableUploadName(r.justificationName) : 'Voir le justificatif'}
                       className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500 transition hover:bg-blue-500 hover:text-white"
                     >
                       <FileText size={12} />

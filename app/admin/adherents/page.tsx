@@ -406,7 +406,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
         disabled={updateTranche.isPending || isUnfilledAndIrrelevant}
         className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center font-black outline-none disabled:cursor-not-allowed disabled:opacity-60 ${sizes.badge} ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
       >
-        <option value="unpaid" disabled={isFullySettled || t.amount > 0}>{isUnfilledAndIrrelevant ? 'N.C' : 'Impayé'}</option>
+        <option value="unpaid" disabled={isUnfilledAndIrrelevant}>{isUnfilledAndIrrelevant ? 'N.C' : 'Impay\u00e9'}</option>
         <option value="paid">Pay&eacute;</option>
         <option value="exempt">Exempté</option>
       </select>

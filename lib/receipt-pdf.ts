@@ -52,7 +52,7 @@ export function downloadReceiptPdf(
     ? `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year} — Tranche ${receipt.trancheIndex + 1}`
     : `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}`;
   const invoiceReference = receipt.invoiceNumber ?? receipt.receiptNumber;
-  const paymentReference = receipt.reference?.trim() || 'Non renseign?e';
+  const paymentReference = receipt.reference?.trim() || 'Non renseign\u00e9e';
   const withTrancheLabel = (source: unknown, trancheIndex?: number | null) => {
     const text = String(source || `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}`);
     if (receipt.type !== 'cotisation_annuelle' || trancheIndex == null || /tranche/i.test(text)) return text;
@@ -122,7 +122,7 @@ export function downloadReceiptPdf(
         <h2>Membre</h2>
         <strong>${escReceipt(memberName)}</strong>
         <p class="muted">N° membre : ${escReceipt(memberId)}</p>
-        <p class="muted">Facture associée : ${escReceipt(invoiceReference)}</p>
+        <p class="muted">R\u00e9f\u00e9rence de paiement : ${escReceipt(paymentReference)}</p>
       </div>
     </section>
     <div style="text-align:center"><span class="paid">${isCancelled ? 'ANNULÉ' : 'PAYÉ'}</span></div>
@@ -132,7 +132,7 @@ export function downloadReceiptPdf(
       <tbody>
         ${previousTranches.length ? [...previousTranches].sort((a, b) => (a.trancheIndex ?? 0) - (b.trancheIndex ?? 0)).map(t => `
         <tr class="recap-row">
-          <td class="fit-cell">${escReceipt((t as any).invoiceNumber ?? t.receiptNumber)}</td>
+          <td class="fit-cell">${escReceipt((t as any).invoiceNumber ?? invoiceReference)}</td>
           <td class="fit-cell">${escReceipt(withTrancheLabel((t as any).invoiceTitle || (t as any).invoiceDescription || `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}`, t.trancheIndex))}</td>
           <td class="date-cell">${escReceipt(fmt(t.paidAt))}</td>
           <td class="right amount-cell">${escReceipt(formatCfa(t.amount))}</td>
