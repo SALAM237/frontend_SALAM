@@ -108,3 +108,31 @@ export function useResolveAppError() {
     onError: (err: Error) => toast.error(err.message),
   });
 }
+
+export function useBulkDeleteAppErrors() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc    = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) =>
+      apiClient('/api/v1/admin/app-errors/bulk', { method: 'DELETE', body: JSON.stringify({ ids }), token: token ?? '' }),
+    onSuccess: (res: any) => {
+      qc.invalidateQueries({ queryKey: ['app-error-logs'] });
+      toast.success(res?.message ?? 'Entrees supprimees');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useBulkResolveAppErrors() {
+  const token = useAuthStore(s => s.accessToken);
+  const qc    = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) =>
+      apiClient('/api/v1/admin/app-errors/bulk/resolve', { method: 'PATCH', body: JSON.stringify({ ids }), token: token ?? '' }),
+    onSuccess: (res: any) => {
+      qc.invalidateQueries({ queryKey: ['app-error-logs'] });
+      toast.success(res?.message ?? 'Erreurs marquees comme resolues');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}

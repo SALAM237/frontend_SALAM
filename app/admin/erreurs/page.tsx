@@ -1,15 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   AlertTriangle, Trash2, ChevronDown, ChevronRight,
   Mail, RotateCcw, AlertCircle, CheckCircle2, Loader2,
   Upload, Shield, Database, FileText, Bell, HelpCircle,
-  Settings, Table, Scan, Star, Check, ShieldAlert,
+  Settings, Table, Scan, Star, Check, ShieldAlert, CheckSquare2, Square,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  useAppErrorLogs, useDeleteAppError, useClearAppErrors, useResolveAppError,
+  useAppErrorLogs, useDeleteAppError, useClearAppErrors, useResolveAppError, useBulkDeleteAppErrors, useBulkResolveAppErrors,
   type AppErrorLog, type AppErrorCategory, type AppErrorScope,
 } from '@/lib/api/mail-errors';
 import { useAuthStore } from '@/store/auth.store';
@@ -99,12 +99,15 @@ function EmailFailures({ failures }: { failures: { name?: string; email?: string
 }
 
 function LogRow({
-  log, onDelete, onResolve, scanView = false,
+  log, onDelete, onResolve, scanView = false, selectionMode = false, selected = false, onToggleSelect,
 }: {
   log: AppErrorLog;
   onDelete: (id: string) => void;
   onResolve: (id: string) => void;
   scanView?: boolean;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const details  = log.details as Record<string, any> | undefined;
@@ -117,6 +120,17 @@ function LogRow({
         className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-neutral-50 transition-colors"
         onClick={() => setOpen(v => !v)}
       >
+        {selectionMode && (
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onToggleSelect?.(log._id); }}
+            className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border transition-colors ${selected ? 'border-emerald-300 bg-emerald-50 text-emerald-600' : 'border-neutral-200 text-neutral-400 hover:bg-neutral-50'}`}
+            title={selected ? 'Retirer de la selection' : 'Selectionner'}
+          >
+            {selected ? <CheckSquare2 size={16} /> : <Square size={16} />}
+          </button>
+        )}
+
         <button className="text-neutral-400 hover:text-neutral-600 flex-shrink-0">
           {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </button>
@@ -255,18 +269,32 @@ export default function GestionErreursPage() {
   const [errorScope,   setErrorScope]   = useState<AppErrorScope>('errors');
   const [showResolved, setShowResolved] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   const catArg = category === 'all' ? undefined : category;
   const { data, isLoading, refetch, isFetching } = useAppErrorLogs(page, catArg, { limit: pageSize, search, scope: errorScope });
   const deleteEntry  = useDeleteAppError();
   const clearAll     = useClearAppErrors();
   const resolveEntry = useResolveAppError();
+  const bulkDelete   = useBulkDeleteAppErrors();
+  const bulkResolve  = useBulkResolveAppErrors();
 
   const allLogs = data?.data?.logs ?? [];
   const logs    = showResolved ? allLogs : allLogs.filter(l => !l.resolved);
   const total   = data?.data?.total ?? 0;
   const pages   = data?.data?.pages ?? 1;
   const showingExternalScans = errorScope === 'external_scans';
+  const visibleIds = logs.map(log => log._id);
+  const selectedVisibleCount = visibleIds.filter(id => selectedIds.includes(id)).length;
+  const allVisibleSelected = visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
+  const selectedCount = selectedIds.length;
+
+  useEffect(() => {
+    setSelectedIds([]);
+    setConfirmBulkDelete(false);
+  }, [page, pageSize, search, category, errorScope, showResolved]);
 
   const email        = user?.email ?? '';
   const isSuperAdmin = user?.effectivePermissions?.includes('*') ?? false;
@@ -283,6 +311,36 @@ export default function GestionErreursPage() {
 
   const handleDelete  = (id: string) => deleteEntry.mutate(id);
   const handleResolve = (id: string) => resolveEntry.mutate(id);
+  const toggleSelectionMode = () => {
+    setSelectionMode(v => {
+      const next = !v;
+      if (!next) {
+        setSelectedIds([]);
+        setConfirmBulkDelete(false);
+      }
+      return next;
+    });
+  };
+  const toggleSelect = (id: string) => {
+    setConfirmBulkDelete(false);
+    setSelectedIds(ids => ids.includes(id) ? ids.filter(item => item !== id) : [...ids, id]);
+  };
+  const toggleSelectAllVisible = () => {
+    setConfirmBulkDelete(false);
+    setSelectedIds(ids => {
+      if (allVisibleSelected) return ids.filter(id => !visibleIds.includes(id));
+      return [...new Set([...ids, ...visibleIds])];
+    });
+  };
+  const handleBulkResolve = () => {
+    if (selectedIds.length === 0) return toast.error('Selectionnez au moins une erreur');
+    bulkResolve.mutate(selectedIds, { onSuccess: () => { setSelectedIds([]); setConfirmBulkDelete(false); } });
+  };
+  const handleBulkDelete = () => {
+    if (selectedIds.length === 0) return toast.error('Selectionnez au moins une erreur');
+    if (!confirmBulkDelete) { setConfirmBulkDelete(true); return; }
+    bulkDelete.mutate(selectedIds, { onSuccess: () => { setSelectedIds([]); setConfirmBulkDelete(false); } });
+  };
   const handleClearAll = () => {
     if (!confirmClear) { setConfirmClear(true); return; }
     clearAll.mutate(undefined, { onSettled: () => setConfirmClear(false) });
@@ -373,6 +431,64 @@ export default function GestionErreursPage() {
         placeholder="Rechercher par message, membre, route..."
       />
 
+      {logs.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleSelectionMode}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
+                selectionMode
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50'
+              }`}
+            >
+              {selectionMode ? <CheckSquare2 size={14} /> : <Square size={14} />}
+              {selectionMode ? 'Annuler selection' : 'Selectionner'}
+            </button>
+
+            {selectionMode && (
+              <button
+                type="button"
+                onClick={toggleSelectAllVisible}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm font-semibold text-neutral-600 transition-colors hover:bg-neutral-50"
+              >
+                {allVisibleSelected ? <CheckSquare2 size={14} /> : <Square size={14} />}
+                {allVisibleSelected ? 'Tout deselectionner' : 'Tout selectionner'}
+              </button>
+            )}
+          </div>
+
+          {selectionMode && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-neutral-500">{selectedCount} selectionnee(s)</span>
+              <button
+                type="button"
+                onClick={handleBulkResolve}
+                disabled={selectedCount === 0 || bulkResolve.isPending}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {bulkResolve.isPending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                Marquer resolues
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkDelete}
+                disabled={selectedCount === 0 || bulkDelete.isPending}
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  confirmBulkDelete
+                    ? 'border-red-600 bg-red-600 text-white hover:bg-red-700'
+                    : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+                }`}
+              >
+                {bulkDelete.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                {confirmBulkDelete ? 'Confirmer suppression' : 'Supprimer'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Category filter tabs */}
       {!showingExternalScans && (
         <div className="flex flex-wrap gap-2">
@@ -421,6 +537,9 @@ export default function GestionErreursPage() {
               onDelete={handleDelete}
               onResolve={handleResolve}
               scanView={showingExternalScans}
+              selectionMode={selectionMode}
+              selected={selectedIds.includes(log._id)}
+              onToggleSelect={toggleSelect}
             />
           ))}
         </div>
