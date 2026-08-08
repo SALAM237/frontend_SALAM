@@ -17,6 +17,7 @@ export interface TreasuryTransaction {
   currency: 'XAF';
   occurredAt: string;
   paymentMode?: string;
+  settledBy?: string | null;
   reference?: string;
   counterparty?: string;
   pendingDeletionAt?: string | null;

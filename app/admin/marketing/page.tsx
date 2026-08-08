@@ -219,7 +219,13 @@ function CampaignEditorModal({ onClose, campaign }: { onClose: () => void; campa
             <div className="relative mb-2">
               <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
               <input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder="Rechercher un membre…"
-                className="h-9 w-full rounded-lg border border-neutral-200 pl-8 pr-3 text-sm outline-none focus:border-rose-400" />
+                className="h-9 w-full rounded-lg border border-neutral-200 pl-8 pr-8 text-sm outline-none focus:border-rose-400" />
+              {memberSearch && (
+                <button type="button" onClick={() => setMemberSearch('')} aria-label="Effacer la recherche"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-300 hover:text-neutral-600">
+                  <X size={13} />
+                </button>
+              )}
             </div>
             <div className="mb-2">
               <MemberFilterPanel filters={memberFilters} onChange={setMemberFilters} />

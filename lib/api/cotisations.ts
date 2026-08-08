@@ -5,6 +5,8 @@ import { useAuthStore } from '@/store/auth.store';
 import type { AuditLogDoc } from './audit-logs';
 
 export type CotisationStatus = 'unpaid' | 'paid' | 'exempt';
+export type PaymentMethod = 'om' | 'especes' | 'mobile_money' | 'virement' | 'cb' | 'autre';
+export type SettledByType = 'member' | 'non_member';
 
 export interface CotisationDoc {
   _id: string;
@@ -15,6 +17,11 @@ export interface CotisationDoc {
   paidAt?: string;
   reference?: string;
   notes?: string;
+  paymentMethod?: PaymentMethod | null;
+  paymentMethodOther?: string | null;
+  settledByType?: SettledByType | null;
+  settledByUserId?: string | null;
+  settledByName?: string | null;
 }
 
 export interface AdminCotisationRow {
@@ -37,6 +44,11 @@ export interface AdminCotisationRow {
     paidAt?: string;
     reference?: string;
     notes?: string;
+    paymentMethod?: PaymentMethod | null;
+    paymentMethodOther?: string | null;
+    settledByType?: SettledByType | null;
+    settledByUserId?: string | null;
+    settledByName?: string | null;
   };
 }
 
@@ -67,6 +79,11 @@ export function useUpdateCotisationStatus() {
       reference?: string;
       notes?: string;
       justification?: File | null;
+      paymentMethod?: PaymentMethod;
+      paymentMethodOther?: string;
+      settledByType?: SettledByType;
+      settledByUserId?: string | null;
+      settledByName?: string;
     }) => {
       const body = vars.justification ? new FormData() : null;
       if (body) {
@@ -76,6 +93,11 @@ export function useUpdateCotisationStatus() {
         if (vars.reference) body.append('reference', vars.reference);
         if (vars.notes) body.append('notes', vars.notes);
         if (vars.justification) body.append('justification', vars.justification);
+        if (vars.paymentMethod) body.append('paymentMethod', vars.paymentMethod);
+        if (vars.paymentMethodOther) body.append('paymentMethodOther', vars.paymentMethodOther);
+        if (vars.settledByType) body.append('settledByType', vars.settledByType);
+        if (vars.settledByUserId) body.append('settledByUserId', vars.settledByUserId);
+        if (vars.settledByName) body.append('settledByName', vars.settledByName);
       }
       return apiClient(`/api/v1/admin/cotisations/${vars.userId}`, {
         method: 'PUT',

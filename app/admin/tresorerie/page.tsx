@@ -326,6 +326,18 @@ export default function AdminTresoreriePage() {
     if (window.confirm('Supprimer cet element de patrimoine ??')) deleteAsset.mutate(id);
   };
 
+  /* Libellé FR pour l'export — les lignes issues des reçus (cotisations/frais
+     d'adhésion) arrivent déjà résolues par le backend (OM/Espèce/.../Autre : nom
+     libre) ; les écritures manuelles de trésorerie portent encore l'enum brut
+     (cash/bank_transfer/...) faute de sélecteur dédié côté formulaire. */
+  const TREASURY_PAYMENT_MODE_LABELS: Record<string, string> = {
+    cash: 'Espèce', bank_transfer: 'Virement', mobile_money: 'Mobile Money', card: 'CB', cheque: 'Chèque', other: '',
+  };
+  const exportPaymentModeLabel = (mode?: string | null) => {
+    if (!mode) return '';
+    return TREASURY_PAYMENT_MODE_LABELS[mode] ?? mode;
+  };
+
   const exportCsv = () => {
     const rows = tab === 'assets'
       ? assetItems.map(item => ({
@@ -346,6 +358,8 @@ export default function AdminTresoreriePage() {
           tiers: item.counterparty ?? '',
           reference: item.reference ?? '',
           description: item.description ?? '',
+          moyenPaiement: exportPaymentModeLabel(item.paymentMode),
+          regleePar: item.settledBy ?? '',
         }));
 
     downloadCsv(`salam-tresorerie-${tab}.csv`, rows);

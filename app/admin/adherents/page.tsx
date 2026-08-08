@@ -34,6 +34,7 @@ import { CauriImg } from '@/components/member/CauriWallet';
 import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard';
 import { GenderIcon } from '@/components/ui/GenderIcon';
 import { downloadElementAsPng, memberCardMailto } from '@/lib/member-card-export';
+import { MemberSettledByPicker } from '@/components/admin/MemberSettledByPicker';
 
 /* ── Types ─────────────────────────────────────────────── */
 type ActiveTab  = 'relance' | 'frais' | 'cauris' | 'cartes' | 'cotisation-annuelle' | 'appareils' | null;
@@ -124,9 +125,14 @@ const TRANCHE_BADGE_CLS: Record<string, string> = {
   exempt: 'bg-neutral-50 text-neutral-400 border-neutral-200',
 };
 
-type PaymentConfirmData = { paidAt: string; reference: string; notes: string; justification?: File | null; amount?: number };
+type PaymentMethodValue = 'om' | 'especes' | 'mobile_money' | 'virement' | 'cb' | 'autre';
+type PaymentConfirmData = {
+  paidAt: string; reference: string; notes: string; justification?: File | null; amount?: number;
+  paymentMethod: PaymentMethodValue; paymentMethodOther?: string;
+  settledByType: 'member' | 'non_member'; settledByUserId?: string; settledByName: string;
+};
 
-type StoredPaymentDraft = Pick<PaymentConfirmData, 'paidAt' | 'reference' | 'notes' | 'amount'>;
+type StoredPaymentDraft = Pick<PaymentConfirmData, 'paidAt' | 'reference' | 'notes' | 'amount' | 'paymentMethod' | 'paymentMethodOther' | 'settledByType' | 'settledByUserId' | 'settledByName'>;
 const PAYMENT_DRAFT_KEY_PREFIX = 'salam:admin:payment-draft:v1';
 const paymentDraftKey = (type: 'cotisation' | 'cotisation_annuelle', userId: string, year: number, trancheIndex?: number) =>
   [PAYMENT_DRAFT_KEY_PREFIX, type, userId, year, trancheIndex ?? 'adhesion'].join(':');
@@ -149,18 +155,42 @@ function clearPaymentDraft(key: string) {
   window.sessionStorage.removeItem(key);
 }
 
-type PaymentConfirmErrorField = 'date' | 'amount' | 'file' | null;
+type PaymentConfirmErrorField = 'date' | 'amount' | 'file' | 'paymentMethod' | 'paymentMethodOther' | 'settledBy' | null;
 
-function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memberNumber, initialDate, initialReference = '', initialNotes = '', initialAmount = '', requireAmount = false, amountLabel = 'Montant pay\u00e9', loading, onClose, onConfirm }: {
+const PAYMENT_METHOD_OPTIONS: { value: PaymentMethodValue; label: string }[] = [
+  { value: 'om', label: 'OM' },
+  { value: 'especes', label: 'Esp\u00e8ce' },
+  { value: 'mobile_money', label: 'Mobile Money' },
+  { value: 'virement', label: 'Virement' },
+  { value: 'cb', label: 'CB' },
+  { value: 'autre', label: 'Autre' },
+];
+
+/* Coche de validation "focus-only" \u2014 m\u00eame pattern que les dates d'\u00e9mission/\u00e9ch\u00e9ance
+   de l'\u00e9diteur de facture (app/admin/facturation/page.tsx) : le bouton n'appara\u00eet
+   que quand le champ a le focus, et se referme apr\u00e8s validation ou clic ailleurs. */
+const focusCocheBtnCls = (valid: boolean, hasError: boolean) =>
+  (valid ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 '
+    : hasError ? 'border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 '
+    : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ')
+  + 'relative z-30 inline-flex h-11 min-w-[44px] items-center justify-center rounded-xl transition-all duration-300';
+
+function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memberNumber, memberUserId, initialDate, initialReference = '', initialNotes = '', initialAmount = '', requireAmount = false, amountLabel = 'Montant pay\u00e9', initialPaymentMethod = '', initialPaymentMethodOther = '', initialSettledByType, initialSettledByUserId, initialSettledByName, loading, onClose, onConfirm }: {
   title?: string;
   memberName: string;
   memberNumber?: string | null;
+  memberUserId: string;
   initialDate: string;
   initialReference?: string;
   initialNotes?: string;
   initialAmount?: string | number;
   requireAmount?: boolean;
   amountLabel?: string;
+  initialPaymentMethod?: string;
+  initialPaymentMethodOther?: string;
+  initialSettledByType?: 'member' | 'non_member';
+  initialSettledByUserId?: string | null;
+  initialSettledByName?: string;
   loading?: boolean;
   onClose: () => void;
   onConfirm: (data: PaymentConfirmData) => void;
@@ -179,6 +209,33 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
     if (errorField === field) return 'border-red-400 bg-red-50/40 focus:border-red-500 focus:ring-red-500/15 ';
     if (validated) return 'border-emerald-400 bg-emerald-50/40 focus:border-emerald-500 focus:ring-emerald-500/15 ';
     return 'border-neutral-200 bg-white focus:border-emerald-500 focus:ring-emerald-500/15 ';
+  };
+
+  /* ── Moyen de paiement ──────────────────────────────────── */
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue | ''>((initialPaymentMethod as PaymentMethodValue) || '');
+  const [paymentMethodOther, setPaymentMethodOther] = useState(initialPaymentMethodOther || '');
+  const [otherValidated, setOtherValidated] = useState(!!initialPaymentMethodOther);
+  const [focusedField, setFocusedField] = useState<'paymentMethodOther' | 'settledByName' | null>(null);
+
+  /* ── Réglée par ─────────────────────────────────────────── */
+  const settledByInputRef = useRef<HTMLInputElement>(null);
+  const [settledByMode, setSettledByMode] = useState<'member' | 'non_member' | null>(
+    initialSettledByType === 'non_member' ? 'non_member' : initialSettledByType === 'member' && initialSettledByUserId && initialSettledByUserId !== memberUserId ? 'member' : null,
+  );
+  const [settledByUserId, setSettledByUserId] = useState<string | null>(initialSettledByType === 'member' ? (initialSettledByUserId ?? null) : null);
+  const [settledByName, setSettledByName] = useState(initialSettledByName || memberName);
+  const [settledByValidated, setSettledByValidated] = useState(!!initialSettledByName);
+
+  const toggleSettledByMember = () => {
+    if (settledByMode === 'member') { setSettledByMode(null); setSettledByUserId(null); setSettledByName(memberName); setSettledByValidated(false); return; }
+    setSettledByMode('member'); setSettledByUserId(null); setSettledByName(''); setSettledByValidated(false);
+    setError(''); setErrorField(null);
+  };
+  const toggleSettledByNonMember = () => {
+    if (settledByMode === 'non_member') { setSettledByMode(null); setSettledByUserId(null); setSettledByName(memberName); setSettledByValidated(false); return; }
+    setSettledByMode('non_member'); setSettledByUserId(null); setSettledByName(''); setSettledByValidated(false);
+    setError(''); setErrorField(null);
+    setTimeout(() => settledByInputRef.current?.focus(), 60);
   };
   const pickFile = (next?: File | null) => {
     setError('');
@@ -206,17 +263,33 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
     if (!dateValidated) { setError("Validez d'abord la date de paiement avant de confirmer."); setErrorField('date'); return; }
     if (requireAmount && !parsedAmount) { setError('Le montant pay\u00e9 est obligatoire.'); setErrorField('amount'); return; }
     if (requireAmount && !amountValidated) { setError("Validez d'abord le montant pay\u00e9 avant de confirmer."); setErrorField('amount'); return; }
+    if (!paymentMethod) { setError('Le moyen de paiement est obligatoire.'); setErrorField('paymentMethod'); return; }
+    if (paymentMethod === 'autre') {
+      if (!paymentMethodOther.trim()) { setError('Pr\u00e9cisez le nom du moyen de paiement.'); setErrorField('paymentMethodOther'); return; }
+      if (!otherValidated) { setError("Validez d'abord le moyen de paiement avant de confirmer."); setErrorField('paymentMethodOther'); return; }
+    }
+    if (!settledByName.trim()) { setError('Veuillez indiquer qui a r\u00e9gl\u00e9 ce paiement.'); setErrorField('settledBy'); return; }
+    if (settledByMode === 'member' && !settledByUserId) { setError('S\u00e9lectionnez un membre dans la liste.'); setErrorField('settledBy'); return; }
+    if (settledByMode !== 'member' && !settledByValidated) { setError("Validez d'abord le nom de la personne qui a r\u00e9gl\u00e9 avant de confirmer."); setErrorField('settledBy'); return; }
     setErrorField(null);
-    onConfirm({ paidAt, reference, notes, justification: file, amount: requireAmount ? parsedAmount : undefined });
+    const isDefaultSelf = settledByMode === null && settledByName.trim() === memberName.trim();
+    onConfirm({
+      paidAt, reference, notes, justification: file, amount: requireAmount ? parsedAmount : undefined,
+      paymentMethod,
+      paymentMethodOther: paymentMethod === 'autre' ? paymentMethodOther.trim() : undefined,
+      settledByType: settledByMode === 'member' || isDefaultSelf ? 'member' : 'non_member',
+      settledByUserId: settledByMode === 'member' ? (settledByUserId ?? undefined) : isDefaultSelf ? memberUserId : undefined,
+      settledByName: settledByName.trim(),
+    });
   };
   return (
     <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl bg-white text-left shadow-2xl ring-1 ring-neutral-200" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+      <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white text-left shadow-2xl ring-1 ring-neutral-200" onClick={e => e.stopPropagation()}>
+        <div className="flex shrink-0 items-center justify-between border-b border-neutral-100 px-6 py-4">
           <div className="min-w-0"><h3 className="font-black text-neutral-900">{title}</h3><p className="mt-0.5 truncate text-xs text-neutral-500">{memberName}{memberNumber ? ' - ' + memberNumber : ''}</p></div>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100"><X size={16} /></button>
         </div>
-        <div className="space-y-4 px-6 py-5">
+        <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date de paiement re&ccedil;ue <span className="text-red-500">*</span></label>
             <div className="flex gap-2">
@@ -239,13 +312,101 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
               </div>
             </div>
           )}
+
+          {/* ── Moyen de paiement (obligatoire) ─────────────── */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Moyen de paiement <span className="text-red-500">*</span></label>
+            <select
+              value={paymentMethod}
+              onChange={e => { const next = e.target.value as PaymentMethodValue | ''; setPaymentMethod(next); setError(''); setErrorField(null); if (next !== 'autre') { setPaymentMethodOther(''); setOtherValidated(false); } }}
+              className={fieldCls('paymentMethod', !!paymentMethod) + 'h-11 w-full cursor-pointer rounded-xl border px-4 text-sm outline-none transition-all duration-300 focus:ring-2'}
+            >
+              <option value="" disabled>S&eacute;lectionner...</option>
+              {PAYMENT_METHOD_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </div>
+          {paymentMethod === 'autre' && (
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Pr&eacute;cisez le moyen de paiement <span className="text-red-500">*</span></label>
+              <div className="flex gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <input
+                    value={paymentMethodOther}
+                    onFocus={() => setFocusedField('paymentMethodOther')}
+                    onBlur={() => window.setTimeout(() => setFocusedField(c => c === 'paymentMethodOther' ? null : c), 120)}
+                    onChange={e => { setPaymentMethodOther(e.target.value); setOtherValidated(false); setError(''); setErrorField(null); }}
+                    placeholder="Ex: Wave, PayPal..."
+                    className={fieldCls('paymentMethodOther', otherValidated) + 'h-11 w-full rounded-xl border px-4 text-sm outline-none transition-all duration-300 focus:ring-2'}
+                  />
+                </div>
+                {focusedField === 'paymentMethodOther' && (
+                  <button type="button" onMouseDown={e => e.preventDefault()}
+                    onClick={() => {
+                      if (!paymentMethodOther.trim()) { setError('Précisez le nom du moyen de paiement.'); setErrorField('paymentMethodOther'); return; }
+                      setOtherValidated(true); setError(''); setErrorField(null); setFocusedField(null);
+                    }}
+                    className={focusCocheBtnCls(otherValidated, errorField === 'paymentMethodOther')}>
+                    <CheckCircle2 size={15} />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Réglée par (obligatoire) ─────────────────────── */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">R&eacute;gl&eacute;e par : <span className="text-red-500">*</span></label>
+            {settledByMode === 'member' ? (
+              <div className={errorField === 'settledBy' ? 'rounded-xl ring-2 ring-red-400/70' : ''}>
+                <MemberSettledByPicker
+                  value={settledByUserId}
+                  onSelect={(userId, fullName) => { setSettledByUserId(userId); setSettledByName(fullName); setSettledByValidated(true); setError(''); setErrorField(null); }}
+                />
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <input
+                    ref={settledByInputRef}
+                    value={settledByName}
+                    onFocus={() => setFocusedField('settledByName')}
+                    onBlur={() => window.setTimeout(() => setFocusedField(c => c === 'settledByName' ? null : c), 120)}
+                    onChange={e => { setSettledByName(e.target.value); setSettledByValidated(false); setError(''); setErrorField(null); }}
+                    placeholder="Nom et prénom"
+                    className={fieldCls('settledBy', settledByValidated) + 'h-11 w-full rounded-xl border px-4 text-sm outline-none transition-all duration-300 focus:ring-2'}
+                  />
+                </div>
+                {focusedField === 'settledByName' && (
+                  <button type="button" onMouseDown={e => e.preventDefault()}
+                    onClick={() => {
+                      if (!settledByName.trim()) { setError('Le nom de la personne qui a réglé est obligatoire.'); setErrorField('settledBy'); return; }
+                      setSettledByValidated(true); setError(''); setErrorField(null); setFocusedField(null);
+                    }}
+                    className={focusCocheBtnCls(settledByValidated, errorField === 'settledBy')}>
+                    <CheckCircle2 size={15} />
+                  </button>
+                )}
+              </div>
+            )}
+            <div className="flex flex-wrap gap-4 pt-0.5">
+              <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-neutral-600">
+                <input type="checkbox" checked={settledByMode === 'member'} onChange={toggleSettledByMember} className="h-3.5 w-3.5 accent-emerald-600" />
+                Membre
+              </label>
+              <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-neutral-600">
+                <input type="checkbox" checked={settledByMode === 'non_member'} onChange={toggleSettledByNonMember} className="h-3.5 w-3.5 accent-emerald-600" />
+                Non membre
+              </label>
+            </div>
+          </div>
+
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">R&eacute;f&eacute;rence <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><input value={reference} onChange={e => setReference(e.target.value)} placeholder="Ex: VIR-BNP-0215, PAYPAL-XXXXX..." className="h-11 w-full rounded-xl border border-neutral-200 px-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Commentaire <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={"Pay\u00e9 par OM, virement, esp\u00e8ce..."} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
           <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Justificatif <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><label className={(errorField === 'file' ? 'border-red-300 bg-red-50/40 ' : 'border-neutral-200 bg-neutral-50 hover:border-emerald-300 hover:bg-emerald-50/30 ') + 'flex cursor-pointer items-center gap-3 rounded-xl border border-dashed px-4 py-3 transition'}><Upload size={15} className="shrink-0 text-neutral-400" /><span className="min-w-0 flex-1 truncate text-sm text-neutral-500">{file?.name || 'S\u00e9lectionner un fichier...'}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => pickFile(e.target.files?.[0])} className="sr-only" />{file && <button type="button" onClick={e => { e.preventDefault(); pickFile(null); }} className="text-neutral-300 hover:text-neutral-600"><X size={12} /></button>}</label><p className="text-[10px] text-neutral-400">PDF, JPG ou PNG &middot; max 5 Mo</p></div>
           {error && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">{error}</p>}
           <div className="flex gap-2 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3"><AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-500" /><p className="text-[11px] leading-relaxed text-amber-700">Un re&ccedil;u de paiement sera automatiquement envoy&eacute; &agrave; l&apos;adh&eacute;rent par email.</p></div>
         </div>
-        <div className="flex gap-3 border-t border-neutral-100 px-6 py-4"><button type="button" onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 bg-white py-2.5 text-sm font-semibold text-neutral-600 hover:border-neutral-300">Annuler</button><button type="button" onClick={submit} disabled={loading} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60">{loading && <Loader2 size={14} className="animate-spin" />} Confirmer le paiement</button></div>
+        <div className="flex shrink-0 gap-3 border-t border-neutral-100 px-6 py-4"><button type="button" onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 bg-white py-2.5 text-sm font-semibold text-neutral-600 hover:border-neutral-300">Annuler</button><button type="button" onClick={submit} disabled={loading} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60">{loading && <Loader2 size={14} className="animate-spin" />} Confirmer le paiement</button></div>
       </div>
     </div>
   );
@@ -369,9 +530,17 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
   const confirmTranchePayment = (data: PaymentConfirmData) => {
     const amount = Math.max(0, Number(data.amount) || 0);
     if (!validatePaymentAmount(amount)) return;
-    savePaymentDraft(paymentStorageKey, { paidAt: data.paidAt, reference: data.reference, notes: data.notes, amount });
+    savePaymentDraft(paymentStorageKey, {
+      paidAt: data.paidAt, reference: data.reference, notes: data.notes, amount,
+      paymentMethod: data.paymentMethod, paymentMethodOther: data.paymentMethodOther,
+      settledByType: data.settledByType, settledByUserId: data.settledByUserId, settledByName: data.settledByName,
+    });
     updateAmount.mutate(
-      { userId, year, trancheIndex: index, amount, status: 'paid', paidAt: data.paidAt, reference: data.reference, notes: data.notes, justification: data.justification },
+      {
+        userId, year, trancheIndex: index, amount, status: 'paid', paidAt: data.paidAt, reference: data.reference, notes: data.notes, justification: data.justification,
+        paymentMethod: data.paymentMethod, paymentMethodOther: data.paymentMethodOther,
+        settledByType: data.settledByType, settledByUserId: data.settledByUserId, settledByName: data.settledByName,
+      },
       {
         onSuccess: res => {
           setPaymentModalOpen(false);
@@ -493,10 +662,16 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
           title={`Confirmer le paiement - Tranche ${index + 1}`}
           memberName={memberName}
           memberNumber={memberNumber}
+          memberUserId={userId}
           initialDate={restoredPaymentDraft?.paidAt || draftDate}
           initialReference={restoredPaymentDraft?.reference ?? ''}
           initialNotes={restoredPaymentDraft?.notes ?? ''}
           initialAmount={restoredPaymentDraft?.amount ?? (draftAmount || t.amount || '')}
+          initialPaymentMethod={restoredPaymentDraft?.paymentMethod ?? t.paymentMethod ?? ''}
+          initialPaymentMethodOther={restoredPaymentDraft?.paymentMethodOther ?? t.paymentMethodOther ?? ''}
+          initialSettledByType={restoredPaymentDraft?.settledByType ?? t.settledByType ?? undefined}
+          initialSettledByUserId={restoredPaymentDraft?.settledByUserId ?? t.settledByUserId ?? undefined}
+          initialSettledByName={restoredPaymentDraft?.settledByName ?? t.settledByName ?? undefined}
           requireAmount
           amountLabel={"Montant pay\u00e9"}
           loading={updateTranche.isPending}
@@ -557,7 +732,11 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
       onFeedback('warning', 'La date de paiement est requise.');
       return;
     }
-    if (nextStatus === 'paid' && extra) savePaymentDraft(paymentStorageKey, { paidAt: nextDate, reference: extra.reference, notes: extra.notes });
+    if (nextStatus === 'paid' && extra) savePaymentDraft(paymentStorageKey, {
+      paidAt: nextDate, reference: extra.reference, notes: extra.notes,
+      paymentMethod: extra.paymentMethod, paymentMethodOther: extra.paymentMethodOther,
+      settledByType: extra.settledByType, settledByUserId: extra.settledByUserId, settledByName: extra.settledByName,
+    });
     updateCotisation.mutate(
       {
         userId,
@@ -567,6 +746,11 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
         reference: extra?.reference,
         notes: extra?.notes,
         justification: extra?.justification,
+        paymentMethod: extra?.paymentMethod,
+        paymentMethodOther: extra?.paymentMethodOther,
+        settledByType: extra?.settledByType,
+        settledByUserId: extra?.settledByUserId,
+        settledByName: extra?.settledByName,
       },
       {
         onSuccess: (res: any) => {
@@ -599,9 +783,15 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
         <PaymentConfirmModal
           memberName={memberName}
           memberNumber={memberNumber}
+          memberUserId={userId}
           initialDate={restoredPaymentDraft?.paidAt || draftDate}
           initialReference={restoredPaymentDraft?.reference ?? ''}
           initialNotes={restoredPaymentDraft?.notes ?? ''}
+          initialPaymentMethod={restoredPaymentDraft?.paymentMethod ?? ''}
+          initialPaymentMethodOther={restoredPaymentDraft?.paymentMethodOther ?? ''}
+          initialSettledByType={restoredPaymentDraft?.settledByType ?? undefined}
+          initialSettledByUserId={restoredPaymentDraft?.settledByUserId ?? undefined}
+          initialSettledByName={restoredPaymentDraft?.settledByName ?? undefined}
           loading={updateCotisation.isPending}
           onClose={() => { clearPaymentDraft(paymentStorageKey); setRestoredPaymentDraft(null); setPaymentModalOpen(false); }}
           onConfirm={confirmPayment}

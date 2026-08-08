@@ -5,12 +5,19 @@ import { useAuthStore } from '@/store/auth.store';
 import type { AuditLogDoc } from './audit-logs';
 
 export type CotisationAnnuelleStatus = 'unpaid' | 'partiel' | 'paid' | 'exempt';
+export type PaymentMethod = 'om' | 'especes' | 'mobile_money' | 'virement' | 'cb' | 'autre';
+export type SettledByType = 'member' | 'non_member';
 
 export interface Tranche {
   amount: number;
   status: 'unpaid' | 'paid' | 'exempt';
   paidAt?: string | null;
   reference?: string | null;
+  paymentMethod?: PaymentMethod | null;
+  paymentMethodOther?: string | null;
+  settledByType?: SettledByType | null;
+  settledByUserId?: string | null;
+  settledByName?: string | null;
 }
 
 export interface CotisationAnnuelleDoc {
@@ -224,6 +231,11 @@ export function useUpdateTranche() {
       reference?: string;
       notes?: string;
       justification?: File | null;
+      paymentMethod?: PaymentMethod;
+      paymentMethodOther?: string;
+      settledByType?: SettledByType;
+      settledByUserId?: string | null;
+      settledByName?: string;
     }) => {
       const body = vars.justification ? new FormData() : null;
       if (body) {
@@ -234,12 +246,21 @@ export function useUpdateTranche() {
         if (vars.reference) body.append('reference', vars.reference);
         if (vars.notes) body.append('notes', vars.notes);
         if (vars.justification) body.append('justification', vars.justification);
+        if (vars.paymentMethod) body.append('paymentMethod', vars.paymentMethod);
+        if (vars.paymentMethodOther) body.append('paymentMethodOther', vars.paymentMethodOther);
+        if (vars.settledByType) body.append('settledByType', vars.settledByType);
+        if (vars.settledByUserId) body.append('settledByUserId', vars.settledByUserId);
+        if (vars.settledByName) body.append('settledByName', vars.settledByName);
       }
       return apiClient<CotisationAnnuelleDoc & { invoiceWarning?: string | null }>(
         `/api/v1/admin/cotisations-annuelles/${vars.userId}/tranche/${vars.trancheIndex}`,
         {
           method: 'PUT',
-          body: body ?? JSON.stringify({ year: vars.year, amount: vars.amount, paidAt: vars.paidAt, status: vars.status, reference: vars.reference, notes: vars.notes }),
+          body: body ?? JSON.stringify({
+            year: vars.year, amount: vars.amount, paidAt: vars.paidAt, status: vars.status, reference: vars.reference, notes: vars.notes,
+            paymentMethod: vars.paymentMethod, paymentMethodOther: vars.paymentMethodOther,
+            settledByType: vars.settledByType, settledByUserId: vars.settledByUserId, settledByName: vars.settledByName,
+          }),
           token: token ?? '',
         },
       );
