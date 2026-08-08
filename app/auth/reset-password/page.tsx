@@ -151,7 +151,7 @@ function ResetPasswordContent() {
               {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
           </div>
-          {errors.password && <p className="text-[11px] text-red-500">{errors.password}</p>}
+          {errors.password && <p role="alert" className="text-[11px] text-red-500">{errors.password}</p>}
           {password && (
             <div className="mt-2 space-y-1">
               <div className="flex gap-1">
@@ -185,7 +185,7 @@ function ResetPasswordContent() {
               {showConf ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
           </div>
-          {errors.confirm && <p className="text-[11px] text-red-500">{errors.confirm}</p>}
+          {errors.confirm && <p role="alert" className="text-[11px] text-red-500">{errors.confirm}</p>}
         </div>
 
         {errors.global && (

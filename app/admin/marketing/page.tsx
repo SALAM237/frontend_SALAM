@@ -159,7 +159,7 @@ function CampaignEditorModal({ onClose, campaign }: { onClose: () => void; campa
             <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Objet du mail</label>
             <input value={title} onChange={e => setTitle(e.target.value)}
               className={`h-11 w-full rounded-xl border px-3.5 text-sm outline-none focus:ring-2 focus:ring-rose-500/20 ${errors.title ? 'border-red-300' : 'border-neutral-200 focus:border-rose-400'}`} />
-            {errors.title && <p className="mt-1 text-xs font-semibold text-red-600">{errors.title}</p>}
+            {errors.title && <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.title}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -167,7 +167,7 @@ function CampaignEditorModal({ onClose, campaign }: { onClose: () => void; campa
               <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.1em] text-neutral-500">Cadeau</label>
               <input value={giftName} onChange={e => setGiftName(e.target.value)} placeholder="ex. 15 000 Cauris"
                 className={`h-11 w-full rounded-xl border px-3.5 text-sm outline-none focus:ring-2 focus:ring-rose-500/20 ${errors.giftName ? 'border-red-300' : 'border-neutral-200 focus:border-rose-400'}`} />
-              {errors.giftName && <p className="mt-1 text-xs font-semibold text-red-600">{errors.giftName}</p>}
+              {errors.giftName && <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.giftName}</p>}
             </div>
             <div>
               <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-neutral-500"><Package size={12} /> Nombre de colis</label>
@@ -189,7 +189,7 @@ function CampaignEditorModal({ onClose, campaign }: { onClose: () => void; campa
             <label className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-neutral-500"><Calendar size={12} /> Date limite de la campagne</label>
             <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)}
               className={`h-11 w-full rounded-xl border px-3.5 text-sm outline-none focus:ring-2 focus:ring-rose-500/20 ${errors.deadline ? 'border-red-300' : 'border-neutral-200 focus:border-rose-400'}`} />
-            {errors.deadline && <p className="mt-1 text-xs font-semibold text-red-600">{errors.deadline}</p>}
+            {errors.deadline && <p role="alert" className="mt-1 text-xs font-semibold text-red-600">{errors.deadline}</p>}
           </div>
 
           <div>
@@ -230,7 +230,7 @@ function CampaignEditorModal({ onClose, campaign }: { onClose: () => void; campa
             <div className="mb-2">
               <MemberFilterPanel filters={memberFilters} onChange={setMemberFilters} />
             </div>
-            {errors.recipients && <p className="mb-2 text-xs font-semibold text-red-600">{errors.recipients}</p>}
+            {errors.recipients && <p role="alert" className="mb-2 text-xs font-semibold text-red-600">{errors.recipients}</p>}
             {excludedCount > 0 && (
               <p className="mb-2 text-[11px] font-semibold text-emerald-700">{excludedCount} membre{excludedCount > 1 ? 's' : ''} déjà récompensé{excludedCount > 1 ? 's' : ''} — exclu{excludedCount > 1 ? 's' : ''} automatiquement de cette liste.</p>
             )}

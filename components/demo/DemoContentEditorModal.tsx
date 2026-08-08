@@ -108,7 +108,7 @@ export function DemoContentEditorModal({
             <DesignEditorField id="title" label="Titre" styles={styles} setStyles={setStyles} active={activeDesign} setActive={setActiveDesign}>
               {style => <RichTextEditor value={form.title} onChange={set('title')} className={inputClass(errors.title)} style={style} placeholder="Titre" multiline={false} />}
             </DesignEditorField>
-            {errors.title && <p className="text-[11px] text-red-500">{errors.title}</p>}
+            {errors.title && <p role="alert" className="text-[11px] text-red-500">{errors.title}</p>}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

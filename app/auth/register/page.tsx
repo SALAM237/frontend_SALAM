@@ -229,7 +229,7 @@ export default function RegisterPage() {
                 </button>
               ))}
             </div>
-            {errors.gender && <p className="text-[11px] text-red-500">{errors.gender}</p>}
+            {errors.gender && <p role="alert" className="text-[11px] text-red-500">{errors.gender}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -379,7 +379,7 @@ export default function RegisterPage() {
                 {' '}de SALAM.
               </span>
             </label>
-            {errors.cgu && <p className="pl-6 text-[11px] text-red-500">{errors.cgu}</p>}
+            {errors.cgu && <p role="alert" className="pl-6 text-[11px] text-red-500">{errors.cgu}</p>}
           </div>
 
           {errors.global && (

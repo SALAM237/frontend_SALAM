@@ -52,7 +52,7 @@ function AlbumForm({
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Titre <span className="text-red-500">*</span></label>
             <input value={albumTitle} onChange={e => { setAlbumTitle(e.target.value); setErrors({}); }} className={inp(errors.title)} />
-            {errors.title && <p className="text-[11px] text-red-500">{errors.title}</p>}
+            {errors.title && <p role="alert" className="text-[11px] text-red-500">{errors.title}</p>}
           </div>
           <div className="space-y-1.5">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Visibilité</label>

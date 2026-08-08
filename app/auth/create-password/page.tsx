@@ -335,7 +335,7 @@ function CreatePasswordContent() {
           <div id="field-phone" className="space-y-1.5">
             <label className="block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Telephone <span className="text-red-500">*</span></label>
             <PhoneField value={form.phone} onChange={setField('phone')} size="lg" required error={!!errors.phone} defaultCountry="CM" />
-            {errors.phone && <p className="text-[11px] text-red-500">{errors.phone}</p>}
+            {errors.phone && <p role="alert" className="text-[11px] text-red-500">{errors.phone}</p>}
           </div>
           <div className="space-y-1.5">
             <label className="block text-[10px] font-black uppercase tracking-[0.12em] text-neutral-500">Contact de recuperation</label>
@@ -437,7 +437,7 @@ function TextInput({ id, icon: Icon, label, value, onChange, error, required, ty
         {Icon && <Icon size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />}
         <input type={type} value={value} min={min} max={max} inputMode={inputMode} maxLength={maxLength} onChange={event => onChange(event.target.value)} placeholder={placeholder} className={`h-11 w-full rounded-xl border bg-white ${Icon ? 'pl-9' : 'pl-3'} pr-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-300 transition focus:ring-2 ${error ? 'border-red-300 focus:border-red-400 focus:ring-red-500/15' : 'border-neutral-200 focus:border-emerald-500 focus:ring-emerald-500/15'}`} />
       </div>
-      {error && <p className="text-[11px] text-red-500">{error}</p>}
+      {error && <p role="alert" className="text-[11px] text-red-500">{error}</p>}
     </div>
   );
 }
@@ -461,7 +461,7 @@ function PasswordInput({ id, label, value, onChange, show, onToggle, error, requ
           {show ? <EyeOff size={15} /> : <Eye size={15} />}
         </button>
       </div>
-      {error && <p className="text-[11px] text-red-500">{error}</p>}
+      {error && <p role="alert" className="text-[11px] text-red-500">{error}</p>}
     </div>
   );
 }
@@ -485,7 +485,7 @@ function SelectInput({ id, label, value, onChange, options, error, required, cla
         </select>
         <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400" />
       </div>
-      {error && <p className="text-[11px] text-red-500">{error}</p>}
+      {error && <p role="alert" className="text-[11px] text-red-500">{error}</p>}
     </div>
   );
 }
@@ -538,7 +538,7 @@ function TagInput({ id, icon: Icon, label, help, value, onChange, placeholder, e
           </div>
         </div>
       </div>
-      {error && <p className="text-[11px] text-red-500">{error}</p>}
+      {error && <p role="alert" className="text-[11px] text-red-500">{error}</p>}
     </div>
   );
 }
