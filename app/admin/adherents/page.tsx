@@ -35,6 +35,7 @@ import { MemberCard, type MemberCardData } from '@/components/portal/MemberCard'
 import { GenderIcon } from '@/components/ui/GenderIcon';
 import { downloadElementAsPng, memberCardMailto } from '@/lib/member-card-export';
 import { MemberSettledByPicker } from '@/components/admin/MemberSettledByPicker';
+import { savePaymentDraftFile, readPaymentDraftFile, clearPaymentDraftFile } from '@/lib/payment-draft-file';
 
 /* ── Types ─────────────────────────────────────────────── */
 type ActiveTab  = 'relance' | 'frais' | 'cauris' | 'cartes' | 'cotisation-annuelle' | 'appareils' | null;
@@ -175,7 +176,7 @@ const focusCocheBtnCls = (valid: boolean, hasError: boolean) =>
     : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ')
   + 'relative z-30 inline-flex h-11 min-w-[44px] items-center justify-center rounded-xl transition-all duration-300';
 
-function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memberNumber, memberUserId, initialDate, initialReference = '', initialNotes = '', initialAmount = '', requireAmount = false, amountLabel = 'Montant pay\u00e9', initialPaymentMethod = '', initialPaymentMethodOther = '', initialSettledByType, initialSettledByUserId, initialSettledByName, loading, onClose, onConfirm }: {
+function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memberNumber, memberUserId, initialDate, initialReference = '', initialNotes = '', initialAmount = '', requireAmount = false, amountLabel = 'Montant pay\u00e9', initialPaymentMethod = '', initialPaymentMethodOther = '', initialSettledByType, initialSettledByUserId, initialSettledByName, initialFile = null, loading, onClose, onConfirm }: {
   title?: string;
   memberName: string;
   memberNumber?: string | null;
@@ -191,6 +192,7 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
   initialSettledByType?: 'member' | 'non_member';
   initialSettledByUserId?: string | null;
   initialSettledByName?: string;
+  initialFile?: File | null;
   loading?: boolean;
   onClose: () => void;
   onConfirm: (data: PaymentConfirmData) => void;
@@ -202,7 +204,7 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
   const [amountValidated, setAmountValidated] = useState(!requireAmount);
   const [reference, setReference] = useState(initialReference);
   const [notes, setNotes] = useState(initialNotes);
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(initialFile);
   const [error, setError] = useState('');
   const [errorField, setErrorField] = useState<PaymentConfirmErrorField>(null);
   const fieldCls = (field: PaymentConfirmErrorField, validated = false) => {
@@ -291,43 +293,46 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
         </div>
         <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
           <div className="space-y-1.5">
-            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Date de paiement re&ccedil;ue <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-900">Date de paiement reçue <span className="text-red-500">*</span></label>
             <div className="flex gap-2">
               <div className="relative min-w-0 flex-1">
                 <CalendarDays size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                 <input type="date" value={paidAt} max={today} onChange={e => { setPaidAt(e.target.value); setDateValidated(false); setError(''); setErrorField(null); }} className={fieldCls('date', dateValidated) + 'h-11 w-full rounded-xl border pl-9 pr-3 text-sm outline-none transition-all duration-300 focus:ring-2'} />
               </div>
-              <button type="button" onClick={validateDate} className={(dateValidated ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 ' : errorField === 'date' ? 'border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'inline-flex h-11 min-w-[76px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all duration-300'}>{dateValidated ? <><CheckCircle2 size={14} className="motion-safe:animate-pulse" />Valid&eacute;e</> : 'Valider'}</button>
+              <button type="button" onClick={validateDate} className={(dateValidated ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 ' : errorField === 'date' ? 'border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'inline-flex h-11 min-w-[76px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all duration-300'}>{dateValidated ? <><CheckCircle2 size={14} className="motion-safe:animate-pulse" />Validée</> : 'Valider'}</button>
             </div>
+            {errorField === 'date' && <p role="alert" className="text-xs font-semibold text-red-600">{error}</p>}
           </div>
           {requireAmount && (
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">{amountLabel} <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-900">{amountLabel} <span className="text-red-500">*</span></label>
               <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">
                   <Banknote size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                   <input type="number" min={0} value={amount} onChange={e => { setAmount(e.target.value); setAmountValidated(false); setError(''); setErrorField(null); }} placeholder="Ex: 10000" className={fieldCls('amount', amountValidated) + 'h-11 w-full rounded-xl border pl-9 pr-3 text-sm outline-none transition-all duration-300 focus:ring-2'} />
                 </div>
-                <button type="button" onClick={validateAmount} className={(amountValidated ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 ' : errorField === 'amount' ? 'border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'inline-flex h-11 min-w-[76px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all duration-300'}>{amountValidated ? <><CheckCircle2 size={14} className="motion-safe:animate-pulse" />Valid&eacute;</> : 'Valider'}</button>
+                <button type="button" onClick={validateAmount} className={(amountValidated ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 ' : errorField === 'amount' ? 'border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 ' : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ') + 'inline-flex h-11 min-w-[76px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all duration-300'}>{amountValidated ? <><CheckCircle2 size={14} className="motion-safe:animate-pulse" />Validé</> : 'Valider'}</button>
               </div>
+              {errorField === 'amount' && <p role="alert" className="text-xs font-semibold text-red-600">{error}</p>}
             </div>
           )}
 
           {/* ── Moyen de paiement (obligatoire) ─────────────── */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Moyen de paiement <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-900">Moyen de paiement <span className="text-red-500">*</span></label>
             <select
               value={paymentMethod}
               onChange={e => { const next = e.target.value as PaymentMethodValue | ''; setPaymentMethod(next); setError(''); setErrorField(null); if (next !== 'autre') { setPaymentMethodOther(''); setOtherValidated(false); } }}
               className={fieldCls('paymentMethod', !!paymentMethod) + 'h-11 w-full cursor-pointer rounded-xl border px-4 text-sm outline-none transition-all duration-300 focus:ring-2'}
             >
-              <option value="" disabled>S&eacute;lectionner...</option>
+              <option value="" disabled>Sélectionner...</option>
               {PAYMENT_METHOD_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
+            {errorField === 'paymentMethod' && <p role="alert" className="text-xs font-semibold text-red-600">{error}</p>}
           </div>
           {paymentMethod === 'autre' && (
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Pr&eacute;cisez le moyen de paiement <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-900">Précisez le moyen de paiement <span className="text-red-500">*</span></label>
               <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">
                   <input
@@ -350,12 +355,13 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
                   </button>
                 )}
               </div>
+              {errorField === 'paymentMethodOther' && <p role="alert" className="text-xs font-semibold text-red-600">{error}</p>}
             </div>
           )}
 
           {/* ── Réglée par (obligatoire) ─────────────────────── */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">R&eacute;gl&eacute;e par : <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-900">Réglée par : <span className="text-red-500">*</span></label>
             {settledByMode === 'member' ? (
               <div className={errorField === 'settledBy' ? 'rounded-xl ring-2 ring-red-400/70' : ''}>
                 <MemberSettledByPicker
@@ -376,18 +382,17 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
                     className={fieldCls('settledBy', settledByValidated) + 'h-11 w-full rounded-xl border px-4 text-sm outline-none transition-all duration-300 focus:ring-2'}
                   />
                 </div>
-                {focusedField === 'settledByName' && (
-                  <button type="button" onMouseDown={e => e.preventDefault()}
-                    onClick={() => {
-                      if (!settledByName.trim()) { setError('Le nom de la personne qui a réglé est obligatoire.'); setErrorField('settledBy'); return; }
-                      setSettledByValidated(true); setError(''); setErrorField(null); setFocusedField(null);
-                    }}
-                    className={focusCocheBtnCls(settledByValidated, errorField === 'settledBy')}>
-                    <CheckCircle2 size={15} />
-                  </button>
-                )}
+                <button type="button" onMouseDown={e => e.preventDefault()}
+                  onClick={() => {
+                    if (!settledByName.trim()) { setError('Le nom de la personne qui a réglé est obligatoire.'); setErrorField('settledBy'); return; }
+                    setSettledByValidated(true); setError(''); setErrorField(null); setFocusedField(null);
+                  }}
+                  className={focusCocheBtnCls(settledByValidated, errorField === 'settledBy')}>
+                  <CheckCircle2 size={15} />
+                </button>
               </div>
             )}
+            {errorField === 'settledBy' && <p role="alert" className="text-xs font-semibold text-red-600">{error}</p>}
             <div className="flex flex-wrap gap-4 pt-0.5">
               <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-neutral-600">
                 <input type="checkbox" checked={settledByMode === 'member'} onChange={toggleSettledByMember} className="h-3.5 w-3.5 accent-emerald-600" />
@@ -400,11 +405,10 @@ function PaymentConfirmModal({ title = 'Confirmer le paiement', memberName, memb
             </div>
           </div>
 
-          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">R&eacute;f&eacute;rence <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><input value={reference} onChange={e => setReference(e.target.value)} placeholder="Ex: VIR-BNP-0215, PAYPAL-XXXXX..." className="h-11 w-full rounded-xl border border-neutral-200 px-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
-          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Commentaire <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={"Pay\u00e9 par OM, virement, esp\u00e8ce..."} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
-          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-500">Justificatif <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><label className={(errorField === 'file' ? 'border-red-300 bg-red-50/40 ' : 'border-neutral-200 bg-neutral-50 hover:border-emerald-300 hover:bg-emerald-50/30 ') + 'flex cursor-pointer items-center gap-3 rounded-xl border border-dashed px-4 py-3 transition'}><Upload size={15} className="shrink-0 text-neutral-400" /><span className="min-w-0 flex-1 truncate text-sm text-neutral-500">{file?.name || 'S\u00e9lectionner un fichier...'}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => pickFile(e.target.files?.[0])} className="sr-only" />{file && <button type="button" onClick={e => { e.preventDefault(); pickFile(null); }} className="text-neutral-300 hover:text-neutral-600"><X size={12} /></button>}</label><p className="text-[10px] text-neutral-400">PDF, JPG ou PNG &middot; max 5 Mo</p></div>
-          {error && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">{error}</p>}
-          <div className="flex gap-2 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3"><AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-500" /><p className="text-[11px] leading-relaxed text-amber-700">Un re&ccedil;u de paiement sera automatiquement envoy&eacute; &agrave; l&apos;adh&eacute;rent par email.</p></div>
+          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-900">Référence <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><input value={reference} onChange={e => setReference(e.target.value)} placeholder="Ex: VIR-BNP-0215, PAYPAL-XXXXX..." className="h-11 w-full rounded-xl border border-neutral-200 px-4 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
+          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-900">Commentaire <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={"Pay\u00e9 par OM, virement, esp\u00e8ce..."} rows={3} className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none placeholder:text-neutral-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15" /></div>
+          <div className="space-y-1.5"><label className="block text-xs font-black uppercase tracking-[0.12em] text-neutral-900">Justificatif <span className="font-normal normal-case text-neutral-300">(optionnel)</span></label><label className={(errorField === 'file' ? 'border-red-300 bg-red-50/40 ' : 'border-neutral-200 bg-neutral-50 hover:border-emerald-300 hover:bg-emerald-50/30 ') + 'flex cursor-pointer items-center gap-3 rounded-xl border border-dashed px-4 py-3 transition'}><Upload size={15} className="shrink-0 text-neutral-400" /><span className="min-w-0 flex-1 truncate text-sm text-neutral-500">{file?.name || 'S\u00e9lectionner un fichier...'}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => pickFile(e.target.files?.[0])} className="sr-only" />{file && <button type="button" onClick={e => { e.preventDefault(); pickFile(null); }} className="text-neutral-300 hover:text-neutral-600"><X size={12} /></button>}</label><p className="text-[10px] text-neutral-400">PDF, JPG ou PNG · max 5 Mo</p>{errorField === 'file' && <p role="alert" className="text-xs font-semibold text-red-600">{error}</p>}</div>
+          <div className="flex gap-2 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3"><AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-500" /><p className="text-[11px] leading-relaxed text-amber-700">Un reçu de paiement sera automatiquement envoyé à l'adhérent par email.</p></div>
         </div>
         <div className="flex shrink-0 gap-3 border-t border-neutral-100 px-6 py-4"><button type="button" onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 bg-white py-2.5 text-sm font-semibold text-neutral-600 hover:border-neutral-300">Annuler</button><button type="button" onClick={submit} disabled={loading} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60">{loading && <Loader2 size={14} className="animate-spin" />} Confirmer le paiement</button></div>
       </div>
@@ -426,6 +430,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const paymentStorageKey = paymentDraftKey('cotisation_annuelle', userId, year, index);
   const [restoredPaymentDraft, setRestoredPaymentDraft] = useState<StoredPaymentDraft | null>(() => readPaymentDraft(paymentStorageKey));
+  const [restoredFile, setRestoredFile] = useState<File | null>(null);
   const amountInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const updateAmount = useUpdateTranche();
@@ -452,7 +457,13 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
     if (!restoredPaymentDraft || t.status === 'paid') return;
     setDraftDate(restoredPaymentDraft.paidAt || draftDate);
     if (restoredPaymentDraft.amount != null) setDraftAmount(String(restoredPaymentDraft.amount));
-    setPaymentModalOpen(true);
+    let cancelled = false;
+    readPaymentDraftFile(paymentStorageKey).then(f => {
+      if (cancelled) return;
+      setRestoredFile(f);
+      setPaymentModalOpen(true);
+    });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -518,7 +529,9 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
         onSuccess: res => {
           setAmountMode('text');
           clearPaymentDraft(paymentStorageKey);
+          clearPaymentDraftFile(paymentStorageKey);
           setRestoredPaymentDraft(null);
+          setRestoredFile(null);
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
           else onFeedback('success', (res as any).message ?? 'Montant mis \u00e0 jour');
@@ -535,6 +548,8 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
       paymentMethod: data.paymentMethod, paymentMethodOther: data.paymentMethodOther,
       settledByType: data.settledByType, settledByUserId: data.settledByUserId, settledByName: data.settledByName,
     });
+    if (data.justification) savePaymentDraftFile(paymentStorageKey, data.justification);
+    else clearPaymentDraftFile(paymentStorageKey);
     updateAmount.mutate(
       {
         userId, year, trancheIndex: index, amount, status: 'paid', paidAt: data.paidAt, reference: data.reference, notes: data.notes, justification: data.justification,
@@ -549,7 +564,9 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
           setDateMode('text');
           setAmountMode('text');
           clearPaymentDraft(paymentStorageKey);
+          clearPaymentDraftFile(paymentStorageKey);
           setRestoredPaymentDraft(null);
+          setRestoredFile(null);
           const warning = (res as any).invoiceWarning;
           if (warning) onFeedback('warning', warning, isLastTranche ? lastTrancheBlockedContent(resteAvantTranche4) : undefined);
           else onFeedback('success', (res as any).message ?? 'Paiement confirm\u00e9');
@@ -651,7 +668,7 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
         className={`w-full cursor-pointer appearance-none rounded-full border px-1.5 py-0.5 text-center font-black outline-none disabled:cursor-not-allowed disabled:opacity-60 ${sizes.badge} ${TRANCHE_BADGE_CLS[t.status] ?? TRANCHE_BADGE_CLS.unpaid}`}
       >
         <option value="unpaid" disabled={isUnfilledAndIrrelevant}>{isUnfilledAndIrrelevant ? 'N.C' : 'Impay\u00e9'}</option>
-        <option value="paid">Pay&eacute;</option>
+        <option value="paid">Payé</option>
         <option value="exempt">Exempté</option>
       </select>
       {isLastTranche && !isUnfilledAndIrrelevant && (
@@ -672,10 +689,11 @@ function TrancheCell({ userId, year, index, tranche, allTranches, annualFee, mem
           initialSettledByType={restoredPaymentDraft?.settledByType ?? t.settledByType ?? undefined}
           initialSettledByUserId={restoredPaymentDraft?.settledByUserId ?? t.settledByUserId ?? undefined}
           initialSettledByName={restoredPaymentDraft?.settledByName ?? t.settledByName ?? undefined}
+          initialFile={restoredFile}
           requireAmount
           amountLabel={"Montant pay\u00e9"}
           loading={updateTranche.isPending}
-          onClose={() => { clearPaymentDraft(paymentStorageKey); setRestoredPaymentDraft(null); setPaymentModalOpen(false); }}
+          onClose={() => { clearPaymentDraft(paymentStorageKey); clearPaymentDraftFile(paymentStorageKey); setRestoredPaymentDraft(null); setRestoredFile(null); setPaymentModalOpen(false); }}
           onConfirm={confirmTranchePayment}
         />
       )}
@@ -709,6 +727,7 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const paymentStorageKey = paymentDraftKey('cotisation', userId, year);
   const [restoredPaymentDraft, setRestoredPaymentDraft] = useState<StoredPaymentDraft | null>(() => readPaymentDraft(paymentStorageKey));
+  const [restoredFile, setRestoredFile] = useState<File | null>(null);
   const updateCotisation = useUpdateCotisationStatus();
   const sizes = variant === 'mobile'
     ? { select: 'w-full text-[10px]' }
@@ -723,7 +742,13 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
   useEffect(() => {
     if (!restoredPaymentDraft || status === 'paid') return;
     setDraftDate(restoredPaymentDraft.paidAt || draftDate);
-    setPaymentModalOpen(true);
+    let cancelled = false;
+    readPaymentDraftFile(paymentStorageKey).then(f => {
+      if (cancelled) return;
+      setRestoredFile(f);
+      setPaymentModalOpen(true);
+    });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -732,11 +757,15 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
       onFeedback('warning', 'La date de paiement est requise.');
       return;
     }
-    if (nextStatus === 'paid' && extra) savePaymentDraft(paymentStorageKey, {
-      paidAt: nextDate, reference: extra.reference, notes: extra.notes,
-      paymentMethod: extra.paymentMethod, paymentMethodOther: extra.paymentMethodOther,
-      settledByType: extra.settledByType, settledByUserId: extra.settledByUserId, settledByName: extra.settledByName,
-    });
+    if (nextStatus === 'paid' && extra) {
+      savePaymentDraft(paymentStorageKey, {
+        paidAt: nextDate, reference: extra.reference, notes: extra.notes,
+        paymentMethod: extra.paymentMethod, paymentMethodOther: extra.paymentMethodOther,
+        settledByType: extra.settledByType, settledByUserId: extra.settledByUserId, settledByName: extra.settledByName,
+      });
+      if (extra.justification) savePaymentDraftFile(paymentStorageKey, extra.justification);
+      else clearPaymentDraftFile(paymentStorageKey);
+    }
     updateCotisation.mutate(
       {
         userId,
@@ -754,7 +783,7 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
       },
       {
         onSuccess: (res: any) => {
-          if (nextStatus === 'paid') { setDraftDate(nextDate); setPaymentModalOpen(false); clearPaymentDraft(paymentStorageKey); setRestoredPaymentDraft(null); }
+          if (nextStatus === 'paid') { setDraftDate(nextDate); setPaymentModalOpen(false); clearPaymentDraft(paymentStorageKey); clearPaymentDraftFile(paymentStorageKey); setRestoredPaymentDraft(null); setRestoredFile(null); }
           onFeedback('success', res?.message ?? successMessage);
         },
         onError: (err: Error) => {
@@ -775,9 +804,9 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
         disabled={updateCotisation.isPending}
         className={`cursor-pointer appearance-none rounded-lg px-1.5 py-0.5 font-black focus:outline-none disabled:cursor-wait disabled:opacity-60 ${sizes.select} ${cfg.cls}`}
       >
-        <option value="unpaid">Impay&eacute;e</option>
-        <option value="paid">Pay&eacute;e</option>
-        <option value="exempt">Exempt&eacute;</option>
+        <option value="unpaid">Impayée</option>
+        <option value="paid">Payée</option>
+        <option value="exempt">Exempté</option>
       </select>
       {paymentModalOpen && (
         <PaymentConfirmModal
@@ -792,8 +821,9 @@ function AdhesionFeeCell({ userId, year, status, paidAt, memberName, memberNumbe
           initialSettledByType={restoredPaymentDraft?.settledByType ?? undefined}
           initialSettledByUserId={restoredPaymentDraft?.settledByUserId ?? undefined}
           initialSettledByName={restoredPaymentDraft?.settledByName ?? undefined}
+          initialFile={restoredFile}
           loading={updateCotisation.isPending}
-          onClose={() => { clearPaymentDraft(paymentStorageKey); setRestoredPaymentDraft(null); setPaymentModalOpen(false); }}
+          onClose={() => { clearPaymentDraft(paymentStorageKey); clearPaymentDraftFile(paymentStorageKey); setRestoredPaymentDraft(null); setRestoredFile(null); setPaymentModalOpen(false); }}
           onConfirm={confirmPayment}
         />
       )}
@@ -1522,7 +1552,7 @@ export default function AdminAdherentsPage() {
             className={`shrink-0 inline-flex items-center gap-0.5 rounded-full px-1.5 py-1 text-[9px] font-semibold shadow-sm transition-all duration-200 sm:px-2 sm:py-1.5 sm:text-[10px] lg:gap-1.5 lg:px-3 lg:py-2 lg:text-sm ${tabBtnCls('frais')}`}>
             <Banknote size={12} className={`shrink-0 lg:size-[14px] ${tabIconCls('frais')}`} />
             <span className={`overflow-hidden whitespace-nowrap transition-[max-width,margin] duration-200 ${activeTab === 'frais' ? 'max-w-[130px] ml-0.5 lg:max-w-none' : 'max-w-0 lg:max-w-none lg:ml-0.5'}`}>
-              Frais d&apos;adhésion
+              Frais d'adhésion
             </span>
           </button>
 
@@ -1643,7 +1673,7 @@ export default function AdminAdherentsPage() {
       <div className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${activeTab === 'frais' ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
         <div className="space-y-3 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-3">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="shrink-0 text-sm font-black text-blue-800">Frais d&apos;adhésion</span>
+            <span className="shrink-0 text-sm font-black text-blue-800">Frais d'adhésion</span>
             <div className="relative">
               <select value={cotisYear} onChange={e => setCotisYear(Number(e.target.value))}
                 className="h-8 appearance-none rounded-xl border border-blue-200 bg-white pl-3 pr-8 text-sm font-semibold text-neutral-700 focus:border-blue-400 focus:outline-none">
@@ -2315,9 +2345,9 @@ export default function AdminAdherentsPage() {
                       ) : (
                         <>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Statut</th>
-                          <th className={`${hidePaymentColsForCards ? 'hidden' : ''} px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400`}>Frais d&apos;adh.</th>
+                          <th className={`${hidePaymentColsForCards ? 'hidden' : ''} px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400`}>Frais d'adh.</th>
                           <th className={`${hidePaymentColsForCards ? 'hidden' : ''} px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400`}>Cotis. annuelle</th>
-                          <th className={`${hidePaymentColsForCards ? 'hidden' : ''} w-[72px] max-w-[72px] px-1.5 py-3 text-left text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-400`}><span className="block">Reste &agrave;</span><span className="block">payer cotisation annuelle</span></th>
+                          <th className={`${hidePaymentColsForCards ? 'hidden' : ''} w-[72px] max-w-[72px] px-1.5 py-3 text-left text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-400`}><span className="block">Reste à</span><span className="block">payer cotisation annuelle</span></th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Profil</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Dern. connexion</th>
                           <th className="px-2 py-3 text-left text-[9px] font-black uppercase tracking-[0.1em] text-neutral-400">Date inscr.</th>
@@ -2576,7 +2606,7 @@ export default function AdminAdherentsPage() {
                                 <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Tél.</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{m.phone ?? 'Non renseigné'}</p></div>
                                 <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Dern. connexion</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{fmtDate(m.lastLoginAt)}</p></div>
                                 <div><p className="font-black uppercase tracking-[0.1em] text-neutral-300">Date inscr.</p><p className="mt-0.5 truncate font-semibold text-neutral-700">{fmt(m.createdAt)}</p></div>
-                                <div><p className="truncate text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-300">Reste &agrave; payer cotisation annuelle</p><p className={`mt-0.5 truncate font-semibold ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</p></div>
+                                <div><p className="truncate text-[8px] font-black uppercase leading-tight tracking-[0.06em] text-neutral-300">Reste à payer cotisation annuelle</p><p className={`mt-0.5 truncate font-semibold ${m.cotisationAnnuelleReste > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmtNum(m.cotisationAnnuelleReste)} F</p></div>
                                 <div>
                                   <p className="font-black uppercase tracking-[0.1em] text-neutral-300">Actions</p>
                                   <div className="mt-1 flex items-center gap-1">

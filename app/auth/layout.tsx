@@ -62,7 +62,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                 <span className="text-emerald-400">votre avenir.</span>
               </h1>
               <p className="mt-4 text-sm leading-relaxed text-white/45">
-                Rejoignez une communauté d&apos;étudiants et de diplômés camerounais qui construisent ensemble un avenir ambitieux.
+                Rejoignez une communauté d'étudiants et de diplômés camerounais qui construisent ensemble un avenir ambitieux.
               </p>
             </div>
 

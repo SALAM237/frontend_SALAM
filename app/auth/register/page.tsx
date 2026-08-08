@@ -140,7 +140,7 @@ export default function RegisterPage() {
             Vérifiez votre<span className="text-emerald-600"> e-mail !</span>
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-neutral-500">
-            Un lien d&apos;activation a été envoyé à{' '}
+            Un lien d'activation a été envoyé à{' '}
             <span className="font-bold text-neutral-700">{form.email}</span>.
             Cliquez sur le lien pour activer votre compte.
           </p>
@@ -372,8 +372,8 @@ export default function RegisterPage() {
                 </svg>
               </div>
               <span className="text-xs leading-relaxed text-neutral-600">
-                J&apos;accepte les{' '}
-                <Link href="/conditions" className="font-bold text-emerald-700 hover:underline">conditions d&apos;utilisation</Link>
+                J'accepte les{' '}
+                <Link href="/conditions" className="font-bold text-emerald-700 hover:underline">conditions d'utilisation</Link>
                 {' '}et la{' '}
                 <Link href="/confidentialite" className="font-bold text-emerald-700 hover:underline">politique de confidentialité</Link>
                 {' '}de SALAM.

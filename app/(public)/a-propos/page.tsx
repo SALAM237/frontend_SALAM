@@ -103,10 +103,10 @@ export default function AProposPage() {
                 portée par la jeunesse
               </h2>
               <p className="mt-5 text-[clamp(0.9rem,1.2vw,1rem)] leading-[1.85] text-neutral-600">
-                SALAM — <em>Solidaire Associative des Lauréats du Maroc</em> — est une association camerounaise créée le <strong>20 février 2010 à Yaoundé</strong>, avec pour mission d&apos;accompagner les étudiants camerounais au Maroc, de renforcer la solidarité entre les membres de la diaspora et de contribuer au développement du Cameroun.
+                SALAM — <em>Solidaire Associative des Lauréats du Maroc</em> — est une association camerounaise créée le <strong>20 février 2010 à Yaoundé</strong>, avec pour mission d'accompagner les étudiants camerounais au Maroc, de renforcer la solidarité entre les membres de la diaspora et de contribuer au développement du Cameroun.
               </p>
               <p className="mt-4 text-[clamp(0.9rem,1.2vw,1rem)] leading-[1.85] text-neutral-600">
-                Née d&apos;une volonté commune des anciens étudiants et diplômés formés au Maroc, SALAM agit comme un réseau d&apos;entraide, d&apos;accompagnement et d&apos;opportunités pour les jeunes camerounais — de l&apos;orientation avant le départ jusqu&apos;à l&apos;insertion professionnelle au retour.
+                Née d'une volonté commune des anciens étudiants et diplômés formés au Maroc, SALAM agit comme un réseau d'entraide, d'accompagnement et d'opportunités pour les jeunes camerounais — de l'orientation avant le départ jusqu'à l'insertion professionnelle au retour.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link href="/adhesion" className="inline-flex h-11 items-center gap-2 rounded-full bg-emerald-600 px-6 text-sm font-black text-white transition-all hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20">
@@ -129,7 +129,7 @@ export default function AProposPage() {
               </div>
               <div className="absolute bottom-5 left-5 right-5 rounded-xl bg-white/10 p-4 backdrop-blur-sm">
                 <p className="text-sm font-black text-white">Fondée le 20 février 2010</p>
-                <p className="mt-0.5 text-xs text-white/60">Yaoundé, Cameroun · Plus de 15 ans d&apos;engagement</p>
+                <p className="mt-0.5 text-xs text-white/60">Yaoundé, Cameroun · Plus de 15 ans d'engagement</p>
               </div>
             </div>
 
@@ -147,7 +147,7 @@ export default function AProposPage() {
               <span className="text-emerald-700">solidarité</span>,{' '}
               <span className="text-yellow-600">leadership</span>,{' '}
               <span className="text-red-600">transmission</span>{' '}
-              et d&apos;engagement social — pour former une communauté forte capable d&apos;impacter durablement le Cameroun et de soutenir les générations futures.
+              et d'engagement social — pour former une communauté forte capable d'impacter durablement le Cameroun et de soutenir les générations futures.
             </p>
           </div>
         </div>
@@ -198,12 +198,12 @@ export default function AProposPage() {
       <section className="bg-white px-5 py-[clamp(4rem,8vw,7rem)] md:px-8 lg:px-12">
         <div className="mx-auto max-w-5xl">
           <div className="mb-12 text-center">
-            <span className="mb-3 inline-block text-xs font-black uppercase tracking-[0.25em] text-emerald-700">Nos domaines d&apos;action</span>
+            <span className="mb-3 inline-block text-xs font-black uppercase tracking-[0.25em] text-emerald-700">Nos domaines d'action</span>
             <h2 className="text-[clamp(1.8rem,4vw,3rem)] font-black leading-[0.92] tracking-[-0.04em] text-neutral-900">
               Comment SALAM <span className="text-emerald-700">agit concrètement</span>
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-neutral-500">
-              De l&apos;orientation académique à l&apos;insertion professionnelle, SALAM intervient à chaque étape du parcours des étudiants et diplômés camerounais.
+              De l'orientation académique à l'insertion professionnelle, SALAM intervient à chaque étape du parcours des étudiants et diplômés camerounais.
             </p>
           </div>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -226,7 +226,7 @@ export default function AProposPage() {
       <section id="equipe" className="bg-[#fffdf8] px-5 py-[clamp(3rem,6vw,5rem)] md:px-8 lg:px-12">
         <div className="mx-auto max-w-5xl">
           <div className="mb-8 text-center">
-            <span className="mb-3 inline-block text-xs font-black uppercase tracking-[0.25em] text-emerald-700">L&apos;équipe</span>
+            <span className="mb-3 inline-block text-xs font-black uppercase tracking-[0.25em] text-emerald-700">L'équipe</span>
             <h2 className="text-[clamp(1.5rem,3vw,2.2rem)] font-black leading-[0.92] tracking-[-0.04em] text-neutral-900">
               Ceux qui font vivre <span className="text-emerald-700">SALAM</span>
             </h2>
@@ -257,7 +257,7 @@ export default function AProposPage() {
             <span className="text-emerald-400">notre avenir</span>
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[clamp(0.9rem,1.2vw,1rem)] leading-relaxed text-white/50">
-            Rejoignez le réseau SALAM et faites partie d&apos;une communauté engagée pour la réussite des étudiants camerounais et le développement du Cameroun.
+            Rejoignez le réseau SALAM et faites partie d'une communauté engagée pour la réussite des étudiants camerounais et le développement du Cameroun.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link href="/adhesion" className="inline-flex h-12 items-center gap-2 rounded-full bg-emerald-500 px-8 text-sm font-black text-white transition-all hover:bg-emerald-400 hover:shadow-xl hover:shadow-emerald-500/20">

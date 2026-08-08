@@ -93,7 +93,7 @@ export default function MembreCartePage() {
         <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-black text-emerald-800">Carte active et valide</p>
-          <p className="text-xs text-emerald-600">Valable jusqu&apos;au 31 décembre {year}</p>
+          <p className="text-xs text-emerald-600">Valable jusqu'au 31 décembre {year}</p>
         </div>
         <span className="hidden shrink-0 font-mono text-xs font-bold text-emerald-700 sm:block">{memberId}</span>
       </div>
@@ -196,8 +196,8 @@ export default function MembreCartePage() {
         <div>
           <p className="text-sm font-black text-yellow-800">Renouvellement annuel</p>
           <p className="mt-0.5 text-xs text-yellow-700">
-            Votre carte est valable pour l&apos;année {year}. Le renouvellement s&apos;effectue en début d&apos;année
-            via la page d&apos;adhésion ou en contactant l&apos;administration.
+            Votre carte est valable pour l'année {year}. Le renouvellement s'effectue en début d'année
+            via la page d'adhésion ou en contactant l'administration.
           </p>
         </div>
       </div>

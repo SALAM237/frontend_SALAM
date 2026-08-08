@@ -74,7 +74,7 @@ export default function ParametresPage() {
     <div className="mx-auto max-w-3xl space-y-5">
       <div>
         <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Paramètres</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">Configuration de l&apos;espace administrateur SALAM</p>
+        <p className="mt-0.5 text-sm text-neutral-500">Configuration de l'espace administrateur SALAM</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-4">
@@ -217,7 +217,7 @@ function PdfLogoSection() {
   return (
     <Section icon={Camera} title="Logo des documents PDF">
       <p className="text-sm text-neutral-500">
-        Ce logo apparaît sur toutes les factures et tous les reçus générés, aussi bien depuis l&apos;espace admin que depuis l&apos;espace membre.
+        Ce logo apparaît sur toutes les factures et tous les reçus générés, aussi bien depuis l'espace admin que depuis l'espace membre.
       </p>
       <div className="flex flex-wrap items-center gap-4">
         <div className="relative shrink-0">

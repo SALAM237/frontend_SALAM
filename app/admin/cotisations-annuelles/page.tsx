@@ -434,7 +434,7 @@ function PaymentModal({ member, onConfirm, onClose, loading }: {
           </div>
           <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 flex gap-2">
             <AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-500" />
-            <p className="text-[11px] leading-relaxed text-amber-700">Un reçu de cotisation annuelle sera automatiquement envoyé à l&apos;adhérent par email.</p>
+            <p className="text-[11px] leading-relaxed text-amber-700">Un reçu de cotisation annuelle sera automatiquement envoyé à l'adhérent par email.</p>
           </div>
         </div>
         <div className="flex gap-3 border-t border-neutral-100 px-6 py-4">

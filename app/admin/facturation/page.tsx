@@ -10,6 +10,7 @@ import {
   Palette, GripVertical, Bold, Italic, Ban, SlidersHorizontal,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { downloadFileFromUrl } from '@/lib/download-file';
 import {
   useAdminInvoices, useCreateInvoice, useDeleteInvoice, useRemoveInvoiceRecipient,
   useUpdateInvoice,
@@ -1007,18 +1008,18 @@ function CreateInvoiceModal({ motif, presetMemberId, presetYear, onClose }: { mo
                       )}
                       <div className="mt-5 grid grid-cols-2 gap-3">
                         <label className="block">
-                          <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Date d&apos;&eacute;mission</span>
+                          <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Date d'émission</span>
                           <div className="mt-1 flex gap-2">
                             <input type="date" value={issuedAt} onFocus={() => setFocusedInvoiceDate('issuedAt')} onBlur={() => window.setTimeout(() => setFocusedInvoiceDate(current => current === 'issuedAt' ? null : current), 120)} onChange={event => { setIssuedAt(event.target.value); setIssuedAtValidated(false); setDueDateValidated(false); setErrors(prev => ({ ...prev, issuedAt: '', dueDate: '' })); }} className={inputCls(errors.issuedAt, issuedAtValidated)} />
-                            {focusedInvoiceDate === 'issuedAt' && <button type="button" aria-label="Valider la date d'&eacute;mission" onMouseDown={event => event.preventDefault()} onClick={() => { if (!issuedAt) setErrors(prev => ({ ...prev, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(prev => ({ ...prev, issuedAt: '' })); setFocusedInvoiceDate(null); } }} className={dateValidateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>}
+                            {focusedInvoiceDate === 'issuedAt' && <button type="button" aria-label="Valider la date d'émission" onMouseDown={event => event.preventDefault()} onClick={() => { if (!issuedAt) setErrors(prev => ({ ...prev, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(prev => ({ ...prev, issuedAt: '' })); setFocusedInvoiceDate(null); } }} className={dateValidateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>}
                           </div>
                           {errors.issuedAt && <p className="mt-1 text-[10px] font-semibold text-red-500">{errors.issuedAt}</p>}
                         </label>
                         <label className="block">
-                          <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">&Eacute;ch&eacute;ance</span>
+                          <span className="text-[10px] font-black uppercase tracking-[0.12em] text-neutral-400">Échéance</span>
                           <div className="mt-1 flex gap-2">
                             <input type="date" min={issuedAt || today} value={dueDate} onFocus={() => setFocusedInvoiceDate('dueDate')} onBlur={() => window.setTimeout(() => setFocusedInvoiceDate(current => current === 'dueDate' ? null : current), 120)} onChange={event => { setDueDate(event.target.value); setDueDateValidated(false); setErrors(prev => ({ ...prev, dueDate: '' })); }} className={inputCls(errors.dueDate, dueDateValidated)} />
-                            {focusedInvoiceDate === 'dueDate' && <button type="button" aria-label="Valider la date d'&eacute;ch&eacute;ance" onMouseDown={event => event.preventDefault()} onClick={() => { if (!dueDate) setErrors(prev => ({ ...prev, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(prev => ({ ...prev, dueDate: '' })); setFocusedInvoiceDate(null); } }} className={dateValidateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>}
+                            {focusedInvoiceDate === 'dueDate' && <button type="button" aria-label="Valider la date d'échéance" onMouseDown={event => event.preventDefault()} onClick={() => { if (!dueDate) setErrors(prev => ({ ...prev, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(prev => ({ ...prev, dueDate: '' })); setFocusedInvoiceDate(null); } }} className={dateValidateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>}
                           </div>
                           {errors.dueDate && <p className="mt-1 text-[10px] font-semibold text-red-500">{errors.dueDate}</p>}
                         </label>
@@ -1288,7 +1289,7 @@ function EditInvoiceModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose: 
               <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Date d'emission</span>
               <div className="flex gap-2">
                 <input type="date" value={issuedAt} onFocus={() => setFocusedInvoiceDate('issuedAt')} onBlur={() => window.setTimeout(() => setFocusedInvoiceDate(current => current === 'issuedAt' ? null : current), 120)} onChange={e => { setIssuedAt(e.target.value); setIssuedAtValidated(false); setDueDateValidated(false); setErrors(prev => ({ ...prev, issuedAt: '', dueDate: '' })); }} className={editInputCls(errors.issuedAt, issuedAtValidated)} />
-                {focusedInvoiceDate === 'issuedAt' && <button type="button" aria-label="Valider la date d'&eacute;mission" onMouseDown={event => event.preventDefault()} onClick={() => { if (!issuedAt) setErrors(prev => ({ ...prev, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(prev => ({ ...prev, issuedAt: '' })); setFocusedInvoiceDate(null); } }} className={editDateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>}
+                {focusedInvoiceDate === 'issuedAt' && <button type="button" aria-label="Valider la date d'émission" onMouseDown={event => event.preventDefault()} onClick={() => { if (!issuedAt) setErrors(prev => ({ ...prev, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(prev => ({ ...prev, issuedAt: '' })); setFocusedInvoiceDate(null); } }} className={editDateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>}
               </div>
               {errors.issuedAt && <p className="mt-1 text-[11px] text-red-500">{errors.issuedAt}</p>}
             </label>
@@ -1296,7 +1297,7 @@ function EditInvoiceModal({ invoice, onClose }: { invoice: InvoiceDoc; onClose: 
               <span className="text-[11px] font-black uppercase tracking-[0.12em] text-neutral-400">Echeance</span>
               <div className="flex gap-2">
                 <input type="date" min={issuedAt || undefined} value={dueDate} onFocus={() => setFocusedInvoiceDate('dueDate')} onBlur={() => window.setTimeout(() => setFocusedInvoiceDate(current => current === 'dueDate' ? null : current), 120)} onChange={e => { setDueDate(e.target.value); setDueDateValidated(false); setErrors(prev => ({ ...prev, dueDate: '' })); }} className={editInputCls(errors.dueDate, dueDateValidated)} />
-                {focusedInvoiceDate === 'dueDate' && <button type="button" aria-label="Valider la date d'&eacute;ch&eacute;ance" onMouseDown={event => event.preventDefault()} onClick={() => { if (!dueDate) setErrors(prev => ({ ...prev, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(prev => ({ ...prev, dueDate: '' })); setFocusedInvoiceDate(null); } }} className={editDateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>}
+                {focusedInvoiceDate === 'dueDate' && <button type="button" aria-label="Valider la date d'échéance" onMouseDown={event => event.preventDefault()} onClick={() => { if (!dueDate) setErrors(prev => ({ ...prev, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(prev => ({ ...prev, dueDate: '' })); setFocusedInvoiceDate(null); } }} className={editDateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>}
               </div>
               {errors.dueDate && <p className="mt-1 text-[11px] text-red-500">{errors.dueDate}</p>}
             </label>
@@ -1448,7 +1449,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
                     onChange={e => { setIssuedAt(e.target.value); setIssuedAtValidated(false); setDueDateValidated(false); setErrors(p => ({...p, issuedAt: '', dueDate: ''})); }}
                     className={`${inputCls(errors.issuedAt, issuedAtValidated)} pl-9 pr-2`} />
                 </div>
-                {focusedInvoiceDate === 'issuedAt' && <button type="button" aria-label="Valider la date d'&eacute;mission" onMouseDown={event => event.preventDefault()} onClick={() => { if (!issuedAt) setErrors(p => ({ ...p, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(p => ({ ...p, issuedAt: '' })); setFocusedInvoiceDate(null); } }} className={dateValidateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>}
+                {focusedInvoiceDate === 'issuedAt' && <button type="button" aria-label="Valider la date d'émission" onMouseDown={event => event.preventDefault()} onClick={() => { if (!issuedAt) setErrors(p => ({ ...p, issuedAt: 'Date d\u2019\u00e9mission requise' })); else { setIssuedAtValidated(true); setErrors(p => ({ ...p, issuedAt: '' })); setFocusedInvoiceDate(null); } }} className={dateValidateBtnCls(issuedAtValidated, errors.issuedAt)}><CheckCircle2 size={15} /></button>}
               </div>
               {errors.issuedAt && <p className="text-[11px] text-red-500">{errors.issuedAt}</p>}
             </div>
@@ -1463,7 +1464,7 @@ function LegacyCreateInvoiceModal({ onClose }: { onClose: () => void }) {
                     onChange={e => { setDueDate(e.target.value); setDueDateValidated(false); setErrors(p => ({...p, dueDate: ''})); }}
                     className={`${inputCls(errors.dueDate, dueDateValidated)} pl-9 pr-2`} />
                 </div>
-                {focusedInvoiceDate === 'dueDate' && <button type="button" aria-label="Valider la date d'&eacute;ch&eacute;ance" onMouseDown={event => event.preventDefault()} onClick={() => { if (!dueDate) setErrors(p => ({ ...p, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(p => ({ ...p, dueDate: '' })); setFocusedInvoiceDate(null); } }} className={dateValidateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>}
+                {focusedInvoiceDate === 'dueDate' && <button type="button" aria-label="Valider la date d'échéance" onMouseDown={event => event.preventDefault()} onClick={() => { if (!dueDate) setErrors(p => ({ ...p, dueDate: 'Date d\u2019\u00e9ch\u00e9ance requise' })); else { setDueDateValidated(true); setErrors(p => ({ ...p, dueDate: '' })); setFocusedInvoiceDate(null); } }} className={dateValidateBtnCls(dueDateValidated, errors.dueDate)}><CheckCircle2 size={15} /></button>}
               </div>
               {errors.dueDate && <p className="text-[11px] text-red-500">{errors.dueDate}</p>}
             </div>
@@ -1605,11 +1606,26 @@ function ReceiptJustificationModal({ receipt, onClose }: { receipt: ReceiptDoc; 
   const url = receipt.justificationUrl ?? '';
   const name = readableUploadName(receipt.justificationName);
   const isImage = /\.(png|jpe?g)$/i.test(url) || /\.(png|jpe?g)$/i.test(name);
+  const [downloading, setDownloading] = useState(false);
   const remove = () => {
     updateReceipt.mutate(
       { id: receipt._id, body: { deleteJustification: true } },
       { onSuccess: () => onClose() },
     );
+  };
+  const download = async () => {
+    setDownloading(true);
+    try {
+      await downloadFileFromUrl(url, name);
+    } catch {
+      /* Repli si le bucket ne renvoie pas d'en-têtes CORS pour le fetch : au
+         moins ouvrir le fichier dans un nouvel onglet, comportement déjà
+         connu de l'utilisateur, plutôt qu'un échec silencieux. */
+      window.open(url, '_blank', 'noopener,noreferrer');
+      toast.error("Téléchargement direct impossible, le fichier s'est ouvert dans un nouvel onglet.");
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -1622,10 +1638,10 @@ function ReceiptJustificationModal({ receipt, onClose }: { receipt: ReceiptDoc; 
             <p className="truncate font-mono text-[10px] text-neutral-400">{receipt.receiptNumber}</p>
           </div>
           <div className="flex items-center gap-1.5">
-            <a href={url} download={name} target="_blank" rel="noopener noreferrer" title="Télécharger"
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition hover:bg-emerald-600 hover:text-white">
-              <Download size={15} />
-            </a>
+            <button type="button" onClick={download} disabled={downloading} title="Télécharger"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition hover:bg-emerald-600 hover:text-white disabled:opacity-60">
+              {downloading ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+            </button>
             <button type="button" onClick={remove} disabled={updateReceipt.isPending} title="Supprimer le justificatif"
               className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-500 hover:text-white disabled:opacity-60">
               {updateReceipt.isPending ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
@@ -2017,7 +2033,7 @@ export default function FacturationAdminPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Facturation</h1>
-          <p className="mt-1 text-sm text-neutral-500">Générer et envoyer des factures pour les événements de l&apos;association.</p>
+          <p className="mt-1 text-sm text-neutral-500">Générer et envoyer des factures pour les événements de l'association.</p>
         </div>
         {mainTab === 'factures' && (
           <div className="flex flex-wrap gap-2">

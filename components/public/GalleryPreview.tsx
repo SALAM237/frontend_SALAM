@@ -37,7 +37,7 @@ export function GalleryPreview() {
               Nos moments<br />en images
             </h2>
             <p className="text-salam mt-3 max-w-md text-neutral-600">
-              Revivez les meilleurs moments publics de l&apos;association SALAM.
+              Revivez les meilleurs moments publics de l'association SALAM.
             </p>
           </div>
           <Link href="/galerie" className="group inline-flex items-center gap-2 whitespace-nowrap text-sm font-bold text-salam-green">

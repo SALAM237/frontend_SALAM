@@ -734,7 +734,7 @@ function EditAdminModal({ admin, onClose, roles }: { admin: AdminUser; onClose: 
                 className="h-9 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/10"
               />
               <div className="rounded-xl border border-violet-100 bg-violet-50/40 px-3 py-2">
-                <p className="text-[10px] text-violet-700">Aucune photo requise. Ce poste n&apos;apparaît pas sur la page Bureau public.</p>
+                <p className="text-[10px] text-violet-700">Aucune photo requise. Ce poste n'apparaît pas sur la page Bureau public.</p>
               </div>
             </div>
           ) : (
@@ -1054,7 +1054,7 @@ function PromoteModal({ onClose, roles }: { onClose: () => void; roles: RoleDoc[
                   )}
                   <div className="rounded-xl border border-violet-100 bg-violet-50/40 px-3 py-2">
                     <p className="text-[10px] text-violet-700">
-                      Aucune photo requise. Ce poste n&apos;apparaîtra pas sur la page Bureau public.
+                      Aucune photo requise. Ce poste n'apparaîtra pas sur la page Bureau public.
                       La promotion est temporaire — les permissions sont attribuées via le rôle sélectionné.
                     </p>
                   </div>

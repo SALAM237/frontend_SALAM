@@ -130,7 +130,7 @@ function ReceiptModal({ cot, user, onClose }: {
           </div>
 
           <p className="mt-4 text-center text-[10px] leading-relaxed text-neutral-400">
-            Ces reçus sont des justificatifs officiels de votre cotisation annuelle à l&apos;Association SALAM Cameroun.<br />
+            Ces reçus sont des justificatifs officiels de votre cotisation annuelle à l'Association SALAM Cameroun.<br />
             Fondée le 20/02/2010 · contact@salam-cameroun.com
           </p>
         </div>
@@ -258,9 +258,9 @@ export function MemberCotisationsAnnuelleContent() {
       </div>
 
       <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
-        <p className="text-sm font-black text-emerald-800 mb-1.5">Besoin d&apos;aide ?</p>
+        <p className="text-sm font-black text-emerald-800 mb-1.5">Besoin d'aide ?</p>
         <p className="text-xs leading-relaxed text-emerald-700">
-          Pour toute question concernant votre cotisation annuelle, contactez l&apos;administration à{' '}
+          Pour toute question concernant votre cotisation annuelle, contactez l'administration à{' '}
           <a href="mailto:contact@salam-cameroun.com" className="font-bold underline underline-offset-2">
             contact@salam-cameroun.com
           </a>

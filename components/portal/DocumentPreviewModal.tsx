@@ -88,7 +88,7 @@ export function DocumentPreviewModal({ doc, onClose }: { doc: PreviewableDoc; on
               <p className="text-base font-black text-white">{doc.title}</p>
               <p className="mt-1 text-sm text-white/40">{doc.mimeLabel} · {fmtSize(doc.fileSize)}</p>
             </div>
-            <p className="text-sm text-white/40">La prévisualisation n&apos;est pas disponible pour ce format.</p>
+            <p className="text-sm text-white/40">La prévisualisation n'est pas disponible pour ce format.</p>
             <div className="flex gap-3">
               <a
                 href={doc.fileUrl}

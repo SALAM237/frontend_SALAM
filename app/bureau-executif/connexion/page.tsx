@@ -279,7 +279,7 @@ export default function BureauConnexionPage() {
                     <div className="flex items-start gap-2.5">
                       <MailWarning size={15} className="mt-0.5 shrink-0 text-amber-600" />
                       <p className="text-xs leading-relaxed text-amber-800">
-                        Vous n&apos;avez pas reçu l&apos;email ?? Cliquez ci-dessous pour en recevoir un nouveau.
+                        Vous n'avez pas reçu l'email ?? Cliquez ci-dessous pour en recevoir un nouveau.
                       </p>
                     </div>
                     {resendStatus === 'sent' ? (

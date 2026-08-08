@@ -117,7 +117,7 @@ function ReceiptModal({ cot, user, onClose }: {
           </div>
 
           <p className="mt-4 text-center text-[10px] leading-relaxed text-neutral-400">
-            Ce reçu est un justificatif officiel de votre adhésion à l&apos;Association SALAM Cameroun.<br />
+            Ce reçu est un justificatif officiel de votre adhésion à l'Association SALAM Cameroun.<br />
             Fondée le 20/02/2010 · contact@salam-cameroun.com
           </p>
         </div>
@@ -144,14 +144,14 @@ export default function MemberCotisationsPage() {
 
       <div>
         <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Mes cotisations</h1>
-        <p className="mt-1 text-sm text-neutral-500">Frais d&apos;adhésion et cotisation annuelle.</p>
+        <p className="mt-1 text-sm text-neutral-500">Frais d'adhésion et cotisation annuelle.</p>
       </div>
 
       {/* Onglets */}
       <div className="flex gap-1.5 rounded-2xl border border-neutral-100 bg-neutral-50/70 p-1.5">
         <button onClick={() => setTab('frais')}
           className={`flex-1 rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${tab === 'frais' ? 'bg-white text-emerald-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>
-          Frais d&apos;adhésion
+          Frais d'adhésion
         </button>
         <button onClick={() => setTab('annuelle')}
           className={`flex-1 rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${tab === 'annuelle' ? 'bg-white text-violet-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>
@@ -207,7 +207,7 @@ export default function MemberCotisationsPage() {
                 <p className="text-lg font-black leading-none text-neutral-900">{cot.year}</p>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-black text-sm text-neutral-900">Frais d&apos;adhésion {cot.year}</p>
+                <p className="font-black text-sm text-neutral-900">Frais d'adhésion {cot.year}</p>
                 {cot.status === 'paid' && cot.paidAt && (
                   <p className="text-xs text-neutral-500 mt-0.5">Payé le {fmt(cot.paidAt)}</p>
                 )}
@@ -241,9 +241,9 @@ export default function MemberCotisationsPage() {
       </div>
 
       <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
-        <p className="text-sm font-black text-emerald-800 mb-1.5">Besoin d&apos;aide ?</p>
+        <p className="text-sm font-black text-emerald-800 mb-1.5">Besoin d'aide ?</p>
         <p className="text-xs leading-relaxed text-emerald-700">
-          Pour toute question concernant vos cotisations, contactez l&apos;administration à{' '}
+          Pour toute question concernant vos cotisations, contactez l'administration à{' '}
           <a href="mailto:contact@salam-cameroun.com" className="font-bold underline underline-offset-2">
             contact@salam-cameroun.com
           </a>

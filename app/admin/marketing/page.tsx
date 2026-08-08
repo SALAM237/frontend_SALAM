@@ -181,7 +181,7 @@ function CampaignEditorModal({ onClose, campaign }: { onClose: () => void; campa
             <input type="number" min={1} value={cauriAmount} onChange={e => setCauriAmount(Number(e.target.value))}
               className="h-11 w-full rounded-xl border border-neutral-200 px-3.5 text-sm outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-500/20" />
             <p className="mt-1 text-[11px] text-neutral-400">
-              Crédité automatiquement dès qu&apos;un destinataire est inscrit ET a un profil complet à 100%, avant la date limite. Historique cauris : «&nbsp;Cadeau promotion &quot;Inscription et profil complet&quot;&nbsp;».
+              Crédité automatiquement dès qu'un destinataire est inscrit ET a un profil complet à 100%, avant la date limite. Historique cauris : «&nbsp;Cadeau promotion &quot;Inscription et profil complet&quot;&nbsp;».
             </p>
           </div>
 
@@ -933,7 +933,7 @@ export default function AdminMarketingPage() {
             className="flex w-full flex-col items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-left transition hover:bg-rose-100 sm:w-1/2">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-600 text-white"><Plus size={18} /></span>
             <span className="text-sm font-black text-rose-700">Créer campagne</span>
-            <span className="text-xs font-semibold text-rose-600/80">Invitez les membres à finaliser leur profil pour bénéficier d&apos;un cadeau exclusif.</span>
+            <span className="text-xs font-semibold text-rose-600/80">Invitez les membres à finaliser leur profil pour bénéficier d'un cadeau exclusif.</span>
           </button>
 
           {/* ── Desktop : les 2 blocs côte à côte, jamais pliés ──── */}

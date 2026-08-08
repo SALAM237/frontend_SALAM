@@ -117,8 +117,8 @@ export function ParallaxBanner() {
         </h2>
 
         <p style={visible ? { animationDelay: '4.7s' } : undefined} className={`mt-4 max-w-xl text-[clamp(0.85rem,1.2vw,1rem)] leading-7 text-white/75 ${visible ? 'fade-in-bck' : 'opacity-0'}`}>
-          SALAM accompagne chaque lauréat dans son parcours — de l&apos;université
-          à la carrière — en s&apos;appuyant sur un réseau solidaire de plus de
+          SALAM accompagne chaque lauréat dans son parcours — de l'université
+          à la carrière — en s'appuyant sur un réseau solidaire de plus de
           400 membres.
         </p>
 

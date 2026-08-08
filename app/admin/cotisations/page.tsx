@@ -432,7 +432,7 @@ function PaymentModal({ member, onConfirm, onClose, loading }: {
           </div>
           <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 flex gap-2">
             <AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-500" />
-            <p className="text-[11px] leading-relaxed text-amber-700">Un reçu de paiement sera automatiquement envoyé à l&apos;adhérent par email.</p>
+            <p className="text-[11px] leading-relaxed text-amber-700">Un reçu de paiement sera automatiquement envoyé à l'adhérent par email.</p>
           </div>
         </div>
         <div className="flex gap-3 border-t border-neutral-100 px-6 py-4">
@@ -521,7 +521,7 @@ export default function CotisationsAdminPage() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">Frais d&apos;adhésion</h1>
+          <h1 className="text-xl font-black tracking-[-0.03em] text-neutral-900 sm:text-2xl">Frais d'adhésion</h1>
           <p className="mt-1 text-sm text-neutral-500">Gérer les cotisations des membres actifs.</p>
         </div>
         <div className="relative">

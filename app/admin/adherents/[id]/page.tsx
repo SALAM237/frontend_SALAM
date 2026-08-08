@@ -157,7 +157,7 @@ export default function AdherentDetailPage({ params }: { params: Promise<{ id: s
           </div>
 
           <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
-            <p className="mb-4 text-sm font-black text-neutral-900">Historique d&apos;activité</p>
+            <p className="mb-4 text-sm font-black text-neutral-900">Historique d'activité</p>
             <div className="flex flex-col items-center py-6 text-center">
               <Clock size={24} className="mb-2 text-neutral-200" />
               <p className="text-sm text-neutral-400">Aucun historique disponible.</p>

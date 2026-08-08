@@ -168,7 +168,7 @@ function CreatePasswordContent() {
             Lien invalide<span className="text-red-500"> !</span>
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-neutral-500">
-            Ce lien d&apos;invitation est incorrect ou a expire. Contactez votre administrateur pour recevoir une nouvelle invitation.
+            Ce lien d'invitation est incorrect ou a expire. Contactez votre administrateur pour recevoir une nouvelle invitation.
           </p>
         </div>
         <Link href="/auth/login" className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-black text-white shadow-sm transition-all hover:bg-emerald-700">
@@ -299,7 +299,7 @@ function CreatePasswordContent() {
           Finalisez votre<span className="text-emerald-600"> compte membre</span>
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-          Votre email d&apos;invitation valide deja l&apos;adresse. Completez vos informations avant d&apos;acceder a votre espace.
+          Votre email d'invitation valide deja l'adresse. Completez vos informations avant d'acceder a votre espace.
         </p>
       </div>
 

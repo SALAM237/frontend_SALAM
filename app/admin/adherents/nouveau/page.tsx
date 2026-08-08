@@ -354,7 +354,7 @@ export default function NouveauAdherentPage() {
       <h2 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Membre créé avec succès !</h2>
       <p className="mt-2 text-sm text-neutral-500">
         La fiche de <strong>{formatFullName(form.firstName, form.lastName)}</strong> a été enregistrée.<br />
-        Numéro d&apos;adhérent : <span className="font-mono font-bold text-emerald-700">{cardData.id}</span>
+        Numéro d'adhérent : <span className="font-mono font-bold text-emerald-700">{cardData.id}</span>
       </p>
       <div className="mt-8 flex flex-col items-center gap-3">
         <div className="mx-auto w-full max-w-[400px]"><MemberCard member={cardData} /></div>
@@ -428,7 +428,7 @@ export default function NouveauAdherentPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Import terminé</h1>
-          <p className="text-sm text-neutral-500">Résultats de l&apos;importation CSV</p>
+          <p className="text-sm text-neutral-500">Résultats de l'importation CSV</p>
         </div>
       </div>
 
@@ -785,7 +785,7 @@ export default function NouveauAdherentPage() {
                   className="inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-600 px-5 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-50">
                   {importCSV.isPending
                     ? <><Loader2 size={12} className="animate-spin" /> Import…</>
-                    : <><UserPlus size={12} /> Valider l&apos;import ({selectedSet.size})</>
+                    : <><UserPlus size={12} /> Valider l'import ({selectedSet.size})</>
                   }
                 </button>
               </div>

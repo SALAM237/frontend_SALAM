@@ -58,7 +58,7 @@ function VerifyEmailContent() {
         </div>
         <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3.5">
           <p className="text-xs leading-relaxed text-emerald-700">
-            Votre compte est en cours de validation par le bureau de SALAM. Vous recevrez un e-mail dès qu&apos;il sera activé.
+            Votre compte est en cours de validation par le bureau de SALAM. Vous recevrez un e-mail dès qu'il sera activé.
           </p>
         </div>
         <Link

@@ -129,7 +129,7 @@ export default function AdminOpportunitesPage() {
                     </span>
                     <span className="inline-flex items-center gap-1" title="J'aime">
                       <ThumbsUp size={11} className="text-neutral-400" />
-                      {item.likeCount ?? 0} j&apos;aime
+                      {item.likeCount ?? 0} j'aime
                     </span>
                     {item.location && (
                       <span className="inline-flex items-center gap-1">

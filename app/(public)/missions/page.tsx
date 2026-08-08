@@ -597,7 +597,7 @@ export default function MissionsPage() {
               Récapitulatif des <span className="text-emerald-700">missions</span>
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-neutral-500">
-              Tableau comparatif des 4 missions selon leurs axes d&apos;intervention.
+              Tableau comparatif des 4 missions selon leurs axes d'intervention.
             </p>
           </div>
 
@@ -606,7 +606,7 @@ export default function MissionsPage() {
               <table className="w-full min-w-[580px]">
                 <thead>
                   <tr className="border-b border-neutral-100 bg-neutral-50/60">
-                    <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.16em] text-neutral-400">Axe d&apos;intervention</th>
+                    <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.16em] text-neutral-400">Axe d'intervention</th>
                     {MISSIONS.map((m, mi) => {
                       const a = ACCENT[m.accentKey];
                       const Icon = m.icon;
@@ -678,7 +678,7 @@ export default function MissionsPage() {
           <div className="mb-10 text-center">
             <span className="mb-3 inline-block text-xs font-black uppercase tracking-[0.25em] text-emerald-700">En 4 mots</span>
             <h2 className="text-[clamp(1.8rem,4vw,3rem)] font-black leading-[0.92] tracking-[-0.04em] text-neutral-900">
-              L&apos;ADN stratégique de <span className="text-emerald-700">SALAM</span>
+              L'ADN stratégique de <span className="text-emerald-700">SALAM</span>
             </h2>
           </div>
 
@@ -710,7 +710,7 @@ export default function MissionsPage() {
             <div className="rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-[clamp(1.5rem,4vw,2.5rem)]">
               <span className="mb-3 inline-block text-xs font-black uppercase tracking-[0.25em] text-emerald-700">Notre vision</span>
               <p className="text-[clamp(1rem,1.8vw,1.2rem)] font-black leading-[1.45] tracking-[-0.02em] text-neutral-900">
-                Former une génération capable de réussir à l&apos;international et de revenir construire le Cameroun.
+                Former une génération capable de réussir à l'international et de revenir construire le Cameroun.
               </p>
             </div>
 
@@ -739,7 +739,7 @@ export default function MissionsPage() {
             <span className="text-emerald-400">du Cameroun de demain</span>
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-[clamp(0.9rem,1.2vw,1rem)] leading-relaxed text-white/50">
-            Rejoignez le réseau SALAM et contribuez à l&apos;une de nos missions — orientation, insertion, solidarité ou développement national.
+            Rejoignez le réseau SALAM et contribuez à l'une de nos missions — orientation, insertion, solidarité ou développement national.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link

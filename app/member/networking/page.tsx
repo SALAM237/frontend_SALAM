@@ -69,7 +69,7 @@ function DirectoryStatsSummary({
             <p className="text-[9px] font-black uppercase tracking-[0.12em] text-neutral-400 sm:text-xs sm:tracking-[0.14em]">{block.title}</p>
             <div className="mt-2 flex flex-wrap gap-1 sm:mt-3 sm:gap-1.5">
               {block.items.length === 0 && <span className="text-xs font-semibold text-neutral-400">Aucune donnee.</span>}
-              {block.items.map(([label, count]) => <span key={label} className={`rounded-full px-2 py-0.5 text-[9px] font-black ring-1 sm:px-2.5 sm:py-1 sm:text-[10px] ${block.cls}`}>{label} &middot; {count}</span>)}
+              {block.items.map(([label, count]) => <span key={label} className={`rounded-full px-2 py-0.5 text-[9px] font-black ring-1 sm:px-2.5 sm:py-1 sm:text-[10px] ${block.cls}`}>{label} · {count}</span>)}
             </div>
           </div>
         ))}

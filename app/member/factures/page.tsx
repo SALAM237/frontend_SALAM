@@ -168,7 +168,7 @@ export default function MemberFacturesPage() {
 
       <div>
         <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Mes factures</h1>
-        <p className="mt-1 text-sm text-neutral-500">Factures émises par l&apos;association pour les événements.</p>
+        <p className="mt-1 text-sm text-neutral-500">Factures émises par l'association pour les événements.</p>
       </div>
 
       {/* Stats */}

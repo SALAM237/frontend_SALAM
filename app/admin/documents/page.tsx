@@ -97,7 +97,7 @@ function SendModal({ doc, onClose }: { doc: SharedDocument; onClose: () => void 
           <div className="flex items-center justify-between rounded-xl border border-neutral-100 p-3">
             <div>
               <p className="text-sm font-semibold text-neutral-800">Envoyer à tous les membres</p>
-              <p className="text-xs text-neutral-400">Tous les membres, y compris en attente d&apos;inscription</p>
+              <p className="text-xs text-neutral-400">Tous les membres, y compris en attente d'inscription</p>
             </div>
             <button
               type="button"
@@ -275,7 +275,7 @@ function AttestationEditor() {
         <div className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><GraduationCap size={16} /></span>
           <div className="text-left">
-            <p className="text-sm font-black text-neutral-900">Modèle d&apos;attestation d&apos;adhésion</p>
+            <p className="text-sm font-black text-neutral-900">Modèle d'attestation d'adhésion</p>
             <p className="text-xs text-neutral-500">Chaque membre génère sa propre attestation depuis son espace, remplie automatiquement.</p>
           </div>
         </div>
@@ -341,7 +341,7 @@ export default function AdminDocumentsPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <h1 className="text-2xl font-black tracking-[-0.03em] text-neutral-900">Documents internes</h1>
-        <p className="mt-0.5 text-sm text-neutral-500">Importez des documents et partagez-les avec les membres de l&apos;association.</p>
+        <p className="mt-0.5 text-sm text-neutral-500">Importez des documents et partagez-les avec les membres de l'association.</p>
       </div>
 
       <AnimatedTabBar items={[...ADMIN_DOCUMENT_TABS]} value={tab} onChange={setTab} />

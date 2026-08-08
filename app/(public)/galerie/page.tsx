@@ -66,7 +66,7 @@ function AlbumModal({ album, onClose, isAdmin }: { album: AlbumDoc; onClose: () 
           {images.length === 0 ? (
             <div className="flex flex-col items-center py-20 text-center">
               <Images size={40} className="mb-3 text-neutral-200" />
-              <p className="text-sm text-neutral-400">Aucune photo dans cet album pour l&apos;instant.</p>
+              <p className="text-sm text-neutral-400">Aucune photo dans cet album pour l'instant.</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -181,7 +181,7 @@ export default function GaleriePage() {
                 <Images size={28} className="text-emerald-600" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-neutral-900">Aucun album disponible pour l&apos;instant</h3>
+                <h3 className="text-lg font-black text-neutral-900">Aucun album disponible pour l'instant</h3>
                 <p className="mt-2 max-w-sm text-sm text-neutral-500">Les albums des événements SALAM seront publiés ici.</p>
               </div>
               <Link href="/adhesion" className="inline-flex h-10 items-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white transition-all hover:bg-emerald-700">

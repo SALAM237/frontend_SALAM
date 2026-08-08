@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
         </div>
         <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3.5">
           <p className="text-xs leading-relaxed text-emerald-700">
-            Le lien expire dans <strong>15 minutes</strong>. Si vous ne recevez rien, vérifiez l&apos;adresse saisie et réessayez.
+            Le lien expire dans <strong>15 minutes</strong>. Si vous ne recevez rien, vérifiez l'adresse saisie et réessayez.
           </p>
         </div>
         <button onClick={() => { setSent(false); setEmail(''); }}
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
           Mot de passe<span className="text-emerald-600"> oublié ?</span>
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-          Saisissez l&apos;adresse e-mail associée à votre compte. Nous vous enverrons un lien pour réinitialiser votre mot de passe.
+          Saisissez l'adresse e-mail associée à votre compte. Nous vous enverrons un lien pour réinitialiser votre mot de passe.
         </p>
       </div>
 

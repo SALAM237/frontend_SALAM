@@ -107,7 +107,7 @@ export default function ChoisirEspacePage() {
             <span className="text-emerald-400">{formatFirstName(user.firstName)}</span>
           </h1>
           <p className="mt-3 text-sm text-white/40">
-            Choisissez l&apos;espace auquel vous souhaitez accéder.
+            Choisissez l'espace auquel vous souhaitez accéder.
           </p>
         </div>
 

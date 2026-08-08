@@ -74,7 +74,7 @@ function ResetPasswordContent() {
         </div>
         <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3.5">
           <p className="text-xs leading-relaxed text-emerald-700">
-            Un e-mail de confirmation vous a été envoyé. Si vous n&apos;êtes pas à l&apos;origine de cette modification, contactez-nous immédiatement.
+            Un e-mail de confirmation vous a été envoyé. Si vous n'êtes pas à l'origine de cette modification, contactez-nous immédiatement.
           </p>
         </div>
         <button

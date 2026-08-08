@@ -26,6 +26,21 @@ function formatCfa(amount?: number) {
   return `${Number(amount ?? 0).toLocaleString('fr-FR')} F.CFA`;
 }
 
+/* Libellés FR alignés sur Backend_salam/src/utils/payment-method.ts (PAYMENT_METHOD_LABELS). */
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  om: 'OM',
+  especes: 'Espèce',
+  mobile_money: 'Mobile Money',
+  virement: 'Virement',
+  cb: 'CB',
+  autre: 'Autre',
+};
+function paymentMethodLabel(method?: string | null, other?: string | null): string {
+  if (!method) return '';
+  if (method === 'autre') return other?.trim() || 'Autre';
+  return PAYMENT_METHOD_LABELS[method] ?? method;
+}
+
 function escReceipt(value: unknown) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -53,6 +68,7 @@ export function downloadReceiptPdf(
     : `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}`;
   const invoiceReference = receipt.invoiceNumber ?? receipt.receiptNumber;
   const paymentReference = receipt.reference?.trim() || 'Non renseign\u00e9e';
+  const paymentMethodText = paymentMethodLabel(receipt.paymentMethod, receipt.paymentMethodOther);
   const withTrancheLabel = (source: unknown, trancheIndex?: number | null) => {
     const text = String(source || `${RECEIPT_TYPE_TITLE[receipt.type]} ${receipt.year}`);
     if (receipt.type !== 'cotisation_annuelle' || trancheIndex == null || /tranche/i.test(text)) return text;
@@ -122,7 +138,6 @@ export function downloadReceiptPdf(
         <h2>Membre</h2>
         <strong>${escReceipt(memberName)}</strong>
         <p class="muted">N° membre : ${escReceipt(memberId)}</p>
-        <p class="muted">R\u00e9f\u00e9rence de paiement : ${escReceipt(paymentReference)}</p>
       </div>
     </section>
     <div style="text-align:center"><span class="paid">${isCancelled ? 'ANNULÉ' : 'PAYÉ'}</span></div>
@@ -151,7 +166,14 @@ export function downloadReceiptPdf(
       </tbody>
     </table>
     ${receipt.modifiedAt ? `<p class="muted" style="margin-top:12px;font-size:11px;">Ce reçu a été modifié le ${escReceipt(fmt(receipt.modifiedAt))}.</p>` : ''}
-    ${receipt.notes ? `<div class="card" style="margin-top:24px"><h2>Commentaire</h2><p class="muted">${escReceipt(receipt.notes)}</p></div>` : ''}
+    <section class="grid" style="margin-top:24px">
+      <div class="card">
+        <h2>Information paiement</h2>
+        <p class="muted">Référence de paiement : ${escReceipt(paymentReference)}</p>
+        ${paymentMethodText ? `<p class="muted">Moyen de paiement : ${escReceipt(paymentMethodText)}</p>` : ''}
+      </div>
+      ${receipt.notes ? `<div class="card"><h2>Commentaire</h2><p class="muted">${escReceipt(receipt.notes)}</p></div>` : ''}
+    </section>
     <div class="thanks">Merci pour votre engagement au sein de SALAM. Votre contribution annuelle soutient les actions d'orientation, de solidarité et d'insertion portées par l'association.</div>
     <footer class="footer">${escReceipt(RECEIPT_ASSOCIATION.title)} · ${escReceipt(RECEIPT_ASSOCIATION.email)} · ${escReceipt(RECEIPT_ASSOCIATION.phone)} · ${escReceipt(RECEIPT_ASSOCIATION.registration)}</footer>
   </div>
