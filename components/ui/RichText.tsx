@@ -34,8 +34,8 @@ export function RichText({
     ? normalizeBlockHtml(value)
     : sanitizeRichHtml(String(value ?? '').replace(/\r\n?/g, '\n').replace(/\n/g, '<br />'));
   const classes = [
-    'break-words',
-    block ? '[&_p]:mb-4 [&_p:last-child]:mb-0' : 'whitespace-pre-line',
+    'break-words whitespace-pre-wrap',
+    block ? '[&_p]:mb-4 [&_p:last-child]:mb-0' : '',
     className,
   ].filter(Boolean).join(' ');
 
