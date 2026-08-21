@@ -26,6 +26,7 @@ import { assetUrl } from '@/lib/assets';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { formatFullName, formatInitials } from '@/lib/format-name';
 import { memberAvatarBorderClass, memberInitialsClass, memberPhotoUrl } from '@/lib/avatar';
+import { PermissionSelector } from '@/components/admin/PermissionSelector';
 
 /* ─── Risk badge ──────────────────────────────────────────── */
 const RISK_STYLE: Record<string, string> = {
@@ -262,6 +263,11 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
   const grouped = permsData?.data?.grouped ?? {};
   const updateRole  = useUpdateRole(role._id);
   const deleteRole  = useDeleteRole();
+  const [selectedPerms, setSelectedPerms] = useState<Set<string>>(new Set(role.permissions));
+  const [permSearch,    setPermSearch]     = useState('');
+  const [riskFilter,    setRiskFilter]     = useState<string>('all');
+  const [editName,      setEditName]       = useState(role.name);
+  const [editDesc,      setEditDesc]       = useState(role.description ?? '');
 
   const allPermsFlat = useMemo(
     () => Object.values(grouped as Record<string, PermissionDoc[]>).flat().map(p => p.key),
@@ -274,12 +280,6 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
     if (globalAllOn) setSelectedPerms(new Set());
     else setSelectedPerms(new Set(allPermsFlat));
   };
-
-  const [selectedPerms, setSelectedPerms] = useState<Set<string>>(new Set(role.permissions));
-  const [permSearch,    setPermSearch]     = useState('');
-  const [riskFilter,    setRiskFilter]      = useState<string>('all');
-  const [editName,      setEditName]       = useState(role.name);
-  const [editDesc,      setEditDesc]       = useState(role.description ?? '');
 
   const isDirty = editName !== role.name || editDesc !== (role.description ?? '')
     || selectedPerms.size !== role.permissions.length
@@ -382,7 +382,7 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
       </div>
 
       {/* Permission search */}
-      {!isSA && (
+      {false && !isSA && (
         <div className="space-y-2.5 border-b border-neutral-100 px-4 py-2.5 shrink-0">
           <div className="relative">
             <Search size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -428,6 +428,17 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
 
       {/* Permission list */}
       <div className={compact ? 'max-h-[55vh] overflow-y-auto px-4 py-3 space-y-4' : 'flex-1 overflow-y-auto px-4 py-3 space-y-4'}>
+        {!isSA && (
+          <PermissionSelector
+            grouped={grouped as Record<string, PermissionDoc[]>}
+            mode="role"
+            granted={selectedPerms}
+            denied={new Set<string>()}
+            onChange={(nextGranted) => setSelectedPerms(nextGranted)}
+          />
+        )}
+        {isSA && (
+        <div>
         {isSA ? (
           <div className="flex flex-col items-center py-10 text-center">
             <Crown size={32} className="mb-3 text-amber-400" />
@@ -487,6 +498,8 @@ function RoleEditor({ role, onClose, compact = false }: { role: RoleDoc; onClose
             </div>
           );
         })}
+        </div>
+        )}
       </div>
 
       {/* Save footer */}
@@ -557,23 +570,25 @@ function AdminCard({ admin, onEditPoste, onEditPerms, onRevoke, onSuspend, isSel
       </div>
       <div className="flex flex-col gap-1.5 shrink-0">
         <button onClick={() => onEditPoste(admin)} title="Modifier le poste"
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition hover:border-emerald-300 hover:text-emerald-600">
-          <Edit3 size={12} />
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition hover:border-emerald-300 hover:text-emerald-600">
+          <Edit3 size={13} />
         </button>
-        <button onClick={() => onEditPerms(admin)} title="Permissions personnalisées"
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition hover:border-blue-300 hover:text-blue-600">
-          <Key size={12} />
-        </button>
+        {!isSA && (
+          <button onClick={() => onEditPerms(admin)} title="Permissions personnalisées"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition hover:border-blue-300 hover:text-blue-600">
+            <Key size={13} />
+          </button>
+        )}
         {!isSelf && !isSA && (
           <>
             <button onClick={() => onRevoke(admin._id)} title="Révoquer l'accès admin"
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-100 text-red-300 transition hover:border-red-300 hover:text-red-600">
-              <ShieldOff size={12} />
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 text-red-300 transition hover:border-red-300 hover:text-red-600">
+              <ShieldOff size={13} />
             </button>
             {!isSuspended && (
               <button onClick={() => onSuspend(admin._id)} title="Bloquer le compte"
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-orange-100 text-orange-300 transition hover:border-orange-400 hover:text-orange-600">
-                <Ban size={12} />
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-orange-100 text-orange-300 transition hover:border-orange-400 hover:text-orange-600">
+                <Ban size={13} />
               </button>
             )}
           </>
@@ -822,9 +837,9 @@ function EditAdminModal({ admin, onClose, roles }: { admin: AdminUser; onClose: 
   );
 }
 
-/* ─── Promote modal (2 étapes) ────────────────────────────── */
+/* ─── Promote modal (3 étapes) ────────────────────────────── */
 function PromoteModal({ onClose, roles }: { onClose: () => void; roles: RoleDoc[] }) {
-  const [step,          setStep]          = useState<'member' | 'config' | 'success'>('member');
+  const [step,          setStep]          = useState<'member' | 'config' | 'permissions' | 'success'>('member');
   const [search,        setSearch]        = useState('');
   const [selectedId,    setSelectedId]    = useState('');
   const [selectedName,  setSelectedName]  = useState('');
@@ -835,14 +850,22 @@ function PromoteModal({ onClose, roles }: { onClose: () => void; roles: RoleDoc[
   const [nominationYear, setNominationYear] = useState(String(CURRENT_YEAR));
   const [photoFile,     setPhotoFile]     = useState<File | null>(null);
   const [photoPreview,  setPhotoPreview]  = useState<string | null>(null);
+  const [customSet,     setCustomSet]     = useState<Set<string>>(new Set());
+  const [deniedSet,     setDeniedSet]     = useState<Set<string>>(new Set());
 
   const { data: membersData } = useAdminMembers({ search, limit: 20 });
+  const { data: permissionsData } = usePermissionsList();
   const promote     = usePromoteAdmin();
   const assign      = useAssignPoste();
   const uploadPhoto = useUploadBureauPhoto();
   const members     = membersData?.data?.data ?? [];
   const categoryOptions = getCategoryOptions(bureauCategory, roles);
   const assignment = buildBureauAssignment(bureauCategory, selectedPoste);
+  const permissionGroups = (permissionsData?.data?.grouped ?? {}) as Record<string, PermissionDoc[]>;
+  const rolePermissions = useMemo(
+    () => new Set(roles.find(role => role.slug === roleSlug)?.permissions ?? []),
+    [roleSlug, roles],
+  );
 
   const filteredPostes = useMemo(() =>
     posteSearch
@@ -873,7 +896,12 @@ function PromoteModal({ onClose, roles }: { onClose: () => void; roles: RoleDoc[
       return;
     }
     try {
-      await promote.mutateAsync({ userId: selectedId, roleSlug });
+      await promote.mutateAsync({
+        userId: selectedId,
+        roleSlug,
+        customPermissions: roleSlug === 'admin' ? [...customSet] : [],
+        deniedPermissions: roleSlug === 'admin' ? [...deniedSet] : [],
+      });
       if (selectedPoste && photoFile && !isOther) {
         await uploadPhoto.mutateAsync({ userId: selectedId, file: photoFile });
       }
@@ -923,17 +951,25 @@ function PromoteModal({ onClose, roles }: { onClose: () => void; roles: RoleDoc[
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 backdrop-blur-sm sm:p-4">
+      <div className={`flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200 sm:max-h-[92vh] ${step === 'permissions' ? 'max-w-3xl' : 'max-w-md'}`}>
 
         {/* En-tête */}
-        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-neutral-100 px-4 py-3 sm:px-6 sm:py-4">
           <div>
             <p className="font-black text-neutral-900">
-              {step === 'member' ? 'Promouvoir un membre' : `Configurer — ${selectedName}`}
+              {step === 'member'
+                ? 'Promouvoir un membre'
+                : step === 'config'
+                  ? `Configurer le rôle — ${selectedName}`
+                  : `Permissions personnalisées — ${selectedName}`}
             </p>
             <p className="text-xs text-neutral-500 mt-0.5">
-              {step === 'member' ? 'Étape 1 / 2 — Sélectionner un membre' : 'Étape 2 / 2 — Rôle & poste'}
+              {step === 'member'
+                ? 'Étape 1 / 3 — Sélectionner un membre'
+                : step === 'config'
+                  ? 'Étape 2 / 3 — Rôle et poste'
+                  : 'Étape 3 / 3 — Vérifier les accès avant validation'}
             </p>
           </div>
           <button onClick={onClose}><X size={16} className="text-neutral-400" /></button>
@@ -1150,11 +1186,68 @@ function PromoteModal({ onClose, roles }: { onClose: () => void; roles: RoleDoc[
                 Retour
               </button>
               <button
-                disabled={promote.isPending || assign.isPending || uploadPhoto.isPending || !nominationYearValid || !photoValid}
-                onClick={handlePromote}
+                disabled={!nominationYearValid || !photoValid}
+                onClick={() => setStep('permissions')}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white disabled:opacity-50">
+                Permissions <ChevronRight size={14} />
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 'permissions' && (
+          <>
+            <div className="flex-1 overflow-y-auto px-2.5 py-3 sm:px-5 sm:py-4">
+              {roleSlug === 'super_admin' ? (
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
+                    <div className="flex items-start gap-2.5">
+                      <Crown size={17} className="mt-0.5 shrink-0 text-amber-600" />
+                      <div>
+                        <p className="text-xs font-black text-amber-900 sm:text-sm">Accès total protégé</p>
+                        <p className="mt-1 text-[11px] leading-5 text-amber-800 sm:text-xs">
+                          Le rôle Super Administrateur possède automatiquement tout le catalogue. Les exceptions individuelles ne s’appliquent pas à ce rôle.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <PermissionSelector grouped={permissionGroups} mode="readonly" />
+                </div>
+              ) : Object.keys(permissionGroups).length === 0 ? (
+                <div className="flex min-h-48 items-center justify-center gap-2 text-xs text-neutral-500">
+                  <Loader2 size={15} className="animate-spin text-emerald-600" /> Chargement du catalogue sécurisé…
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-[11px] leading-5 text-blue-800 sm:text-xs">
+                    Les droits « Hérité » viennent du rôle Administrateur. Un refus individuel est prioritaire sur le rôle ; un accord individuel ajoute uniquement la permission choisie.
+                  </div>
+                  <PermissionSelector
+                    grouped={permissionGroups}
+                    mode="custom"
+                    granted={customSet}
+                    denied={deniedSet}
+                    inherited={rolePermissions}
+                    onChange={(nextGranted, nextDenied) => {
+                      setCustomSet(nextGranted);
+                      setDeniedSet(nextDenied);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-neutral-100 px-3 py-3 sm:gap-3 sm:px-6 sm:py-4">
+              <button onClick={() => setStep('config')}
+                className="min-h-10 rounded-xl border border-neutral-200 px-3 text-xs font-semibold text-neutral-600 sm:text-sm">
+                Retour
+              </button>
+              <button
+                disabled={promote.isPending || assign.isPending || uploadPhoto.isPending || Object.keys(permissionGroups).length === 0}
+                onClick={handlePromote}
+                className="flex min-h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 text-xs font-black text-white disabled:opacity-50 sm:text-sm">
                 {(promote.isPending || assign.isPending || uploadPhoto.isPending) && <Loader2 size={13} className="animate-spin" />}
-                Promouvoir
+                Confirmer la promotion
               </button>
             </div>
           </>
@@ -1174,6 +1267,10 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
   const [deniedSet, setDeniedSet] = useState<Set<string>>(new Set(admin.deniedPermissions));
   const [search,    setSearch]    = useState('');
   const update = useUpdateCustomPerms();
+  const inheritedSet = useMemo(
+    () => new Set((admin.roles ?? []).flatMap(role => role.permissions ?? [])),
+    [admin.roles],
+  );
 
   /* ── Filtrage ── */
   const filteredGroups = useMemo(() => {
@@ -1226,11 +1323,11 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 backdrop-blur-sm sm:p-4">
+      <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-neutral-200 sm:max-h-[90vh]">
 
         {/* En-tête */}
-        <div className="flex items-center justify-between border-b border-neutral-100 bg-emerald-50/40 px-6 py-4 shrink-0">
+        <div className="flex shrink-0 items-center justify-between border-b border-neutral-100 bg-emerald-50/40 px-4 py-3 sm:px-6 sm:py-4">
           <div>
             <p className="font-black text-neutral-900">Permissions personnalisées</p>
             <p className="text-xs text-neutral-500 mt-0.5">{formatFullName(admin.firstName, admin.lastName)}</p>
@@ -1244,8 +1341,23 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
           <span className="text-[10px] font-black uppercase tracking-wide text-red-600">− Refusée : {deniedSet.size}</span>
         </div>
 
+        <div className="flex-1 overflow-y-auto px-2.5 py-3 sm:px-4">
+          <PermissionSelector
+            grouped={grouped}
+            mode="custom"
+            granted={customSet}
+            denied={deniedSet}
+            inherited={inheritedSet}
+            onChange={(nextGranted, nextDenied) => {
+              setCustomSet(nextGranted);
+              setDeniedSet(nextDenied);
+            }}
+          />
+        </div>
+
+        {false && (<>
         {/* Recherche */}
-        <div className="border-b border-neutral-100 px-4 py-2.5 shrink-0">
+        <div className="hidden border-b border-neutral-100 px-4 py-2.5 shrink-0">
           <div className="relative">
             <Search size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filtrer les permissions…"
@@ -1254,7 +1366,7 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
         </div>
 
         {/* En-têtes colonnes + TOUT sélectionner */}
-        <div className="border-b border-neutral-100 px-4 py-1.5 shrink-0 bg-neutral-50 flex items-center">
+        <div className="hidden border-b border-neutral-100 px-4 py-1.5 shrink-0 bg-neutral-50 items-center">
           <span className="flex-1 text-[10px] font-black uppercase tracking-wide text-neutral-400">Permission</span>
           {/* Colonnes alignées avec les boutons des lignes */}
           <div className="flex items-center gap-2 shrink-0">
@@ -1272,7 +1384,7 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
         </div>
 
         {/* Liste groupée par module */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+        <div className="hidden flex-1 overflow-y-auto px-4 py-3 space-y-3">
           {filteredGroups.map(([mod, perms]) => {
             const keys          = perms.map(p => p.key);
             const allModCustom  = keys.every(k => customSet.has(k));
@@ -1341,17 +1453,18 @@ function CustomPermsModal({ admin, onClose }: { admin: AdminUser; onClose: () =>
             );
           })}
         </div>
+        </>)}
 
         {/* Pied de page */}
-        <div className="flex gap-3 border-t border-neutral-100 px-6 py-4 shrink-0">
-          <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-semibold text-neutral-600">Annuler</button>
+        <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-neutral-100 px-3 py-3 sm:gap-3 sm:px-6 sm:py-4">
+          <button onClick={onClose} className="min-h-10 rounded-xl border border-neutral-200 px-3 text-xs font-semibold text-neutral-600 sm:text-sm">Annuler</button>
           <button
             disabled={update.isPending}
             onClick={() => update.mutate(
               { userId: admin._id, customPermissions: [...customSet], deniedPermissions: [...deniedSet] },
               { onSuccess: () => onClose() },
             )}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-black text-white disabled:opacity-50">
+            className="flex min-h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 text-xs font-black text-white disabled:opacity-50 sm:text-sm">
             {update.isPending && <Loader2 size={13} className="animate-spin" />}
             Enregistrer
           </button>
@@ -1560,7 +1673,7 @@ export default function RolesPage() {
       {/* ── PERMISSIONS TAB ── */}
       {tab === 'permissions' && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="hidden flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-48">
               <Search size={13} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
               <input value={permSearch} onChange={e => setPermSearch(e.target.value)}
@@ -1585,7 +1698,27 @@ export default function RolesPage() {
 
           {permsLoading && <div className="h-64 rounded-2xl bg-neutral-100 animate-pulse" />}
 
-          {!permsLoading && Object.entries(grouped).map(([mod, perms]) => {
+          {!permsLoading && (
+            <>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <div className="rounded-xl border border-neutral-100 bg-white p-3 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400">Rubriques</p>
+                  <p className="mt-1 text-xl font-black text-neutral-900">{Object.keys(grouped).length}</p>
+                </div>
+                <div className="rounded-xl border border-neutral-100 bg-white p-3 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400">Permissions</p>
+                  <p className="mt-1 text-xl font-black text-emerald-700">{Object.values(grouped).flat().length}</p>
+                </div>
+                <div className="rounded-xl border border-red-100 bg-red-50/50 p-3 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.1em] text-red-500">Droits critiques</p>
+                  <p className="mt-1 text-xl font-black text-red-700">{Object.values(grouped).flat().filter(permission => permission.riskLevel === 'critical').length}</p>
+                </div>
+              </div>
+              <PermissionSelector grouped={grouped as Record<string, PermissionDoc[]>} mode="readonly" />
+            </>
+          )}
+
+          {false && !permsLoading && Object.entries(grouped).map(([mod, perms]) => {
             const filteredPerms = perms.filter(p => {
               const matchSearch = !permSearch || p.key.toLowerCase().includes(permSearch.toLowerCase()) || p.label.toLowerCase().includes(permSearch.toLowerCase());
               const matchRisk   = riskFilter === 'all' || p.riskLevel === riskFilter;

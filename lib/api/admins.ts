@@ -37,10 +37,15 @@ export function usePromoteAdmin() {
   const token = useAuthStore(s => s.accessToken);
   const qc    = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, roleSlug = 'admin' }: { userId: string; roleSlug?: string }) =>
+    mutationFn: ({ userId, roleSlug = 'admin', customPermissions = [], deniedPermissions = [] }: {
+      userId: string;
+      roleSlug?: string;
+      customPermissions?: string[];
+      deniedPermissions?: string[];
+    }) =>
       apiClient('/api/v1/admin/admins', {
         method: 'POST',
-        body: JSON.stringify({ userId, roleSlug }),
+        body: JSON.stringify({ userId, roleSlug, customPermissions, deniedPermissions }),
         token: token ?? '',
       }),
     onSuccess: res => {
