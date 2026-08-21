@@ -38,7 +38,10 @@ export function useAnalyticsOverview(days = 30) {
   });
 }
 
-export function useAnalyticsActivity(params: { page: number; limit: number; search?: string; eventType?: string }) {
+export function useAnalyticsActivity(
+  params: { page: number; limit: number; search?: string; eventType?: string },
+  options: { enabled?: boolean } = {},
+) {
   const token = useAuthStore(s => s.accessToken);
   const qs = new URLSearchParams();
   qs.set('page', String(params.page));
@@ -49,7 +52,7 @@ export function useAnalyticsActivity(params: { page: number; limit: number; sear
   return useQuery({
     queryKey: ['analytics-activity', params.page, params.limit, params.search, params.eventType],
     queryFn: () => apiClient<PagedResult<AnalyticsActivityRow>>(`/api/v1/admin/analytics/activity?${qs.toString()}`, { token: token ?? '' }),
-    enabled: !!token,
+    enabled: !!token && (options.enabled ?? true),
     staleTime: 0,
     refetchOnWindowFocus: true,
   });

@@ -11,8 +11,7 @@ import { formatFullName } from '@/lib/format-name';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { formatPageUrl } from '@/lib/format-url';
-
-const ALLOWED_EMAIL = 'salamcameroun237@gmail.com';
+import { isSensitiveAnalyticsEmail } from '@/lib/security/sensitive-access';
 
 function normalizeName(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -202,7 +201,7 @@ export default function UserLogsPage() {
     ? `Aucun résultat pour ${selectedMemberLabels.join(', ')}`
     : null;
 
-  if (user?.email !== ALLOWED_EMAIL) {
+  if (!isSensitiveAnalyticsEmail(user?.email)) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-neutral-500">
         <AlertTriangle size={40} className="text-red-400" />

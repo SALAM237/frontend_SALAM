@@ -8,6 +8,9 @@ import { Activity, Eye, Laptop, Monitor, Smartphone, Tablet, Users } from 'lucid
 import { useAnalyticsOverview, useAnalyticsActivity, type AnalyticsActivityRow } from '@/lib/api/analytics';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { formatPageUrl } from '@/lib/format-url';
+import { useAuthStore } from '@/store/auth.store';
+import { hasPermission } from '@/lib/auth/roles';
+import { isSensitiveAnalyticsEmail } from '@/lib/security/sensitive-access';
 
 const CATEGORY_COLORS = ['#059669', '#2563eb', '#f59e0b', '#7c3aed', '#dc2626', '#0f766e', '#64748b'];
 
@@ -27,7 +30,7 @@ function DeviceIcon({ type }: { type?: string }) {
 
 function StatTile({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-neutral-200/70 bg-white p-3 shadow-sm sm:p-4">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-500">{label}</span>
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-700"><Icon size={14} /></span>
@@ -52,6 +55,9 @@ function RankRow({ label, value, max, color }: { label: string; value: number; m
 }
 
 export default function AnalyticsPage() {
+  const user = useAuthStore(state => state.user);
+  const canViewActivityJournal = isSensitiveAnalyticsEmail(user?.email)
+    && hasPermission(user, 'analytics.activity.read');
   const [days, setDays] = useState(30);
   const overview = useAnalyticsOverview(days);
   const data = overview.data?.data;
@@ -60,7 +66,10 @@ export default function AnalyticsPage() {
   const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState('');
   const [eventType, setEventType] = useState('all');
-  const activity = useAnalyticsActivity({ page, limit: pageSize, search, eventType });
+  const activity = useAnalyticsActivity(
+    { page, limit: pageSize, search, eventType },
+    { enabled: canViewActivityJournal },
+  );
   const logs = activity.data?.data?.logs ?? [];
   const total = activity.data?.data?.total ?? 0;
 
@@ -80,7 +89,7 @@ export default function AnalyticsPage() {
         <select
           value={days}
           onChange={e => setDays(Number(e.target.value))}
-          className="h-9 rounded-xl border border-neutral-200 bg-white px-3 text-sm font-bold text-neutral-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10"
+          className="h-9 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm font-bold text-neutral-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 sm:w-auto"
         >
           <option value={7}>7 derniers jours</option>
           <option value={30}>30 derniers jours</option>
@@ -88,14 +97,14 @@ export default function AnalyticsPage() {
         </select>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-3 sm:gap-3">
         <StatTile icon={Eye} label="Événements" value={data?.totals.events ?? 0} />
         <StatTile icon={Activity} label="Sessions" value={data?.totals.sessions ?? 0} />
         <StatTile icon={Users} label="Utilisateurs" value={data?.totals.users ?? 0} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="rounded-xl border border-neutral-200/70 bg-white p-5 shadow-sm lg:col-span-2">
+        <section className="rounded-xl border border-neutral-200/70 bg-white p-3 shadow-sm sm:p-5 lg:col-span-2">
           <p className="mb-4 text-sm font-black text-neutral-900">Tendance ({days} jours)</p>
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -116,7 +125,7 @@ export default function AnalyticsPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-neutral-200/70 bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-neutral-200/70 bg-white p-3 shadow-sm sm:p-5">
           <p className="mb-4 text-sm font-black text-neutral-900">Appareils</p>
           <div className="h-[160px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -144,14 +153,14 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-xl border border-neutral-200/70 bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-neutral-200/70 bg-white p-3 shadow-sm sm:p-5">
           <p className="mb-4 text-sm font-black text-neutral-900">Pages les plus visitées</p>
           {topPages.length === 0 && <p className="text-xs font-semibold text-neutral-400">Aucune donnée.</p>}
           <div className="space-y-3">
             {topPages.map(p => <RankRow key={p.path} label={formatPageUrl(p.path)} value={p.count} max={maxPage} />)}
           </div>
         </section>
-        <section className="rounded-xl border border-neutral-200/70 bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-neutral-200/70 bg-white p-3 shadow-sm sm:p-5">
           <p className="mb-4 text-sm font-black text-neutral-900">Navigateurs</p>
           {byBrowser.length === 0 && <p className="text-xs font-semibold text-neutral-400">Aucune donnée.</p>}
           <div className="space-y-3">
@@ -160,7 +169,8 @@ export default function AnalyticsPage() {
         </section>
       </div>
 
-      <section className="rounded-xl border border-neutral-200/70 bg-white p-5 shadow-sm">
+      {canViewActivityJournal && (
+      <section className="rounded-xl border border-neutral-200/70 bg-white p-3 shadow-sm sm:p-5">
         <p className="mb-3 text-sm font-black text-neutral-900">Journal d'activité</p>
         <ListToolbar
           search={search}
@@ -194,6 +204,7 @@ export default function AnalyticsPage() {
           ))}
         </div>
       </section>
+      )}
     </div>
   );
 }

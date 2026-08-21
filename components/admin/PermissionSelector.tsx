@@ -44,6 +44,7 @@ const MODULE_META: Record<string, { label: string; description: string }> = {
   gallery: { label: 'Galerie', description: 'Albums, médias et modération' },
   content: { label: 'Actualités', description: 'Articles et informations à la une' },
   marketing: { label: 'Marketing', description: 'Campagnes et communications marketing' },
+  analytics: { label: 'Analytics', description: 'Statistiques générales et journal d’activité sensible' },
   messages: { label: 'Messagerie', description: 'Conversations, réponses et archivage' },
   chatbot: { label: 'Assistant public', description: 'Leads et demandes issues du chatbot' },
   adhesions: { label: 'Adhésions', description: 'Instruction et export des demandes d’adhésion' },
@@ -61,6 +62,10 @@ const MODULE_META: Record<string, { label: string; description: string }> = {
 const MODULE_ORDER = Object.keys(MODULE_META);
 
 const SUBRUBRICS: Record<string, { id: string; label: string; prefixes: string[] }[]> = {
+  analytics: [
+    { id: 'overview', label: 'Statistiques générales', prefixes: ['analytics.read'] },
+    { id: 'activity', label: 'Journal d’activité', prefixes: ['analytics.activity.'] },
+  ],
   content: [
     { id: 'news', label: 'Articles et actualités', prefixes: ['content.'] },
     { id: 'featured', label: 'Informations à la une', prefixes: ['featured.'] },

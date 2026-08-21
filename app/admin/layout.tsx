@@ -27,9 +27,9 @@ import { AvatarLightbox, GlobalProfilePhotoLightbox } from '@/components/portal/
 import { usePendingValidations } from '@/lib/api/validations';
 import { useAdminStats } from '@/lib/api/dashboard';
 import { useNotifications } from '@/lib/api/notifications';
+import { isSensitiveAnalyticsEmail, SENSITIVE_ANALYTICS_ALLOWED_EMAIL } from '@/lib/security/sensitive-access';
 
 const ERRORS_ALLOWED_EMAILS = ['salamcameroun237@gmail.com', 'vicklionel@yahoo.fr'];
-const SENSITIVE_ANALYTICS_ALLOWED_EMAIL = 'salamcameroun237@gmail.com';
 type NavItem = { label: string; href: string; icon: React.ElementType; superAdminOnly?: boolean; adminOnly?: boolean; permissions?: string[]; hidden?: boolean; allowedEmails?: string[]; emailOnly?: string[] };
 
 const BASE_NAV: NavItem[] = [
@@ -50,7 +50,7 @@ const BASE_NAV: NavItem[] = [
   { label: 'IDP/ISP',           href: '/admin/idp-isp',           icon: Target, permissions: ['chatbot.read'] },
   { label: 'Validations',       href: '/admin/validations',       icon: ShieldCheck, permissions: ['content.publish', 'gallery.publish', 'networking.publish', 'opportunities.publish'] },
   { label: 'Historique',        href: '/admin/historique',        icon: History, permissions: ['audit.read'] },
-  { label: 'Analytics',         href: '/admin/analytics',         icon: BarChart3, emailOnly: [SENSITIVE_ANALYTICS_ALLOWED_EMAIL] },
+  { label: 'Analytics',         href: '/admin/analytics',         icon: BarChart3, permissions: ['analytics.read'] },
   { label: 'User Log',          href: '/admin/user-logs',         icon: Eye, emailOnly: [SENSITIVE_ANALYTICS_ALLOWED_EMAIL] },
   { label: 'Gestion Erreurs',   href: '/admin/erreurs',           icon: AlertTriangle, allowedEmails: ERRORS_ALLOWED_EMAILS },
   { label: 'Rôles & Accès',     href: '/admin/roles',             icon: Shield, superAdminOnly: true },
@@ -332,14 +332,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/bureau-executif/connexion');
   };
 
-  const isSensitiveAnalyticsPage = pathname === '/admin/analytics' || pathname.startsWith('/admin/user-logs');
-  const canAccessSensitiveAnalytics = String(user?.email ?? '').trim().toLowerCase() === SENSITIVE_ANALYTICS_ALLOWED_EMAIL;
+  const isUserLogsPage = pathname.startsWith('/admin/user-logs');
+  const canAccessUserLogs = isSensitiveAnalyticsEmail(user?.email);
 
   useEffect(() => {
-    if (!restoring && isSensitiveAnalyticsPage && !canAccessSensitiveAnalytics) {
+    if (!restoring && isUserLogsPage && !canAccessUserLogs) {
       router.replace('/admin/dashboard');
     }
-  }, [restoring, isSensitiveAnalyticsPage, canAccessSensitiveAnalytics, router]);
+  }, [restoring, isUserLogsPage, canAccessUserLogs, router]);
 
   // Ecran de chargement pendant la restauration de session
   if (restoring) {
