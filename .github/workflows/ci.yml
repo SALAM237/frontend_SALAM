@@ -12,6 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Secret scan (gitleaks)
+        # Tourne juste apres le checkout, avant `npm ci`/`build` : un scan de
+        # secrets doit porter sur le code source, jamais sur les artefacts de
+        # build (.next/, node_modules/) qui contiennent des cles internes
+        # generees par les outils eux-memes (ex. previewModeEncryptionKey de
+        # Next.js) et produisent de faux positifs sans rapport avec le code.
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
+            detect --source=/repo --no-git --verbose --redact --config=/repo/.gitleaks.toml
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -30,8 +40,3 @@ jobs:
       - name: Dependency audit (informatif)
         run: npm audit --omit=dev --audit-level=high
         continue-on-error: true
-
-      - name: Secret scan (gitleaks)
-        run: |
-          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
-            detect --source=/repo --verbose --redact
