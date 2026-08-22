@@ -779,12 +779,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
     });
   }, []);
   const mediaPlaying = playingMediaIds.size > 0;
-  // Le carrousel ne doit pas avancer (et donc couper une video en cours de
-  // lecture) tant qu'un media actif joue encore — sur desktop comme sur
-  // mobile. Avant ce fix, seul le mobile respectait mediaPlaying : le timer
-  // desktop (RAF plus bas) avancait systematiquement a SLIDE_DELAY (12s)
-  // meme si la video active etait encore en train de jouer.
-  const carouselPaused = manualPaused || Boolean(preview) || mediaPlaying;
+  const carouselPaused = manualPaused || Boolean(preview) || (!isDesktopOrTablet && mediaPlaying);
 
   const moveDesktop = useCallback((direction: 'prev' | 'next') => {
     if (items.length < 2) return;
