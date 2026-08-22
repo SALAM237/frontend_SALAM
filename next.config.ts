@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 import path from 'node:path';
 
 const NOINDEX = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
@@ -35,6 +36,21 @@ const BASE_SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false, // ne pas exposer "X-Powered-By: Next.js"
+
+  // Le DSN est volontairement public côté navigateur. Aucun token Sentry
+  // d'administration ou d'upload n'est exposé par ces variables.
+  env: {
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN ?? process.env.SENTRY_DSN ?? '',
+    NEXT_PUBLIC_SENTRY_ENVIRONMENT:
+      process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT
+      ?? process.env.VERCEL_ENV
+      ?? process.env.NODE_ENV
+      ?? 'development',
+    NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE:
+      process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE
+      ?? process.env.SENTRY_TRACES_SAMPLE_RATE
+      ?? '0.1',
+  },
 
   compress: true, // gzip/brotli compression (actif par défaut, explicite ici)
 
@@ -127,4 +143,20 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG ?? 'salam-cameroun',
+  project: process.env.SENTRY_PROJECT ?? 'salam_cameroun',
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  telemetry: false,
+  widenClientFileUpload: true,
+  tunnelRoute: true,
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+});

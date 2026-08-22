@@ -114,7 +114,7 @@ export async function refreshAuthSession(options: RefreshAuthOptions = {}): Prom
       const res = await fetch(`${API}/api/v1/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'X-Requested-With': 'XMLHttpRequest' },
       });
       if (res.status === 401 || res.status === 403) throw new RefreshError('refresh_expired', res.status);
       if (!res.ok) throw new RefreshError('refresh_temporarily_unavailable', res.status);
@@ -192,6 +192,7 @@ export async function apiClient<T = unknown>(
   const isFormData = typeof FormData !== 'undefined' && rest.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json; charset=utf-8' }),
+    'X-Requested-With': 'XMLHttpRequest',
     ...((rest.headers as Record<string, string>) ?? {}),
   };
   if (isFormData) delete headers['Content-Type'];
