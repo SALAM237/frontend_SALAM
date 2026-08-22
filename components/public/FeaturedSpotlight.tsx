@@ -35,7 +35,7 @@ import {
 } from '@/lib/api/featured';
 import { useAuthStore } from '@/store/auth.store';
 
-const SLIDE_DELAY = 5_000;
+const SLIDE_DELAY = 12_000;
 const DESKTOP_VIDEO_DELAY = 2_000;
 const YOUTUBE_ORIGINS = new Set(['https://www.youtube.com', 'https://www.youtube-nocookie.com']);
 
@@ -219,6 +219,8 @@ function CinematicMedia({
 }: MediaProps & { onExpand: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const activeSinceRef = useRef(0);
+  const youtubeAutoplayTimerRef = useRef<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const source = validMediaSource(item.mediaUrls[0]);
@@ -237,7 +239,14 @@ function CinematicMedia({
   }, []);
 
   useEffect(() => {
-    if (active) return;
+    if (active) {
+      activeSinceRef.current = Date.now();
+      return;
+    }
+    if (youtubeAutoplayTimerRef.current !== null) {
+      window.clearTimeout(youtubeAutoplayTimerRef.current);
+      youtubeAutoplayTimerRef.current = null;
+    }
     videoRef.current?.pause();
     sendYoutubeCommand('pauseVideo');
     const animationFrame = window.requestAnimationFrame(() => updatePlaying(false));
@@ -262,26 +271,28 @@ function CinematicMedia({
   }, [updatePlaying]);
 
   useEffect(() => {
-    if (!active || !item.autoplay || item.mediaType !== 'video' || !source) return;
+    if (!active || item.mediaType !== 'video' || !source || youtube) return;
+
+    const elapsedInActivePosition = Math.max(0, Date.now() - activeSinceRef.current);
+    const remainingDelay = Math.max(0, DESKTOP_VIDEO_DELAY - elapsedInActivePosition);
 
     const timer = window.setTimeout(() => {
-      if (youtube) {
-        sendYoutubeCommand('mute');
-        sendYoutubeCommand('playVideo');
-        setMuted(true);
-        return;
-      }
       const video = videoRef.current;
       if (!video) return;
       video.muted = true;
       setMuted(true);
       void video.play().catch(() => updatePlaying(false));
-    }, DESKTOP_VIDEO_DELAY);
+    }, remainingDelay);
 
     return () => window.clearTimeout(timer);
-  }, [active, item.autoplay, item.mediaType, sendYoutubeCommand, source, updatePlaying, youtube]);
+  }, [active, item.mediaType, source, updatePlaying, youtube]);
 
-  useEffect(() => () => onPlaybackChange(playbackId, false), [onPlaybackChange, playbackId]);
+  useEffect(() => () => {
+    if (youtubeAutoplayTimerRef.current !== null) {
+      window.clearTimeout(youtubeAutoplayTimerRef.current);
+    }
+    onPlaybackChange(playbackId, false);
+  }, [onPlaybackChange, playbackId]);
 
   const togglePlay = () => {
     if (youtube) {
@@ -329,6 +340,17 @@ function CinematicMedia({
           src={`https://www.youtube-nocookie.com/embed/${youtube}?enablejsapi=1&playsinline=1&autoplay=0&mute=1&controls=0&rel=0`}
           onLoad={event => {
             event.currentTarget.contentWindow?.postMessage(JSON.stringify({ event: 'listening', id: playbackId }), 'https://www.youtube-nocookie.com');
+            if (youtubeAutoplayTimerRef.current !== null) {
+              window.clearTimeout(youtubeAutoplayTimerRef.current);
+            }
+            const elapsedInActivePosition = Math.max(0, Date.now() - activeSinceRef.current);
+            const remainingDelay = Math.max(0, DESKTOP_VIDEO_DELAY - elapsedInActivePosition);
+            youtubeAutoplayTimerRef.current = window.setTimeout(() => {
+              sendYoutubeCommand('mute');
+              sendYoutubeCommand('playVideo');
+              setMuted(true);
+              youtubeAutoplayTimerRef.current = null;
+            }, remainingDelay);
           }}
           title={item.title}
           allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
@@ -569,9 +591,9 @@ function DesktopAccordionCarousel({
             className={`featured-accordion-card group absolute overflow-hidden border border-white/10 bg-[#06130d] shadow-2xl ${active ? 'is-active' : ''}`}
             style={{
               left,
-              top: active || singleton ? '0%' : '8%',
+              top: '8%',
               width: singleton ? '100%' : active ? 'var(--featured-active-width)' : 'var(--featured-thumb-width)',
-              height: active || singleton ? '100%' : '84%',
+              height: '84%',
               opacity: visible ? 1 : 0,
               zIndex: active ? 30 : offset === -1 ? 8 : Math.max(4, 20 - offset),
               pointerEvents: visible ? 'auto' : 'none',
@@ -611,7 +633,7 @@ function DesktopAccordionCarousel({
             {active && (
               <>
                 <ProgressBar progress={progress} />
-                <span className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(0,8,5,0.96)_0%,rgba(0,10,6,0.84)_32%,rgba(0,8,5,0.28)_61%,transparent_82%)]" />
+                <span className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(0,8,5,0.78)_0%,rgba(0,10,6,0.56)_24%,rgba(0,8,5,0.14)_48%,transparent_66%)]" />
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={item._id}
@@ -733,6 +755,20 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   const [playingMediaIds, setPlayingMediaIds] = useState<Set<string>>(() => new Set());
   const isDesktopOrTablet = useMediaQuery('(min-width: 768px)');
 
+  useEffect(() => {
+    if (!preview) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPreview(null);
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [preview]);
+
   const handlePlaybackChange = useCallback((id: string, playing: boolean) => {
     setPlayingMediaIds(current => {
       const next = new Set(current);
@@ -743,7 +779,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
     });
   }, []);
   const mediaPlaying = playingMediaIds.size > 0;
-  const carouselPaused = manualPaused || mediaPlaying || Boolean(preview);
+  const carouselPaused = manualPaused || Boolean(preview) || (!isDesktopOrTablet && mediaPlaying);
 
   const moveDesktop = useCallback((direction: 'prev' | 'next') => {
     if (items.length < 2) return;
@@ -957,7 +993,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
       <AnimatePresence>
         {preview && (
           <motion.div
-            className="fixed inset-0 z-[160] flex items-center justify-center bg-black/88 p-4 backdrop-blur-md"
+            className="fixed inset-0 z-[160] flex h-screen h-[100dvh] w-screen items-center justify-center bg-black backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -971,18 +1007,19 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.97, y: 10 }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className="relative h-auto max-h-[88vh] w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl"
+              className="relative h-screen h-[100dvh] w-screen max-w-none overflow-hidden bg-black"
               onClick={event => event.stopPropagation()}
             >
               <button
                 type="button"
                 onClick={() => setPreview(null)}
                 aria-label="Fermer l aperçu"
-                className="absolute right-3 top-3 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/70 text-white backdrop-blur transition hover:bg-black/90"
+                autoFocus
+                className="absolute right-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white shadow-xl backdrop-blur transition hover:scale-105 hover:bg-black/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
                 <X size={18} />
               </button>
-              <div className="aspect-video">
+              <div className="featured-preview-fullscreen h-full w-full">
                 <LegacyMedia item={preview} active playbackId={`preview-${preview._id}`} onPlaybackChange={handlePlaybackChange} />
               </div>
             </motion.div>
