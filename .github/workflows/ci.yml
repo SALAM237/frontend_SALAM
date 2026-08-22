@@ -34,4 +34,4 @@ jobs:
       - name: Secret scan (gitleaks)
         run: |
           docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
-            detect --source=/repo --verbose --redact
+            detect --source=/repo --no-git --verbose --redact --config=/repo/.gitleaks.toml
