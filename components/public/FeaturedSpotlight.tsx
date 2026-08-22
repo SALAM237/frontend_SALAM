@@ -574,6 +574,9 @@ function DesktopAccordionCarousel({
         const offset = relativeOffset(itemIndex, activeIndex, items.length);
         const active = offset === 0;
         const visible = singleton || offset >= -1 && offset <= 4;
+        const ctaProps = destinationProps(item.buttonDestination)
+          ?? destinationProps(item.titleDestination)
+          ?? destinationProps(item.textDestination);
         const left = singleton
           ? '0px'
           : offset < -1
@@ -668,18 +671,28 @@ function DesktopAccordionCarousel({
                     </DestinationContent>
 
                     <div className="mt-4 flex max-w-full flex-wrap items-center gap-2.5 lg:mt-5">
-                      {destinationProps(item.buttonDestination) && (
-                        <DestinationContent
-                          destination={item.buttonDestination}
-                          className="featured-active-cta inline-flex w-fit items-center gap-1.5 rounded-full bg-white font-black text-[#07150d] shadow-xl transition hover:-translate-y-0.5 hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                      {ctaProps ? (
+                        <a
+                          {...ctaProps}
+                          className="featured-active-cta inline-flex w-fit items-center gap-1 rounded-full bg-white font-black text-[#07150d] shadow-xl transition hover:-translate-y-0.5 hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                         >
-                          {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={15} />
-                        </DestinationContent>
+                          {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={12} />
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => onPreview(item)}
+                          className="featured-active-cta inline-flex w-fit items-center gap-1 rounded-full bg-white font-black text-[#07150d] shadow-xl transition hover:-translate-y-0.5 hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                        >
+                          {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={12} />
+                        </button>
                       )}
-                      <CarouselDots items={items} activeIndex={activeIndex} onSelect={onSelect} tone="dark" />
                     </div>
                   </motion.div>
                 </AnimatePresence>
+                <div className="featured-active-dots absolute left-1/2 z-40 -translate-x-1/2">
+                  <CarouselDots items={items} activeIndex={activeIndex} onSelect={onSelect} tone="dark" />
+                </div>
               </>
             )}
           </article>

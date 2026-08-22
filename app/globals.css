@@ -250,8 +250,8 @@ select {
 }
 
 .featured-accordion-track {
-  --featured-gap: clamp(0.5rem, 0.8vw, 1rem);
-  --featured-peek: 5vw;
+  --featured-gap: clamp(0.75rem, 1.15vw, 1.35rem);
+  --featured-peek: 3vw;
   --featured-thumb-width: clamp(7.5rem, 17vw, 20rem);
   --featured-active-width: calc(
     100vw
@@ -310,6 +310,7 @@ select {
 }
 
 .featured-accordion-card.is-active {
+  border: 1px solid rgba(209, 213, 219, 0.48);
   box-shadow:
     0 36px 90px -34px rgba(0, 0, 0, 0.9),
     0 18px 38px -22px rgba(0, 0, 0, 0.72),
@@ -364,10 +365,16 @@ select {
 }
 
 .featured-active-cta {
-  min-height: clamp(2rem, 2.6vw, 2.5rem);
+  min-height: clamp(1.75rem, 2.2vw, 2.15rem);
   max-width: 100%;
-  padding-inline: clamp(0.8rem, 1.4vw, 1.25rem);
-  font-size: clamp(0.65rem, 0.78vw, 0.8rem);
+  padding-inline: clamp(0.65rem, 1.05vw, 1rem);
+  font-size: clamp(0.6rem, 0.7vw, 0.72rem);
+  line-height: 1;
+}
+
+.featured-active-dots {
+  bottom: clamp(0.8rem, 1.7vw, 1.35rem);
+  max-width: calc(100% - 2rem);
 }
 
 @media (min-width: 768px) {
