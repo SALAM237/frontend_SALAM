@@ -14,3 +14,13 @@ description = "Faux positifs confirmes"
 regexes = [
   '''salam_invoice_association_v1''',
 ]
+# Defense en profondeur : le workflow scanne desormais avant le build, donc
+# ces dossiers ne devraient jamais exister au moment du scan — mais si
+# quelqu'un reordonne les etapes plus tard, ne pas scanner les artefacts de
+# build/dependances (cles internes generees par les outils, pas des secrets
+# du projet).
+paths = [
+  '''\.next/''',
+  '''node_modules/''',
+  '''dist/''',
+]
