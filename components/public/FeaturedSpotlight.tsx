@@ -591,9 +591,9 @@ function DesktopAccordionCarousel({
             className={`featured-accordion-card group absolute overflow-hidden border border-white/10 bg-[#06130d] shadow-2xl ${active ? 'is-active' : ''}`}
             style={{
               left,
-              top: '8%',
+              top: '0%',
               width: singleton ? '100%' : active ? 'var(--featured-active-width)' : 'var(--featured-thumb-width)',
-              height: '84%',
+              height: '95%',
               opacity: visible ? 1 : 0,
               zIndex: active ? 30 : offset === -1 ? 8 : Math.max(4, 20 - offset),
               pointerEvents: visible ? 'auto' : 'none',
@@ -633,7 +633,7 @@ function DesktopAccordionCarousel({
             {active && (
               <>
                 <ProgressBar progress={progress} />
-                <span className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(0,8,5,0.78)_0%,rgba(0,10,6,0.56)_24%,rgba(0,8,5,0.14)_48%,transparent_66%)]" />
+                <span className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(68deg,rgba(0,8,5,0.96)_0%,rgba(0,10,6,0.84)_32%,rgba(0,8,5,0.28)_61%,transparent_82%)]" />
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={item._id}
@@ -641,15 +641,15 @@ function DesktopAccordionCarousel({
                     animate={{ opacity: 1, x: 0 }}
                     exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -22 }}
                     transition={{ duration: reducedMotion ? 0.01 : 0.42, delay: reducedMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute inset-y-0 left-0 z-30 flex w-[64%] max-w-[720px] flex-col justify-end px-7 pb-8 pt-12 lg:w-[58%] lg:px-10 lg:pb-10 xl:px-14 xl:pb-12"
+                    className="featured-active-content absolute inset-y-0 left-0 z-30 flex w-[88%] max-w-[720px] flex-col justify-end px-4 pb-5 pt-4 sm:px-5 sm:pb-6 sm:pt-5 lg:w-[72%] lg:px-7 lg:pb-7 lg:pt-6 xl:w-[68%] xl:px-9 xl:pb-9"
                   >
-                    <div className="mb-auto flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-500/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100 backdrop-blur-xl">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]" />
+                    <div className="mb-auto flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-500/15 px-2 py-1 text-[8px] font-black uppercase tracking-[0.15em] text-emerald-100 backdrop-blur-xl sm:text-[9px]">
+                        <span className="h-1 w-1 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
                         Sélection SALAM
                       </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/30 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/80 backdrop-blur-xl">
-                        {item.mediaType === 'video' ? <Play size={10} fill="currentColor" /> : <ImageIcon size={11} />}
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/30 px-2 py-1 text-[8px] font-bold uppercase tracking-[0.12em] text-white/80 backdrop-blur-xl sm:text-[9px]">
+                        {item.mediaType === 'video' ? <Play size={9} fill="currentColor" /> : <ImageIcon size={9} />}
                         {item.mediaType === 'video' ? 'Vidéo' : 'Image'}
                       </span>
                     </div>
@@ -662,16 +662,16 @@ function DesktopAccordionCarousel({
                     </DestinationContent>
                     <DestinationContent
                       destination={item.textDestination}
-                      className="featured-active-description mt-4 block max-w-xl whitespace-pre-line break-words text-[13px] font-medium leading-6 text-white/76 drop-shadow lg:mt-5 lg:text-[15px] lg:leading-7"
+                      className="featured-active-description mt-3 block max-w-xl whitespace-pre-line break-words font-medium text-white/76 drop-shadow lg:mt-4"
                     >
                       {item.description}
                     </DestinationContent>
 
-                    <div className="mt-6 flex flex-wrap items-center gap-3">
+                    <div className="mt-4 flex max-w-full flex-wrap items-center gap-2.5 lg:mt-5">
                       {destinationProps(item.buttonDestination) && (
                         <DestinationContent
                           destination={item.buttonDestination}
-                          className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-5 text-xs font-black text-[#07150d] shadow-xl transition hover:-translate-y-0.5 hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white lg:h-11 lg:px-6 lg:text-sm"
+                          className="featured-active-cta inline-flex w-fit items-center gap-1.5 rounded-full bg-white font-black text-[#07150d] shadow-xl transition hover:-translate-y-0.5 hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                         >
                           {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={15} />
                         </DestinationContent>
@@ -898,7 +898,7 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   }
 
   return (
-    <section className="featured-spotlight-shell relative w-full overflow-hidden pb-7 pt-4 sm:pb-8 sm:pt-6 md:pb-10 md:pt-7 lg:pb-12 lg:pt-9" aria-labelledby="featured-heading">
+    <section className="featured-spotlight-shell relative w-full overflow-hidden pb-7 pt-4 sm:pb-8 sm:pt-6 md:pb-0 md:pt-7 lg:pt-9" aria-labelledby="featured-heading">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-[0.14] mix-blend-soft-light md:opacity-[0.08]"
