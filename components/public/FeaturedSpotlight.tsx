@@ -165,7 +165,7 @@ function LegacyMedia({ item, active, playbackId, onPlaybackChange }: MediaProps)
   const source = validMediaSource(item.mediaUrls[0]);
   if (!source) return <MediaUnavailable />;
   if (item.mediaType === 'image') {
-    return <img src={source} alt={item.title} loading="lazy" className="h-full w-full object-cover" />;
+    return <img src={source} alt={item.title} loading="lazy" className="featured-media-visual h-full w-full object-cover" />;
   }
 
   const youtube = item.videoProvider === 'youtube' ? youtubeId(source) : '';
@@ -180,7 +180,7 @@ function LegacyMedia({ item, active, playbackId, onPlaybackChange }: MediaProps)
         loading="lazy"
         allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
         allowFullScreen
-        className="h-full w-full"
+        className="featured-media-visual h-full w-full"
       />
     );
   }
@@ -197,7 +197,7 @@ function LegacyMedia({ item, active, playbackId, onPlaybackChange }: MediaProps)
       onPlay={() => onPlaybackChange(playbackId, true)}
       onPause={() => onPlaybackChange(playbackId, false)}
       onEnded={() => onPlaybackChange(playbackId, false)}
-      className="h-full w-full object-cover"
+      className="featured-media-visual h-full w-full object-cover"
     />
   );
 }
@@ -414,7 +414,7 @@ function CinematicMedia({
   );
 }
 
-type LegacyCarouselProps = {
+type MobileAccordionCarouselProps = {
   items: FeaturedItem[];
   activeIndex: number;
   progress: number;
@@ -427,7 +427,7 @@ type LegacyCarouselProps = {
   onSelect: (index: number) => void;
 };
 
-function LegacyMobileCarousel({
+function MobileAccordionCarousel({
   items,
   activeIndex,
   progress,
@@ -438,7 +438,7 @@ function LegacyMobileCarousel({
   onPreview,
   onPlaybackChange,
   onSelect,
-}: LegacyCarouselProps) {
+}: MobileAccordionCarouselProps) {
   return (
     <div className="featured-legacy-mobile relative h-[85vh] min-h-[520px] max-h-[780px] overflow-hidden md:hidden">
       <Swiper
@@ -461,54 +461,108 @@ function LegacyMobileCarousel({
         onAutoplayTimeLeft={(_swiper, _timeLeft, percentage) =>
           onProgressChange(Math.max(0, Math.min(100, (1 - percentage) * 100)))}
       >
-        {items.map((item, itemIndex) => (
-          <SwiperSlide key={item._id} className="!flex h-full items-start justify-end pt-7">
-            <div
-              className="grid h-[88%] w-[93%] min-h-0 grid-rows-[42%_58%] overflow-hidden rounded-2xl border-0 bg-transparent"
-              style={{ boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px' }}
-            >
-              <article
-                className="isolate relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl bg-white p-4 text-left text-neutral-950"
-                style={{ boxShadow: '0 -10px 32px rgba(0,0,0,0.10), 0 -2px 8px rgba(0,0,0,0.06)' }}
-              >
-                <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-                  <DestinationContent destination={item.titleDestination} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl">
-                    {item.title}
-                  </DestinationContent>
-                  <DestinationContent destination={item.textDestination} className="mt-2.5 block whitespace-pre-line break-words text-sm leading-6 text-neutral-600 hover:text-neutral-900">
-                    {item.description}
-                  </DestinationContent>
-                </div>
-                {destinationProps(item.buttonDestination) && (
-                  <DestinationContent
-                    destination={item.buttonDestination}
-                    className="absolute bottom-9 left-4 z-10 inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-emerald-600/45 bg-emerald-100/75 px-3.5 text-[11px] font-black text-emerald-800 backdrop-blur transition hover:border-emerald-700/70 hover:bg-emerald-100"
-                  >
-                    {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={12} />
-                  </DestinationContent>
-                )}
-                <CarouselDots items={items} activeIndex={activeIndex} onSelect={onSelect} tone="light" />
-              </article>
+        {items.map((item, itemIndex) => {
+          const active = itemIndex === activeIndex;
+          const ctaProps = destinationProps(item.buttonDestination)
+            ?? destinationProps(item.titleDestination)
+            ?? destinationProps(item.textDestination);
 
-              <button
-                type="button"
-                onClick={() => onPreview(item)}
-                className="relative order-1 h-full min-h-0 overflow-hidden rounded-t-2xl bg-black text-left"
-              >
-                <ProgressBar progress={progress} />
-                <LegacyMedia
-                  item={item}
-                  active={itemIndex === activeIndex && !preview}
-                  playbackId={`mobile-slide-${item._id}`}
-                  onPlaybackChange={onPlaybackChange}
-                />
-                <span className="absolute right-3 top-3 z-30 grid h-7 w-7 place-items-center rounded-full border border-white/30 bg-black/70 text-white shadow-lg backdrop-blur" aria-hidden="true">
-                  <Expand size={13} />
-                </span>
-              </button>
-            </div>
-          </SwiperSlide>
-        ))}
+          return (
+            <SwiperSlide key={item._id} className="!flex h-full items-start justify-end pt-7">
+              <article className={`featured-mobile-accordion-card relative h-[88%] w-[93%] min-h-0 overflow-hidden rounded-2xl bg-[#06130d] text-left ${active ? 'is-active' : ''}`}>
+                <div className="absolute inset-0 bg-black">
+                  <LegacyMedia
+                    item={item}
+                    active={active && !preview}
+                    playbackId={`mobile-slide-${item._id}`}
+                    onPlaybackChange={onPlaybackChange}
+                  />
+                </div>
+
+                <span className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-black/10 to-black/15" />
+
+                {active ? (
+                  <>
+                    <ProgressBar progress={progress} />
+                    <span className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(68deg,rgba(0,8,5,0.94)_0%,rgba(0,10,6,0.76)_30%,rgba(0,8,5,0.22)_59%,transparent_80%)]" />
+
+                    <motion.div
+                      key={`mobile-content-${item._id}`}
+                      initial={{ opacity: 0, x: 18 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.32, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+                      className="featured-mobile-active-content pointer-events-none absolute inset-0 z-30 flex min-w-0 flex-col px-4 pb-12 pt-4"
+                    >
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-500/15 px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-emerald-100 backdrop-blur-xl">
+                          <span className="h-1 w-1 rounded-full bg-emerald-400" />
+                          Sélection SALAM
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/30 px-2 py-1 text-[8px] font-bold uppercase tracking-[0.1em] text-white/80 backdrop-blur-xl">
+                          {item.mediaType === 'video' ? <Play size={8} fill="currentColor" /> : <ImageIcon size={8} />}
+                          {item.mediaType === 'video' ? 'Vidéo' : 'Image'}
+                        </span>
+                      </div>
+
+                      <div className="mt-auto min-w-0 max-w-[92%]">
+                        <DestinationContent
+                          destination={item.titleDestination}
+                          className="featured-mobile-title pointer-events-auto block max-w-full font-black leading-[1.04] tracking-[-0.035em] text-white drop-shadow-2xl"
+                        >
+                          {item.title}
+                        </DestinationContent>
+                        <DestinationContent
+                          destination={item.textDestination}
+                          className="featured-mobile-description pointer-events-auto mt-2 block max-w-full whitespace-pre-line font-medium text-white/80 drop-shadow"
+                        >
+                          {item.description}
+                        </DestinationContent>
+
+                        <div className="mt-3">
+                          {ctaProps ? (
+                            <a
+                              {...ctaProps}
+                              className="featured-mobile-cta pointer-events-auto inline-flex w-fit items-center gap-1 rounded-full bg-white font-black text-[#07150d] shadow-lg transition active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                            >
+                              {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={11} />
+                            </a>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => onPreview(item)}
+                              className="featured-mobile-cta pointer-events-auto inline-flex w-fit items-center gap-1 rounded-full bg-white font-black text-[#07150d] shadow-lg transition active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                            >
+                              {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={11} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <div className="absolute bottom-4 left-1/2 z-40 -translate-x-1/2">
+                      <CarouselDots items={items} activeIndex={activeIndex} onSelect={onSelect} tone="dark" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onPreview(item)}
+                      aria-label={`Agrandir ${item.title}`}
+                      className="absolute right-3 top-3 z-40 grid h-8 w-8 place-items-center rounded-full border border-white/25 bg-black/55 text-white shadow-lg backdrop-blur transition active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                    >
+                      <Expand size={13} />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onSelect(itemIndex)}
+                    aria-label={`Afficher ${item.title}`}
+                    className="absolute inset-0 z-20 rounded-[inherit] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-white"
+                  />
+                )}
+              </article>
+            </SwiperSlide>
+          );
+        })}
       </Swiper>
     </div>
   );
@@ -972,12 +1026,11 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
       </div>
 
       {/*
-        Ancien carousel conservé pendant la phase de validation.
-        Il reste volontairement actif uniquement sur mobile et ne sera retiré
-        qu'après validation explicite du nouveau rendu desktop/tablette.
+        Accordéon mobile : le moteur Swiper, ses dimensions et sa logique de
+        défilement historique restent inchangés ; seul le rendu est cinématique.
       */}
       {!isDesktopOrTablet && (
-        <LegacyMobileCarousel
+        <MobileAccordionCarousel
           items={items}
           activeIndex={activeIndex}
           progress={progress}
