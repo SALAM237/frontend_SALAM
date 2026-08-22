@@ -36,7 +36,7 @@ import {
 import { useAuthStore } from '@/store/auth.store';
 
 const SLIDE_DELAY = 12_000;
-const DESKTOP_VIDEO_DELAY = 2_000;
+const ACTIVE_VIDEO_DELAY = 2_000;
 const YOUTUBE_ORIGINS = new Set(['https://www.youtube.com', 'https://www.youtube-nocookie.com']);
 
 function youtubeId(url: string) {
@@ -274,7 +274,7 @@ function CinematicMedia({
     if (!active || item.mediaType !== 'video' || !source || youtube) return;
 
     const elapsedInActivePosition = Math.max(0, Date.now() - activeSinceRef.current);
-    const remainingDelay = Math.max(0, DESKTOP_VIDEO_DELAY - elapsedInActivePosition);
+    const remainingDelay = Math.max(0, ACTIVE_VIDEO_DELAY - elapsedInActivePosition);
 
     const timer = window.setTimeout(() => {
       const video = videoRef.current;
@@ -344,7 +344,7 @@ function CinematicMedia({
               window.clearTimeout(youtubeAutoplayTimerRef.current);
             }
             const elapsedInActivePosition = Math.max(0, Date.now() - activeSinceRef.current);
-            const remainingDelay = Math.max(0, DESKTOP_VIDEO_DELAY - elapsedInActivePosition);
+            const remainingDelay = Math.max(0, ACTIVE_VIDEO_DELAY - elapsedInActivePosition);
             youtubeAutoplayTimerRef.current = window.setTimeout(() => {
               sendYoutubeCommand('mute');
               sendYoutubeCommand('playVideo');
@@ -471,11 +471,12 @@ function MobileAccordionCarousel({
             <SwiperSlide key={item._id} className="!flex h-full items-start justify-end pt-7">
               <article className={`featured-mobile-accordion-card relative h-[88%] w-[93%] min-h-0 overflow-hidden rounded-2xl bg-[#06130d] text-left ${active ? 'is-active' : ''}`}>
                 <div className="absolute inset-0 bg-black">
-                  <LegacyMedia
+                  <CinematicMedia
                     item={item}
                     active={active && !preview}
                     playbackId={`mobile-slide-${item._id}`}
                     onPlaybackChange={onPlaybackChange}
+                    onExpand={() => onPreview(item)}
                   />
                 </div>
 
@@ -542,14 +543,6 @@ function MobileAccordionCarousel({
                     <div className="absolute bottom-4 left-1/2 z-40 -translate-x-1/2">
                       <CarouselDots items={items} activeIndex={activeIndex} onSelect={onSelect} tone="dark" />
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => onPreview(item)}
-                      aria-label={`Agrandir ${item.title}`}
-                      className="absolute right-3 top-3 z-40 grid h-8 w-8 place-items-center rounded-full border border-white/25 bg-black/55 text-white shadow-lg backdrop-blur transition active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                    >
-                      <Expand size={13} />
-                    </button>
                   </>
                 ) : (
                   <button
@@ -819,7 +812,6 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   const [lastNav, setLastNav] = useState<'prev' | 'next' | null>(null);
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState<FeaturedItem | null>(null);
-  const [playingMediaIds, setPlayingMediaIds] = useState<Set<string>>(() => new Set());
   const isDesktopOrTablet = useMediaQuery('(min-width: 768px)');
 
   useEffect(() => {
@@ -836,17 +828,8 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
     };
   }, [preview]);
 
-  const handlePlaybackChange = useCallback((id: string, playing: boolean) => {
-    setPlayingMediaIds(current => {
-      const next = new Set(current);
-      if (playing) next.add(id);
-      else next.delete(id);
-      if (next.size === current.size && [...next].every(value => current.has(value))) return current;
-      return next;
-    });
-  }, []);
-  const mediaPlaying = playingMediaIds.size > 0;
-  const carouselPaused = manualPaused || Boolean(preview) || (!isDesktopOrTablet && mediaPlaying);
+  const handlePlaybackChange = useCallback(() => undefined, []);
+  const carouselPaused = manualPaused || Boolean(preview);
 
   const moveDesktop = useCallback((direction: 'prev' | 'next') => {
     if (items.length < 2) return;
