@@ -244,6 +244,133 @@ select {
   }
 }
 
+/* Carousel accordéon cinématique de la rubrique À la une. */
+.featured-spotlight-shell {
+  background: linear-gradient(to bottom, #ffffff 0%, #ffffff 28%, #052e16 62%, #021a0d 80%, #010f07 100%);
+}
+
+.featured-accordion-track {
+  --featured-gap: clamp(0.65rem, 1vw, 1.1rem);
+  --featured-peek: clamp(3.25rem, 7vw, 6.5rem);
+  --featured-active-width: clamp(31rem, 66vw, 65rem);
+  --featured-thumb-width: clamp(9.25rem, 17vw, 15.75rem);
+  height: clamp(27rem, 47vw, 43rem);
+  isolation: isolate;
+  outline: none;
+}
+
+/* Fallback local : conserve le layout du Swiper historique même si son chunk
+   CSS est chargé après le premier rendu lors d'une navigation hydratée. */
+.featured-legacy-mobile .swiper {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.featured-legacy-mobile .swiper-wrapper {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  box-sizing: content-box;
+  transition-property: transform;
+}
+
+.featured-legacy-mobile .swiper-slide {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.featured-accordion-track:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+}
+
+.featured-accordion-card {
+  border-radius: clamp(1.15rem, 2vw, 1.8rem);
+  transition-property: left, top, width, height, opacity, border-radius, box-shadow;
+  will-change: left, width, height;
+  transform: translateZ(0);
+}
+
+.featured-accordion-card.is-active {
+  box-shadow:
+    0 36px 90px -34px rgba(0, 0, 0, 0.9),
+    0 18px 38px -22px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.featured-media-visual {
+  transform: scale(1.001);
+  transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1), filter 500ms ease;
+  will-change: transform;
+}
+
+.featured-accordion-card:hover .featured-media-visual,
+.featured-accordion-card:focus-within .featured-media-visual {
+  transform: scale(1.045);
+}
+
+.featured-media-controls {
+  opacity: 0;
+  transform: translateY(7px);
+  transition: opacity 220ms ease, transform 300ms cubic-bezier(0.22, 1, 0.36, 1), background-color 180ms ease;
+}
+
+.featured-media-root:hover .featured-media-controls,
+.featured-media-root:focus-within .featured-media-controls {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.featured-active-title {
+  font-size: clamp(1.9rem, 3.55vw, 3.9rem);
+}
+
+.featured-active-description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+@media (min-width: 768px) {
+  .featured-spotlight-shell {
+    background:
+      radial-gradient(circle at 17% 50%, rgba(10, 117, 57, 0.16), transparent 31%),
+      radial-gradient(circle at 82% 18%, rgba(247, 198, 0, 0.07), transparent 25%),
+      linear-gradient(135deg, #020b06 0%, #06170e 50%, #020a06 100%);
+  }
+}
+
+@media (min-width: 1280px) {
+  .featured-active-description { -webkit-line-clamp: 5; }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .featured-media-controls {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .featured-accordion-card,
+  .featured-media-visual,
+  .featured-media-controls {
+    transition-duration: 1ms !important;
+  }
+
+  .featured-accordion-card:hover .featured-media-visual,
+  .featured-accordion-card:focus-within .featured-media-visual {
+    transform: none;
+  }
+}
+
 /* ── Card ── */
 .card-salam {
   background: #fff;

@@ -1,51 +1,150 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUpRight, Expand, Pause, Play, X, Megaphone, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type AnchorHTMLAttributes,
+  type ReactNode,
+} from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import {
+  ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
+  Expand,
+  ImageIcon,
+  Megaphone,
+  Pause,
+  Play,
+  Volume2,
+  VolumeX,
+  X,
+} from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { A11y, Autoplay } from 'swiper/modules';
 import type { Swiper as SwiperInstance } from 'swiper';
 import 'swiper/css';
-import { useMemberFeatured, usePublicFeatured, type FeaturedDestination, type FeaturedItem } from '@/lib/api/featured';
+import {
+  useMemberFeatured,
+  usePublicFeatured,
+  type FeaturedDestination,
+  type FeaturedItem,
+} from '@/lib/api/featured';
 import { useAuthStore } from '@/store/auth.store';
 
 const SLIDE_DELAY = 5_000;
+const DESKTOP_VIDEO_DELAY = 2_000;
+const YOUTUBE_ORIGINS = new Set(['https://www.youtube.com', 'https://www.youtube-nocookie.com']);
 
-function youtubeEmbed(url: string) {
+function youtubeId(url: string) {
   try {
     const parsed = new URL(url);
-    const id = parsed.hostname.includes('youtu.be') ? parsed.pathname.slice(1) : parsed.searchParams.get('v') || parsed.pathname.split('/').pop();
-    return id && /^[A-Za-z0-9_-]{6,20}$/.test(id) ? 'https://www.youtube-nocookie.com/embed/' + id : '';
-  } catch { return ''; }
+    const hostname = parsed.hostname.toLowerCase();
+    const allowedHost = hostname === 'youtu.be'
+      || hostname === 'youtube.com'
+      || hostname === 'www.youtube.com'
+      || hostname === 'm.youtube.com'
+      || hostname === 'youtube-nocookie.com'
+      || hostname === 'www.youtube-nocookie.com';
+    if (!allowedHost) return '';
+    const id = hostname === 'youtu.be'
+      ? parsed.pathname.slice(1).split('/')[0]
+      : parsed.searchParams.get('v') || parsed.pathname.split('/').filter(Boolean).pop();
+    return id && /^[A-Za-z0-9_-]{6,20}$/.test(id) ? id : '';
+  } catch {
+    return '';
+  }
 }
 
-function destinationProps(destination?: FeaturedDestination) {
-  if (!destination || destination.type === 'none' || !destination.href) return {};
-  return destination.type === 'external'
-    ? { href: destination.href, target: '_blank', rel: 'noopener noreferrer' }
-    : { href: destination.href };
+function validMediaSource(value?: string) {
+  const source = value?.trim() ?? '';
+  if (source.startsWith('/') && !source.startsWith('//')) return source;
+  try {
+    const parsed = new URL(source);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
 }
 
-function Media({ item, active, playbackId, onPlaybackChange }: {
+function destinationProps(destination?: FeaturedDestination): AnchorHTMLAttributes<HTMLAnchorElement> | null {
+  const href = destination?.href?.trim() ?? '';
+  if (!destination || destination.type === 'none' || !href) return null;
+
+  if (destination.type === 'internal') {
+    if (!href.startsWith('/') || href.startsWith('//')) return null;
+    return { href };
+  }
+
+  try {
+    const parsed = new URL(href);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+    return { href: parsed.toString(), target: '_blank', rel: 'noopener noreferrer' };
+  } catch {
+    return null;
+  }
+}
+
+function DestinationContent({
+  destination,
+  className,
+  children,
+}: {
+  destination?: FeaturedDestination;
+  className: string;
+  children: ReactNode;
+}) {
+  const props = destinationProps(destination);
+  return props
+    ? <a {...props} className={className}>{children}</a>
+    : <span className={className}>{children}</span>;
+}
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const update = () => setMatches(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [query]);
+
+  return matches;
+}
+
+type MediaProps = {
   item: FeaturedItem;
   active: boolean;
   playbackId: string;
   onPlaybackChange: (id: string, playing: boolean) => void;
-}) {
+};
+
+/**
+ * Media historique du carousel mobile. Il reste volontairement séparé afin
+ * de préserver le comportement validé sur téléphone pendant le test desktop.
+ */
+function LegacyMedia({ item, active, playbackId, onPlaybackChange }: MediaProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     if (active) return;
     videoRef.current?.pause();
-    iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+    iframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }),
+      'https://www.youtube-nocookie.com',
+    );
     onPlaybackChange(playbackId, false);
   }, [active, onPlaybackChange, playbackId]);
 
   useEffect(() => {
     const receiveYoutubeState = (event: MessageEvent) => {
-      if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
+      if (!YOUTUBE_ORIGINS.has(event.origin) || !iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
       let payload: unknown = event.data;
       if (typeof payload === 'string') {
         try { payload = JSON.parse(payload); } catch { return; }
@@ -63,17 +162,560 @@ function Media({ item, active, playbackId, onPlaybackChange }: {
     };
   }, [onPlaybackChange, playbackId]);
 
-  const source = item.mediaUrls[0]?.trim() ?? '';
-  const validSource = source.startsWith('/') || source.startsWith('https://') || source.startsWith('http://');
-  if (!validSource) return <div className="grid h-full w-full place-items-center bg-neutral-900 px-6 text-center text-sm font-bold text-white/70">Media indisponible. Reimportez le fichier depuis l editeur.</div>;
-  if (item.mediaType === 'image') return <img src={source} alt={item.title} loading="lazy" className="h-full w-full object-cover" />;
+  const source = validMediaSource(item.mediaUrls[0]);
+  if (!source) return <MediaUnavailable />;
+  if (item.mediaType === 'image') {
+    return <img src={source} alt={item.title} loading="lazy" className="h-full w-full object-cover" />;
+  }
 
-  const youtube = item.videoProvider === 'youtube' ? youtubeEmbed(source) : '';
-  if (youtube) return <iframe ref={iframeRef} data-exclusive-media="youtube" src={youtube + '?enablejsapi=1&playsinline=1&autoplay=' + (item.autoplay && active ? '1' : '0') + '&mute=1'} onLoad={event => event.currentTarget.contentWindow?.postMessage(JSON.stringify({ event: 'listening' }), '*')} title={item.title} loading="lazy" allow="accelerometer; autoplay; encrypted-media; picture-in-picture" className="h-full w-full" />;
+  const youtube = item.videoProvider === 'youtube' ? youtubeId(source) : '';
+  if (youtube) {
+    return (
+      <iframe
+        ref={iframeRef}
+        data-exclusive-media="youtube"
+        src={`https://www.youtube-nocookie.com/embed/${youtube}?enablejsapi=1&playsinline=1&autoplay=${item.autoplay && active ? '1' : '0'}&mute=1`}
+        onLoad={event => event.currentTarget.contentWindow?.postMessage(JSON.stringify({ event: 'listening' }), 'https://www.youtube-nocookie.com')}
+        title={item.title}
+        loading="lazy"
+        allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
+        allowFullScreen
+        className="h-full w-full"
+      />
+    );
+  }
 
-  return <video ref={videoRef} src={source} controls preload="metadata" autoPlay={item.autoplay && active} muted={item.autoplay} playsInline
-    onPlay={() => onPlaybackChange(playbackId, true)} onPause={() => onPlaybackChange(playbackId, false)} onEnded={() => onPlaybackChange(playbackId, false)}
-    className="h-full w-full object-cover" />;
+  return (
+    <video
+      ref={videoRef}
+      src={source}
+      controls
+      preload="metadata"
+      autoPlay={item.autoplay && active}
+      muted={item.autoplay}
+      playsInline
+      onPlay={() => onPlaybackChange(playbackId, true)}
+      onPause={() => onPlaybackChange(playbackId, false)}
+      onEnded={() => onPlaybackChange(playbackId, false)}
+      className="h-full w-full object-cover"
+    />
+  );
+}
+
+function MediaUnavailable() {
+  return (
+    <div className="grid h-full w-full place-items-center bg-neutral-950 px-6 text-center text-sm font-bold text-white/65">
+      Media indisponible. Reimportez le fichier depuis l editeur.
+    </div>
+  );
+}
+
+function CinematicMedia({
+  item,
+  active,
+  playbackId,
+  onPlaybackChange,
+  onExpand,
+}: MediaProps & { onExpand: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const source = validMediaSource(item.mediaUrls[0]);
+  const youtube = item.mediaType === 'video' && item.videoProvider === 'youtube' ? youtubeId(source) : '';
+
+  const updatePlaying = useCallback((value: boolean) => {
+    setPlaying(value);
+    onPlaybackChange(playbackId, value);
+  }, [onPlaybackChange, playbackId]);
+
+  const sendYoutubeCommand = useCallback((func: string, args: unknown[] = []) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func, args }),
+      'https://www.youtube-nocookie.com',
+    );
+  }, []);
+
+  useEffect(() => {
+    if (active) return;
+    videoRef.current?.pause();
+    sendYoutubeCommand('pauseVideo');
+    const animationFrame = window.requestAnimationFrame(() => updatePlaying(false));
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [active, sendYoutubeCommand, updatePlaying]);
+
+  useEffect(() => {
+    const receiveYoutubeState = (event: MessageEvent) => {
+      if (!YOUTUBE_ORIGINS.has(event.origin) || !iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
+      let payload: unknown = event.data;
+      if (typeof payload === 'string') {
+        try { payload = JSON.parse(payload); } catch { return; }
+      }
+      if (!payload || typeof payload !== 'object') return;
+      const data = payload as { event?: string; info?: number };
+      if (data.event !== 'onStateChange') return;
+      if (data.info === 1) updatePlaying(true);
+      if (data.info === 0 || data.info === 2 || data.info === 5) updatePlaying(false);
+    };
+    window.addEventListener('message', receiveYoutubeState);
+    return () => window.removeEventListener('message', receiveYoutubeState);
+  }, [updatePlaying]);
+
+  useEffect(() => {
+    if (!active || !item.autoplay || item.mediaType !== 'video' || !source) return;
+
+    const timer = window.setTimeout(() => {
+      if (youtube) {
+        sendYoutubeCommand('mute');
+        sendYoutubeCommand('playVideo');
+        setMuted(true);
+        return;
+      }
+      const video = videoRef.current;
+      if (!video) return;
+      video.muted = true;
+      setMuted(true);
+      void video.play().catch(() => updatePlaying(false));
+    }, DESKTOP_VIDEO_DELAY);
+
+    return () => window.clearTimeout(timer);
+  }, [active, item.autoplay, item.mediaType, sendYoutubeCommand, source, updatePlaying, youtube]);
+
+  useEffect(() => () => onPlaybackChange(playbackId, false), [onPlaybackChange, playbackId]);
+
+  const togglePlay = () => {
+    if (youtube) {
+      sendYoutubeCommand(playing ? 'pauseVideo' : 'playVideo');
+      return;
+    }
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) void video.play().catch(() => updatePlaying(false));
+    else video.pause();
+  };
+
+  const toggleMute = () => {
+    const nextMuted = !muted;
+    setMuted(nextMuted);
+    if (youtube) {
+      sendYoutubeCommand(nextMuted ? 'mute' : 'unMute');
+      return;
+    }
+    if (videoRef.current) videoRef.current.muted = nextMuted;
+  };
+
+  if (!source) return <MediaUnavailable />;
+
+  return (
+    <div className="featured-media-root relative h-full w-full overflow-hidden bg-[#020806]">
+      {item.mediaType === 'image' ? (
+        <img
+          src={source}
+          alt={active ? item.title : ''}
+          loading={active ? 'eager' : 'lazy'}
+          className="featured-media-visual h-full w-full object-cover"
+        />
+      ) : youtube && !active ? (
+        <img
+          src={`https://i.ytimg.com/vi/${youtube}/hqdefault.jpg`}
+          alt=""
+          loading="lazy"
+          className="featured-media-visual h-full w-full object-cover"
+        />
+      ) : youtube ? (
+        <iframe
+          ref={iframeRef}
+          data-exclusive-media="youtube"
+          src={`https://www.youtube-nocookie.com/embed/${youtube}?enablejsapi=1&playsinline=1&autoplay=0&mute=1&controls=0&rel=0`}
+          onLoad={event => {
+            event.currentTarget.contentWindow?.postMessage(JSON.stringify({ event: 'listening', id: playbackId }), 'https://www.youtube-nocookie.com');
+          }}
+          title={item.title}
+          allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+          className="featured-media-visual h-full w-full border-0"
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          src={source}
+          preload="metadata"
+          muted={muted}
+          playsInline
+          onPlay={() => updatePlaying(true)}
+          onPause={() => updatePlaying(false)}
+          onEnded={() => updatePlaying(false)}
+          className="featured-media-visual h-full w-full object-cover"
+        />
+      )}
+
+      {active && item.mediaType === 'video' && (
+        <div className="featured-media-controls absolute bottom-4 right-4 z-40 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/55 p-1.5 text-white shadow-2xl backdrop-blur-xl lg:bottom-5 lg:right-5">
+          <button
+            type="button"
+            onClick={togglePlay}
+            aria-label={playing ? 'Mettre la video en pause' : 'Lire la video'}
+            className="grid h-9 w-9 place-items-center rounded-full transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            {playing ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+          </button>
+          <button
+            type="button"
+            onClick={toggleMute}
+            aria-label={muted ? 'Activer le son' : 'Couper le son'}
+            className="grid h-9 w-9 place-items-center rounded-full transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            {muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+          </button>
+          <button
+            type="button"
+            onClick={onExpand}
+            aria-label="Agrandir la video"
+            className="grid h-9 w-9 place-items-center rounded-full transition hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            <Expand size={16} />
+          </button>
+        </div>
+      )}
+
+      {active && item.mediaType === 'image' && (
+        <button
+          type="button"
+          onClick={onExpand}
+          aria-label="Agrandir l image"
+          className="featured-media-controls absolute right-4 top-4 z-40 grid h-10 w-10 place-items-center rounded-full border border-white/25 bg-black/55 text-white shadow-xl backdrop-blur-xl transition hover:scale-105 hover:bg-black/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white lg:right-5 lg:top-5"
+        >
+          <Expand size={17} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+type LegacyCarouselProps = {
+  items: FeaturedItem[];
+  activeIndex: number;
+  progress: number;
+  preview: FeaturedItem | null;
+  swiperRef: React.MutableRefObject<SwiperInstance | null>;
+  onActiveIndexChange: (index: number) => void;
+  onProgressChange: (progress: number) => void;
+  onPreview: (item: FeaturedItem) => void;
+  onPlaybackChange: (id: string, playing: boolean) => void;
+  onSelect: (index: number) => void;
+};
+
+function LegacyMobileCarousel({
+  items,
+  activeIndex,
+  progress,
+  preview,
+  swiperRef,
+  onActiveIndexChange,
+  onProgressChange,
+  onPreview,
+  onPlaybackChange,
+  onSelect,
+}: LegacyCarouselProps) {
+  return (
+    <div className="featured-legacy-mobile relative h-[85vh] min-h-[520px] max-h-[780px] overflow-hidden md:hidden">
+      <Swiper
+        modules={[Autoplay, A11y]}
+        className="h-full"
+        slidesPerView={1.12}
+        centeredSlides={false}
+        spaceBetween={2}
+        loop={items.length > 1}
+        speed={500}
+        autoplay={items.length > 1 ? { delay: SLIDE_DELAY, disableOnInteraction: false, waitForTransition: true } : false}
+        onSwiper={swiper => {
+          swiperRef.current = swiper;
+          onActiveIndexChange(swiper.realIndex);
+        }}
+        onSlideChange={swiper => {
+          onActiveIndexChange(swiper.realIndex);
+          onProgressChange(0);
+        }}
+        onAutoplayTimeLeft={(_swiper, _timeLeft, percentage) =>
+          onProgressChange(Math.max(0, Math.min(100, (1 - percentage) * 100)))}
+      >
+        {items.map((item, itemIndex) => (
+          <SwiperSlide key={item._id} className="!flex h-full items-start justify-end pt-7">
+            <div
+              className="grid h-[88%] w-[93%] min-h-0 grid-rows-[42%_58%] overflow-hidden rounded-2xl border-0 bg-transparent"
+              style={{ boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px' }}
+            >
+              <article
+                className="isolate relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl bg-white p-4 text-left text-neutral-950"
+                style={{ boxShadow: '0 -10px 32px rgba(0,0,0,0.10), 0 -2px 8px rgba(0,0,0,0.06)' }}
+              >
+                <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                  <DestinationContent destination={item.titleDestination} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl">
+                    {item.title}
+                  </DestinationContent>
+                  <DestinationContent destination={item.textDestination} className="mt-2.5 block whitespace-pre-line break-words text-sm leading-6 text-neutral-600 hover:text-neutral-900">
+                    {item.description}
+                  </DestinationContent>
+                </div>
+                {destinationProps(item.buttonDestination) && (
+                  <DestinationContent
+                    destination={item.buttonDestination}
+                    className="absolute bottom-9 left-4 z-10 inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-emerald-600/45 bg-emerald-100/75 px-3.5 text-[11px] font-black text-emerald-800 backdrop-blur transition hover:border-emerald-700/70 hover:bg-emerald-100"
+                  >
+                    {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={12} />
+                  </DestinationContent>
+                )}
+                <CarouselDots items={items} activeIndex={activeIndex} onSelect={onSelect} tone="light" />
+              </article>
+
+              <button
+                type="button"
+                onClick={() => onPreview(item)}
+                className="relative order-1 h-full min-h-0 overflow-hidden rounded-t-2xl bg-black text-left"
+              >
+                <ProgressBar progress={progress} />
+                <LegacyMedia
+                  item={item}
+                  active={itemIndex === activeIndex && !preview}
+                  playbackId={`mobile-slide-${item._id}`}
+                  onPlaybackChange={onPlaybackChange}
+                />
+                <span className="absolute right-3 top-3 z-30 grid h-7 w-7 place-items-center rounded-full border border-white/30 bg-black/70 text-white shadow-lg backdrop-blur" aria-hidden="true">
+                  <Expand size={13} />
+                </span>
+              </button>
+            </div>
+          </SwiperSlide>
+        ))}
+      </Swiper>
+    </div>
+  );
+}
+
+function relativeOffset(index: number, activeIndex: number, length: number) {
+  const forward = (index - activeIndex + length) % length;
+  if (forward === 0) return 0;
+  const backward = forward - length;
+  return Math.abs(backward) < forward ? backward : forward;
+}
+
+function rightCardPosition(offset: number) {
+  const terms = ['var(--featured-peek)', 'var(--featured-active-width)'];
+  for (let index = 0; index < offset + 1; index += 1) terms.push('var(--featured-gap)');
+  for (let index = 1; index < offset; index += 1) terms.push('var(--featured-thumb-width)');
+  return `calc(${terms.join(' + ')})`;
+}
+
+function DesktopAccordionCarousel({
+  items,
+  activeIndex,
+  progress,
+  preview,
+  onSelect,
+  onPreview,
+  onPlaybackChange,
+}: {
+  items: FeaturedItem[];
+  activeIndex: number;
+  progress: number;
+  preview: FeaturedItem | null;
+  onSelect: (index: number) => void;
+  onPreview: (item: FeaturedItem) => void;
+  onPlaybackChange: (id: string, playing: boolean) => void;
+}) {
+  const reducedMotion = useReducedMotion();
+  const singleton = items.length === 1;
+
+  return (
+    <div
+      className="featured-accordion-track relative hidden w-full overflow-hidden md:block"
+      role="region"
+      aria-roledescription="carrousel"
+      aria-label="Informations à la une"
+      tabIndex={0}
+      onKeyDown={event => {
+        if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          onSelect((activeIndex - 1 + items.length) % items.length);
+        }
+        if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          onSelect((activeIndex + 1) % items.length);
+        }
+      }}
+    >
+      <span className="sr-only" aria-live="polite">
+        Élément {activeIndex + 1} sur {items.length} : {items[activeIndex]?.title}
+      </span>
+
+      {items.map((item, itemIndex) => {
+        const offset = relativeOffset(itemIndex, activeIndex, items.length);
+        const active = offset === 0;
+        const visible = singleton || offset >= -1 && offset <= 4;
+        const left = singleton
+          ? '0px'
+          : offset < -1
+            ? 'calc(0px - var(--featured-thumb-width) - var(--featured-gap))'
+            : offset === -1
+              ? 'calc(var(--featured-peek) - var(--featured-thumb-width))'
+              : offset === 0
+                ? 'calc(var(--featured-peek) + var(--featured-gap))'
+                : rightCardPosition(offset);
+
+        return (
+          <article
+            key={item._id}
+            aria-hidden={!visible}
+            className={`featured-accordion-card group absolute overflow-hidden border border-white/10 bg-[#06130d] shadow-2xl ${active ? 'is-active' : ''}`}
+            style={{
+              left,
+              top: active || singleton ? '0%' : '8%',
+              width: singleton ? '100%' : active ? 'var(--featured-active-width)' : 'var(--featured-thumb-width)',
+              height: active || singleton ? '100%' : '84%',
+              opacity: visible ? 1 : 0,
+              zIndex: active ? 30 : offset === -1 ? 8 : Math.max(4, 20 - offset),
+              pointerEvents: visible ? 'auto' : 'none',
+              transitionDuration: reducedMotion ? '1ms' : '680ms',
+              transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          >
+            <CinematicMedia
+              item={item}
+              active={active && !preview}
+              playbackId={`desktop-slide-${item._id}`}
+              onPlaybackChange={onPlaybackChange}
+              onExpand={() => onPreview(item)}
+            />
+
+            <span className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/75 via-transparent to-black/10" />
+
+            {!active && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onSelect(itemIndex)}
+                  aria-label={`Afficher ${item.title}`}
+                  className="absolute inset-0 z-20 rounded-[inherit] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-white"
+                />
+                <div className="pointer-events-none absolute left-3 top-3 z-30 flex max-w-[90%] flex-wrap gap-1.5">
+                  <span className="rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white backdrop-blur-lg">
+                    {item.mediaType === 'video' ? 'Vidéo' : 'À la une'}
+                  </span>
+                  <span className="rounded-full border border-white/20 bg-white/12 px-2 py-1 text-[9px] font-black tabular-nums text-white backdrop-blur-lg">
+                    {String(itemIndex + 1).padStart(2, '0')}
+                  </span>
+                </div>
+              </>
+            )}
+
+            {active && (
+              <>
+                <ProgressBar progress={progress} />
+                <span className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(0,8,5,0.96)_0%,rgba(0,10,6,0.84)_32%,rgba(0,8,5,0.28)_61%,transparent_82%)]" />
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={item._id}
+                    initial={reducedMotion ? { opacity: 1 } : { opacity: 0, x: 28 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -22 }}
+                    transition={{ duration: reducedMotion ? 0.01 : 0.42, delay: reducedMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute inset-y-0 left-0 z-30 flex w-[64%] max-w-[720px] flex-col justify-end px-7 pb-8 pt-12 lg:w-[58%] lg:px-10 lg:pb-10 xl:px-14 xl:pb-12"
+                  >
+                    <div className="mb-auto flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-500/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100 backdrop-blur-xl">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]" />
+                        Sélection SALAM
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/30 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/80 backdrop-blur-xl">
+                        {item.mediaType === 'video' ? <Play size={10} fill="currentColor" /> : <ImageIcon size={11} />}
+                        {item.mediaType === 'video' ? 'Vidéo' : 'Image'}
+                      </span>
+                    </div>
+
+                    <DestinationContent
+                      destination={item.titleDestination}
+                      className="featured-active-title block max-w-2xl text-balance font-black leading-[0.98] tracking-[-0.045em] text-white drop-shadow-2xl transition hover:text-emerald-100"
+                    >
+                      {item.title}
+                    </DestinationContent>
+                    <DestinationContent
+                      destination={item.textDestination}
+                      className="featured-active-description mt-4 block max-w-xl whitespace-pre-line break-words text-[13px] font-medium leading-6 text-white/76 drop-shadow lg:mt-5 lg:text-[15px] lg:leading-7"
+                    >
+                      {item.description}
+                    </DestinationContent>
+
+                    <div className="mt-6 flex flex-wrap items-center gap-3">
+                      {destinationProps(item.buttonDestination) && (
+                        <DestinationContent
+                          destination={item.buttonDestination}
+                          className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-5 text-xs font-black text-[#07150d] shadow-xl transition hover:-translate-y-0.5 hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white lg:h-11 lg:px-6 lg:text-sm"
+                        >
+                          {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={15} />
+                        </DestinationContent>
+                      )}
+                      <CarouselDots items={items} activeIndex={activeIndex} onSelect={onSelect} tone="dark" />
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </>
+            )}
+          </article>
+        );
+      })}
+
+      <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-40 w-[var(--featured-peek)] bg-gradient-to-r from-[#03110a]/55 to-transparent" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-40 w-10 bg-gradient-to-l from-[#03110a]/70 to-transparent" />
+    </div>
+  );
+}
+
+function ProgressBar({ progress }: { progress: number }) {
+  return (
+    <span className="absolute inset-x-0 top-0 z-50 h-1 bg-black/25">
+      <span
+        className="block h-full origin-left"
+        style={{
+          width: `${progress}%`,
+          background: 'linear-gradient(90deg,#0B8F3A 0%,#F7C600 52%,#C8102E 100%)',
+          boxShadow: '0 0 16px rgba(247,198,0,0.5)',
+          transition: 'width 100ms linear',
+        }}
+      />
+    </span>
+  );
+}
+
+function CarouselDots({
+  items,
+  activeIndex,
+  onSelect,
+  tone,
+}: {
+  items: FeaturedItem[];
+  activeIndex: number;
+  onSelect: (index: number) => void;
+  tone: 'light' | 'dark';
+}) {
+  return (
+    <div className={`${tone === 'light' ? 'mt-3 justify-center' : 'justify-start'} flex shrink-0 items-center gap-1.5`}>
+      {items.map((entry, dotIndex) => (
+        <button
+          key={entry._id}
+          type="button"
+          onClick={() => onSelect(dotIndex)}
+          aria-label={`Afficher ${entry.title}`}
+          aria-current={dotIndex === activeIndex ? 'true' : undefined}
+          style={{ height: '4px', minHeight: '0' }}
+          className={`relative overflow-hidden rounded-full p-0 transition-all duration-300 ${
+            dotIndex === activeIndex
+              ? tone === 'light' ? 'w-5 bg-emerald-600' : 'w-7 bg-white'
+              : tone === 'light' ? 'w-1 bg-neutral-300 hover:bg-neutral-400' : 'w-2 bg-white/30 hover:bg-white/65'
+          }`}
+        />
+      ))}
+    </div>
+  );
 }
 
 export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?: FeaturedItem[] }) {
@@ -82,56 +724,113 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   const { data: memberData } = useMemberFeatured();
   const items = (token ? memberData?.data : undefined) ?? data?.data ?? initialItems;
   const swiperRef = useRef<SwiperInstance | null>(null);
+  const autoplayElapsed = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [manualPaused, setManualPaused] = useState(false);
   const [lastNav, setLastNav] = useState<'prev' | 'next' | null>(null);
-  /* progress mis à jour uniquement via onAutoplayTimeLeft de Swiper */
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState<FeaturedItem | null>(null);
   const [playingMediaIds, setPlayingMediaIds] = useState<Set<string>>(() => new Set());
+  const isDesktopOrTablet = useMediaQuery('(min-width: 768px)');
 
   const handlePlaybackChange = useCallback((id: string, playing: boolean) => {
     setPlayingMediaIds(current => {
       const next = new Set(current);
-      if (playing) next.add(id); else next.delete(id);
+      if (playing) next.add(id);
+      else next.delete(id);
       if (next.size === current.size && [...next].every(value => current.has(value))) return current;
       return next;
     });
   }, []);
   const mediaPlaying = playingMediaIds.size > 0;
+  const carouselPaused = manualPaused || mediaPlaying || Boolean(preview);
 
-  /* Pause / resume Swiper autoplay */
+  const moveDesktop = useCallback((direction: 'prev' | 'next') => {
+    if (items.length < 2) return;
+    autoplayElapsed.current = 0;
+    setProgress(0);
+    setLastNav(direction);
+    setActiveIndex(current => direction === 'next'
+      ? (current + 1) % items.length
+      : (current - 1 + items.length) % items.length);
+  }, [items.length]);
+
+  const selectSlide = useCallback((index: number) => {
+    if (index === activeIndex || index < 0 || index >= items.length) return;
+    const forward = (index - activeIndex + items.length) % items.length;
+    const backward = (activeIndex - index + items.length) % items.length;
+    setLastNav(forward <= backward ? 'next' : 'prev');
+    if (isDesktopOrTablet) {
+      autoplayElapsed.current = 0;
+      setProgress(0);
+      setActiveIndex(index);
+    }
+    else swiperRef.current?.slideToLoop(index);
+  }, [activeIndex, isDesktopOrTablet, items.length]);
+
+  const navigate = (direction: 'prev' | 'next') => {
+    if (isDesktopOrTablet) moveDesktop(direction);
+    else if (direction === 'next') swiperRef.current?.slideNext();
+    else swiperRef.current?.slidePrev();
+    setLastNav(direction);
+  };
+
   useEffect(() => {
     const autoplay = swiperRef.current?.autoplay;
     if (!autoplay) return;
-    if (manualPaused || mediaPlaying || preview) autoplay.pause();
+    if (isDesktopOrTablet || carouselPaused) autoplay.pause();
     else autoplay.resume();
-  }, [manualPaused, mediaPlaying, preview]);
+  }, [carouselPaused, isDesktopOrTablet]);
 
-  /* Sync index si items recharge */
   useEffect(() => {
     swiperRef.current?.update();
-    if (activeIndex >= items.length) {
+    if (!items.length || activeIndex < items.length) return;
+    const animationFrame = window.requestAnimationFrame(() => {
       swiperRef.current?.slideTo(0, 0);
+      autoplayElapsed.current = 0;
+      setProgress(0);
       setActiveIndex(0);
-    }
+    });
+    return () => window.cancelAnimationFrame(animationFrame);
   }, [activeIndex, items.length]);
 
-  /* Reset jauge au changement de slide */
-  useEffect(() => { setProgress(0); }, [activeIndex]);
+  useEffect(() => {
+    if (!isDesktopOrTablet || items.length < 2) return;
+    let animationFrame = 0;
+    let previousTime = 0;
+    let previousPaint = 0;
 
-  const selectSlide = (index: number) => {
-    if (index === activeIndex) return;
-    setLastNav(index > activeIndex ? 'next' : 'prev');
-    swiperRef.current?.slideTo(index);
-  };
+    const tick = (time: number) => {
+      if (!previousTime) previousTime = time;
+      const elapsed = Math.min(100, time - previousTime);
+      previousTime = time;
+
+      if (!carouselPaused) {
+        autoplayElapsed.current += elapsed;
+        if (time - previousPaint > 80) {
+          setProgress(Math.min(100, autoplayElapsed.current / SLIDE_DELAY * 100));
+          previousPaint = time;
+        }
+        if (autoplayElapsed.current >= SLIDE_DELAY) {
+          autoplayElapsed.current = 0;
+          setProgress(0);
+          moveDesktop('next');
+          return;
+        }
+      }
+
+      animationFrame = window.requestAnimationFrame(tick);
+    };
+
+    animationFrame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [carouselPaused, isDesktopOrTablet, items.length, moveDesktop]);
+
+  const activeItem = useMemo(() => items[activeIndex] ?? items[0], [activeIndex, items]);
 
   if (!items.length) {
     return (
-      <section
-        className="featured-gradient relative overflow-hidden rounded-none py-12 sm:py-16 lg:mx-3 lg:my-3 lg:rounded-[2.5rem]"
-        aria-labelledby="featured-heading"
-      >
+      <section className="featured-gradient relative w-full overflow-hidden py-12 sm:py-16" aria-labelledby="featured-heading">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-[0.15] md:opacity-[0.20]"
@@ -145,13 +844,17 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
         />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mb-5">
-            <p className="text-xs font-black uppercase text-emerald-400">Selection SALAM</p>
-            <h2 id="featured-heading" className="text-3xl font-black text-neutral-950 sm:text-4xl">A la une</h2>
+            <p className="text-xs font-black uppercase text-emerald-500">Sélection SALAM</p>
+            <h2 id="featured-heading" className="text-3xl font-black text-neutral-950 sm:text-4xl">À la une</h2>
           </div>
           <div className="flex min-h-[260px] w-full flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-white/90 px-6 text-center backdrop-blur-sm">
-            {isLoading ? <span className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" /> : <Megaphone size={30} className="text-emerald-700" />}
-            <p className="mt-4 text-base font-black text-neutral-800">{isLoading ? 'Chargement des informations...' : 'Les prochaines informations a la une seront publiees ici.'}</p>
-            {!isLoading && <p className="mt-1 max-w-lg text-sm leading-6 text-neutral-500">Actualites importantes, annonces et initiatives mises en avant par SALAM.</p>}
+            {isLoading
+              ? <span className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+              : <Megaphone size={30} className="text-emerald-700" />}
+            <p className="mt-4 text-base font-black text-neutral-800">
+              {isLoading ? 'Chargement des informations...' : 'Les prochaines informations à la une seront publiées ici.'}
+            </p>
+            {!isLoading && <p className="mt-1 max-w-lg text-sm leading-6 text-neutral-500">Actualités importantes, annonces et initiatives mises en avant par SALAM.</p>}
           </div>
         </div>
       </section>
@@ -159,193 +862,135 @@ export default function FeaturedSpotlight({ initialItems = [] }: { initialItems?
   }
 
   return (
-    <section
-      className="featured-gradient relative overflow-hidden rounded-none pt-4 pb-7 sm:pt-6 sm:pb-8 lg:mx-3 lg:my-3 lg:rounded-[2.5rem] lg:pt-8 lg:pb-8"
-      aria-labelledby="featured-heading"
-    >
-      {/* Motif ndop */}
+    <section className="featured-spotlight-shell relative w-full overflow-hidden pb-7 pt-4 sm:pb-8 sm:pt-6 md:pb-10 md:pt-7 lg:pb-12 lg:pt-9" aria-labelledby="featured-heading">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.15] md:opacity-[0.12]"
+        className="pointer-events-none absolute inset-0 opacity-[0.14] mix-blend-soft-light md:opacity-[0.08]"
         style={{
           backgroundImage: "url('/images/placeholders/ndop motif WBG.png')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          mixBlendMode: 'soft-light',
         }}
       />
+      <div aria-hidden="true" className="pointer-events-none absolute -left-36 top-12 hidden h-80 w-80 rounded-full bg-emerald-500/15 blur-[110px] md:block" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-36 bottom-0 hidden h-80 w-80 rounded-full bg-yellow-400/10 blur-[120px] md:block" />
 
-      <div className="relative mx-auto max-w-[1500px]">
-
-        {/* ── Header : titre + contrôles ── */}
-        <div className="mx-auto mb-0 flex max-w-7xl items-end justify-between gap-4 px-4 sm:px-6">
-          <div>
-            <p className="text-xs font-black uppercase text-emerald-700">Selection SALAM</p>
-            <h2 id="featured-heading" className="text-3xl font-black text-neutral-950 sm:text-4xl">A la une</h2>
-          </div>
-
-          {/* Chevrons · Pause — bordure gris/blanc */}
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => { swiperRef.current?.slidePrev(); setLastNav('prev'); }}
-              aria-label="Element précédent"
-              className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${
-                lastNav === 'prev'
-                  ? 'border-transparent bg-neutral-700 text-white'
-                  : 'border-neutral-300 bg-white/70 text-neutral-500 hover:border-neutral-500 hover:bg-white hover:text-neutral-800'
-              }`}
-            >
-              <ChevronLeft size={14} strokeWidth={1.5} />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setManualPaused(v => !v)}
-              aria-label={manualPaused ? 'Relancer le carrousel' : 'Mettre le carrousel en pause'}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 bg-white/70 text-neutral-500 transition-all duration-200 hover:border-neutral-500 hover:bg-white hover:text-neutral-800"
-            >
-              {manualPaused ? <Play size={13} /> : <Pause size={13} />}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { swiperRef.current?.slideNext(); setLastNav('next'); }}
-              aria-label="Element suivant"
-              className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${
-                lastNav === 'next'
-                  ? 'border-transparent bg-neutral-700 text-white'
-                  : 'border-neutral-300 bg-white/70 text-neutral-500 hover:border-neutral-500 hover:bg-white hover:text-neutral-800'
-              }`}
-            >
-              <ChevronRight size={14} strokeWidth={1.5} />
-            </button>
-          </div>
+      <div className="relative z-50 mb-1 flex w-full items-end justify-between gap-4 px-4 sm:px-6 md:mb-6 md:px-7 lg:mb-7 lg:px-10 xl:px-14">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700 md:text-emerald-300/80 lg:text-xs">Sélection SALAM</p>
+          <h2 id="featured-heading" className="text-3xl font-black tracking-[-0.04em] text-neutral-950 sm:text-4xl md:text-white lg:text-[44px]">À la une</h2>
         </div>
 
-        {/* ── Carrousel ── */}
-        <div className="relative h-[85vh] min-h-[520px] max-h-[780px] overflow-hidden lg:h-[70vh] lg:min-h-[460px] lg:max-h-[620px]">
-          <Swiper
-            modules={[Autoplay, A11y]}
-            className="h-full"
-            slidesPerView={1.12}
-            centeredSlides={false}
-            spaceBetween={2}
-            loop={items.length > 1}
-            speed={500}
-            autoplay={items.length > 1 ? { delay: SLIDE_DELAY, disableOnInteraction: false, waitForTransition: true } : false}
-            breakpoints={{
-              768:  { slidesPerView: 1.12, spaceBetween: 12 },
-              1024: { slidesPerView: 1.12, spaceBetween: 16 },
-            }}
-            onSwiper={swiper => { swiperRef.current = swiper; setActiveIndex(swiper.realIndex); }}
-            onSlideChange={swiper => { setActiveIndex(swiper.realIndex); setProgress(0); }}
-            /* Jauge pilotée exclusivement par le timer Swiper */
-            onAutoplayTimeLeft={(_swiper, _timeLeft, percentage) =>
-              setProgress(Math.max(0, Math.min(100, (1 - percentage) * 100)))
-            }
+        <div className="flex items-center gap-1.5 rounded-full md:border md:border-white/10 md:bg-white/[0.06] md:p-1.5 md:shadow-xl md:backdrop-blur-xl">
+          <button
+            type="button"
+            onClick={() => navigate('prev')}
+            disabled={items.length < 2}
+            aria-label="Élément précédent"
+            className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 disabled:opacity-35 md:h-9 md:w-9 md:border-0 ${
+              lastNav === 'prev'
+                ? 'border-transparent bg-neutral-700 text-white md:bg-white md:text-[#06130d]'
+                : 'border-neutral-300 bg-white/70 text-neutral-500 hover:border-neutral-500 hover:bg-white hover:text-neutral-800 md:bg-transparent md:text-white/65 md:hover:bg-white/15 md:hover:text-white'
+            }`}
           >
-            {items.map((item, itemIndex) => (
-              <SwiperSlide key={item._id} className="!flex h-full items-start pt-7 justify-end md:items-center md:pt-0">
-                <div
-                  className="grid h-[88%] w-[93%] min-h-0 overflow-hidden rounded-2xl border-0 bg-transparent grid-rows-[42%_58%] md:h-[360px] md:w-[92%] md:grid-cols-[1fr_1fr] md:grid-rows-1 lg:h-[400px] lg:w-[91%] xl:h-[430px]"
-                  style={{
-                    boxShadow: 'rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px',
-                  }}
-                >
-
-                  {/* ── Bloc texte ── */}
-                  <article
-                    className="isolate relative order-2 flex min-h-0 flex-col justify-center rounded-b-2xl bg-white p-4 text-left text-neutral-950 md:order-1 md:rounded-b-none md:rounded-l-2xl md:bg-transparent md:p-5 lg:bg-gradient-to-r lg:from-white lg:via-white/85 lg:to-transparent lg:p-6 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:hidden before:h-14 before:bg-gradient-to-b before:from-black/[0.07] before:to-transparent before:z-[-1] md:before:block"
-                    style={{ boxShadow: '0 -10px 32px rgba(0,0,0,0.10), 0 -2px 8px rgba(0,0,0,0.06)' }}
-                  >
-                    <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-                      <a {...destinationProps(item.titleDestination)} className="text-xl font-black leading-snug text-neutral-950 hover:text-emerald-700 sm:text-2xl lg:text-3xl">{item.title}</a>
-                      <a {...destinationProps(item.textDestination)} className="mt-2.5 block whitespace-pre-line break-words text-sm leading-6 text-neutral-600 hover:text-neutral-900">{item.description}</a>
-                    </div>
-                    {item.buttonDestination?.type !== 'none' && (
-                      <a {...destinationProps(item.buttonDestination)} className="absolute bottom-9 left-4 z-10 inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-emerald-600/45 bg-emerald-100/75 px-3.5 text-[11px] font-black text-emerald-800 backdrop-blur transition hover:border-emerald-700/70 hover:bg-emerald-100 md:static md:bottom-auto md:left-auto md:z-auto md:mt-4">
-                        {item.buttonLabel || 'En savoir plus'} <ArrowUpRight size={12} />
-                      </a>
-                    )}
-
-                    {/* Dots */}
-                    <div className="mt-3 flex shrink-0 items-center justify-center gap-1.5">
-                      {items.map((entry, dotIndex) => (
-                        <button
-                          key={entry._id}
-                          type="button"
-                          onClick={() => selectSlide(dotIndex)}
-                          aria-label={'Afficher ' + entry.title}
-                          style={{ height: '4px', minHeight: '0' }}
-                          className={`relative overflow-hidden p-0 rounded-full transition-all duration-300 ${
-                            dotIndex === activeIndex
-                              ? 'w-5'
-                              : 'w-1 bg-neutral-300 hover:bg-neutral-400'
-                          }`}
-                        >
-                          {dotIndex === activeIndex && (
-                            <motion.span
-                              layoutId="carousel-active-dot"
-                              className="absolute inset-0 rounded-full bg-emerald-600"
-                              transition={{ type: 'spring', bounce: 0.18, duration: 0.42 }}
-                            />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </article>
-
-                  {/* ── Bloc média ── */}
-                  <button
-                    type="button"
-                    onClick={() => setPreview(item)}
-                    className="relative order-1 h-full min-h-0 overflow-hidden rounded-t-2xl bg-black text-left md:order-2 md:rounded-2xl lg:rounded-l-none"
-                  >
-                    {/* Barre de progression — jauge du slide, se remplit sur SLIDE_DELAY ms */}
-                    <span className="absolute left-0 right-0 top-0 z-20 h-1.5 bg-black/20">
-                      <span
-                        className="block h-full origin-left"
-                        style={{
-                          width: `${progress}%`,
-                          background: 'linear-gradient(90deg,#0B8F3A 0%,#C8102E 50%,#F7C600 100%)',
-                          transition: 'width 100ms linear',
-                        }}
-                      />
-                    </span>
-                    <Media item={item} active={itemIndex === activeIndex && !preview} playbackId={'slide-' + item._id} onPlaybackChange={handlePlaybackChange} />
-                    <span className="absolute right-3 top-3 z-30 grid h-7 w-7 place-items-center rounded-full border border-white/30 bg-black/70 text-white shadow-lg backdrop-blur transition hover:scale-105 hover:bg-black/85 md:right-4 md:top-4 md:h-10 md:w-10" aria-hidden="true">
-                      <Expand size={13} className="md:hidden" />
-                      <Expand size={19} className="hidden md:block" />
-                    </span>
-                  </button>
-                </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
+            <ChevronLeft size={15} strokeWidth={1.8} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setManualPaused(value => !value)}
+            disabled={items.length < 2}
+            aria-label={manualPaused ? 'Relancer le carrousel' : 'Mettre le carrousel en pause'}
+            aria-pressed={manualPaused}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 bg-white/70 text-neutral-500 transition-all duration-200 hover:border-neutral-500 hover:bg-white hover:text-neutral-800 disabled:opacity-35 md:h-9 md:w-9 md:border-0 md:bg-transparent md:text-white/65 md:hover:bg-white/15 md:hover:text-white"
+          >
+            {manualPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} fill="currentColor" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('next')}
+            disabled={items.length < 2}
+            aria-label="Élément suivant"
+            className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 disabled:opacity-35 md:h-9 md:w-9 md:border-0 ${
+              lastNav === 'next'
+                ? 'border-transparent bg-neutral-700 text-white md:bg-white md:text-[#06130d]'
+                : 'border-neutral-300 bg-white/70 text-neutral-500 hover:border-neutral-500 hover:bg-white hover:text-neutral-800 md:bg-transparent md:text-white/65 md:hover:bg-white/15 md:hover:text-white'
+            }`}
+          >
+            <ChevronRight size={15} strokeWidth={1.8} />
+          </button>
         </div>
       </div>
 
-      {/* ── Lightbox preview ── */}
+      {/*
+        Ancien carousel conservé pendant la phase de validation.
+        Il reste volontairement actif uniquement sur mobile et ne sera retiré
+        qu'après validation explicite du nouveau rendu desktop/tablette.
+      */}
+      {!isDesktopOrTablet && (
+        <LegacyMobileCarousel
+          items={items}
+          activeIndex={activeIndex}
+          progress={progress}
+          preview={preview}
+          swiperRef={swiperRef}
+          onActiveIndexChange={setActiveIndex}
+          onProgressChange={setProgress}
+          onPreview={setPreview}
+          onPlaybackChange={handlePlaybackChange}
+          onSelect={selectSlide}
+        />
+      )}
+
+      {isDesktopOrTablet && (
+        <DesktopAccordionCarousel
+          items={items}
+          activeIndex={activeIndex}
+          progress={progress}
+          preview={preview}
+          onSelect={selectSlide}
+          onPreview={setPreview}
+          onPlaybackChange={handlePlaybackChange}
+        />
+      )}
+
       <AnimatePresence>
         {preview && (
           <motion.div
-            className="fixed inset-0 z-[160] flex items-center justify-center bg-black/85 p-4 backdrop-blur"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[160] flex items-center justify-center bg-black/88 p-4 backdrop-blur-md"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={() => setPreview(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Aperçu de ${preview.title}`}
           >
-            <div className="relative h-auto max-h-[88vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-black" onClick={e => e.stopPropagation()}>
-              <button type="button" onClick={() => setPreview(null)} className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 10 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="relative h-auto max-h-[88vh] w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl"
+              onClick={event => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setPreview(null)}
+                aria-label="Fermer l aperçu"
+                className="absolute right-3 top-3 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/70 text-white backdrop-blur transition hover:bg-black/90"
+              >
                 <X size={18} />
               </button>
               <div className="aspect-video">
-                <Media item={preview} active playbackId={'preview-' + preview._id} onPlaybackChange={handlePlaybackChange} />
+                <LegacyMedia item={preview} active playbackId={`preview-${preview._id}`} onPlaybackChange={handlePlaybackChange} />
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {activeItem && <span className="sr-only">Élément actif : {activeItem.title}</span>}
     </section>
   );
 }
